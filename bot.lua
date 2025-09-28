@@ -1,14 +1,24 @@
--- ✅ Destroy previous UI if exists
+-- ✅ Cleanup previous UI & connections
 if _G.ObsidianWindow then
     pcall(function()
         _G.ObsidianWindow:Destroy()
     end)
+    _G.ObsidianWindow = nil
+end
+
+if _G.loopTask then
+    _G.loopTask:Disconnect()
+    _G.loopTask = nil
+end
+
+if _G.followConnection then
+    _G.followConnection:Disconnect()
+    _G.followConnection = nil
 end
 
 -- ✅ Obsidian UI Setup
 local repo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
 local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
-
 local Options = Library.Options
 
 local Window = Library:CreateWindow({
@@ -19,7 +29,7 @@ local Window = Library:CreateWindow({
     ShowCustomCursor = true,
 })
 
--- Simpan window ini secara global agar bisa dihapus jika script dijalankan lagi
+-- Simpan window & connections secara global agar bisa dihapus saat reload
 _G.ObsidianWindow = Window
 
 local Tabs = {
@@ -32,7 +42,7 @@ local RunService = game:GetService("RunService")
 local TextChatService = game:GetService("TextChatService")
 
 local localPlayer = Players.LocalPlayer
-local clientName = "FiestaGuardVip" -- langsung set client name
+local clientName = "FiestaGuardVip"
 local jarakIkut = 5
 local toggleAktif = false
 local followAllowed = false
@@ -43,6 +53,10 @@ local loopTask = nil
 local humanoid = nil
 local myRootPart = nil
 local client = nil
+
+-- ✅ Simpan connection lama ke _G supaya bisa di-disconnect saat reload
+_G.loopTask = loopTask
+_G.followConnection = followConnection
 
 -- ✅ Bot Mapping
 local botMapping = {
@@ -65,7 +79,7 @@ local function updateBotRefs()
     debugPrint("Bot references updated")
 end
 
--- ✅ Reset function
+-- ✅ Reset follow
 local function runStopCommand()
     followAllowed = false
     currentFormasiTarget = nil
@@ -82,10 +96,11 @@ GroupBox1:AddInput("BotIdentity", {
     Text = "Bot Identity",
     Placeholder = "Auto-detected bot info",
     Callback = function(Value)
-        -- readonly, tidak ada perubahan
+        -- readonly
     end,
 })
 
+-- Toggle follow
 GroupBox1:AddToggle("AktifkanFollow", {
     Text = "Enable Bot Follow",
     Default = false,
@@ -107,6 +122,7 @@ GroupBox1:AddToggle("AktifkanFollow", {
     end,
 })
 
+-- Input jarak ikut
 GroupBox1:AddInput("JarakIkutInput", {
     Default = "5",
     Text = "Follow Distance",
@@ -146,7 +162,7 @@ function setupBotFollowSystem()
         client = player
         debugPrint("Client "..player.Name.." setup complete")
 
-        -- ✅ Chat Listener (TextChatService baru)
+        -- TextChatService baru
         if TextChatService and TextChatService.TextChannels then
             local generalChannel = TextChatService.TextChannels.RBXGeneral
             if generalChannel then
@@ -160,11 +176,12 @@ function setupBotFollowSystem()
                 end
             end
         else
-            -- ✅ Fallback (Player.Chatted lama)
+            -- Fallback lama
             followConnection = player.Chatted:Connect(function(msg)
                 debugPrint("Received chat from "..player.Name..": "..msg)
                 handleCommand(msg)
             end)
+            _G.followConnection = followConnection
         end
     end
 
@@ -200,4 +217,5 @@ function setupBotFollowSystem()
             end
         end
     end)
+    _G.loopTask = loopTask
 end
