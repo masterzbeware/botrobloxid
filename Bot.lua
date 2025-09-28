@@ -35,27 +35,29 @@ _G.BotVars = {
     ToggleAktif = false,
 
     -- 🔹 Default spacing & distance values
-    JarakIkut = 5,        -- jarak bot ke VIP (ikuti mode)
-    FollowSpacing = 2,    -- jarak antar bot di follow
-    ShieldDistance = 5,   -- jarak shield ke VIP
-    ShieldSpacing = 4,    -- jarak antar bot shield
-    RowSpacing = 4,       -- jarak antar baris
-    SideSpacing = 4,      -- jarak kiri-kanan barisan
+    JarakIkut = 5,
+    FollowSpacing = 2,
+    ShieldDistance = 5,
+    ShieldSpacing = 4,
+    RowSpacing = 4,
+    SideSpacing = 4,
+
+    BotMode = "Bot1", -- default bot aktif untuk game
 }
 
 -- ✅ Identity Detection
 local botMapping = {
-    ["8802945328"] = "Bot1 - XBODYGUARDVIP01",
-    ["8802949363"] = "Bot2 - XBODYGUARDVIP02",
-    ["8802939883"] = "Bot3 - XBODYGUARDVIP03",
-    ["8802998147"] = "Bot4 - XBODYGUARDVIP04",
+    ["8802945328"] = "Bot1",
+    ["8802949363"] = "Bot2",
+    ["8802939883"] = "Bot3",
+    ["8802998147"] = "Bot4",
 }
 _G.BotVars.BotIdentity = botMapping[tostring(_G.BotVars.LocalPlayer.UserId)] or "Unknown Bot"
 debugPrint("Detected identity: " .. _G.BotVars.BotIdentity)
 
 -- ✅ Commands Loader
 local Commands = {}
-local commandFiles = { "Ikuti.lua", "Stop.lua", "Shield.lua", "Row.lua", "Sync.lua" }
+local commandFiles = { "Ikuti.lua", "Stop.lua", "Shield.lua", "Row.lua", "Sync.lua", "GameCommands.lua" }
 
 for _, fileName in ipairs(commandFiles) do
     local url = repoBase .. fileName
@@ -86,18 +88,23 @@ end
 local function handleCommand(msg, client)
     if not _G.BotVars.ToggleAktif then return end
     msg = msg:lower()
+
     for name, cmd in pairs(Commands) do
         if msg:match("^!" .. name) and cmd.Execute then
             debugPrint("Executing command: " .. name)
-            cmd.Execute(msg, client)
+            -- 🔹 Jika command adalah game, kirim player
+            if name == "gamecommands" then
+                cmd.Execute(msg, client)
+            else
+                cmd.Execute(msg, client)
+            end
         end
     end
 end
 
 -- ✅ Setup Client Listener
 local function setupClient(player)
-    if player.Name ~= _G.BotVars.ClientName then return end
-    local client = player
+    if not player then return end
 
     if _G.BotVars.TextChatService and _G.BotVars.TextChatService.TextChannels then
         local generalChannel = _G.BotVars.TextChatService.TextChannels.RBXGeneral
@@ -105,14 +112,14 @@ local function setupClient(player)
             generalChannel.OnIncomingMessage = function(message)
                 local senderUserId = message.TextSource and message.TextSource.UserId
                 local sender = senderUserId and _G.BotVars.Players:GetPlayerByUserId(senderUserId)
-                if sender and sender == client then
-                    handleCommand(message.Text, client)
+                if sender then
+                    handleCommand(message.Text, sender)
                 end
             end
         end
     else
         player.Chatted:Connect(function(msg)
-            handleCommand(msg, client)
+            handleCommand(msg, player)
         end)
     end
 end
