@@ -2,6 +2,27 @@
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars
+
+        -- 🔹 Cek toggle RockPaper
+        if vars.RockPaperEnabled == false then
+            print("[RockPaper] Fitur RockPaper sedang OFF, tidak mengeksekusi command.")
+            return
+        end
+
+        -- 🔹 Delay 20 detik per pemain
+        local playerCooldowns = vars.RockPaperCooldowns or {}
+        vars.RockPaperCooldowns = playerCooldowns
+
+        local lastUsed = playerCooldowns[client.UserId] or 0
+        local currentTime = tick()
+        if currentTime - lastUsed < 20 then
+            print("[RockPaper] Tunggu " .. math.ceil(20 - (currentTime - lastUsed)) .. " detik lagi untuk " .. client.Name)
+            return
+        end
+
+        playerCooldowns[client.UserId] = currentTime
+
+        -- 🔹 TextChatService
         local TextChatService = game:GetService("TextChatService")
         local channel
         if TextChatService.TextChannels then

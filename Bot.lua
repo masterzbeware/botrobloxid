@@ -12,7 +12,7 @@ local Options = Library.Options
 -- ✅ Buat Window UI
 local Window = Library:CreateWindow({
     Title = "Made by MasterZ",
-    Footer = "v1.0.0",
+    Footer = "v2.0.0",
     Icon = 0,
     NotifySide = "Right",
     ShowCustomCursor = true,
@@ -33,14 +33,16 @@ _G.BotVars = {
     ClientName = "FiestaGuardVip",
 
     ToggleAktif = false,
+    RockPaperEnabled = true, -- Toggle khusus RockPaper
+    RockPaperCooldowns = {}, -- Cooldown per pemain
 
     -- 🔹 Default spacing & distance values
-    JarakIkut = 5,        -- jarak bot ke VIP (ikuti mode)
-    FollowSpacing = 2,    -- jarak antar bot di follow
-    ShieldDistance = 5,   -- jarak shield ke VIP
-    ShieldSpacing = 4,    -- jarak antar bot shield
-    RowSpacing = 4,       -- jarak antar baris
-    SideSpacing = 4,      -- jarak kiri-kanan barisan
+    JarakIkut = 5,
+    FollowSpacing = 2,
+    ShieldDistance = 5,
+    ShieldSpacing = 4,
+    RowSpacing = 4,
+    SideSpacing = 4,
 }
 
 -- ✅ Identity Detection
@@ -68,7 +70,7 @@ for _, fileName in ipairs(commandFiles) do
         if func then
             local status, cmdTable = pcall(func)
             if status and type(cmdTable) == "table" then
-                local nameKey = fileName:sub(1, #fileName - 4) -- hapus .lua
+                local nameKey = fileName:sub(1, #fileName - 4)
                 Commands[nameKey:lower()] = cmdTable
                 debugPrint("Loaded command via HTTP: " .. nameKey)
             else
@@ -140,6 +142,7 @@ GroupBox1:AddInput("BotIdentity", {
     Text = "Bot Identity",
     Placeholder = "Auto-detected bot info",
 })
+
 GroupBox1:AddToggle("AktifkanBot", {
     Text = "Enable Bot System",
     Default = false,
@@ -148,6 +151,18 @@ GroupBox1:AddToggle("AktifkanBot", {
         _G.BotVars.ToggleAktif = Value
         debugPrint("ToggleAktif set to: " .. tostring(Value))
         Library:Notify("Bot System " .. (Value and "Enabled" or "Disabled"), 3)
+    end,
+})
+
+-- 🔹 Toggle khusus RockPaper
+GroupBox1:AddToggle("ToggleRockPaper", {
+    Text = "Enable RockPaper Feature",
+    Default = true,
+    Tooltip = "On/Off fitur !rockpaper",
+    Callback = function(Value)
+        _G.BotVars.RockPaperEnabled = Value
+        debugPrint("RockPaperEnabled set to: " .. tostring(Value))
+        Library:Notify("RockPaper Feature " .. (Value and "Enabled" or "Disabled"), 3)
     end,
 })
 
