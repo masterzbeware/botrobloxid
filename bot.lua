@@ -5,7 +5,7 @@ local Options = Library.Options
 
 local Window = Library:CreateWindow({
     Title = "Made by MasterZ",
-    Footer = "v12.0.0",
+    Footer = "v13.0.0",
     Icon = 0,
     NotifySide = "Right",
     ShowCustomCursor = true,
@@ -64,6 +64,7 @@ local function updateBotRefs()
     local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
     humanoid = character:WaitForChild("Humanoid")
     myRootPart = character:WaitForChild("HumanoidRootPart")
+    humanoid.AutoRotate = true -- biar otomatis menghadap target
     debugPrint("Bot references updated")
 end
 
@@ -74,10 +75,13 @@ local function runStopCommand()
     Library:Notify("Bot Follow Stopped", 3)
 end
 
-local function moveToPosition(targetPos, lookAtPos)
+-- ✅ FIX: Anti-stuck moveTo
+local function moveToPosition(targetPos)
     if humanoid and myRootPart and targetPos then
-        humanoid:MoveTo(targetPos)
-        myRootPart.CFrame = CFrame.new(myRootPart.Position, Vector3.new(lookAtPos.X, myRootPart.Position.Y, lookAtPos.Z))
+        local dist = (myRootPart.Position - targetPos).Magnitude
+        if dist > 2 then
+            humanoid:MoveTo(targetPos)
+        end
     end
 end
 
@@ -266,6 +270,7 @@ function setupBotFollowSystem()
             local targetHRP = currentFormasiTarget.Character:FindFirstChild("HumanoidRootPart")
             if targetHRP then
                 if shieldActive then
+                    -- Shield Formation
                     local allBots = {}
                     for id, _ in pairs(botMapping) do
                         local p = Players:GetPlayerByUserId(tonumber(id))
@@ -284,9 +289,10 @@ function setupBotFollowSystem()
                     local offsetX = (index - middle) * shieldSpacing
                     local rowOffset = math.floor((index-1)/2) * shieldRowSpacing
                     local targetPos = targetHRP.Position + targetHRP.CFrame.RightVector * offsetX + targetHRP.CFrame.LookVector * (shieldDistance - rowOffset)
-                    moveToPosition(targetPos, targetHRP.Position)
+                    moveToPosition(targetPos)
 
                 elseif rowActive then
+                    -- Row Formation
                     local index
                     local ids = {}
                     for id,_ in pairs(botMapping) do table.insert(ids, tonumber(id)) end
@@ -303,9 +309,10 @@ function setupBotFollowSystem()
                     elseif index == 4 then
                         targetPos = targetHRP.Position + targetHRP.CFrame.RightVector * rowSideSpacing + targetHRP.CFrame.LookVector * (rowFrontDistance - rowSpacing)
                     end
-                    if targetPos then moveToPosition(targetPos, targetHRP.Position) end
+                    if targetPos then moveToPosition(targetPos) end
 
                 elseif followAllowed then
+                    -- Follow Formation
                     local botIds = {}
                     for id, _ in pairs(botMapping) do
                         table.insert(botIds, tonumber(id))
@@ -318,7 +325,7 @@ function setupBotFollowSystem()
                     end
 
                     local followPos = targetHRP.Position - targetHRP.CFrame.LookVector * (jarakIkut + (index-1)*followSpacing)
-                    moveToPosition(followPos, targetHRP.Position)
+                    moveToPosition(followPos)
                 end
             end
         end
