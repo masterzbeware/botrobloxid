@@ -2,9 +2,6 @@
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars
-        local player = vars.LocalPlayer
-
-        -- 🔹 Pastikan TextChatService siap
         local TextChatService = game:GetService("TextChatService")
         local channel
         if TextChatService.TextChannels then
@@ -16,11 +13,16 @@ return {
             return
         end
 
+        -- 🔹 Pilihan random
+        local choices = { "Batu", "Kertas", "Gunting" }
+        local choice = choices[math.random(1, #choices)]
+
         -- 🔹 Kirim chat otomatis
+        local messageText = client.Name .. " memulai RockPaper! Bot memilih: " .. choice
         pcall(function()
-            channel:SendAsync("Halo ini testing")
+            channel:SendAsync(messageText)
         end)
 
-        print("[COMMAND] RockPaper executed by:", client.Name)
+        print("[RockPaper] " .. messageText)
     end
 }
