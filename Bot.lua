@@ -12,7 +12,7 @@ local Options = Library.Options
 -- ✅ Buat Window UI
 local Window = Library:CreateWindow({
     Title = "Made by MasterZ",
-    Footer = "v2.0.0",
+    Footer = "v3.0.0",
     Icon = 0,
     NotifySide = "Right",
     ShowCustomCursor = true,
@@ -136,7 +136,7 @@ GroupBox1:AddInput("BotIdentity", {
 GroupBox1:AddToggle("AktifkanBot", {
     Text = "Enable Bot System",
     Default = false,
-    Tooltip = "Enable to accept chat commands (!ikuti, !stop, !absen, dll)",
+    Tooltip = "Enable to accept chat commands (!ikuti, !stop, !shield, !row, !sync, !absen)",
     Callback = function(Value)
         _G.BotVars.ToggleAktif = Value
         debugPrint("ToggleAktif set to: " .. tostring(Value))

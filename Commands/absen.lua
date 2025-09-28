@@ -19,6 +19,9 @@ return {
             local player = Players:GetPlayerByUserId(tonumber(userIdStr))
             if player and player.Character then
                 table.insert(onlineBots, {Player = player, Name = botName})
+                print("[DEBUG] Bot online terdeteksi: " .. botName)
+            else
+                print("[DEBUG] Bot offline atau karakter tidak ada: " .. botName)
             end
         end
 
@@ -42,23 +45,27 @@ return {
         -- 🔹 Chat awal
         pcall(function()
             channel:SendAsync("Siap laksanakan! Mulai Berhitung")
-            print("[DEBUG] Chat: Siap laksanakan! Mulai Berhitung")
+            print("[DEBUG] Chat awal dikirim: Siap laksanakan! Mulai Berhitung")
         end)
 
-        -- 🔹 Delay 2 detik sebelum mulai hitung
-        task.wait(2)
+        -- 🔹 Delay sebentar agar chat awal muncul
+        task.wait(1)
 
         -- 🔹 Kirim chat sesuai urutan bot online
         for i, botInfo in ipairs(onlineBots) do
             local botPlayer = botInfo.Player
             local botName = botInfo.Name
 
-            task.delay((i - 1) * 2, function()
+            task.spawn(function()
+                local delayTime = (i - 1) * 2
+                task.wait(delayTime)
                 if botPlayer and botPlayer.Character then
                     pcall(function()
                         channel:SendAsync(tostring(i))
                         print("[DEBUG] Bot " .. botName .. " mengirim chat: " .. i)
                     end)
+                else
+                    print("[DEBUG] Bot " .. botName .. " tidak online saat hitung")
                 end
             end)
         end
