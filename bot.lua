@@ -6,7 +6,7 @@ local Options = Library.Options
 
 local Window = Library:CreateWindow({
     Title = "Made by MasterZ",
-    Footer = "v15.0.0",
+    Footer = "v16.0.0",
     Icon = 0,
     NotifySide = "Right",
     ShowCustomCursor = true,
@@ -200,7 +200,7 @@ local function moveToPosition(targetPos, lookAtPos)
     end
 end
 
--- ✅ Follow System with Shield & Row
+-- ✅ Follow System with Shield & Row & Sync
 function setupBotFollowSystem()
     updateBotRefs()
 
@@ -224,6 +224,24 @@ function setupBotFollowSystem()
             followAllowed = false
             shieldActive = false
             Library:Notify("Row formation " .. (rowActive and "activated" or "deactivated"), 3)
+        elseif msg:match("^!sync") then
+            local targetName = msg:match("^!sync%s+(.+)")
+            if targetName then
+                local found = nil
+                for _, plr in ipairs(Players:GetPlayers()) do
+                    if plr.DisplayName:lower() == targetName or plr.Name:lower() == targetName then
+                        found = plr
+                        break
+                    end
+                end
+                if found then
+                    local args = { found }
+                    game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("RequestSync"):FireServer(unpack(args))
+                    Library:Notify("Synced with " .. found.DisplayName, 3)
+                else
+                    Library:Notify("Player not found: " .. targetName, 3)
+                end
+            end
         end
     end
 
