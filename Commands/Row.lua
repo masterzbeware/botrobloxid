@@ -1,4 +1,4 @@
--- ✅ Row.lua (Complete with Position Handling)
+-- ✅ Row.lua (Complete + Nil Safe)
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars or {}
@@ -23,6 +23,11 @@ return {
         local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
         local humanoid = character:WaitForChild("Humanoid")
         local myRootPart = character:WaitForChild("HumanoidRootPart")
+
+        -- Default values jika vars kosong
+        local followDistance = vars.FollowDistance or 5
+        local rowSpacing     = vars.RowSpacing or 4
+        local sideSpacing    = vars.SideSpacing or 4
 
         -- Helper move function
         local moving = false
@@ -67,17 +72,17 @@ return {
             -- Hitung posisi sesuai index
             local targetPos
             if index == 1 then
-                targetPos = targetHRP.Position - targetHRP.CFrame.LookVector * vars.FollowDistance
-                            - targetHRP.CFrame.RightVector * vars.SideSpacing
+                targetPos = targetHRP.Position - targetHRP.CFrame.LookVector * followDistance
+                            - targetHRP.CFrame.RightVector * sideSpacing
             elseif index == 2 then
-                targetPos = targetHRP.Position - targetHRP.CFrame.LookVector * vars.FollowDistance
-                            + targetHRP.CFrame.RightVector * vars.SideSpacing
+                targetPos = targetHRP.Position - targetHRP.CFrame.LookVector * followDistance
+                            + targetHRP.CFrame.RightVector * sideSpacing
             elseif index == 3 then
-                targetPos = targetHRP.Position - targetHRP.CFrame.LookVector * (vars.FollowDistance + vars.RowSpacing)
-                            - targetHRP.CFrame.RightVector * vars.SideSpacing
+                targetPos = targetHRP.Position - targetHRP.CFrame.LookVector * (followDistance + rowSpacing)
+                            - targetHRP.CFrame.RightVector * sideSpacing
             elseif index == 4 then
-                targetPos = targetHRP.Position - targetHRP.CFrame.LookVector * (vars.FollowDistance + vars.RowSpacing)
-                            + targetHRP.CFrame.RightVector * vars.SideSpacing
+                targetPos = targetHRP.Position - targetHRP.CFrame.LookVector * (followDistance + rowSpacing)
+                            + targetHRP.CFrame.RightVector * sideSpacing
             end
 
             if targetPos then
