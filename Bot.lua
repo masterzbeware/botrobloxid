@@ -1,8 +1,16 @@
 -- Bot.lua
-local repo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
-local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
+-- MasterZ Beware Bot System
+-- Versi dengan HTTP loader Commands langsung dari GitHub repo
+
+-- ✅ Base repo untuk commands
+local repoBase = "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Commands/"
+
+-- ✅ Library UI (masih pakai Obsidian repo yang lama)
+local obsidianRepo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
+local Library = loadstring(game:HttpGet(obsidianRepo .. "Library.lua"))()
 local Options = Library.Options
 
+-- ✅ Buat Window UI
 local Window = Library:CreateWindow({
     Title = "Made by MasterZ",
     Footer = "v16.0.0",
@@ -10,10 +18,9 @@ local Window = Library:CreateWindow({
     NotifySide = "Right",
     ShowCustomCursor = true,
 })
-
 local Tabs = { Main = Window:AddTab("Main", "user") }
 
--- ✅ Debug Function
+-- ✅ Debug helper
 local function debugPrint(msg)
     print("[DEBUG] " .. tostring(msg))
 end
@@ -26,7 +33,7 @@ _G.BotVars = {
     LocalPlayer = game:GetService("Players").LocalPlayer,
     ClientName = "FiestaGuardVip",
 
-    -- Bot State
+    -- State
     JarakIkut = 5,
     FollowSpacing = 2,
     ShieldDistance = 5,
@@ -41,7 +48,7 @@ _G.BotVars = {
     CurrentFormasiTarget = nil,
 }
 
--- ✅ Bot Identity Detection
+-- ✅ Identity Detection
 local botMapping = {
     ["8802945328"] = "Bot1 - XBODYGUARDVIP01",
     ["8802949363"] = "Bot2 - XBODYGUARDVIP02",
@@ -51,19 +58,32 @@ local botMapping = {
 _G.BotVars.BotIdentity = botMapping[tostring(_G.BotVars.LocalPlayer.UserId)] or "Unknown Bot"
 debugPrint("Detected identity: " .. _G.BotVars.BotIdentity)
 
--- ✅ Commands Loader with Debug
+-- ✅ Commands Loader (dari repo GitHub)
 local Commands = {}
-local commandFiles = { "Ikuti", "Stop", "Shield", "Row", "Sync" }
+local commandFiles = { "Ikuti.lua", "Stop.lua", "Shield.lua", "Row.lua", "Sync.lua" }
 
-for _, file in ipairs(commandFiles) do
-    local success, result = pcall(function()
-        return loadfile("Commands/" .. file .. ".lua")()
+for _, fileName in ipairs(commandFiles) do
+    local url = repoBase .. fileName
+    local success, response = pcall(function()
+        return game:HttpGet(url)
     end)
-    if success and type(result) == "table" then
-        Commands[file:lower()] = result
-        debugPrint("Loaded command: " .. file)
+
+    if success and response then
+        local func, err = loadstring(response)
+        if func then
+            local status, cmdTable = pcall(func)
+            if status and type(cmdTable) == "table" then
+                local nameKey = fileName:sub(1, #fileName - 4) -- hapus .lua
+                Commands[nameKey:lower()] = cmdTable
+                debugPrint("Loaded command via HTTP: " .. nameKey)
+            else
+                debugPrint("Failed executing command chunk: " .. fileName .. " err: " .. tostring(cmdTable))
+            end
+        else
+            debugPrint("Failed loadstring: " .. fileName .. " err: " .. tostring(err))
+        end
     else
-        debugPrint("Failed to load: " .. file .. " (" .. tostring(result) .. ")")
+        debugPrint("Failed HttpGet: " .. fileName .. " err: " .. tostring(response))
     end
 end
 
@@ -79,7 +99,7 @@ local function handleCommand(msg, client)
     end
 end
 
--- ✅ Setup client listener
+-- ✅ Setup Client Listener
 local function setupClient(player)
     if player.Name ~= _G.BotVars.ClientName then return end
     local client = player
@@ -102,8 +122,8 @@ local function setupClient(player)
     end
 end
 
-for _, player in ipairs(_G.BotVars.Players:GetPlayers()) do
-    setupClient(player)
+for _, plr in ipairs(_G.BotVars.Players:GetPlayers()) do
+    setupClient(plr)
 end
 _G.BotVars.Players.PlayerAdded:Connect(setupClient)
 
@@ -127,5 +147,6 @@ GroupBox1:AddToggle("AktifkanBot", {
     end,
 })
 
+-- ✅ Final Notify
 Library:Notify("Bot System Loaded!", 3)
 debugPrint("Bot.lua finished loading")
