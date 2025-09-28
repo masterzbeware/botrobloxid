@@ -1,6 +1,6 @@
 local M = {}
 
-return function(args, ctx)
+function M.execute(args, ctx)
     ctx.State.shieldActive = not ctx.State.shieldActive
     ctx.State.followAllowed = false
     ctx.State.rowActive = false
@@ -19,9 +19,9 @@ function M.run(State, localPlayer, targetHRP, moveToPosition, botMapping)
     if index == 1 then
         targetPos = targetHRP.Position + targetHRP.CFrame.LookVector * State.shieldDistance
     elseif index == 2 then
-        targetPos = targetHRP.Position - targetHRP.CFrame.RightVector * State.shieldDistance
+        targetPos = targetHRP.Position - targetHRP.CFrame.RightVector * State.shieldSpacing
     elseif index == 3 then
-        targetPos = targetHRP.Position + targetHRP.CFrame.RightVector * State.shieldDistance
+        targetPos = targetHRP.Position + targetHRP.CFrame.RightVector * State.shieldSpacing
     elseif index == 4 then
         targetPos = targetHRP.Position - targetHRP.CFrame.LookVector * State.shieldDistance
     end

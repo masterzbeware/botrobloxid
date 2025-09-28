@@ -1,22 +1,34 @@
-return function(args, ctx)
-    ctx.State.followAllowed = true
-    ctx.State.shieldActive = false
-    ctx.State.rowActive = false
-    ctx.State.currentFormasiTarget = ctx.Client
-    ctx.Library:Notify("Following VIP", 3)
+local M = {}
+
+function M.execute(args, ctx)
+    local targetName = args[1]
+    if not targetName then
+        ctx.Library:Notify("Usage: !ikuti {username/displayname}", 3)
+        return
+    end
+
+    local target = nil
+    for _, plr in ipairs(ctx.Players:GetPlayers()) do
+        if plr.Name:lower():find(targetName:lower()) or plr.DisplayName:lower():find(targetName:lower()) then
+            target = plr
+            break
+        end
+    end
+
+    if target then
+        ctx.State.currentFormasiTarget = target
+        ctx.State.followAllowed = true
+        ctx.State.shieldActive = false
+        ctx.State.rowActive = false
+        ctx.Library:Notify("Following " .. target.DisplayName, 3)
+    else
+        ctx.Library:Notify("Player not found: " .. targetName, 3)
+    end
 end
 
--- fungsi jalanin posisi
-local M = {}
 function M.run(State, localPlayer, targetHRP, moveToPosition, botMapping)
-    local botIds = {}
-    for id in pairs(botMapping) do table.insert(botIds, tonumber(id)) end
-    table.sort(botIds)
-
-    local index = 1
-    for i, id in ipairs(botIds) do if id == localPlayer.UserId then index = i break end end
-
-    local followPos = targetHRP.Position - targetHRP.CFrame.LookVector * (State.jarakIkut + (index - 1) * State.followSpacing)
+    local followPos = targetHRP.Position - targetHRP.CFrame.LookVector * State.jarakIkut
     moveToPosition(followPos, targetHRP.Position)
 end
+
 return M

@@ -1,6 +1,6 @@
 local M = {}
 
-return function(args, ctx)
+function M.execute(args, ctx)
     ctx.State.rowActive = not ctx.State.rowActive
     ctx.State.followAllowed = false
     ctx.State.shieldActive = false
