@@ -1,4 +1,4 @@
--- ✅ Row.lua (Row formation dengan jarak antar bot/baris)
+-- ✅ Row.lua (Row formation dengan urutan fix Bot1-4)
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars or {}
@@ -25,7 +25,7 @@ return {
         local myRootPart = character:WaitForChild("HumanoidRootPart")
 
         -- Default values jika vars kosong
-        local followDistance = vars.FollowDistance or 5
+        local followDistance = vars.JarakIkut or 5
         local rowSpacing     = vars.RowSpacing or 4
         local sideSpacing    = vars.SideSpacing or 4
 
@@ -57,23 +57,25 @@ return {
             local targetHRP = vars.CurrentFormasiTarget.Character:FindFirstChild("HumanoidRootPart")
             if not targetHRP then return end
 
-            -- Dapatkan urutan bot
-            local botIds = {}
-            for id, _ in pairs(vars.BotMapping or {}) do
-                table.insert(botIds, tonumber(id))
-            end
-            table.sort(botIds)
+            -- 🔹 Urutan fix Bot1 → Bot4
+            local orderedBots = {
+                "8802945328", -- Bot1 - XBODYGUARDVIP01
+                "8802949363", -- Bot2 - XBODYGUARDVIP02
+                "8802939883", -- Bot3 - XBODYGUARDVIP03
+                "8802998147", -- Bot4 - XBODYGUARDVIP04
+            }
 
+            local myUserId = tostring(localPlayer.UserId)
             local index = 1
-            for i, id in ipairs(botIds) do
-                if id == localPlayer.UserId then
+            for i, uid in ipairs(orderedBots) do
+                if uid == myUserId then
                     index = i
                     break
                 end
             end
 
-            -- Baris ke berapa (row) dan posisi kiri/kanan
-            local rowIndex = math.floor((index - 1) / 2) -- 0 untuk baris 1, 1 untuk baris 2, dst
+            -- 🔹 Tentukan baris dan posisi samping
+            local rowIndex = math.floor((index - 1) / 2) -- baris ke-0,1,2,...
             local sideIndex = (index - 1) % 2            -- 0 = kiri, 1 = kanan
 
             -- Hitung posisi sesuai row & side
@@ -84,7 +86,7 @@ return {
                 - targetHRP.CFrame.LookVector * baseBack
                 + targetHRP.CFrame.RightVector * offsetSide
 
-            moveToPosition(targetPos, targetHRP.Position)
+            moveToPosition(targetPos, targetHRP.Position) -- tetap menghadap VIP
         end)
     end
 }
