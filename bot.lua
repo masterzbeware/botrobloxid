@@ -1,24 +1,7 @@
--- ✅ Cleanup previous UI & connections
-if _G.ObsidianWindow then
-    pcall(function()
-        _G.ObsidianWindow:Destroy()
-    end)
-    _G.ObsidianWindow = nil
-end
-
-if _G.loopTask then
-    _G.loopTask:Disconnect()
-    _G.loopTask = nil
-end
-
-if _G.followConnection then
-    _G.followConnection:Disconnect()
-    _G.followConnection = nil
-end
-
 -- ✅ Obsidian UI Setup
 local repo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
 local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
+
 local Options = Library.Options
 
 local Window = Library:CreateWindow({
@@ -28,9 +11,6 @@ local Window = Library:CreateWindow({
     NotifySide = "Right",
     ShowCustomCursor = true,
 })
-
--- Simpan window & connections secara global agar bisa dihapus saat reload
-_G.ObsidianWindow = Window
 
 local Tabs = {
     Main = Window:AddTab("Main", "user")
@@ -47,16 +27,13 @@ local jarakIkut = 5
 local toggleAktif = false
 local followAllowed = false
 local currentFormasiTarget = nil
+local shieldActive = false
 
 local followConnection = nil
 local loopTask = nil
 local humanoid = nil
 local myRootPart = nil
 local client = nil
-
--- ✅ Simpan connection lama ke _G supaya bisa di-disconnect saat reload
-_G.loopTask = loopTask
-_G.followConnection = followConnection
 
 -- ✅ Bot Mapping
 local botMapping = {
@@ -79,7 +56,7 @@ local function updateBotRefs()
     debugPrint("Bot references updated")
 end
 
--- ✅ Reset follow
+-- ✅ Reset function
 local function runStopCommand()
     followAllowed = false
     currentFormasiTarget = nil
@@ -96,11 +73,10 @@ GroupBox1:AddInput("BotIdentity", {
     Text = "Bot Identity",
     Placeholder = "Auto-detected bot info",
     Callback = function(Value)
-        -- readonly
+        -- readonly, tidak ada perubahan
     end,
 })
 
--- Toggle follow
 GroupBox1:AddToggle("AktifkanFollow", {
     Text = "Enable Bot Follow",
     Default = false,
@@ -122,7 +98,6 @@ GroupBox1:AddToggle("AktifkanFollow", {
     end,
 })
 
--- Input jarak ikut
 GroupBox1:AddInput("JarakIkutInput", {
     Default = "5",
     Text = "Follow Distance",
@@ -137,7 +112,7 @@ GroupBox1:AddInput("JarakIkutInput", {
     end,
 })
 
--- ✅ Follow System
+-- ✅ Follow System with Shield
 function setupBotFollowSystem()
     updateBotRefs()
 
@@ -145,12 +120,19 @@ function setupBotFollowSystem()
         msg = msg:lower()
         if msg:match("^!ikuti") then
             followAllowed = true
+            shieldActive = false
             currentFormasiTarget = client
             Options.TextboxDisplayName:SetValue("")
             Library:Notify("Bot following main client: " .. client.DisplayName, 3)
             debugPrint("Follow started for "..client.DisplayName)
         elseif msg:match("^!stop") then
             runStopCommand()
+            shieldActive = false
+        elseif msg:match("^!shield") then
+            shieldActive = not shieldActive
+            followAllowed = false
+            Library:Notify("Shield formation " .. (shieldActive and "activated" or "deactivated"), 3)
+            debugPrint("ShieldActive: "..tostring(shieldActive))
         end
     end
 
@@ -162,7 +144,6 @@ function setupBotFollowSystem()
         client = player
         debugPrint("Client "..player.Name.." setup complete")
 
-        -- TextChatService baru
         if TextChatService and TextChatService.TextChannels then
             local generalChannel = TextChatService.TextChannels.RBXGeneral
             if generalChannel then
@@ -176,12 +157,10 @@ function setupBotFollowSystem()
                 end
             end
         else
-            -- Fallback lama
             followConnection = player.Chatted:Connect(function(msg)
                 debugPrint("Received chat from "..player.Name..": "..msg)
                 handleCommand(msg)
             end)
-            _G.followConnection = followConnection
         end
     end
 
@@ -201,14 +180,37 @@ function setupBotFollowSystem()
         if toggleAktif and currentFormasiTarget and currentFormasiTarget.Character and humanoid and myRootPart then
             local ok, err = pcall(function()
                 local targetHRP = currentFormasiTarget.Character:FindFirstChild("HumanoidRootPart")
-                if targetHRP and followAllowed then
-                    local followPos = targetHRP.Position - targetHRP.CFrame.LookVector * jarakIkut
-                    local dist = (myRootPart.Position - followPos).Magnitude
-                    debugPrint("Distance to target: "..dist)
-                    if dist > 0.1 then
+                if targetHRP then
+                    if shieldActive then
+                        -- Hitung posisi formasi otomatis
+                        local allBots = {}
+                        for id, _ in pairs(botMapping) do
+                            local p = Players:GetPlayerByUserId(tonumber(id))
+                            if p and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                                table.insert(allBots, p)
+                            end
+                        end
+                        table.sort(allBots, function(a,b) return a.UserId < b.UserId end)
+
+                        local totalBots = #allBots
+                        local spacing = 2
+                        local index = 1
+                        for i, p in ipairs(allBots) do
+                            if p == localPlayer then
+                                index = i
+                                break
+                            end
+                        end
+
+                        local middle = math.ceil(totalBots/2)
+                        local offsetX = (index - middle) * spacing
+                        local targetPos = targetHRP.Position + targetHRP.CFrame.RightVector * offsetX - targetHRP.CFrame.LookVector * spacing
+                        humanoid:MoveTo(targetPos)
                         myRootPart.CFrame = CFrame.lookAt(myRootPart.Position, targetHRP.Position)
+                    elseif followAllowed then
+                        local followPos = targetHRP.Position - targetHRP.CFrame.LookVector * jarakIkut
                         humanoid:MoveTo(followPos)
-                        debugPrint("Moving to "..tostring(followPos))
+                        myRootPart.CFrame = CFrame.lookAt(myRootPart.Position, targetHRP.Position)
                     end
                 end
             end)
@@ -217,5 +219,4 @@ function setupBotFollowSystem()
             end
         end
     end)
-    _G.loopTask = loopTask
 end
