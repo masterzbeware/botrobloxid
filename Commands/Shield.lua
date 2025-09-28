@@ -1,4 +1,4 @@
--- Shield.lua (Shield formation + warning 15 detik + chat ancaman)
+-- Shield.lua (Shield formation + warning dengan delay 1 menit)
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars or {}
@@ -52,9 +52,9 @@ return {
         player.CharacterAdded:Connect(updateBotRefs)
         updateBotRefs()
 
-        -- Delay per pemain
-        local warningDelay = 15 -- detik
-        local warningPlayers = {} -- tabel: [UserId] = {lastWarning = tick(), warnedOnce = true/false}
+        -- Timestamp terakhir chat
+        local lastWarningTime = 0
+        local warningDelay = 25 -- detik
 
         local function moveToPosition(targetPos, lookAtPos)
             if not humanoid or not myRootPart then return end
@@ -101,40 +101,27 @@ return {
 
             moveToPosition(targetPos, targetHRP.Position + targetHRP.CFrame.LookVector * 50)
 
-            -- 🔹 Peringatan pemain mendekati VIP
+            -- 🔹 Deteksi pemain lain mendekati VIP (hanya non-bot)
             local now = tick()
-            for _, plr in ipairs(Players:GetPlayers()) do
-                if plr ~= player and plr ~= vars.CurrentFormasiTarget then
-                    local userIdStr = tostring(plr.UserId)
-                    if not botMapping[userIdStr] then -- hanya pemain non-bot
-                        local char = plr.Character
-                        if char and char:FindFirstChild("HumanoidRootPart") then
-                            local dist = (char.HumanoidRootPart.Position - targetHRP.Position).Magnitude
-                            if dist <= shieldDistance then
-                                local data = warningPlayers[plr.UserId]
-                                if not data then
-                                    -- Kirim peringatan pertama
+            if now - lastWarningTime >= warningDelay then
+                for _, plr in ipairs(Players:GetPlayers()) do
+                    if plr ~= player and plr ~= vars.CurrentFormasiTarget then
+                        local userIdStr = tostring(plr.UserId)
+                        if not botMapping[userIdStr] then  -- hanya pemain non-bot
+                            local char = plr.Character
+                            if char and char:FindFirstChild("HumanoidRootPart") then
+                                local dist = (char.HumanoidRootPart.Position - targetHRP.Position).Magnitude
+                                if dist <= shieldDistance then
+                                    -- Kirim chat global peringatan dengan nama pemain
                                     local channel = TextChatService.TextChannels and TextChatService.TextChannels.RBXGeneral
                                     if channel then
                                         pcall(function()
                                             channel:SendAsync(plr.Name .. " Harap menjauh ini Area Vip!")
                                         end)
                                     end
-                                    warningPlayers[plr.UserId] = {lastWarning = now, warnedOnce = true}
-                                elseif now - data.lastWarning >= warningDelay then
-                                    -- Kirim peringatan kedua (mengancam)
-                                    local channel = TextChatService.TextChannels and TextChatService.TextChannels.RBXGeneral
-                                    if channel then
-                                        pcall(function()
-                                            channel:SendAsync(plr.Name .. "!!! Anda terus mendekati VIP! Peringatan terakhir!")
-                                        end)
-                                    end
-                                    warningPlayers[plr.UserId].lastWarning = now
-                                    warningPlayers[plr.UserId].warnedOnce = false
+                                    lastWarningTime = now -- update timestamp terakhir
+                                    break -- cukup satu chat per warningDelay
                                 end
-                            else
-                                -- pemain sudah menjauh, hapus dari tabel
-                                warningPlayers[plr.UserId] = nil
                             end
                         end
                     end
