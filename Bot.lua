@@ -12,7 +12,7 @@ local Options = Library.Options
 -- ✅ Buat Window UI
 local Window = Library:CreateWindow({
     Title = "Made by MasterZ",
-    Footer = "v1.0.0",
+    Footer = "v2.0.0",
     Icon = 0,
     NotifySide = "Right",
     ShowCustomCursor = true,
@@ -32,7 +32,8 @@ _G.BotVars = {
     LocalPlayer = game:GetService("Players").LocalPlayer,
     ClientName = "FiestaGuardVip",
 
-    ToggleAktif = false,
+    ToggleAktif = false,           -- Toggle utama Bot aktif/tidak
+    ToggleRockPaper = false,       -- Toggle khusus interaktif !rockpaper
 
     -- 🔹 Default spacing & distance values
     JarakIkut = 5,        -- jarak bot ke VIP (ikuti mode)
@@ -84,10 +85,17 @@ end
 
 -- ✅ Handle Chat Commands
 local function handleCommand(msg, client)
-    if not _G.BotVars.ToggleAktif then return end
+    if not _G.BotVars.ToggleAktif then
+        debugPrint("Bot system is disabled. Command ignored: " .. msg)
+        return
+    end
+
     msg = msg:lower()
     for name, cmd in pairs(Commands) do
-        if msg:match("^!" .. name) and cmd.Execute then
+        -- Jika command RockPaper, cek toggle khusus
+        if name == "rockpaper" and not _G.BotVars.ToggleRockPaper then
+            debugPrint("RockPaper disabled. Command ignored: " .. msg)
+        elseif msg:match("^!" .. name) and cmd.Execute then
             debugPrint("Executing command: " .. name)
             cmd.Execute(msg, client)
         end
@@ -130,14 +138,26 @@ GroupBox1:AddInput("BotIdentity", {
     Text = "Bot Identity",
     Placeholder = "Auto-detected bot info",
 })
+
 GroupBox1:AddToggle("AktifkanBot", {
     Text = "Enable Bot System",
     Default = false,
-    Tooltip = "Enable to accept chat commands (!ikuti, !stop, dll)",
+    Tooltip = "Enable to accept chat commands (!ikuti, !stop, etc)",
     Callback = function(Value)
         _G.BotVars.ToggleAktif = Value
         debugPrint("ToggleAktif set to: " .. tostring(Value))
         Library:Notify("Bot System " .. (Value and "Enabled" or "Disabled"), 3)
+    end,
+})
+
+GroupBox1:AddToggle("AktifRockPaper", {
+    Text = "Enable RockPaper",
+    Default = false,
+    Tooltip = "Allow all players to run !rockpaper command",
+    Callback = function(Value)
+        _G.BotVars.ToggleRockPaper = Value
+        debugPrint("ToggleRockPaper set to: " .. tostring(Value))
+        Library:Notify("RockPaper " .. (Value and "Enabled" or "Disabled"), 3)
     end,
 })
 

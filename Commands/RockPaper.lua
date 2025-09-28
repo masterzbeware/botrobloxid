@@ -1,4 +1,4 @@
--- RockPaper.lua (dengan debugging lengkap)
+-- RockPaper.lua (dengan toggle interaktif & debugging lengkap)
 local vars = _G.BotVars
 local Players = vars.Players
 local TextChatService = vars.TextChatService
@@ -34,7 +34,6 @@ end
 -- Listener tunggal
 if not vars.RPSListenerSetup then
     vars.RPSListenerSetup = true
-
     print("[DEBUG] RockPaper listener diaktifkan.")
 
     Players.PlayerChatted:Connect(function(plr, message)
@@ -58,6 +57,12 @@ if not vars.RPSListenerSetup then
             vars.ActiveBot = botModes.mode4
             sendGlobal("Mode Game Bot4 diaktifkan oleh VIP!")
             print("[DEBUG] Bot4 diaktifkan")
+        end
+
+        -- Hanya aktif jika ToggleAktif di Bot.lua true
+        if not vars.ToggleAktif then
+            print("[DEBUG] Bot interaktif dinonaktifkan, "!rockpaper" diabaikan.")
+            return
         end
 
         -- Siapapun ketik !rockpaper
