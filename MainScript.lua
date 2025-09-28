@@ -1,5 +1,5 @@
 -- ✅ Obsidian UI Setup
-local repo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
+local repo = "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/"
 local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
 local Options = Library.Options
 
@@ -121,9 +121,9 @@ GroupBox1:AddInput("SideSpacingInput", {
     Callback = function(Value) State.sideSpacing = tonumber(Value) or 4 end
 })
 
--- ✅ Commands Loader (from GitHub)
+-- ✅ Commands Loader (from raw GitHub)
 local Commands = {}
-local commandList = { "ikuti", "row", "shield"} -- sesuaikan dengan nama module di repo
+local commandList = { "ikuti", "row", "shield" }
 
 local function loadCommands()
     for _, cmdName in ipairs(commandList) do
@@ -135,6 +135,9 @@ local function loadCommands()
             Commands[cmdName:lower()] = result
             print("Loaded Command:", cmdName)
         else
+            Commands[cmdName:lower()] = {
+                execute = function() print(cmdName .. " not available") end
+            }
             warn("Failed to load command:", cmdName, result)
         end
     end
