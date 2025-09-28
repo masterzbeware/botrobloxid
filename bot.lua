@@ -122,7 +122,8 @@ function setupBotFollowSystem()
             followAllowed = true
             shieldActive = false
             currentFormasiTarget = client
-            Options.TextboxDisplayName:SetValue("")
+            -- 🔴 Dihapus karena tidak ada Options.TextboxDisplayName
+            -- Options.TextboxDisplayName:SetValue("")
             Library:Notify("Bot following main client: " .. client.DisplayName, 3)
             debugPrint("Follow started for "..client.DisplayName)
         elseif msg:match("^!stop") then
