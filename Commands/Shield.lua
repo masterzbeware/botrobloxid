@@ -54,7 +54,7 @@ return {
 
         -- Timestamp terakhir chat
         local lastWarningTime = 0
-        local warningDelay = 25 -- detik
+        local warningDelay = 15 -- detik
 
         local function moveToPosition(targetPos, lookAtPos)
             if not humanoid or not myRootPart then return end
