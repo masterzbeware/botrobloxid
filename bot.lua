@@ -30,10 +30,10 @@ local currentFormasiTarget = nil
 local shieldActive = false
 
 local followConnection = nil
-local loopTask = nil
 local humanoid = nil
 local myRootPart = nil
 local client = nil
+local moving = false -- flag agar tidak spam MoveTo
 
 -- ✅ Bot Mapping
 local botMapping = {
@@ -60,6 +60,7 @@ end
 local function runStopCommand()
     followAllowed = false
     currentFormasiTarget = nil
+    moving = false
     debugPrint("Follow stopped")
     Library:Notify("Bot Follow Stopped", 3)
 end
@@ -67,14 +68,11 @@ end
 -- ✅ UI - Main Tab
 local GroupBox1 = Tabs.Main:AddLeftGroupbox("Main Options")
 
--- Bot identity textbox (readonly)
 GroupBox1:AddInput("BotIdentity", {
     Default = botIdentity,
     Text = "Bot Identity",
     Placeholder = "Auto-detected bot info",
-    Callback = function(Value)
-        -- readonly, tidak ada perubahan
-    end,
+    Callback = function(Value) end, -- readonly
 })
 
 GroupBox1:AddToggle("AktifkanFollow", {
@@ -87,12 +85,10 @@ GroupBox1:AddToggle("AktifkanFollow", {
         if Value then
             Library:Notify("Bot Follow Enabled", 3)
             if followConnection then followConnection:Disconnect() end
-            if loopTask then loopTask:Disconnect() end
             setupBotFollowSystem()
         else
             Library:Notify("Bot Follow Disabled", 3)
             runStopCommand()
-            if loopTask then loopTask:Disconnect() end
             if followConnection then followConnection:Disconnect() end
         end
     end,
@@ -112,6 +108,23 @@ GroupBox1:AddInput("JarakIkutInput", {
     end,
 })
 
+-- ✅ MoveTo wrapper (biar ga spam tiap frame)
+local function moveToPosition(targetPos, lookAtPos)
+    if not humanoid or not myRootPart then return end
+    if moving then return end -- lagi jalan, skip
+    if (myRootPart.Position - targetPos).Magnitude < 2 then return end -- terlalu dekat, skip
+
+    moving = true
+    humanoid:MoveTo(targetPos)
+    humanoid.MoveToFinished:Wait()
+    moving = false
+
+    -- Rotasi ke arah target
+    if lookAtPos then
+        myRootPart.CFrame = CFrame.new(myRootPart.Position, Vector3.new(lookAtPos.X, myRootPart.Position.Y, lookAtPos.Z))
+    end
+end
+
 -- ✅ Follow System with Shield
 function setupBotFollowSystem()
     updateBotRefs()
@@ -122,8 +135,6 @@ function setupBotFollowSystem()
             followAllowed = true
             shieldActive = false
             currentFormasiTarget = client
-            -- 🔴 Dihapus karena tidak ada Options.TextboxDisplayName
-            -- Options.TextboxDisplayName:SetValue("")
             Library:Notify("Bot following main client: " .. client.DisplayName, 3)
             debugPrint("Follow started for "..client.DisplayName)
         elseif msg:match("^!stop") then
@@ -138,10 +149,7 @@ function setupBotFollowSystem()
     end
 
     local function setupClient(player)
-        if player.Name ~= clientName then
-            debugPrint("Player "..player.Name.." is not the client")
-            return
-        end
+        if player.Name ~= clientName then return end
         client = player
         debugPrint("Client "..player.Name.." setup complete")
 
@@ -165,58 +173,46 @@ function setupBotFollowSystem()
         end
     end
 
-    -- Setup existing players
     for _, player in ipairs(Players:GetPlayers()) do
         setupClient(player)
     end
-
-    -- Setup new players
     Players.PlayerAdded:Connect(setupClient)
-
-    -- Update bot references on respawn
     localPlayer.CharacterAdded:Connect(updateBotRefs)
 
-    -- Heartbeat loop
-    loopTask = RunService.Heartbeat:Connect(function()
+    -- Loop cek posisi
+    RunService.Heartbeat:Connect(function()
         if toggleAktif and currentFormasiTarget and currentFormasiTarget.Character and humanoid and myRootPart then
-            local ok, err = pcall(function()
-                local targetHRP = currentFormasiTarget.Character:FindFirstChild("HumanoidRootPart")
-                if targetHRP then
-                    if shieldActive then
-                        -- Hitung posisi formasi otomatis
-                        local allBots = {}
-                        for id, _ in pairs(botMapping) do
-                            local p = Players:GetPlayerByUserId(tonumber(id))
-                            if p and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                                table.insert(allBots, p)
-                            end
+            local targetHRP = currentFormasiTarget.Character:FindFirstChild("HumanoidRootPart")
+            if targetHRP then
+                if shieldActive then
+                    local allBots = {}
+                    for id, _ in pairs(botMapping) do
+                        local p = Players:GetPlayerByUserId(tonumber(id))
+                        if p and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                            table.insert(allBots, p)
                         end
-                        table.sort(allBots, function(a,b) return a.UserId < b.UserId end)
-
-                        local totalBots = #allBots
-                        local spacing = 2
-                        local index = 1
-                        for i, p in ipairs(allBots) do
-                            if p == localPlayer then
-                                index = i
-                                break
-                            end
-                        end
-
-                        local middle = math.ceil(totalBots/2)
-                        local offsetX = (index - middle) * spacing
-                        local targetPos = targetHRP.Position + targetHRP.CFrame.RightVector * offsetX - targetHRP.CFrame.LookVector * spacing
-                        humanoid:MoveTo(targetPos)
-                        myRootPart.CFrame = CFrame.lookAt(myRootPart.Position, targetHRP.Position)
-                    elseif followAllowed then
-                        local followPos = targetHRP.Position - targetHRP.CFrame.LookVector * jarakIkut
-                        humanoid:MoveTo(followPos)
-                        myRootPart.CFrame = CFrame.lookAt(myRootPart.Position, targetHRP.Position)
                     end
+                    table.sort(allBots, function(a,b) return a.UserId < b.UserId end)
+
+                    local totalBots = #allBots
+                    local spacing = 2
+                    local index = 1
+                    for i, p in ipairs(allBots) do
+                        if p == localPlayer then
+                            index = i
+                            break
+                        end
+                    end
+
+                    local middle = math.ceil(totalBots/2)
+                    local offsetX = (index - middle) * spacing
+                    local targetPos = targetHRP.Position + targetHRP.CFrame.RightVector * offsetX - targetHRP.CFrame.LookVector * spacing
+                    moveToPosition(targetPos, targetHRP.Position)
+
+                elseif followAllowed then
+                    local followPos = targetHRP.Position - targetHRP.CFrame.LookVector * jarakIkut
+                    moveToPosition(followPos, targetHRP.Position)
                 end
-            end)
-            if not ok then
-                debugPrint("Error in Heartbeat: "..err)
             end
         end
     end)
