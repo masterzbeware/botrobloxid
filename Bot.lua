@@ -88,15 +88,14 @@ local function handleCommand(msg, client)
     msg = msg:lower()
     for name, cmd in pairs(Commands) do
         if msg:match("^!" .. name) and cmd.Execute then
-            debugPrint("Executing command: " .. name)
+            debugPrint("Executing command: " .. name .. " by " .. client.Name)
             cmd.Execute(msg, client)
         end
     end
 end
 
--- ✅ Setup Client Listener
+-- ✅ Setup Client Listener (VIP + non-VIP for !rockpaper)
 local function setupClient(player)
-    if player.Name ~= _G.BotVars.ClientName then return end
     local client = player
 
     if _G.BotVars.TextChatService and _G.BotVars.TextChatService.TextChannels then
@@ -105,18 +104,29 @@ local function setupClient(player)
             generalChannel.OnIncomingMessage = function(message)
                 local senderUserId = message.TextSource and message.TextSource.UserId
                 local sender = senderUserId and _G.BotVars.Players:GetPlayerByUserId(senderUserId)
-                if sender and sender == client then
-                    handleCommand(message.Text, client)
+                if sender then
+                    -- 🔹 Command !rockpaper bisa semua pemain
+                    if message.Text:lower():match("^!rockpaper") then
+                        handleCommand(message.Text, sender)
+                    -- 🔹 Command lain tetap VIP-only
+                    elseif sender.Name == _G.BotVars.ClientName then
+                        handleCommand(message.Text, sender)
+                    end
                 end
             end
         end
     else
         player.Chatted:Connect(function(msg)
-            handleCommand(msg, client)
+            if msg:lower():match("^!rockpaper") then
+                handleCommand(msg, player)
+            elseif player.Name == _G.BotVars.ClientName then
+                handleCommand(msg, player)
+            end
         end)
     end
 end
 
+-- ✅ Apply listener ke semua pemain
 for _, plr in ipairs(_G.BotVars.Players:GetPlayers()) do
     setupClient(plr)
 end
@@ -133,7 +143,7 @@ GroupBox1:AddInput("BotIdentity", {
 GroupBox1:AddToggle("AktifkanBot", {
     Text = "Enable Bot System",
     Default = false,
-    Tooltip = "Enable to accept chat commands (!ikuti, !stop, dll)",
+    Tooltip = "Enable to accept chat commands (!ikuti, !stop, !rockpaper, dll)",
     Callback = function(Value)
         _G.BotVars.ToggleAktif = Value
         debugPrint("ToggleAktif set to: " .. tostring(Value))
