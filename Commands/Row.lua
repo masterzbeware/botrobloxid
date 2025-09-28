@@ -1,4 +1,4 @@
--- ✅ Row.lua (Row formation + auto chat sebelum & sesudah baris, tanpa emoji)
+-- ✅ Row.lua (Row formation + auto chat global dengan delay)
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars or {}
@@ -18,7 +18,7 @@ return {
         -- Notifikasi lokal
         game.StarterGui:SetCore("SendNotification", {
             Title = "Formation Command",
-            Text = (vars.BotIdentity or localPlayer.Name) .. " Row " .. (vars.RowActive and "Activated" or "Deactivated")
+            Text = "Row " .. (vars.RowActive and "Activated" or "Deactivated")
         })
 
         if vars.RowActive then
@@ -26,9 +26,22 @@ return {
             local channel = TextChatService.TextChannels and TextChatService.TextChannels.RBXGeneral
             if channel then
                 pcall(function()
-                    channel:SendAsync((vars.BotIdentity or localPlayer.Name) .. ": Siap laksanakan!")
+                    channel:SendAsync("Siap laksanakan!")
                 end)
             end
+
+            -- 🔹 Delay sebelum mengumumkan barisan selesai
+            task.delay(3, function()
+                if vars.RowActive and not vars.RowFormationAnnounced then
+                    vars.RowFormationAnnounced = true
+                    local channel2 = TextChatService.TextChannels and TextChatService.TextChannels.RBXGeneral
+                    if channel2 then
+                        pcall(function()
+                            channel2:SendAsync("Semua sudah masuk barisan!")
+                        end)
+                    end
+                end
+            end)
         else
             return
         end
@@ -49,8 +62,7 @@ return {
             if not humanoid or not myRootPart then return end
             if moving then return end
 
-            local dist = (myRootPart.Position - targetPos).Magnitude
-            if dist < 2 then return true end -- sudah sampai
+            if (myRootPart.Position - targetPos).Magnitude < 2 then return true end
 
             moving = true
             humanoid:MoveTo(targetPos)
@@ -76,10 +88,10 @@ return {
 
             -- 🔹 Urutan fix Bot1 → Bot4
             local orderedBots = {
-                "8802945328", -- Bot1 - XBODYGUARDVIP01
-                "8802949363", -- Bot2 - XBODYGUARDVIP02
-                "8802939883", -- Bot3 - XBODYGUARDVIP03
-                "8802998147", -- Bot4 - XBODYGUARDVIP04
+                "8802945328",
+                "8802949363",
+                "8802939883",
+                "8802998147",
             }
 
             local myUserId = tostring(localPlayer.UserId)
@@ -91,7 +103,7 @@ return {
                 end
             end
 
-            -- 🔹 Tentukan baris dan posisi samping
+            -- Tentukan baris dan posisi samping
             local rowIndex = math.floor((index - 1) / 2)
             local sideIndex = (index - 1) % 2
 
@@ -102,18 +114,7 @@ return {
                 - targetHRP.CFrame.LookVector * baseBack
                 + targetHRP.CFrame.RightVector * offsetSide
 
-            local reached = moveToPosition(targetPos, targetHRP.Position)
-
-            -- 🔹 Jika semua bot sudah sampai barisan → umumkan sekali
-            if reached and not vars.RowFormationAnnounced then
-                vars.RowFormationAnnounced = true
-                local channel = TextChatService.TextChannels and TextChatService.TextChannels.RBXGeneral
-                if channel then
-                    pcall(function()
-                        channel:SendAsync("Semua sudah masuk barisan!")
-                    end)
-                end
-            end
+            moveToPosition(targetPos, targetHRP.Position)
         end)
     end
 }
