@@ -2,53 +2,42 @@
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars or {}
-        local Players = game:GetService("Players")
+        local Players = vars.Players or game:GetService("Players")
         local TextChatService = vars.TextChatService or game:GetService("TextChatService")
-        local player = vars.LocalPlayer or Players.LocalPlayer
+        local localPlayer = vars.LocalPlayer or Players.LocalPlayer
 
-        if not msg:lower():match("^!absen") then return end
+        -- Toggle aktif
+        if not vars.ToggleAktif then return end
 
-        local botMapping = vars.BotMapping or {
-            ["8802945328"] = "Bot1",
-            ["8802949363"] = "Bot2",
-            ["8802939883"] = "Bot3",
-            ["8802998147"] = "Bot4",
-        }
-
-        -- Urutkan bot berdasarkan UserId
-        local botIds = {}
-        for idStr, _ in pairs(botMapping) do
-            table.insert(botIds, tonumber(idStr))
-        end
-        table.sort(botIds)
-
-        -- Cari index bot ini
-        local index = 1
-        for i, id in ipairs(botIds) do
-            if id == player.UserId then
-                index = i
-                break
+        -- Ambil semua bot yang online
+        local onlineBots = {}
+        for idStr, name in pairs(vars.BotMapping or {}) do
+            local player = Players:GetPlayerByUserId(tonumber(idStr))
+            if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                table.insert(onlineBots, player)
             end
         end
 
-        -- Channel global
-        local channel = TextChatService.TextChannels and TextChatService.TextChannels.RBXGeneral
-        if not channel then return end
+        if #onlineBots == 0 then return end
 
-        -- Hanya Bot1 yang memulai chat "Siap laksanakan! Mulai Berhitung"
-        if index == 1 then
-            pcall(function() channel:SendAsync("Siap laksanakan! Mulai Berhitung") end)
+        -- Fungsi chat global
+        local function sendGlobalMessage(text)
+            local channel = TextChatService.TextChannels.RBXGeneral
+            if channel then
+                channel:SendAsync(text)
+            end
         end
 
-        -- Delay agar semua bot siap
-        task.delay(2, function()
-            -- Delay per bot: 1 detik
-            local delayPerBot = 1
-            task.delay((index-1) * delayPerBot, function()
-                pcall(function() channel:SendAsync(tostring(index)) end)
+        -- Bot pertama akan memulai
+        if localPlayer == onlineBots[1] then
+            spawn(function()
+                sendGlobalMessage("Siap laksanakan! Mulai Berhitung")
+                wait(1.5)
+                for i, bot in ipairs(onlineBots) do
+                    sendGlobalMessage(tostring(i))
+                    wait(1.5)
+                end
             end)
-        end)
-
-        print("[COMMAND] Absen executed by", player.Name)
+        end
     end
 }
