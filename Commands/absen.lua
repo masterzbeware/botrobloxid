@@ -1,43 +1,69 @@
--- Absen.lua
+-- ✅ Absen.lua (Auto chat absen sesuai jumlah bot online)
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars or {}
-        local Players = vars.Players or game:GetService("Players")
-        local TextChatService = vars.TextChatService or game:GetService("TextChatService")
+        local Players = game:GetService("Players")
+        local TextChatService = game:GetService("TextChatService")
+        local RunService = game:GetService("RunService")
+
         local localPlayer = vars.LocalPlayer or Players.LocalPlayer
+        local botMapping = vars.BotMapping or {
+            ["8802945328"] = "Bot1",
+            ["8802949363"] = "Bot2",
+            ["8802939883"] = "Bot3",
+            ["8802998147"] = "Bot4",
+        }
 
-        -- Toggle aktif
-        if not vars.ToggleAktif then return end
-
-        -- Ambil semua bot yang online
+        -- 🔹 Ambil daftar bot online
         local onlineBots = {}
-        for idStr, name in pairs(vars.BotMapping or {}) do
-            local player = Players:GetPlayerByUserId(tonumber(idStr))
-            if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                table.insert(onlineBots, player)
+        for idStr, _ in pairs(botMapping) do
+            local plr = Players:GetPlayerByUserId(tonumber(idStr))
+            if plr and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                table.insert(onlineBots, plr)
+            end
+        end
+        table.sort(onlineBots, function(a,b) return a.UserId < b.UserId end)
+
+        -- 🔹 Pastikan localPlayer termasuk di onlineBots
+        local isOnline = false
+        for _, bot in ipairs(onlineBots) do
+            if bot == localPlayer then
+                isOnline = true
+                break
+            end
+        end
+        if not isOnline then table.insert(onlineBots, localPlayer) end
+
+        -- 🔹 Hanya jalankan jika localPlayer termasuk onlineBots
+        local myIndex = 1
+        for i, bot in ipairs(onlineBots) do
+            if bot == localPlayer then
+                myIndex = i
+                break
             end
         end
 
-        if #onlineBots == 0 then return end
-
-        -- Fungsi chat global
-        local function sendGlobalMessage(text)
-            local channel = TextChatService.TextChannels.RBXGeneral
-            if channel then
-                channel:SendAsync(text)
-            end
-        end
-
-        -- Bot pertama akan memulai
-        if localPlayer == onlineBots[1] then
-            spawn(function()
-                sendGlobalMessage("Siap laksanakan! Mulai Berhitung")
-                wait(1.5)
-                for i, bot in ipairs(onlineBots) do
-                    sendGlobalMessage(tostring(i))
-                    wait(1.5)
-                end
+        -- 🔹 Chat awal global
+        local channel = TextChatService.TextChannels and TextChatService.TextChannels.RBXGeneral
+        if channel and myIndex == 1 then
+            pcall(function()
+                channel:SendAsync("Siap laksanakan! Mulai Berhitung")
             end)
         end
+
+        -- 🔹 Delay singkat sebelum mulai hitung
+        task.delay(2, function()
+            for i, bot in ipairs(onlineBots) do
+                if bot == localPlayer then
+                    task.delay((i-1) * 2, function()
+                        if channel then
+                            pcall(function()
+                                channel:SendAsync(tostring(i))
+                            end)
+                        end
+                    end)
+                end
+            end
+        end)
     end
 }
