@@ -1,15 +1,18 @@
 -- Bot.lua
+-- Made by MasterZ
+
+-- ✅ Library Setup
 local repo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
 local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
 local Options = Library.Options
 
+-- ✅ Roblox Services
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local TextChatService = game:GetService("TextChatService")
 local localPlayer = Players.LocalPlayer
-local clientName = "FiestaGuardVip"
 
--- Global variables
+-- ✅ Global Variables
 _G.toggleAktif = false
 _G.followAllowed = false
 _G.shieldActive = false
@@ -35,7 +38,7 @@ _G.botMapping = {
 }
 _G.botIdentity = _G.botMapping[tostring(localPlayer.UserId)] or "Unknown Bot"
 
--- UI setup
+-- ✅ UI Setup
 local Window = Library:CreateWindow({
     Title = "Made by MasterZ",
     Footer = "v16.0.0",
@@ -50,24 +53,16 @@ local Tabs = {
 
 local GroupBox1 = Tabs.Main:AddLeftGroupbox("Main Options")
 GroupBox1:AddInput("BotIdentity", { Default = _G.botIdentity, Text = "Bot Identity", Placeholder = "Auto-detected bot info" })
-GroupBox1:AddToggle("AktifkanFollow", { Text = "Enable Bot Follow", Default = false, Callback = function(value) _G.toggleAktif = value end })
+GroupBox1:AddToggle("AktifkanFollow", { Text = "Enable Bot Follow", Default = false, Callback = function(value)
+    _G.toggleAktif = value
+    print("[DEBUG] ToggleAktif set to: "..tostring(value))
+end })
 
--- Load all commands dynamically
-local commandFiles = {"ikuti", "stop", "shield", "row", "sync"}
-for _, cmd in ipairs(commandFiles) do
-    local success, err = pcall(function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Commands/"..cmd..".lua"))()
-    end)
-    if not success then
-        warn("Failed to load command: "..cmd..".lua", err)
-    end
-end
-
--- MoveTo helper
+-- ✅ MoveTo Helper
 function _G.moveToPosition(targetPos, lookAtPos)
     if not _G.humanoid or not _G.myRootPart then return end
     if _G.moving then return end
-    if ( _G.myRootPart.Position - targetPos ).Magnitude < 2 then return end
+    if (_G.myRootPart.Position - targetPos).Magnitude < 2 then return end
 
     _G.moving = true
     _G.humanoid:MoveTo(targetPos)
@@ -79,16 +74,38 @@ function _G.moveToPosition(targetPos, lookAtPos)
     end
 end
 
--- Update bot references
+-- ✅ Update Bot References
 function _G.updateBotRefs()
     local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
     _G.humanoid = character:WaitForChild("Humanoid")
     _G.myRootPart = character:WaitForChild("HumanoidRootPart")
+    print("[DEBUG] Bot references updated")
 end
 
--- Start follow loop
+-- ✅ Load Commands from GitHub
+local commandFiles = {"ikuti", "stop", "shield", "row", "sync"}
+for _, cmd in ipairs(commandFiles) do
+    local url = "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Commands/"..cmd..".lua"
+    local success, err = pcall(function()
+        local scriptString = game:HttpGet(url)
+        loadstring(scriptString)()
+    end)
+    if not success then
+        warn("[ERROR] Failed to load command: "..cmd..".lua", err)
+    else
+        print("[INFO] Loaded command: "..cmd..".lua")
+    end
+end
+
+-- ✅ Follow Loop (empty, command files handle movement)
 RunService.Heartbeat:Connect(function()
     if _G.toggleAktif and _G.currentFormasiTarget and _G.currentFormasiTarget.Character and _G.humanoid and _G.myRootPart then
-        -- Commands handle movement internally
+        -- Movement handled by individual command files (ikuti, shield, row, sync, stop)
     end
 end)
+
+-- ✅ Character Update
+localPlayer.CharacterAdded:Connect(_G.updateBotRefs)
+if localPlayer.Character then
+    _G.updateBotRefs()
+end
