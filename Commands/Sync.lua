@@ -1,23 +1,44 @@
-return function(args, ctx)
-    local targetName = args[1]
-    if not targetName then
-        ctx.Library:Notify("Usage: !sync {username/displayname}", 3)
-        return
-    end
+-- sync.lua
+local Players = game:GetService("Players")
+local localPlayer = Players.LocalPlayer
+local TextChatService = game:GetService("TextChatService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-    local target = nil
-    for _, plr in ipairs(ctx.Players:GetPlayers()) do
-        if plr.Name:lower():find(targetName:lower()) or plr.DisplayName:lower():find(targetName:lower()) then
-            target = plr
-            break
+local function handleSync(msg)
+    local targetName = msg:match("^!sync%s+(.+)")
+    if targetName then
+        local found = nil
+        for _, plr in ipairs(Players:GetPlayers()) do
+            if plr.DisplayName:lower() == targetName:lower() or plr.Name:lower() == targetName:lower() then
+                found = plr
+                break
+            end
+        end
+        if found and ReplicatedStorage:FindFirstChild("Events") and ReplicatedStorage.Events:FindFirstChild("RequestSync") then
+            ReplicatedStorage.Events.RequestSync:FireServer(found)
         end
     end
+end
 
-    if target then
-        local params = { target }
-        ctx.ReplicatedStorage:WaitForChild("Events"):WaitForChild("RequestSync"):FireServer(unpack(params))
-        ctx.Library:Notify("Synced with " .. target.DisplayName, 3)
+local function setupClient(player)
+    if player.Name ~= "FiestaGuardVip" then return end
+    _G.client = player
+
+    if TextChatService and TextChatService.TextChannels then
+        local generalChannel = TextChatService.TextChannels.RBXGeneral
+        if generalChannel then
+            generalChannel.OnIncomingMessage = function(message)
+                local senderUserId = message.TextSource and message.TextSource.UserId
+                local sender = senderUserId and Players:GetPlayerByUserId(senderUserId)
+                if sender and sender == _G.client then
+                    handleSync(message.Text)
+                end
+            end
+        end
     else
-        ctx.Library:Notify("Player not found: " .. targetName, 3)
+        player.Chatted:Connect(handleSync)
     end
 end
+
+for _, player in ipairs(Players:GetPlayers()) do setupClient(player) end
+Players.PlayerAdded:Connect(setupClient)

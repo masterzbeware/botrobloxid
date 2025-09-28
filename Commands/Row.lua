@@ -1,40 +1,35 @@
-return {
-    execute = function(args, ctx)
-        local targetName = args[1]
-        if not targetName then
-            ctx.Library:Notify("Usage: !row {username/displayname}", 3)
-            return
-        end
+-- row.lua
+local Players = game:GetService("Players")
+local localPlayer = Players.LocalPlayer
+local TextChatService = game:GetService("TextChatService")
 
-        local target = nil
-        for _, plr in ipairs(ctx.Players:GetPlayers()) do
-            if plr.Name:lower():find(targetName:lower()) or plr.DisplayName:lower():find(targetName:lower()) then
-                target = plr
-                break
+local function handleRow(msg)
+    if msg:match("^!row") then
+        _G.rowActive = not _G.rowActive
+        _G.followAllowed = false
+        _G.shieldActive = false
+    end
+end
+
+local function setupClient(player)
+    if player.Name ~= "FiestaGuardVip" then return end
+    _G.client = player
+
+    if TextChatService and TextChatService.TextChannels then
+        local generalChannel = TextChatService.TextChannels.RBXGeneral
+        if generalChannel then
+            generalChannel.OnIncomingMessage = function(message)
+                local senderUserId = message.TextSource and message.TextSource.UserId
+                local sender = senderUserId and Players:GetPlayerByUserId(senderUserId)
+                if sender and sender == _G.client then
+                    handleRow(message.Text)
+                end
             end
         end
+    else
+        player.Chatted:Connect(handleRow)
+    end
+end
 
-        if target then
-            ctx.State.currentFormasiTarget = target
-            ctx.State.rowActive = true
-            ctx.State.shieldActive = false
-            ctx.State.followAllowed = false
-            ctx.Library:Notify("Row formation active for " .. target.DisplayName, 3)
-        else
-            ctx.Library:Notify("Player not found: " .. targetName, 3)
-        end
-    end,
-
-    run = function(State, localPlayer, targetHRP, moveToPosition, botMapping)
-        if not State.rowActive then return end
-
-        local botName = botMapping[tostring(localPlayer.UserId)]
-        if not botName then return end
-
-        local index = tonumber(string.match(botName, "%d+")) or 0
-        local offsetX = (index - 2) * State.rowSpacing
-        local rowPos = targetHRP.CFrame * CFrame.new(offsetX, 0, -State.jarakIkut)
-
-        moveToPosition(rowPos.Position, targetHRP.Position)
-    end,
-}
+for _, player in ipairs(Players:GetPlayers()) do setupClient(player) end
+Players.PlayerAdded:Connect(setupClient)

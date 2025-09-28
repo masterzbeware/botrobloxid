@@ -1,40 +1,36 @@
-return {
-    execute = function(args, ctx)
-        local targetName = args[1]
-        if not targetName then
-            ctx.Library:Notify("Usage: !ikuti {username/displayname}", 3)
-            return
-        end
+-- ikuti.lua
+local Players = game:GetService("Players")
+local localPlayer = Players.LocalPlayer
+local TextChatService = game:GetService("TextChatService")
 
-        local target = nil
-        for _, plr in ipairs(ctx.Players:GetPlayers()) do
-            if plr.Name:lower():find(targetName:lower()) or plr.DisplayName:lower():find(targetName:lower()) then
-                target = plr
-                break
+local function handleIkuti(msg)
+    if msg:match("^!ikuti") then
+        _G.followAllowed = true
+        _G.shieldActive = false
+        _G.rowActive = false
+        _G.currentFormasiTarget = _G.client
+    end
+end
+
+local function setupClient(player)
+    if player.Name ~= "FiestaGuardVip" then return end
+    _G.client = player
+
+    if TextChatService and TextChatService.TextChannels then
+        local generalChannel = TextChatService.TextChannels.RBXGeneral
+        if generalChannel then
+            generalChannel.OnIncomingMessage = function(message)
+                local senderUserId = message.TextSource and message.TextSource.UserId
+                local sender = senderUserId and Players:GetPlayerByUserId(senderUserId)
+                if sender and sender == _G.client then
+                    handleIkuti(message.Text)
+                end
             end
         end
+    else
+        player.Chatted:Connect(handleIkuti)
+    end
+end
 
-        if target then
-            ctx.State.currentFormasiTarget = target
-            ctx.State.followAllowed = true
-            ctx.State.shieldActive = false
-            ctx.State.rowActive = false
-            ctx.Library:Notify("Following " .. target.DisplayName, 3)
-        else
-            ctx.Library:Notify("Player not found: " .. targetName, 3)
-        end
-    end,
-
-    run = function(State, localPlayer, targetHRP, moveToPosition, botMapping)
-        if not State.followAllowed then return end
-
-        local botName = botMapping[tostring(localPlayer.UserId)]
-        if not botName then return end
-
-        local spacing = State.followSpacing
-        local offsetZ = -State.jarakIkut - (tonumber(string.match(botName, "%d+")) or 0) * spacing
-        local followPos = targetHRP.CFrame * CFrame.new(0, 0, offsetZ)
-
-        moveToPosition(followPos.Position, targetHRP.Position)
-    end,
-}
+for _, player in ipairs(Players:GetPlayers()) do setupClient(player) end
+Players.PlayerAdded:Connect(setupClient)
