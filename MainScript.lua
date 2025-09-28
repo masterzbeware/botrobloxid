@@ -1,11 +1,11 @@
 -- ✅ Obsidian UI Setup
 local repo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
 local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
-
 local Options = Library.Options
+
 local Window = Library:CreateWindow({
     Title = "Made by MasterZ",
-    Footer = "v17.0.0",
+    Footer = "v16.0.0",
     Icon = 0,
     NotifySide = "Right",
     ShowCustomCursor = true,
@@ -25,7 +25,7 @@ local localPlayer = Players.LocalPlayer
 local clientName = "FiestaGuardVip"
 local client = nil
 
--- State
+-- ✅ State
 local State = {
     jarakIkut = 5,
     followSpacing = 2,
@@ -43,7 +43,7 @@ local State = {
     myRootPart = nil,
 }
 
--- Bot Mapping
+-- ✅ Bot Mapping
 local botMapping = {
     ["8802945328"] = "Bot1 - XBODYGUARDVIP01",
     ["8802949363"] = "Bot2 - XBODYGUARDVIP02",
@@ -80,6 +80,7 @@ end
 -- ✅ UI Setup
 local GroupBox1 = Tabs.Main:AddLeftGroupbox("Main Options")
 GroupBox1:AddInput("BotIdentity", { Default = botIdentity, Text = "Bot Identity" })
+
 GroupBox1:AddToggle("AktifkanFollow", {
     Text = "Enable Bot Follow",
     Default = false,
@@ -94,6 +95,7 @@ GroupBox1:AddToggle("AktifkanFollow", {
         end
     end,
 })
+
 GroupBox1:AddInput("JarakIkutInput", {
     Default = "5", Text = "Follow Distance (VIP)",
     Callback = function(Value) State.jarakIkut = tonumber(Value) or 5 end
@@ -119,28 +121,20 @@ GroupBox1:AddInput("SideSpacingInput", {
     Callback = function(Value) State.sideSpacing = tonumber(Value) or 4 end
 })
 
--- ✅ Commands Loader (via GitHub)
+-- ✅ Commands Loader
 local Commands = {}
 local function loadCommands()
-    local baseUrl = "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Commands/"
-    local commandFiles = {
-        "Ikuti.lua",
-        "Stop.lua",
-        "Sync.lua",
-        "Shield.lua",
-        "Row.lua",
-    }
-
-    for _, file in ipairs(commandFiles) do
-        local cmdName = file:match("^(.-)%.lua$"):lower()
-        local success, result = pcall(function()
-            return loadstring(game:HttpGet(baseUrl .. file))()
-        end)
-        if success and result then
-            Commands[cmdName] = result
-            print("Loaded Command:", cmdName)
-        else
-            warn("Failed to load:", file, result)
+    local folder = script:WaitForChild("Commands")
+    for _, module in ipairs(folder:GetChildren()) do
+        if module:IsA("ModuleScript") then
+            local cmdName = module.Name:lower()
+            local ok, result = pcall(require, module)
+            if ok and result then
+                Commands[cmdName] = result
+                print("Loaded Command:", cmdName)
+            else
+                warn("Failed to load command:", module.Name, result)
+            end
         end
     end
 end
@@ -152,8 +146,9 @@ local function handleCommand(msg)
     local cmd = split[1]:sub(2):lower()
     table.remove(split, 1)
 
-    if Commands[cmd] then
-        Commands[cmd](split, {
+    local command = Commands[cmd]
+    if command and command.execute then
+        command.execute(split, {
             State = State,
             Players = Players,
             Client = client,
@@ -190,20 +185,15 @@ for _, plr in ipairs(Players:GetPlayers()) do setupClient(plr) end
 Players.PlayerAdded:Connect(setupClient)
 localPlayer.CharacterAdded:Connect(updateBotRefs)
 
--- ✅ Loop (jalanin formasi)
+-- ✅ Loop
 RunService.Heartbeat:Connect(function()
     if not (State.toggleAktif and State.currentFormasiTarget and State.humanoid and State.myRootPart) then return end
     local targetHRP = State.currentFormasiTarget.Character and State.currentFormasiTarget.Character:FindFirstChild("HumanoidRootPart")
     if not targetHRP then return end
 
-    -- Shield
-    if State.shieldActive and Commands["shield"] then
-        Commands["shield"].run(State, localPlayer, targetHRP, moveToPosition, botMapping)
-    -- Row
-    elseif State.rowActive and Commands["row"] then
-        Commands["row"].run(State, localPlayer, targetHRP, moveToPosition, botMapping)
-    -- Ikuti
-    elseif State.followAllowed and Commands["ikuti"] then
-        Commands["ikuti"].run(State, localPlayer, targetHRP, moveToPosition, botMapping)
+    for name, command in pairs(Commands) do
+        if command.run then
+            command.run(State, localPlayer, targetHRP, moveToPosition, botMapping)
+        end
     end
 end)
