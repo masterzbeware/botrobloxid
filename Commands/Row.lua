@@ -1,4 +1,4 @@
--- ✅ Row.lua (Complete + Nil Safe)
+-- ✅ Row.lua (Row formation dengan jarak antar bot/baris)
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars or {}
@@ -42,7 +42,10 @@ return {
             moving = false
 
             if lookAtPos then
-                myRootPart.CFrame = CFrame.new(myRootPart.Position, Vector3.new(lookAtPos.X, myRootPart.Position.Y, lookAtPos.Z))
+                myRootPart.CFrame = CFrame.new(
+                    myRootPart.Position,
+                    Vector3.new(lookAtPos.X, myRootPart.Position.Y, lookAtPos.Z)
+                )
             end
         end
 
@@ -69,25 +72,19 @@ return {
                 end
             end
 
-            -- Hitung posisi sesuai index
-            local targetPos
-            if index == 1 then
-                targetPos = targetHRP.Position - targetHRP.CFrame.LookVector * followDistance
-                            - targetHRP.CFrame.RightVector * sideSpacing
-            elseif index == 2 then
-                targetPos = targetHRP.Position - targetHRP.CFrame.LookVector * followDistance
-                            + targetHRP.CFrame.RightVector * sideSpacing
-            elseif index == 3 then
-                targetPos = targetHRP.Position - targetHRP.CFrame.LookVector * (followDistance + rowSpacing)
-                            - targetHRP.CFrame.RightVector * sideSpacing
-            elseif index == 4 then
-                targetPos = targetHRP.Position - targetHRP.CFrame.LookVector * (followDistance + rowSpacing)
-                            + targetHRP.CFrame.RightVector * sideSpacing
-            end
+            -- Baris ke berapa (row) dan posisi kiri/kanan
+            local rowIndex = math.floor((index - 1) / 2) -- 0 untuk baris 1, 1 untuk baris 2, dst
+            local sideIndex = (index - 1) % 2            -- 0 = kiri, 1 = kanan
 
-            if targetPos then
-                moveToPosition(targetPos, targetHRP.Position) -- selalu menghadap VIP
-            end
+            -- Hitung posisi sesuai row & side
+            local baseBack = followDistance + (rowIndex * rowSpacing)
+            local offsetSide = (sideIndex == 0 and -1 or 1) * sideSpacing
+
+            local targetPos = targetHRP.Position
+                - targetHRP.CFrame.LookVector * baseBack
+                + targetHRP.CFrame.RightVector * offsetSide
+
+            moveToPosition(targetPos, targetHRP.Position)
         end)
     end
 }
