@@ -1,10 +1,10 @@
--- Shield.lua (Shield formation + peringatan area VIP)
+-- Shield.lua (Shield formation + warning saat pemain lain mendekati VIP)
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars or {}
         local RunService = vars.RunService or game:GetService("RunService")
         local Players = game:GetService("Players")
-        local TextChatService = game:GetService("TextChatService")
+        local TextChatService = vars.TextChatService or game:GetService("TextChatService")
         local player = vars.LocalPlayer or Players.LocalPlayer
 
         -- Toggle shield mode
@@ -24,17 +24,25 @@ return {
             return
         end
 
+        -- Ambil nilai dari Bot.lua
         local shieldDistance = tonumber(vars.ShieldDistance) or 5
         local shieldSpacing  = tonumber(vars.ShieldSpacing) or 4
 
         local botMapping = vars.BotMapping or {
-            ["8802945328"] = true,
-            ["8802949363"] = true,
-            ["8802939883"] = true,
-            ["8802998147"] = true,
+            ["8802945328"] = "Bot1 - XBODYGUARDVIP01",
+            ["8802949363"] = "Bot2 - XBODYGUARDVIP02",
+            ["8802939883"] = "Bot3 - XBODYGUARDVIP03",
+            ["8802998147"] = "Bot4 - XBODYGUARDVIP04",
         }
 
-        -- bot refs
+        local botIds = {}
+        for idStr, _ in pairs(botMapping) do
+            local n = tonumber(idStr)
+            if n then table.insert(botIds, n) end
+        end
+        table.sort(botIds)
+
+        -- Bot references
         local humanoid, myRootPart, moving
         local function updateBotRefs()
             local character = player.Character or player.CharacterAdded:Wait()
@@ -59,7 +67,6 @@ return {
             end
         end
 
-        -- Shield loop
         vars.ShieldConnection = RunService.Heartbeat:Connect(function()
             if not vars.ToggleAktif or not vars.ShieldActive then return end
             if not vars.CurrentFormasiTarget or not vars.CurrentFormasiTarget.Character then return end
@@ -68,13 +75,7 @@ return {
             local targetHRP = vars.CurrentFormasiTarget.Character:FindFirstChild("HumanoidRootPart")
             if not targetHRP then return end
 
-            -- Tentukan posisi bot sesuai index
-            local botIds = {}
-            for idStr, _ in pairs(botMapping) do
-                table.insert(botIds, tonumber(idStr))
-            end
-            table.sort(botIds)
-
+            -- Tentukan posisi Shield
             local index = 1
             for i, id in ipairs(botIds) do
                 if id == player.UserId then index = i break end
@@ -95,18 +96,18 @@ return {
 
             moveToPosition(targetPos, targetHRP.Position + targetHRP.CFrame.LookVector * 50)
 
-            -- 🔹 Deteksi pemain lain di area VIP
-            for _, other in ipairs(Players:GetPlayers()) do
-                if other ~= player and other ~= vars.CurrentFormasiTarget and not botMapping[tostring(other.UserId)] then
-                    local char = other.Character
+            -- 🔹 Deteksi pemain lain mendekati VIP
+            for _, plr in ipairs(Players:GetPlayers()) do
+                if plr ~= player and plr ~= vars.CurrentFormasiTarget then
+                    local char = plr.Character
                     if char and char:FindFirstChild("HumanoidRootPart") then
                         local dist = (char.HumanoidRootPart.Position - targetHRP.Position).Magnitude
-                        if dist <= shieldDistance + 1 then -- +1 buffer
-                            -- chat peringatan global
+                        if dist <= shieldDistance then
+                            -- Kirim chat global peringatan
                             local channel = TextChatService.TextChannels and TextChatService.TextChannels.RBXGeneral
                             if channel then
                                 pcall(function()
-                                    channel:SendAsync("Harap menjauh ini Area VIP!")
+                                    channel:SendAsync("Harap menjauh ini Area Vip!")
                                 end)
                             end
                         end
