@@ -5,13 +5,18 @@ local Options = Library.Options
 
 local Window = Library:CreateWindow({
     Title = "Made by MasterZ",
-    Footer = "v11.0.0",
+    Footer = "v16.0.0",
     Icon = 0,
     NotifySide = "Right",
     ShowCustomCursor = true,
 })
 
 local Tabs = { Main = Window:AddTab("Main", "user") }
+
+-- ✅ Debug Function
+local function debugPrint(msg)
+    print("[DEBUG] " .. tostring(msg))
+end
 
 -- ✅ Global Variables
 _G.BotVars = {
@@ -44,17 +49,21 @@ local botMapping = {
     ["8802998147"] = "Bot4 - XBODYGUARDVIP04",
 }
 _G.BotVars.BotIdentity = botMapping[tostring(_G.BotVars.LocalPlayer.UserId)] or "Unknown Bot"
+debugPrint("Detected identity: " .. _G.BotVars.BotIdentity)
 
--- ✅ Commands Loader
+-- ✅ Commands Loader with Debug
 local Commands = {}
 local commandFiles = { "Ikuti", "Stop", "Shield", "Row", "Sync" }
 
 for _, file in ipairs(commandFiles) do
-    local success, cmd = pcall(function()
+    local success, result = pcall(function()
         return loadfile("Commands/" .. file .. ".lua")()
     end)
-    if success and type(cmd) == "table" then
-        Commands[file:lower()] = cmd
+    if success and type(result) == "table" then
+        Commands[file:lower()] = result
+        debugPrint("Loaded command: " .. file)
+    else
+        debugPrint("Failed to load: " .. file .. " (" .. tostring(result) .. ")")
     end
 end
 
@@ -64,6 +73,7 @@ local function handleCommand(msg, client)
     msg = msg:lower()
     for name, cmd in pairs(Commands) do
         if msg:match("^!" .. name) and cmd.Execute then
+            debugPrint("Executing command: " .. name)
             cmd.Execute(msg, client)
         end
     end
@@ -112,8 +122,10 @@ GroupBox1:AddToggle("AktifkanBot", {
     Tooltip = "Enable to accept chat commands (!ikuti, !stop, dll)",
     Callback = function(Value)
         _G.BotVars.ToggleAktif = Value
+        debugPrint("ToggleAktif set to: " .. tostring(Value))
         Library:Notify("Bot System " .. (Value and "Enabled" or "Disabled"), 3)
     end,
 })
 
 Library:Notify("Bot System Loaded!", 3)
+debugPrint("Bot.lua finished loading")
