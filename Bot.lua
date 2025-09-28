@@ -33,6 +33,14 @@ _G.BotVars = {
     ClientName = "FiestaGuardVip",
 
     ToggleAktif = false,
+
+    -- 🔹 Default spacing & distance values
+    JarakIkut = 5,        -- jarak bot ke VIP (ikuti mode)
+    FollowSpacing = 2,    -- jarak antar bot di follow
+    ShieldDistance = 5,   -- jarak shield ke VIP
+    ShieldSpacing = 4,    -- jarak antar bot shield
+    RowSpacing = 4,       -- jarak antar baris
+    SideSpacing = 4,      -- jarak kiri-kanan barisan
 }
 
 -- ✅ Identity Detection
@@ -116,6 +124,7 @@ _G.BotVars.Players.PlayerAdded:Connect(setupClient)
 
 -- ✅ UI
 local GroupBox1 = Tabs.Main:AddLeftGroupbox("Bot Options")
+
 GroupBox1:AddInput("BotIdentity", {
     Default = _G.BotVars.BotIdentity,
     Text = "Bot Identity",
@@ -129,6 +138,91 @@ GroupBox1:AddToggle("AktifkanBot", {
         _G.BotVars.ToggleAktif = Value
         debugPrint("ToggleAktif set to: " .. tostring(Value))
         Library:Notify("Bot System " .. (Value and "Enabled" or "Disabled"), 3)
+    end,
+})
+
+-- 🔹 Input untuk spacing & distance
+GroupBox1:AddInput("JarakIkutInput", {
+    Default = tostring(_G.BotVars.JarakIkut),
+    Text = "Follow Distance (VIP)",
+    Placeholder = "Example: 5",
+    Callback = function(Value)
+        local number = tonumber(Value)
+        if number then
+            _G.BotVars.JarakIkut = number
+            debugPrint("Follow distance set to: " .. number)
+            Library:Notify("Follow distance set to: " .. number, 3)
+        end
+    end,
+})
+
+GroupBox1:AddInput("FollowSpacingInput", {
+    Default = tostring(_G.BotVars.FollowSpacing),
+    Text = "Follow Spacing (Antar Bot)",
+    Placeholder = "Example: 2",
+    Callback = function(Value)
+        local number = tonumber(Value)
+        if number then
+            _G.BotVars.FollowSpacing = number
+            debugPrint("Follow spacing set to: " .. number)
+            Library:Notify("Follow spacing set to: " .. number, 3)
+        end
+    end,
+})
+
+GroupBox1:AddInput("ShieldDistanceInput", {
+    Default = tostring(_G.BotVars.ShieldDistance),
+    Text = "Shield Distance (VIP)",
+    Placeholder = "Example: 5",
+    Callback = function(Value)
+        local number = tonumber(Value)
+        if number then
+            _G.BotVars.ShieldDistance = number
+            debugPrint("Shield distance set to: " .. number)
+            Library:Notify("Shield distance set to: " .. number, 3)
+        end
+    end,
+})
+
+GroupBox1:AddInput("ShieldSpacingInput", {
+    Default = tostring(_G.BotVars.ShieldSpacing),
+    Text = "Shield Spacing (Rows)",
+    Placeholder = "Example: 4",
+    Callback = function(Value)
+        local number = tonumber(Value)
+        if number then
+            _G.BotVars.ShieldSpacing = number
+            debugPrint("Shield spacing set to: " .. number)
+            Library:Notify("Shield spacing set to: " .. number, 3)
+        end
+    end,
+})
+
+GroupBox1:AddInput("RowSpacingInput", {
+    Default = tostring(_G.BotVars.RowSpacing),
+    Text = "Row Spacing (Baris)",
+    Placeholder = "Example: 4",
+    Callback = function(Value)
+        local number = tonumber(Value)
+        if number then
+            _G.BotVars.RowSpacing = number
+            debugPrint("Row spacing set to: " .. number)
+            Library:Notify("Row spacing set to: " .. number, 3)
+        end
+    end,
+})
+
+GroupBox1:AddInput("SideSpacingInput", {
+    Default = tostring(_G.BotVars.SideSpacing),
+    Text = "Side Spacing (Kiri-Kanan)",
+    Placeholder = "Example: 4",
+    Callback = function(Value)
+        local number = tonumber(Value)
+        if number then
+            _G.BotVars.SideSpacing = number
+            debugPrint("Side spacing set to: " .. number)
+            Library:Notify("Side spacing set to: " .. number, 3)
+        end
     end,
 })
 
