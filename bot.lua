@@ -6,7 +6,7 @@ local Options = Library.Options
 
 local Window = Library:CreateWindow({
     Title = "Made by MasterZ",
-    Footer = "v2.0.0",
+    Footer = "v12.0.0",
     Icon = 0,
     NotifySide = "Right",
     ShowCustomCursor = true,
@@ -33,7 +33,7 @@ local followConnection = nil
 local humanoid = nil
 local myRootPart = nil
 local client = nil
-local moving = false -- flag agar tidak spam MoveTo
+local moving = false
 
 -- ✅ Bot Mapping
 local botMapping = {
@@ -56,7 +56,6 @@ local function updateBotRefs()
     debugPrint("Bot references updated")
 end
 
--- ✅ Reset function
 local function runStopCommand()
     followAllowed = false
     currentFormasiTarget = nil
@@ -65,14 +64,14 @@ local function runStopCommand()
     Library:Notify("Bot Follow Stopped", 3)
 end
 
--- ✅ UI - Main Tab
+-- ✅ UI
 local GroupBox1 = Tabs.Main:AddLeftGroupbox("Main Options")
 
 GroupBox1:AddInput("BotIdentity", {
     Default = botIdentity,
     Text = "Bot Identity",
     Placeholder = "Auto-detected bot info",
-    Callback = function(Value) end, -- readonly
+    Callback = function(Value) end,
 })
 
 GroupBox1:AddToggle("AktifkanFollow", {
@@ -96,7 +95,7 @@ GroupBox1:AddToggle("AktifkanFollow", {
 
 GroupBox1:AddInput("JarakIkutInput", {
     Default = "5",
-    Text = "Follow Distance",
+    Text = "Follow Distance (VIP)",
     Placeholder = "Example: 5",
     Callback = function(Value)
         local number = tonumber(Value)
@@ -108,18 +107,17 @@ GroupBox1:AddInput("JarakIkutInput", {
     end,
 })
 
--- ✅ MoveTo wrapper (biar ga spam tiap frame)
+-- ✅ MoveTo wrapper
 local function moveToPosition(targetPos, lookAtPos)
     if not humanoid or not myRootPart then return end
-    if moving then return end -- lagi jalan, skip
-    if (myRootPart.Position - targetPos).Magnitude < 2 then return end -- terlalu dekat, skip
+    if moving then return end
+    if (myRootPart.Position - targetPos).Magnitude < 2 then return end
 
     moving = true
     humanoid:MoveTo(targetPos)
     humanoid.MoveToFinished:Wait()
     moving = false
 
-    -- Rotasi ke arah target
     if lookAtPos then
         myRootPart.CFrame = CFrame.new(myRootPart.Position, Vector3.new(lookAtPos.X, myRootPart.Position.Y, lookAtPos.Z))
     end
@@ -179,12 +177,13 @@ function setupBotFollowSystem()
     Players.PlayerAdded:Connect(setupClient)
     localPlayer.CharacterAdded:Connect(updateBotRefs)
 
-    -- Loop cek posisi
+    -- Loop
     RunService.Heartbeat:Connect(function()
         if toggleAktif and currentFormasiTarget and currentFormasiTarget.Character and humanoid and myRootPart then
             local targetHRP = currentFormasiTarget.Character:FindFirstChild("HumanoidRootPart")
             if targetHRP then
                 if shieldActive then
+                    -- ✅ SHIELD: posisi di depan VIP
                     local allBots = {}
                     for id, _ in pairs(botMapping) do
                         local p = Players:GetPlayerByUserId(tonumber(id))
@@ -195,7 +194,7 @@ function setupBotFollowSystem()
                     table.sort(allBots, function(a,b) return a.UserId < b.UserId end)
 
                     local totalBots = #allBots
-                    local spacing = 2
+                    local spacing = 3 -- jarak antar bot di shield
                     local index = 1
                     for i, p in ipairs(allBots) do
                         if p == localPlayer then
@@ -206,11 +205,28 @@ function setupBotFollowSystem()
 
                     local middle = math.ceil(totalBots/2)
                     local offsetX = (index - middle) * spacing
-                    local targetPos = targetHRP.Position + targetHRP.CFrame.RightVector * offsetX - targetHRP.CFrame.LookVector * spacing
+                    -- 🔥 Depan VIP → tambah LookVector
+                    local targetPos = targetHRP.Position + targetHRP.CFrame.RightVector * offsetX + targetHRP.CFrame.LookVector * 3
                     moveToPosition(targetPos, targetHRP.Position)
 
                 elseif followAllowed then
-                    local followPos = targetHRP.Position - targetHRP.CFrame.LookVector * jarakIkut
+                    -- ✅ FOLLOW: jarak berdasarkan urutan bot
+                    local botIds = {}
+                    for id, _ in pairs(botMapping) do
+                        table.insert(botIds, tonumber(id))
+                    end
+                    table.sort(botIds)
+
+                    local index = 1
+                    for i, id in ipairs(botIds) do
+                        if id == localPlayer.UserId then
+                            index = i
+                            break
+                        end
+                    end
+
+                    local extraDistance = index * 2 -- Bot1 = 2, Bot2 = 4, dst
+                    local followPos = targetHRP.Position - targetHRP.CFrame.LookVector * (jarakIkut + extraDistance)
                     moveToPosition(followPos, targetHRP.Position)
                 end
             end
