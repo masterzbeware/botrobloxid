@@ -6,7 +6,7 @@ return {
         Vars.ShieldActive = false
         game.StarterGui:SetCore("SendNotification", {
             Title = "Command",
-            Text = "Row " .. (Vars.RowActive and "Activated" or "Deactivated")
+            Text = Vars.BotIdentity .. " Row " .. (Vars.RowActive and "Activated" or "Deactivated")
         })
     end
 }

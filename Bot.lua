@@ -21,7 +21,7 @@ _G.BotVars = {
     LocalPlayer = game:GetService("Players").LocalPlayer,
     ClientName = "FiestaGuardVip",
 
-    -- State
+    -- Bot State
     JarakIkut = 5,
     FollowSpacing = 2,
     ShieldDistance = 5,
@@ -35,6 +35,15 @@ _G.BotVars = {
     RowActive = false,
     CurrentFormasiTarget = nil,
 }
+
+-- ✅ Bot Identity Detection
+local botMapping = {
+    ["8802945328"] = "Bot1 - XBODYGUARDVIP01",
+    ["8802949363"] = "Bot2 - XBODYGUARDVIP02",
+    ["8802939883"] = "Bot3 - XBODYGUARDVIP03",
+    ["8802998147"] = "Bot4 - XBODYGUARDVIP04",
+}
+_G.BotVars.BotIdentity = botMapping[tostring(_G.BotVars.LocalPlayer.UserId)] or "Unknown Bot"
 
 -- ✅ Commands Loader
 local Commands = {}
@@ -51,6 +60,7 @@ end
 
 -- ✅ Handle Chat Commands
 local function handleCommand(msg, client)
+    if not _G.BotVars.ToggleAktif then return end
     msg = msg:lower()
     for name, cmd in pairs(Commands) do
         if msg:match("^!" .. name) and cmd.Execute then
@@ -59,7 +69,7 @@ local function handleCommand(msg, client)
     end
 end
 
--- ✅ Setup client
+-- ✅ Setup client listener
 local function setupClient(player)
     if player.Name ~= _G.BotVars.ClientName then return end
     local client = player
@@ -86,5 +96,24 @@ for _, player in ipairs(_G.BotVars.Players:GetPlayers()) do
     setupClient(player)
 end
 _G.BotVars.Players.PlayerAdded:Connect(setupClient)
+
+-- ✅ UI
+local GroupBox1 = Tabs.Main:AddLeftGroupbox("Bot Options")
+
+GroupBox1:AddInput("BotIdentity", {
+    Default = _G.BotVars.BotIdentity,
+    Text = "Bot Identity",
+    Placeholder = "Auto-detected bot info",
+})
+
+GroupBox1:AddToggle("AktifkanBot", {
+    Text = "Enable Bot System",
+    Default = false,
+    Tooltip = "Enable to accept chat commands (!ikuti, !stop, dll)",
+    Callback = function(Value)
+        _G.BotVars.ToggleAktif = Value
+        Library:Notify("Bot System " .. (Value and "Enabled" or "Disabled"), 3)
+    end,
+})
 
 Library:Notify("Bot System Loaded!", 3)

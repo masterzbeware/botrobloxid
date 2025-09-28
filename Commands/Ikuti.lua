@@ -7,7 +7,7 @@ return {
         Vars.CurrentFormasiTarget = client
         game.StarterGui:SetCore("SendNotification", {
             Title = "Command",
-            Text = "Ikuti command executed!"
+            Text = Vars.BotIdentity .. " following VIP!"
         })
     end
 }

@@ -15,7 +15,7 @@ return {
                 game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("RequestSync"):FireServer(unpack(args))
                 game.StarterGui:SetCore("SendNotification", {
                     Title = "Command",
-                    Text = "Synced with " .. found.DisplayName
+                    Text = Vars.BotIdentity .. " synced with " .. found.DisplayName
                 })
             else
                 game.StarterGui:SetCore("SendNotification", {

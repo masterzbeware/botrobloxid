@@ -7,7 +7,7 @@ return {
         Vars.CurrentFormasiTarget = nil
         game.StarterGui:SetCore("SendNotification", {
             Title = "Command",
-            Text = "Stop command executed!"
+            Text = Vars.BotIdentity .. " stopped!"
         })
     end
 }
