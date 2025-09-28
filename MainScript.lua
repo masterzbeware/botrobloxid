@@ -121,23 +121,25 @@ GroupBox1:AddInput("SideSpacingInput", {
     Callback = function(Value) State.sideSpacing = tonumber(Value) or 4 end
 })
 
--- ✅ Commands Loader
+-- ✅ Commands Loader (from GitHub)
 local Commands = {}
+local commandList = { "ikuti", "row", "shield"} -- sesuaikan dengan nama module di repo
+
 local function loadCommands()
-    local folder = script:WaitForChild("Commands")
-    for _, module in ipairs(folder:GetChildren()) do
-        if module:IsA("ModuleScript") then
-            local cmdName = module.Name:lower()
-            local ok, result = pcall(require, module)
-            if ok and result then
-                Commands[cmdName] = result
-                print("Loaded Command:", cmdName)
-            else
-                warn("Failed to load command:", module.Name, result)
-            end
+    for _, cmdName in ipairs(commandList) do
+        local ok, result = pcall(function()
+            local url = repo .. "Commands/" .. cmdName .. ".lua"
+            return loadstring(game:HttpGet(url))()
+        end)
+        if ok and result then
+            Commands[cmdName:lower()] = result
+            print("Loaded Command:", cmdName)
+        else
+            warn("Failed to load command:", cmdName, result)
         end
     end
 end
+
 loadCommands()
 
 -- ✅ Chat Handler
