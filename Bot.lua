@@ -1,11 +1,10 @@
 -- Bot.lua
--- MasterZ Beware Bot System
--- Versi dengan HTTP loader Commands langsung dari GitHub repo
+-- MasterZ Beware Bot System (Dispatcher Only)
 
 -- ✅ Base repo untuk commands
 local repoBase = "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Commands/"
 
--- ✅ Library UI (masih pakai Obsidian repo yang lama)
+-- ✅ Library UI
 local obsidianRepo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
 local Library = loadstring(game:HttpGet(obsidianRepo .. "Library.lua"))()
 local Options = Library.Options
@@ -33,19 +32,7 @@ _G.BotVars = {
     LocalPlayer = game:GetService("Players").LocalPlayer,
     ClientName = "FiestaGuardVip",
 
-    -- State
-    JarakIkut = 5,
-    FollowSpacing = 2,
-    ShieldDistance = 5,
-    ShieldSpacing = 4,
-    RowSpacing = 4,
-    SideSpacing = 4,
-
     ToggleAktif = false,
-    FollowAllowed = false,
-    ShieldActive = false,
-    RowActive = false,
-    CurrentFormasiTarget = nil,
 }
 
 -- ✅ Identity Detection
@@ -58,7 +45,7 @@ local botMapping = {
 _G.BotVars.BotIdentity = botMapping[tostring(_G.BotVars.LocalPlayer.UserId)] or "Unknown Bot"
 debugPrint("Detected identity: " .. _G.BotVars.BotIdentity)
 
--- ✅ Commands Loader (dari repo GitHub)
+-- ✅ Commands Loader
 local Commands = {}
 local commandFiles = { "Ikuti.lua", "Stop.lua", "Shield.lua", "Row.lua", "Sync.lua" }
 
@@ -77,13 +64,13 @@ for _, fileName in ipairs(commandFiles) do
                 Commands[nameKey:lower()] = cmdTable
                 debugPrint("Loaded command via HTTP: " .. nameKey)
             else
-                debugPrint("Failed executing command chunk: " .. fileName .. " err: " .. tostring(cmdTable))
+                debugPrint("Failed executing command chunk: " .. fileName)
             end
         else
-            debugPrint("Failed loadstring: " .. fileName .. " err: " .. tostring(err))
+            debugPrint("Failed loadstring: " .. fileName)
         end
     else
-        debugPrint("Failed HttpGet: " .. fileName .. " err: " .. tostring(response))
+        debugPrint("Failed HttpGet: " .. fileName)
     end
 end
 
@@ -129,13 +116,11 @@ _G.BotVars.Players.PlayerAdded:Connect(setupClient)
 
 -- ✅ UI
 local GroupBox1 = Tabs.Main:AddLeftGroupbox("Bot Options")
-
 GroupBox1:AddInput("BotIdentity", {
     Default = _G.BotVars.BotIdentity,
     Text = "Bot Identity",
     Placeholder = "Auto-detected bot info",
 })
-
 GroupBox1:AddToggle("AktifkanBot", {
     Text = "Enable Bot System",
     Default = false,
@@ -147,6 +132,5 @@ GroupBox1:AddToggle("AktifkanBot", {
     end,
 })
 
--- ✅ Final Notify
 Library:Notify("Bot System Loaded!", 3)
 debugPrint("Bot.lua finished loading")
