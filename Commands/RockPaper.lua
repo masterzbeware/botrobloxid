@@ -1,4 +1,4 @@
--- RockPaper.lua (dengan toggle interaktif & debugging lengkap)
+-- RockPaper.lua (fix interaktif semua pemain)
 local vars = _G.BotVars
 local Players = vars.Players
 local TextChatService = vars.TextChatService
@@ -59,9 +59,13 @@ if not vars.RPSListenerSetup then
             print("[DEBUG] Bot4 diaktifkan")
         end
 
-        -- Hanya aktif jika ToggleAktif di Bot.lua true
+        -- Hanya aktif jika toggle utama & RockPaper aktif
         if not vars.ToggleAktif then
-            print("[DEBUG] Bot interaktif dinonaktifkan, "!rockpaper" diabaikan.")
+            print("[DEBUG] Bot system dinonaktifkan, !rockpaper diabaikan")
+            return
+        end
+        if not vars.ToggleRockPaper then
+            print("[DEBUG] RockPaper dinonaktifkan, !rockpaper diabaikan")
             return
         end
 
@@ -76,13 +80,13 @@ if not vars.RPSListenerSetup then
             vars.RPSCooldowns[plr.UserId] = now
             print("[DEBUG] Cooldown direset untuk " .. plr.Name)
 
-            -- Bot yang aktif merespon
+            -- Hanya Bot yang aktif merespon
             if tostring(localPlayer.UserId) == vars.ActiveBot then
                 local botChoice = choices[math.random(1, #choices)]
                 sendGlobal(plr.Name .. " Kamu memilih batu, Saya memilih " .. botChoice .. "!")
                 print("[DEBUG] Bot " .. localPlayer.Name .. " merespon " .. plr.Name .. " dengan " .. botChoice)
             else
-                print("[DEBUG] Bot " .. localPlayer.Name .. " tidak aktif, tidak merespon")
+                print("[DEBUG] Bot " .. localPlayer.Name .. " bukan ActiveBot, tidak merespon")
             end
         end
     end)
