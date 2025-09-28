@@ -1,32 +1,40 @@
-local M = {}
+return {
+    execute = function(args, ctx)
+        local targetName = args[1]
+        if not targetName then
+            ctx.Library:Notify("Usage: !row {username/displayname}", 3)
+            return
+        end
 
-function M.execute(args, ctx)
-    ctx.State.rowActive = not ctx.State.rowActive
-    ctx.State.followAllowed = false
-    ctx.State.shieldActive = false
-    ctx.Library:Notify("Row " .. (ctx.State.rowActive and "ON" or "OFF"), 3)
-end
+        local target = nil
+        for _, plr in ipairs(ctx.Players:GetPlayers()) do
+            if plr.Name:lower():find(targetName:lower()) or plr.DisplayName:lower():find(targetName:lower()) then
+                target = plr
+                break
+            end
+        end
 
-function M.run(State, localPlayer, targetHRP, moveToPosition, botMapping)
-    local botIds = {}
-    for id in pairs(botMapping) do table.insert(botIds, tonumber(id)) end
-    table.sort(botIds)
+        if target then
+            ctx.State.currentFormasiTarget = target
+            ctx.State.rowActive = true
+            ctx.State.shieldActive = false
+            ctx.State.followAllowed = false
+            ctx.Library:Notify("Row formation active for " .. target.DisplayName, 3)
+        else
+            ctx.Library:Notify("Player not found: " .. targetName, 3)
+        end
+    end,
 
-    local index = 1
-    for i, id in ipairs(botIds) do if id == localPlayer.UserId then index = i break end end
+    run = function(State, localPlayer, targetHRP, moveToPosition, botMapping)
+        if not State.rowActive then return end
 
-    local targetPos
-    if index == 1 then
-        targetPos = targetHRP.Position - targetHRP.CFrame.LookVector * State.jarakIkut - targetHRP.CFrame.RightVector * State.sideSpacing
-    elseif index == 2 then
-        targetPos = targetHRP.Position - targetHRP.CFrame.LookVector * State.jarakIkut + targetHRP.CFrame.RightVector * State.sideSpacing
-    elseif index == 3 then
-        targetPos = targetHRP.Position - targetHRP.CFrame.LookVector * (State.jarakIkut + State.rowSpacing) - targetHRP.CFrame.RightVector * State.sideSpacing
-    elseif index == 4 then
-        targetPos = targetHRP.Position - targetHRP.CFrame.LookVector * (State.jarakIkut + State.rowSpacing) + targetHRP.CFrame.RightVector * State.sideSpacing
-    end
+        local botName = botMapping[tostring(localPlayer.UserId)]
+        if not botName then return end
 
-    if targetPos then moveToPosition(targetPos, targetHRP.Position) end
-end
+        local index = tonumber(string.match(botName, "%d+")) or 0
+        local offsetX = (index - 2) * State.rowSpacing
+        local rowPos = targetHRP.CFrame * CFrame.new(offsetX, 0, -State.jarakIkut)
 
-return M
+        moveToPosition(rowPos.Position, targetHRP.Position)
+    end,
+}
