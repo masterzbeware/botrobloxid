@@ -1,80 +1,66 @@
--- ✅ Absen.lua (Auto chat absen sesuai jumlah bot online + debug)
+-- Absen.lua
+-- ✅ Auto Absen command (!absen)
+
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars or {}
-        local Players = game:GetService("Players")
-        local TextChatService = game:GetService("TextChatService")
-        local RunService = game:GetService("RunService")
+        local Players = vars.Players
+        local TextChatService = vars.TextChatService
+        local localPlayer = vars.LocalPlayer
 
-        local localPlayer = vars.LocalPlayer or Players.LocalPlayer
-        local botMapping = vars.BotMapping or {
-            ["8802945328"] = "Bot1",
-            ["8802949363"] = "Bot2",
-            ["8802939883"] = "Bot3",
-            ["8802998147"] = "Bot4",
-        }
-
-        print("[Absen] Executing Absen command for", localPlayer.Name)
+        if not vars.ToggleAktif then
+            print("[DEBUG] Bot system tidak aktif, absen dibatalkan")
+            return
+        end
 
         -- 🔹 Ambil daftar bot online
         local onlineBots = {}
-        for idStr, _ in pairs(botMapping) do
-            local plr = Players:GetPlayerByUserId(tonumber(idStr))
-            if plr and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-                table.insert(onlineBots, plr)
-                print("[Absen] Bot online:", plr.Name)
-            end
-        end
-        table.sort(onlineBots, function(a,b) return a.UserId < b.UserId end)
-
-        -- 🔹 Pastikan localPlayer termasuk di onlineBots
-        local isOnline = false
-        for _, bot in ipairs(onlineBots) do
-            if bot == localPlayer then
-                isOnline = true
-                break
-            end
-        end
-        if not isOnline then
-            table.insert(onlineBots, localPlayer)
-            print("[Absen] Local player added to onlineBots:", localPlayer.Name)
-        end
-
-        print("[Absen] Total bots online:", #onlineBots)
-
-        -- 🔹 Hanya jalankan jika localPlayer termasuk onlineBots
-        local myIndex = 1
-        for i, bot in ipairs(onlineBots) do
-            if bot == localPlayer then
-                myIndex = i
-                print("[Absen] Local player index:", myIndex)
-                break
+        for userIdStr, botName in pairs(vars.BotMapping or {}) do
+            local player = Players:GetPlayerByUserId(tonumber(userIdStr))
+            if player and player.Character then
+                table.insert(onlineBots, {Player = player, Name = botName})
             end
         end
 
-        -- 🔹 Chat awal global
+        if #onlineBots == 0 then
+            print("[DEBUG] Tidak ada bot online untuk absen")
+            return
+        end
+
+        -- 🔹 Urutkan berdasarkan UserId (Bot1 → Bot4)
+        table.sort(onlineBots, function(a, b)
+            return tonumber(a.Player.UserId) < tonumber(b.Player.UserId)
+        end)
+
+        -- 🔹 Channel global
         local channel = TextChatService.TextChannels and TextChatService.TextChannels.RBXGeneral
-        if channel and myIndex == 1 then
-            pcall(function()
-                print("[Absen] Sending initial message: Siap laksanakan! Mulai Berhitung")
-                channel:SendAsync("Siap laksanakan! Mulai Berhitung")
-            end)
+        if not channel then
+            print("[DEBUG] RBXGeneral channel tidak ditemukan")
+            return
         end
 
-        -- 🔹 Delay singkat sebelum mulai hitung
-        task.delay(2, function()
-            for i, bot in ipairs(onlineBots) do
-                if bot == localPlayer then
-                    task.delay((i-1) * 2, function()
-                        if channel then
-                            pcall(function()
-                                print("[Absen] Sending number:", i, "from", localPlayer.Name)
-                                channel:SendAsync(tostring(i))
-                            end)
-                        end
+        -- 🔹 Chat awal
+        pcall(function()
+            channel:SendAsync("Siap laksanakan! Mulai Berhitung")
+            print("[DEBUG] Chat: Siap laksanakan! Mulai Berhitung")
+        end)
+
+        -- 🔹 Delay 2 detik sebelum mulai hitung
+        task.wait(2)
+
+        -- 🔹 Kirim chat sesuai urutan bot online
+        for i, botInfo in ipairs(onlineBots) do
+            local botPlayer = botInfo.Player
+            local botName = botInfo.Name
+
+            task.delay((i - 1) * 2, function()
+                if botPlayer and botPlayer.Character then
+                    pcall(function()
+                        channel:SendAsync(tostring(i))
+                        print("[DEBUG] Bot " .. botName .. " mengirim chat: " .. i)
                     end)
                 end
-            end
-        end)
+            end)
+        end
     end
 }
