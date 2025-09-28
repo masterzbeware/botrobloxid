@@ -1,4 +1,4 @@
--- RockPaper.lua (fix interaktif semua pemain)
+-- RockPaper.lua (Final Fix - siap loadstring)
 local vars = _G.BotVars
 local Players = vars.Players
 local TextChatService = vars.TextChatService
@@ -19,14 +19,16 @@ local choices = {"batu", "gunting", "kertas"}
 local function sendGlobal(msg)
     local channel = TextChatService.TextChannels and TextChatService.TextChannels.RBXGeneral
     if channel then
-        pcall(function() channel:SendAsync(msg) end)
+        pcall(function()
+            channel:SendAsync(msg)
+        end)
         print("[DEBUG][SendGlobal] " .. msg)
     else
         print("[DEBUG][SendGlobal] Channel RBXGeneral tidak ditemukan!")
     end
 end
 
--- Cooldown table per pemain
+-- Cooldown per pemain
 if not vars.RPSCooldowns then
     vars.RPSCooldowns = {}
 end
@@ -40,7 +42,7 @@ if not vars.RPSListenerSetup then
         message = message:lower()
         print("[DEBUG][PlayerChatted] " .. plr.Name .. " mengetik: " .. message)
 
-        -- VIP mengaktifkan mode bot tertentu
+        -- VIP memilih mode Bot
         if message == "!modegame1" then
             vars.ActiveBot = botModes.mode1
             sendGlobal("Mode Game Bot1 diaktifkan oleh VIP!")
@@ -59,7 +61,7 @@ if not vars.RPSListenerSetup then
             print("[DEBUG] Bot4 diaktifkan")
         end
 
-        -- Hanya aktif jika toggle utama & RockPaper aktif
+        -- Cek toggle utama & RockPaper
         if not vars.ToggleAktif then
             print("[DEBUG] Bot system dinonaktifkan, !rockpaper diabaikan")
             return
@@ -80,7 +82,7 @@ if not vars.RPSListenerSetup then
             vars.RPSCooldowns[plr.UserId] = now
             print("[DEBUG] Cooldown direset untuk " .. plr.Name)
 
-            -- Hanya Bot yang aktif merespon
+            -- Bot yang aktif merespon
             if tostring(localPlayer.UserId) == vars.ActiveBot then
                 local botChoice = choices[math.random(1, #choices)]
                 sendGlobal(plr.Name .. " Kamu memilih batu, Saya memilih " .. botChoice .. "!")
@@ -92,7 +94,7 @@ if not vars.RPSListenerSetup then
     end)
 end
 
--- Execute tetap bisa kosong karena listener sudah berjalan
+-- Execute kosong karena listener sudah berjalan
 return {
     Execute = function(msg, client)
         print("[DEBUG][Execute] Command dipanggil: " .. tostring(msg))
