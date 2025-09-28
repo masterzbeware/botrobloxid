@@ -6,7 +6,7 @@ local Options = Library.Options
 
 local Window = Library:CreateWindow({
     Title = "Made by MasterZ",
-    Footer = "v13.0.0",
+    Footer = "v11.0.0",
     Icon = 0,
     NotifySide = "Right",
     ShowCustomCursor = true,
@@ -24,6 +24,7 @@ local TextChatService = game:GetService("TextChatService")
 local localPlayer = Players.LocalPlayer
 local clientName = "FiestaGuardVip"
 local jarakIkut = 5
+local followSpacing = 2
 local toggleAktif = false
 local followAllowed = false
 local currentFormasiTarget = nil
@@ -104,6 +105,20 @@ GroupBox1:AddInput("JarakIkutInput", {
             jarakIkut = number
             debugPrint("Follow distance set to: "..number)
             Library:Notify("Follow distance set to: "..number, 3)
+        end
+    end,
+})
+
+GroupBox1:AddInput("FollowSpacingInput", {
+    Default = "2",
+    Text = "Follow Spacing (Antar Bot)",
+    Placeholder = "Example: 2",
+    Callback = function(Value)
+        local number = tonumber(Value)
+        if number then
+            followSpacing = number
+            debugPrint("Follow spacing set to: "..number)
+            Library:Notify("Follow spacing set to: "..number, 3)
         end
     end,
 })
@@ -241,7 +256,7 @@ function setupBotFollowSystem()
                     moveToPosition(targetPos, targetHRP.Position + targetHRP.CFrame.LookVector * 50)
 
                 elseif followAllowed then
-                    -- ✅ FOLLOW: jarak berdasarkan urutan bot
+                    -- ✅ FOLLOW: rapih dengan spacing
                     local botIds = {}
                     for id, _ in pairs(botMapping) do
                         table.insert(botIds, tonumber(id))
@@ -256,8 +271,8 @@ function setupBotFollowSystem()
                         end
                     end
 
-                    local extraDistance = index * 2
-                    local followPos = targetHRP.Position - targetHRP.CFrame.LookVector * (jarakIkut + extraDistance)
+                    -- jarak = jarakIkut + tambahan spacing sesuai urutan
+                    local followPos = targetHRP.Position - targetHRP.CFrame.LookVector * (jarakIkut + (index - 1) * followSpacing)
                     moveToPosition(followPos, targetHRP.Position)
                 end
             end
