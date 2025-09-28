@@ -6,7 +6,7 @@ local Options = Library.Options
 
 local Window = Library:CreateWindow({
     Title = "Made by MasterZ",
-    Footer = "v12.0.0",
+    Footer = "v13.0.0",
     Icon = 0,
     NotifySide = "Right",
     ShowCustomCursor = true,
@@ -29,6 +29,10 @@ local followAllowed = false
 local currentFormasiTarget = nil
 local shieldActive = false
 
+-- Tambahan variabel shield
+local shieldDistance = 5   -- jarak bot dengan VIP
+local shieldSpacing = 4    -- jarak antar bot/baris
+
 local followConnection = nil
 local humanoid = nil
 local myRootPart = nil
@@ -45,9 +49,7 @@ local botMapping = {
 local botIdentity = botMapping[tostring(localPlayer.UserId)] or "Unknown Bot"
 
 -- ✅ Helper Functions
-local function debugPrint(msg)
-    print("[DEBUG]", msg)
-end
+local function debugPrint(msg) print("[DEBUG]", msg) end
 
 local function updateBotRefs()
     local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
@@ -71,7 +73,6 @@ GroupBox1:AddInput("BotIdentity", {
     Default = botIdentity,
     Text = "Bot Identity",
     Placeholder = "Auto-detected bot info",
-    Callback = function(Value) end,
 })
 
 GroupBox1:AddToggle("AktifkanFollow", {
@@ -107,6 +108,35 @@ GroupBox1:AddInput("JarakIkutInput", {
     end,
 })
 
+-- Tambahan input untuk shield
+GroupBox1:AddInput("ShieldDistanceInput", {
+    Default = "5",
+    Text = "Shield Distance (VIP)",
+    Placeholder = "Example: 5",
+    Callback = function(Value)
+        local number = tonumber(Value)
+        if number then
+            shieldDistance = number
+            debugPrint("Shield distance set to: "..number)
+            Library:Notify("Shield distance set to: "..number, 3)
+        end
+    end,
+})
+
+GroupBox1:AddInput("ShieldSpacingInput", {
+    Default = "4",
+    Text = "Shield Spacing (Rows)",
+    Placeholder = "Example: 4",
+    Callback = function(Value)
+        local number = tonumber(Value)
+        if number then
+            shieldSpacing = number
+            debugPrint("Shield spacing set to: "..number)
+            Library:Notify("Shield spacing set to: "..number, 3)
+        end
+    end,
+})
+
 -- ✅ MoveTo wrapper
 local function moveToPosition(targetPos, lookAtPos)
     if not humanoid or not myRootPart then return end
@@ -119,6 +149,7 @@ local function moveToPosition(targetPos, lookAtPos)
     moving = false
 
     if lookAtPos then
+        -- 🔥 menghadap ke arah depan (arah VIP), bukan ke VIP
         myRootPart.CFrame = CFrame.new(myRootPart.Position, Vector3.new(lookAtPos.X, myRootPart.Position.Y, lookAtPos.Z))
     end
 end
@@ -134,7 +165,6 @@ function setupBotFollowSystem()
             shieldActive = false
             currentFormasiTarget = client
             Library:Notify("Bot following main client: " .. client.DisplayName, 3)
-            debugPrint("Follow started for "..client.DisplayName)
         elseif msg:match("^!stop") then
             runStopCommand()
             shieldActive = false
@@ -149,7 +179,6 @@ function setupBotFollowSystem()
     local function setupClient(player)
         if player.Name ~= clientName then return end
         client = player
-        debugPrint("Client "..player.Name.." setup complete")
 
         if TextChatService and TextChatService.TextChannels then
             local generalChannel = TextChatService.TextChannels.RBXGeneral
@@ -158,14 +187,12 @@ function setupBotFollowSystem()
                     local senderUserId = message.TextSource and message.TextSource.UserId
                     local sender = senderUserId and Players:GetPlayerByUserId(senderUserId)
                     if sender and sender == client then
-                        debugPrint("Received chat from "..sender.Name..": "..message.Text)
                         handleCommand(message.Text)
                     end
                 end
             end
         else
             followConnection = player.Chatted:Connect(function(msg)
-                debugPrint("Received chat from "..player.Name..": "..msg)
                 handleCommand(msg)
             end)
         end
@@ -183,7 +210,7 @@ function setupBotFollowSystem()
             local targetHRP = currentFormasiTarget.Character:FindFirstChild("HumanoidRootPart")
             if targetHRP then
                 if shieldActive then
-                    -- ✅ SHIELD: posisi di depan VIP
+                    -- ✅ SHIELD: membelakangi VIP, menghadap ke depan
                     local allBots = {}
                     for id, _ in pairs(botMapping) do
                         local p = Players:GetPlayerByUserId(tonumber(id))
@@ -194,7 +221,7 @@ function setupBotFollowSystem()
                     table.sort(allBots, function(a,b) return a.UserId < b.UserId end)
 
                     local totalBots = #allBots
-                    local spacing = 3 -- jarak antar bot di shield
+                    local spacing = shieldSpacing
                     local index = 1
                     for i, p in ipairs(allBots) do
                         if p == localPlayer then
@@ -205,9 +232,13 @@ function setupBotFollowSystem()
 
                     local middle = math.ceil(totalBots/2)
                     local offsetX = (index - middle) * spacing
-                    -- 🔥 Depan VIP → tambah LookVector
-                    local targetPos = targetHRP.Position + targetHRP.CFrame.RightVector * offsetX + targetHRP.CFrame.LookVector * 3
-                    moveToPosition(targetPos, targetHRP.Position)
+
+                    -- 🔥 Bot di depan VIP sejajar + membelakangi VIP
+                    local targetPos = targetHRP.Position 
+                        + targetHRP.CFrame.LookVector * shieldDistance  -- maju ke depan
+                        + targetHRP.CFrame.RightVector * offsetX        -- sebar samping
+
+                    moveToPosition(targetPos, targetHRP.Position + targetHRP.CFrame.LookVector * 50)
 
                 elseif followAllowed then
                     -- ✅ FOLLOW: jarak berdasarkan urutan bot
@@ -225,7 +256,7 @@ function setupBotFollowSystem()
                         end
                     end
 
-                    local extraDistance = index * 2 -- Bot1 = 2, Bot2 = 4, dst
+                    local extraDistance = index * 2
                     local followPos = targetHRP.Position - targetHRP.CFrame.LookVector * (jarakIkut + extraDistance)
                     moveToPosition(followPos, targetHRP.Position)
                 end
