@@ -1,4 +1,4 @@
--- ✅ Absen.lua (Auto chat absen sesuai jumlah bot online)
+-- ✅ Absen.lua (Auto chat absen sesuai jumlah bot online + debug)
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars or {}
@@ -14,12 +14,15 @@ return {
             ["8802998147"] = "Bot4",
         }
 
+        print("[Absen] Executing Absen command for", localPlayer.Name)
+
         -- 🔹 Ambil daftar bot online
         local onlineBots = {}
         for idStr, _ in pairs(botMapping) do
             local plr = Players:GetPlayerByUserId(tonumber(idStr))
             if plr and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
                 table.insert(onlineBots, plr)
+                print("[Absen] Bot online:", plr.Name)
             end
         end
         table.sort(onlineBots, function(a,b) return a.UserId < b.UserId end)
@@ -32,13 +35,19 @@ return {
                 break
             end
         end
-        if not isOnline then table.insert(onlineBots, localPlayer) end
+        if not isOnline then
+            table.insert(onlineBots, localPlayer)
+            print("[Absen] Local player added to onlineBots:", localPlayer.Name)
+        end
+
+        print("[Absen] Total bots online:", #onlineBots)
 
         -- 🔹 Hanya jalankan jika localPlayer termasuk onlineBots
         local myIndex = 1
         for i, bot in ipairs(onlineBots) do
             if bot == localPlayer then
                 myIndex = i
+                print("[Absen] Local player index:", myIndex)
                 break
             end
         end
@@ -47,6 +56,7 @@ return {
         local channel = TextChatService.TextChannels and TextChatService.TextChannels.RBXGeneral
         if channel and myIndex == 1 then
             pcall(function()
+                print("[Absen] Sending initial message: Siap laksanakan! Mulai Berhitung")
                 channel:SendAsync("Siap laksanakan! Mulai Berhitung")
             end)
         end
@@ -58,6 +68,7 @@ return {
                     task.delay((i-1) * 2, function()
                         if channel then
                             pcall(function()
+                                print("[Absen] Sending number:", i, "from", localPlayer.Name)
                                 channel:SendAsync(tostring(i))
                             end)
                         end
