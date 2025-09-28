@@ -1,8 +1,6 @@
--- sync.lua
 local Players = game:GetService("Players")
-local localPlayer = Players.LocalPlayer
-local TextChatService = game:GetService("TextChatService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TextChatService = game:GetService("TextChatService")
 
 local function handleSync(msg)
     local targetName = msg:match("^!sync%s+(.+)")
@@ -23,17 +21,10 @@ end
 local function setupClient(player)
     if player.Name ~= "FiestaGuardVip" then return end
     _G.client = player
-
-    if TextChatService and TextChatService.TextChannels then
-        local generalChannel = TextChatService.TextChannels.RBXGeneral
-        if generalChannel then
-            generalChannel.OnIncomingMessage = function(message)
-                local senderUserId = message.TextSource and message.TextSource.UserId
-                local sender = senderUserId and Players:GetPlayerByUserId(senderUserId)
-                if sender and sender == _G.client then
-                    handleSync(message.Text)
-                end
-            end
+    if TextChatService.TextChannels and TextChatService.TextChannels.RBXGeneral then
+        TextChatService.TextChannels.RBXGeneral.OnIncomingMessage = function(message)
+            local sender = Players:GetPlayerByUserId(message.TextSource.UserId)
+            if sender and sender == _G.client then handleSync(message.Text) end
         end
     else
         player.Chatted:Connect(handleSync)

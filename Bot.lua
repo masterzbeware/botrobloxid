@@ -1,18 +1,16 @@
 -- Bot.lua
 -- Made by MasterZ
 
--- ✅ Library Setup
 local repo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
 local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
 local Options = Library.Options
 
--- ✅ Roblox Services
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local TextChatService = game:GetService("TextChatService")
 local localPlayer = Players.LocalPlayer
 
--- ✅ Global Variables
+-- Global variables
 _G.toggleAktif = false
 _G.followAllowed = false
 _G.shieldActive = false
@@ -38,7 +36,7 @@ _G.botMapping = {
 }
 _G.botIdentity = _G.botMapping[tostring(localPlayer.UserId)] or "Unknown Bot"
 
--- ✅ UI Setup
+-- UI Setup
 local Window = Library:CreateWindow({
     Title = "Made by MasterZ",
     Footer = "v16.0.0",
@@ -58,7 +56,7 @@ GroupBox1:AddToggle("AktifkanFollow", { Text = "Enable Bot Follow", Default = fa
     print("[DEBUG] ToggleAktif set to: "..tostring(value))
 end })
 
--- ✅ MoveTo Helper
+-- MoveTo Helper
 function _G.moveToPosition(targetPos, lookAtPos)
     if not _G.humanoid or not _G.myRootPart then return end
     if _G.moving then return end
@@ -74,7 +72,7 @@ function _G.moveToPosition(targetPos, lookAtPos)
     end
 end
 
--- ✅ Update Bot References
+-- Update Bot References
 function _G.updateBotRefs()
     local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
     _G.humanoid = character:WaitForChild("Humanoid")
@@ -82,30 +80,29 @@ function _G.updateBotRefs()
     print("[DEBUG] Bot references updated")
 end
 
--- ✅ Load Commands from GitHub
+-- Load Commands
 local commandFiles = {"ikuti", "stop", "shield", "row", "sync"}
 for _, cmd in ipairs(commandFiles) do
-    local url = "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Commands/"..cmd..".lua"
+    local url = "https://raw.githubusercontent.com/<username>/botrobloxid/main/Commands/"..cmd..".lua" -- Ganti <username> dengan username GitHub mu
     local success, err = pcall(function()
         local scriptString = game:HttpGet(url)
         loadstring(scriptString)()
     end)
     if not success then
-        warn("[ERROR] Failed to load command: "..cmd..".lua", err)
+        warn("[ERROR] Failed to load command: "..cmd..".lua. Check URL:", url)
+        warn(err)
     else
         print("[INFO] Loaded command: "..cmd..".lua")
     end
 end
 
--- ✅ Follow Loop (empty, command files handle movement)
+-- Follow Loop
 RunService.Heartbeat:Connect(function()
     if _G.toggleAktif and _G.currentFormasiTarget and _G.currentFormasiTarget.Character and _G.humanoid and _G.myRootPart then
-        -- Movement handled by individual command files (ikuti, shield, row, sync, stop)
+        -- Movement handled by commands
     end
 end)
 
--- ✅ Character Update
+-- Update references on respawn
 localPlayer.CharacterAdded:Connect(_G.updateBotRefs)
-if localPlayer.Character then
-    _G.updateBotRefs()
-end
+if localPlayer.Character then _G.updateBotRefs() end
