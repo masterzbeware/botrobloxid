@@ -1,3 +1,10 @@
+-- ✅ Destroy previous UI if exists
+if _G.ObsidianWindow then
+    pcall(function()
+        _G.ObsidianWindow:Destroy()
+    end)
+end
+
 -- ✅ Obsidian UI Setup
 local repo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
 local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
@@ -11,6 +18,9 @@ local Window = Library:CreateWindow({
     NotifySide = "Right",
     ShowCustomCursor = true,
 })
+
+-- Simpan window ini secara global agar bisa dihapus jika script dijalankan lagi
+_G.ObsidianWindow = Window
 
 local Tabs = {
     Main = Window:AddTab("Main", "user")
