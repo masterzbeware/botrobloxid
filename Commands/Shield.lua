@@ -1,39 +1,57 @@
--- ✅ Shield.lua (Shield formation + warning ke pemain lain)
+-- Shield.lua (Shield formation + peringatan pemain lain mendekati VIP)
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars or {}
+        local RunService = vars.RunService or game:GetService("RunService")
         local Players = game:GetService("Players")
-        local RunService = game:GetService("RunService")
+        local player = vars.LocalPlayer or Players.LocalPlayer
         local TextChatService = game:GetService("TextChatService")
 
-        local player = vars.LocalPlayer or Players.LocalPlayer
+        -- Toggle shield mode
         vars.ShieldActive = not vars.ShieldActive
         vars.FollowAllowed = false
         vars.RowActive = false
         vars.CurrentFormasiTarget = client
 
-        -- Flag untuk delay warning
-        vars.LastShieldWarning = 0
+        -- Disconnect previous loops
+        if vars.FollowConnection then pcall(function() vars.FollowConnection:Disconnect() end) vars.FollowConnection = nil end
+        if vars.ShieldConnection then pcall(function() vars.ShieldConnection:Disconnect() end) vars.ShieldConnection = nil end
+        if vars.RowConnection then pcall(function() vars.RowConnection:Disconnect() end) vars.RowConnection = nil end
 
-        -- Notifikasi lokal
-        game.StarterGui:SetCore("SendNotification", {
-            Title = "Formation Command",
-            Text = "Shield " .. (vars.ShieldActive and "Activated" or "Deactivated")
-        })
+        local notifyLib = vars.Library or loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/Library.lua"))()
+        if not vars.ShieldActive then
+            notifyLib:Notify("Shield formation Deactivated", 3)
+            return
+        end
 
-        if not vars.ShieldActive then return end
-
-        -- Pastikan reference
-        local character = player.Character or player.CharacterAdded:Wait()
-        local humanoid = character:WaitForChild("Humanoid")
-        local myRootPart = character:WaitForChild("HumanoidRootPart")
-
-        -- Ambil jarak & spacing dari vars
+        -- ambil nilai dari Bot.lua
         local shieldDistance = tonumber(vars.ShieldDistance) or 5
         local shieldSpacing  = tonumber(vars.ShieldSpacing) or 4
 
-        -- Helper move
-        local moving = false
+        local botMapping = vars.BotMapping or {
+            ["8802945328"] = "Bot1 - XBODYGUARDVIP01",
+            ["8802949363"] = "Bot2 - XBODYGUARDVIP02",
+            ["8802939883"] = "Bot3 - XBODYGUARDVIP03",
+            ["8802998147"] = "Bot4 - XBODYGUARDVIP04",
+        }
+
+        local botIds = {}
+        for idStr, _ in pairs(botMapping) do
+            local n = tonumber(idStr)
+            if n then table.insert(botIds, n) end
+        end
+        table.sort(botIds)
+
+        -- bot refs
+        local humanoid, myRootPart, moving
+        local function updateBotRefs()
+            local character = player.Character or player.CharacterAdded:Wait()
+            humanoid = character:WaitForChild("Humanoid")
+            myRootPart = character:WaitForChild("HumanoidRootPart")
+        end
+        player.CharacterAdded:Connect(updateBotRefs)
+        updateBotRefs()
+
         local function moveToPosition(targetPos, lookAtPos)
             if not humanoid or not myRootPart then return end
             if moving then return end
@@ -45,39 +63,24 @@ return {
             moving = false
 
             if lookAtPos then
-                myRootPart.CFrame = CFrame.new(
-                    myRootPart.Position,
-                    Vector3.new(lookAtPos.X, myRootPart.Position.Y, lookAtPos.Z)
-                )
+                myRootPart.CFrame = CFrame.new(myRootPart.Position, Vector3.new(lookAtPos.X, myRootPart.Position.Y, lookAtPos.Z))
             end
         end
 
-        -- Jalankan loop Shield
-        RunService.Heartbeat:Connect(function()
-            if not vars.ShieldActive then return end
+        vars.ShieldConnection = RunService.Heartbeat:Connect(function()
+            if not vars.ToggleAktif or not vars.ShieldActive then return end
             if not vars.CurrentFormasiTarget or not vars.CurrentFormasiTarget.Character then return end
+            if not humanoid or not myRootPart then return end
 
             local targetHRP = vars.CurrentFormasiTarget.Character:FindFirstChild("HumanoidRootPart")
             if not targetHRP then return end
 
-            -- 🔹 Urutan fix Bot1 → Bot4
-            local orderedBots = {
-                "8802945328",
-                "8802949363",
-                "8802939883",
-                "8802998147",
-            }
-
-            local myUserId = tostring(player.UserId)
+            -- Tentukan posisi bot Shield
             local index = 1
-            for i, uid in ipairs(orderedBots) do
-                if uid == myUserId then
-                    index = i
-                    break
-                end
+            for i, id in ipairs(botIds) do
+                if id == player.UserId then index = i break end
             end
 
-            -- 🔹 Hitung posisi shield
             local targetPos
             if index == 1 then
                 targetPos = targetHRP.Position + targetHRP.CFrame.LookVector * shieldDistance
@@ -87,31 +90,33 @@ return {
                 targetPos = targetHRP.Position + targetHRP.CFrame.RightVector * shieldSpacing
             elseif index == 4 then
                 targetPos = targetHRP.Position - targetHRP.CFrame.LookVector * shieldDistance
+            else
+                targetPos = targetHRP.Position - targetHRP.CFrame.LookVector * shieldDistance
             end
 
-            if targetPos then
-                moveToPosition(targetPos, targetHRP.Position)
-            end
+            moveToPosition(targetPos, targetHRP.Position + targetHRP.CFrame.LookVector * 50)
 
-            -- 🔹 Deteksi pemain lain yang terlalu dekat VIP
-            local now = tick()
-            if now - (vars.LastShieldWarning or 0) > 5 then -- kasih delay 5 detik
-                for _, plr in ipairs(Players:GetPlayers()) do
-                    if plr ~= player and plr ~= vars.CurrentFormasiTarget and plr.Character then
-                        local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
-                        if hrp and (hrp.Position - targetHRP.Position).Magnitude < 8 then
+            -- 🔹 Deteksi pemain lain mendekati VIP
+            for _, plr in ipairs(Players:GetPlayers()) do
+                if plr ~= player and plr ~= vars.CurrentFormasiTarget then
+                    local char = plr.Character
+                    if char then
+                        local hrp = char:FindFirstChild("HumanoidRootPart")
+                        if hrp and (hrp.Position - targetHRP.Position).Magnitude <= shieldDistance then
+                            -- Chat global peringatan
                             local channel = TextChatService.TextChannels and TextChatService.TextChannels.RBXGeneral
                             if channel then
                                 pcall(function()
-                                    channel:SendAsync("Harap menjauh ini Area Vip!")
+                                    channel:SendAsync("Harap menjauh ini Area VIP!")
                                 end)
                             end
-                            vars.LastShieldWarning = now
-                            break
                         end
                     end
                 end
             end
         end)
+
+        notifyLib:Notify("Shield formation Activated", 3)
+        print("[COMMAND] Shield activated by", client.Name, "distance:", shieldDistance, "spacing:", shieldSpacing)
     end
 }
