@@ -51,12 +51,11 @@ local botMapping = {
     ["8802998147"] = "Bot4 - XBODYGUARDVIP04",
 }
 _G.BotVars.BotIdentity = botMapping[tostring(_G.BotVars.LocalPlayer.UserId)] or "Unknown Bot"
-_G.BotVars.BotMapping = botMapping  -- agar Absen.lua bisa akses daftar bot
 debugPrint("Detected identity: " .. _G.BotVars.BotIdentity)
 
 -- ✅ Commands Loader
 local Commands = {}
-local commandFiles = { "Ikuti.lua", "Stop.lua", "Shield.lua", "Row.lua", "Sync.lua", "Absen.lua" }
+local commandFiles = { "Ikuti.lua", "Stop.lua", "Shield.lua", "Row.lua", "Sync.lua" }
 
 for _, fileName in ipairs(commandFiles) do
     local url = repoBase .. fileName
@@ -107,14 +106,12 @@ local function setupClient(player)
                 local senderUserId = message.TextSource and message.TextSource.UserId
                 local sender = senderUserId and _G.BotVars.Players:GetPlayerByUserId(senderUserId)
                 if sender and sender == client then
-                    debugPrint("[Chat Received] " .. message.Text)
                     handleCommand(message.Text, client)
                 end
             end
         end
     else
         player.Chatted:Connect(function(msg)
-            debugPrint("[Chat Received] " .. msg)
             handleCommand(msg, client)
         end)
     end
@@ -136,7 +133,7 @@ GroupBox1:AddInput("BotIdentity", {
 GroupBox1:AddToggle("AktifkanBot", {
     Text = "Enable Bot System",
     Default = false,
-    Tooltip = "Enable to accept chat commands (!ikuti, !stop, !shield, !row, !sync, !absen)",
+    Tooltip = "Enable to accept chat commands (!ikuti, !stop, dll)",
     Callback = function(Value)
         _G.BotVars.ToggleAktif = Value
         debugPrint("ToggleAktif set to: " .. tostring(Value))
