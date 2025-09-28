@@ -119,15 +119,28 @@ GroupBox1:AddInput("SideSpacingInput", {
     Callback = function(Value) State.sideSpacing = tonumber(Value) or 4 end
 })
 
--- ✅ Commands Loader
+-- ✅ Commands Loader (via GitHub)
 local Commands = {}
 local function loadCommands()
-    local folder = script:WaitForChild("Commands")
-    for _, module in ipairs(folder:GetChildren()) do
-        if module:IsA("ModuleScript") then
-            local cmdName = module.Name:lower()
-            Commands[cmdName] = require(module)
+    local baseUrl = "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Commands/"
+    local commandFiles = {
+        "Ikuti.lua",
+        "Stop.lua",
+        "Sync.lua",
+        "Shield.lua",
+        "Row.lua",
+    }
+
+    for _, file in ipairs(commandFiles) do
+        local cmdName = file:match("^(.-)%.lua$"):lower()
+        local success, result = pcall(function()
+            return loadstring(game:HttpGet(baseUrl .. file))()
+        end)
+        if success and result then
+            Commands[cmdName] = result
             print("Loaded Command:", cmdName)
+        else
+            warn("Failed to load:", file, result)
         end
     end
 end
@@ -184,13 +197,13 @@ RunService.Heartbeat:Connect(function()
     if not targetHRP then return end
 
     -- Shield
-    if State.shieldActive then
+    if State.shieldActive and Commands["shield"] then
         Commands["shield"].run(State, localPlayer, targetHRP, moveToPosition, botMapping)
     -- Row
-    elseif State.rowActive then
+    elseif State.rowActive and Commands["row"] then
         Commands["row"].run(State, localPlayer, targetHRP, moveToPosition, botMapping)
     -- Ikuti
-    elseif State.followAllowed then
+    elseif State.followAllowed and Commands["ikuti"] then
         Commands["ikuti"].run(State, localPlayer, targetHRP, moveToPosition, botMapping)
     end
 end)
