@@ -1,42 +1,8 @@
 -- Bot.lua
--- Made by MasterZ
-
 local repo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
 local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
 local Options = Library.Options
 
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local TextChatService = game:GetService("TextChatService")
-local localPlayer = Players.LocalPlayer
-
--- Global variables
-_G.toggleAktif = false
-_G.followAllowed = false
-_G.shieldActive = false
-_G.rowActive = false
-_G.jarakIkut = 5
-_G.followSpacing = 2
-_G.shieldDistance = 5
-_G.shieldSpacing = 4
-_G.rowSpacing = 4
-_G.sideSpacing = 4
-_G.currentFormasiTarget = nil
-_G.client = nil
-_G.humanoid = nil
-_G.myRootPart = nil
-_G.moving = false
-
--- Bot Mapping
-_G.botMapping = {
-    ["8802945328"] = "Bot1 - XBODYGUARDVIP01",
-    ["8802949363"] = "Bot2 - XBODYGUARDVIP02",
-    ["8802939883"] = "Bot3 - XBODYGUARDVIP03",
-    ["8802998147"] = "Bot4 - XBODYGUARDVIP04",
-}
-_G.botIdentity = _G.botMapping[tostring(localPlayer.UserId)] or "Unknown Bot"
-
--- UI Setup
 local Window = Library:CreateWindow({
     Title = "Made by MasterZ",
     Footer = "v16.0.0",
@@ -45,64 +11,80 @@ local Window = Library:CreateWindow({
     ShowCustomCursor = true,
 })
 
-local Tabs = {
-    Main = Window:AddTab("Main", "user")
+local Tabs = { Main = Window:AddTab("Main", "user") }
+
+-- ✅ Global Variables
+_G.BotVars = {
+    Players = game:GetService("Players"),
+    RunService = game:GetService("RunService"),
+    TextChatService = game:GetService("TextChatService"),
+    LocalPlayer = game:GetService("Players").LocalPlayer,
+    ClientName = "FiestaGuardVip",
+
+    -- State
+    JarakIkut = 5,
+    FollowSpacing = 2,
+    ShieldDistance = 5,
+    ShieldSpacing = 4,
+    RowSpacing = 4,
+    SideSpacing = 4,
+
+    ToggleAktif = false,
+    FollowAllowed = false,
+    ShieldActive = false,
+    RowActive = false,
+    CurrentFormasiTarget = nil,
 }
 
-local GroupBox1 = Tabs.Main:AddLeftGroupbox("Main Options")
-GroupBox1:AddInput("BotIdentity", { Default = _G.botIdentity, Text = "Bot Identity", Placeholder = "Auto-detected bot info" })
-GroupBox1:AddToggle("AktifkanFollow", { Text = "Enable Bot Follow", Default = false, Callback = function(value)
-    _G.toggleAktif = value
-    print("[DEBUG] ToggleAktif set to: "..tostring(value))
-end })
+-- ✅ Commands Loader
+local Commands = {}
+local commandFiles = { "Ikuti", "Stop", "Shield", "Row", "Sync" }
 
--- MoveTo Helper
-function _G.moveToPosition(targetPos, lookAtPos)
-    if not _G.humanoid or not _G.myRootPart then return end
-    if _G.moving then return end
-    if (_G.myRootPart.Position - targetPos).Magnitude < 2 then return end
-
-    _G.moving = true
-    _G.humanoid:MoveTo(targetPos)
-    _G.humanoid.MoveToFinished:Wait()
-    _G.moving = false
-
-    if lookAtPos then
-        _G.myRootPart.CFrame = CFrame.new(_G.myRootPart.Position, Vector3.new(lookAtPos.X, _G.myRootPart.Position.Y, lookAtPos.Z))
-    end
-end
-
--- Update Bot References
-function _G.updateBotRefs()
-    local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
-    _G.humanoid = character:WaitForChild("Humanoid")
-    _G.myRootPart = character:WaitForChild("HumanoidRootPart")
-    print("[DEBUG] Bot references updated")
-end
-
--- Load Commands
-local commandFiles = {"ikuti", "stop", "shield", "row", "sync"}
-for _, cmd in ipairs(commandFiles) do
-    local url = "https://raw.githubusercontent.com/<username>/botrobloxid/main/Commands/"..cmd..".lua" -- Ganti <username> dengan username GitHub mu
-    local success, err = pcall(function()
-        local scriptString = game:HttpGet(url)
-        loadstring(scriptString)()
+for _, file in ipairs(commandFiles) do
+    local success, cmd = pcall(function()
+        return loadfile("Commands/" .. file .. ".lua")()
     end)
-    if not success then
-        warn("[ERROR] Failed to load command: "..cmd..".lua. Check URL:", url)
-        warn(err)
-    else
-        print("[INFO] Loaded command: "..cmd..".lua")
+    if success and type(cmd) == "table" then
+        Commands[file:lower()] = cmd
     end
 end
 
--- Follow Loop
-RunService.Heartbeat:Connect(function()
-    if _G.toggleAktif and _G.currentFormasiTarget and _G.currentFormasiTarget.Character and _G.humanoid and _G.myRootPart then
-        -- Movement handled by commands
+-- ✅ Handle Chat Commands
+local function handleCommand(msg, client)
+    msg = msg:lower()
+    for name, cmd in pairs(Commands) do
+        if msg:match("^!" .. name) and cmd.Execute then
+            cmd.Execute(msg, client)
+        end
     end
-end)
+end
 
--- Update references on respawn
-localPlayer.CharacterAdded:Connect(_G.updateBotRefs)
-if localPlayer.Character then _G.updateBotRefs() end
+-- ✅ Setup client
+local function setupClient(player)
+    if player.Name ~= _G.BotVars.ClientName then return end
+    local client = player
+
+    if _G.BotVars.TextChatService and _G.BotVars.TextChatService.TextChannels then
+        local generalChannel = _G.BotVars.TextChatService.TextChannels.RBXGeneral
+        if generalChannel then
+            generalChannel.OnIncomingMessage = function(message)
+                local senderUserId = message.TextSource and message.TextSource.UserId
+                local sender = senderUserId and _G.BotVars.Players:GetPlayerByUserId(senderUserId)
+                if sender and sender == client then
+                    handleCommand(message.Text, client)
+                end
+            end
+        end
+    else
+        player.Chatted:Connect(function(msg)
+            handleCommand(msg, client)
+        end)
+    end
+end
+
+for _, player in ipairs(_G.BotVars.Players:GetPlayers()) do
+    setupClient(player)
+end
+_G.BotVars.Players.PlayerAdded:Connect(setupClient)
+
+Library:Notify("Bot System Loaded!", 3)
