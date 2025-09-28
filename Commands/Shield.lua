@@ -1,4 +1,4 @@
--- Shield.lua (Shield formation + warning saat pemain lain mendekati VIP)
+-- Shield.lua (Shield formation + warning dengan delay 1 menit)
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars or {}
@@ -52,6 +52,10 @@ return {
         player.CharacterAdded:Connect(updateBotRefs)
         updateBotRefs()
 
+        -- Timestamp terakhir chat
+        local lastWarningTime = 0
+        local warningDelay = 60 -- detik
+
         local function moveToPosition(targetPos, lookAtPos)
             if not humanoid or not myRootPart then return end
             if moving then return end
@@ -98,20 +102,25 @@ return {
             moveToPosition(targetPos, targetHRP.Position + targetHRP.CFrame.LookVector * 50)
 
             -- 🔹 Deteksi pemain lain mendekati VIP (hanya non-bot)
-            for _, plr in ipairs(Players:GetPlayers()) do
-                if plr ~= player and plr ~= vars.CurrentFormasiTarget then
-                    local userIdStr = tostring(plr.UserId)
-                    if not botMapping[userIdStr] then  -- hanya pemain non-bot
-                        local char = plr.Character
-                        if char and char:FindFirstChild("HumanoidRootPart") then
-                            local dist = (char.HumanoidRootPart.Position - targetHRP.Position).Magnitude
-                            if dist <= shieldDistance then
-                                -- Kirim chat global peringatan
-                                local channel = TextChatService.TextChannels and TextChatService.TextChannels.RBXGeneral
-                                if channel then
-                                    pcall(function()
-                                        channel:SendAsync("Harap menjauh ini Area Vip!")
-                                    end)
+            local now = tick()
+            if now - lastWarningTime >= warningDelay then
+                for _, plr in ipairs(Players:GetPlayers()) do
+                    if plr ~= player and plr ~= vars.CurrentFormasiTarget then
+                        local userIdStr = tostring(plr.UserId)
+                        if not botMapping[userIdStr] then  -- hanya pemain non-bot
+                            local char = plr.Character
+                            if char and char:FindFirstChild("HumanoidRootPart") then
+                                local dist = (char.HumanoidRootPart.Position - targetHRP.Position).Magnitude
+                                if dist <= shieldDistance then
+                                    -- Kirim chat global peringatan
+                                    local channel = TextChatService.TextChannels and TextChatService.TextChannels.RBXGeneral
+                                    if channel then
+                                        pcall(function()
+                                            channel:SendAsync("Harap menjauh ini Area Vip!")
+                                        end)
+                                    end
+                                    lastWarningTime = now -- update timestamp terakhir
+                                    break -- cukup satu chat per 1 menit
                                 end
                             end
                         end
