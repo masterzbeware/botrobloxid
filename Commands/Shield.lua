@@ -1,4 +1,4 @@
--- Shield.lua (Shield formation + warning dengan delay 25 detik + chat ulang)
+-- Shield.lua (Shield formation + warning 15 detik + chat ancaman)
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars or {}
@@ -52,9 +52,9 @@ return {
         player.CharacterAdded:Connect(updateBotRefs)
         updateBotRefs()
 
-        -- Timestamp terakhir chat
+        -- Delay per pemain
         local warningDelay = 15 -- detik
-        local warningPlayers = {} -- tabel untuk pemain yang diperingatkan
+        local warningPlayers = {} -- tabel: [UserId] = {lastWarning = tick(), warnedOnce = true/false}
 
         local function moveToPosition(targetPos, lookAtPos)
             if not humanoid or not myRootPart then return end
@@ -102,6 +102,7 @@ return {
             moveToPosition(targetPos, targetHRP.Position + targetHRP.CFrame.LookVector * 50)
 
             -- 🔹 Peringatan pemain mendekati VIP
+            local now = tick()
             for _, plr in ipairs(Players:GetPlayers()) do
                 if plr ~= player and plr ~= vars.CurrentFormasiTarget then
                     local userIdStr = tostring(plr.UserId)
@@ -110,34 +111,32 @@ return {
                         if char and char:FindFirstChild("HumanoidRootPart") then
                             local dist = (char.HumanoidRootPart.Position - targetHRP.Position).Magnitude
                             if dist <= shieldDistance then
-                                -- kirim peringatan jika belum dikirim atau bubble chat hilang & delay
-                                local now = tick()
                                 local data = warningPlayers[plr.UserId]
-                                if (not data) or (now - (data.lastWarning or 0) >= warningDelay) or (data.chatHidden) then
+                                if not data then
+                                    -- Kirim peringatan pertama
                                     local channel = TextChatService.TextChannels and TextChatService.TextChannels.RBXGeneral
                                     if channel then
                                         pcall(function()
                                             channel:SendAsync(plr.Name .. " Harap menjauh ini Area Vip!")
                                         end)
                                     end
-                                    warningPlayers[plr.UserId] = {lastWarning = now, chatHidden = false}
+                                    warningPlayers[plr.UserId] = {lastWarning = now, warnedOnce = true}
+                                elseif now - data.lastWarning >= warningDelay then
+                                    -- Kirim peringatan kedua (mengancam)
+                                    local channel = TextChatService.TextChannels and TextChatService.TextChannels.RBXGeneral
+                                    if channel then
+                                        pcall(function()
+                                            channel:SendAsync(plr.Name .. "!!! Anda terus mendekati VIP! Peringatan terakhir!")
+                                        end)
+                                    end
+                                    warningPlayers[plr.UserId].lastWarning = now
+                                    warningPlayers[plr.UserId].warnedOnce = false
                                 end
                             else
                                 -- pemain sudah menjauh, hapus dari tabel
                                 warningPlayers[plr.UserId] = nil
                             end
                         end
-                    end
-                end
-            end
-
-            -- 🔹 Cek bubble chat hilang
-            for userId, data in pairs(warningPlayers) do
-                local plr = Players:GetPlayerByUserId(userId)
-                if plr and plr.Character and plr.Character:FindFirstChild("Head") then
-                    local billboard = plr.Character.Head:FindFirstChildWhichIsA("BillboardGui")
-                    if not billboard then
-                        data.chatHidden = true -- tandai agar chat dikirim ulang
                     end
                 end
             end
