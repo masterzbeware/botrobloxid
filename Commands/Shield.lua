@@ -67,6 +67,7 @@ return {
             end
         end
 
+        -- Shield loop
         vars.ShieldConnection = RunService.Heartbeat:Connect(function()
             if not vars.ToggleAktif or not vars.ShieldActive then return end
             if not vars.CurrentFormasiTarget or not vars.CurrentFormasiTarget.Character then return end
@@ -96,19 +97,22 @@ return {
 
             moveToPosition(targetPos, targetHRP.Position + targetHRP.CFrame.LookVector * 50)
 
-            -- 🔹 Deteksi pemain lain mendekati VIP
+            -- 🔹 Deteksi pemain lain mendekati VIP (hanya non-bot)
             for _, plr in ipairs(Players:GetPlayers()) do
                 if plr ~= player and plr ~= vars.CurrentFormasiTarget then
-                    local char = plr.Character
-                    if char and char:FindFirstChild("HumanoidRootPart") then
-                        local dist = (char.HumanoidRootPart.Position - targetHRP.Position).Magnitude
-                        if dist <= shieldDistance then
-                            -- Kirim chat global peringatan
-                            local channel = TextChatService.TextChannels and TextChatService.TextChannels.RBXGeneral
-                            if channel then
-                                pcall(function()
-                                    channel:SendAsync("Harap menjauh ini Area Vip!")
-                                end)
+                    local userIdStr = tostring(plr.UserId)
+                    if not botMapping[userIdStr] then  -- hanya pemain non-bot
+                        local char = plr.Character
+                        if char and char:FindFirstChild("HumanoidRootPart") then
+                            local dist = (char.HumanoidRootPart.Position - targetHRP.Position).Magnitude
+                            if dist <= shieldDistance then
+                                -- Kirim chat global peringatan
+                                local channel = TextChatService.TextChannels and TextChatService.TextChannels.RBXGeneral
+                                if channel then
+                                    pcall(function()
+                                        channel:SendAsync("Harap menjauh ini Area Vip!")
+                                    end)
+                                end
                             end
                         end
                     end
