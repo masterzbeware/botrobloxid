@@ -6,7 +6,7 @@ local Options = Library.Options
 
 local Window = Library:CreateWindow({
     Title = "Made by MasterZ",
-    Footer = "v14.0.0",
+    Footer = "v15.0.0",
     Icon = 0,
     NotifySide = "Right",
     ShowCustomCursor = true,
@@ -29,10 +29,13 @@ local toggleAktif = false
 local followAllowed = false
 local currentFormasiTarget = nil
 local shieldActive = false
+local rowActive = false
 
--- Tambahan variabel shield
-local shieldDistance = 6   -- jarak bot depan ke VIP
-local shieldSpacing = 4    -- jarak antar baris & antar kolom
+-- Tambahan variabel shield & row
+local shieldDistance = 5   -- jarak bot dengan VIP
+local shieldSpacing = 4    -- jarak antar bot (samping)
+local rowSpacing = 4       -- jarak antar baris
+local sideSpacing = 4      -- jarak antar bot kiri-kanan
 
 local followConnection = nil
 local humanoid = nil
@@ -61,6 +64,8 @@ end
 
 local function runStopCommand()
     followAllowed = false
+    shieldActive = false
+    rowActive = false
     currentFormasiTarget = nil
     moving = false
     debugPrint("Follow stopped")
@@ -123,11 +128,10 @@ GroupBox1:AddInput("FollowSpacingInput", {
     end,
 })
 
--- Tambahan input untuk shield
 GroupBox1:AddInput("ShieldDistanceInput", {
-    Default = "6",
+    Default = "5",
     Text = "Shield Distance (VIP)",
-    Placeholder = "Example: 6",
+    Placeholder = "Example: 5",
     Callback = function(Value)
         local number = tonumber(Value)
         if number then
@@ -140,7 +144,7 @@ GroupBox1:AddInput("ShieldDistanceInput", {
 
 GroupBox1:AddInput("ShieldSpacingInput", {
     Default = "4",
-    Text = "Shield Spacing (Rows/Cols)",
+    Text = "Shield Spacing (Rows)",
     Placeholder = "Example: 4",
     Callback = function(Value)
         local number = tonumber(Value)
@@ -148,6 +152,34 @@ GroupBox1:AddInput("ShieldSpacingInput", {
             shieldSpacing = number
             debugPrint("Shield spacing set to: "..number)
             Library:Notify("Shield spacing set to: "..number, 3)
+        end
+    end,
+})
+
+GroupBox1:AddInput("RowSpacingInput", {
+    Default = "4",
+    Text = "Row Spacing (Baris)",
+    Placeholder = "Example: 4",
+    Callback = function(Value)
+        local number = tonumber(Value)
+        if number then
+            rowSpacing = number
+            debugPrint("Row spacing set to: "..number)
+            Library:Notify("Row spacing set to: "..number, 3)
+        end
+    end,
+})
+
+GroupBox1:AddInput("SideSpacingInput", {
+    Default = "4",
+    Text = "Side Spacing (Kiri-Kanan)",
+    Placeholder = "Example: 4",
+    Callback = function(Value)
+        local number = tonumber(Value)
+        if number then
+            sideSpacing = number
+            debugPrint("Side spacing set to: "..number)
+            Library:Notify("Side spacing set to: "..number, 3)
         end
     end,
 })
@@ -168,7 +200,7 @@ local function moveToPosition(targetPos, lookAtPos)
     end
 end
 
--- ✅ Follow System with Shield
+-- ✅ Follow System with Shield & Row
 function setupBotFollowSystem()
     updateBotRefs()
 
@@ -177,21 +209,21 @@ function setupBotFollowSystem()
         if msg:match("^!ikuti") then
             followAllowed = true
             shieldActive = false
+            rowActive = false
             currentFormasiTarget = client
             Library:Notify("Bot following main client: " .. client.DisplayName, 3)
         elseif msg:match("^!stop") then
             runStopCommand()
-            shieldActive = false
         elseif msg:match("^!shield") then
             shieldActive = not shieldActive
             followAllowed = false
+            rowActive = false
             Library:Notify("Shield formation " .. (shieldActive and "activated" or "deactivated"), 3)
-            debugPrint("ShieldActive: "..tostring(shieldActive))
         elseif msg:match("^!row") then
-            shieldActive = not shieldActive
+            rowActive = not rowActive
             followAllowed = false
-            Library:Notify("Row formation " .. (shieldActive and "activated" or "deactivated"), 3)
-            debugPrint("RowActive: "..tostring(shieldActive))
+            shieldActive = false
+            Library:Notify("Row formation " .. (rowActive and "activated" or "deactivated"), 3)
         end
     end
 
@@ -228,42 +260,68 @@ function setupBotFollowSystem()
         if toggleAktif and currentFormasiTarget and currentFormasiTarget.Character and humanoid and myRootPart then
             local targetHRP = currentFormasiTarget.Character:FindFirstChild("HumanoidRootPart")
             if targetHRP then
+                -- Shield Mode
                 if shieldActive then
-                    -- ✅ SHIELD: formasi 2x2 rapih
-                    local allBots = {}
+                    local botIds = {}
                     for id, _ in pairs(botMapping) do
-                        local p = Players:GetPlayerByUserId(tonumber(id))
-                        if p and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                            table.insert(allBots, p)
-                        end
+                        table.insert(botIds, tonumber(id))
                     end
-                    table.sort(allBots, function(a,b) return a.UserId < b.UserId end)
+                    table.sort(botIds)
 
-                    -- cari index bot ini
                     local index = 1
-                    for i, p in ipairs(allBots) do
-                        if p == localPlayer then
-                            index = i
-                            break
-                        end
+                    for i, id in ipairs(botIds) do
+                        if id == localPlayer.UserId then index = i break end
                     end
 
-                    -- hitung row/col
-                    local row = math.floor((index-1) / 2)  -- 0 = depan, 1 = belakang
-                    local col = (index-1) % 2              -- 0 = kiri, 1 = kanan
+                    local targetPos
+                    if index == 1 then
+                        targetPos = targetHRP.Position + targetHRP.CFrame.LookVector * shieldDistance
+                    elseif index == 2 then
+                        targetPos = targetHRP.Position - targetHRP.CFrame.RightVector * shieldDistance
+                    elseif index == 3 then
+                        targetPos = targetHRP.Position + targetHRP.CFrame.RightVector * shieldDistance
+                    elseif index == 4 then
+                        targetPos = targetHRP.Position - targetHRP.CFrame.LookVector * shieldDistance
+                    end
 
-                    -- offset
-                    local offsetX = (col == 0 and -1 or 1) * (shieldSpacing/2)
-                    local offsetZ = shieldDistance - (row * shieldSpacing)
+                    if targetPos then
+                        moveToPosition(targetPos, targetHRP.Position + targetHRP.CFrame.LookVector * 50)
+                    end
 
-                    local targetPos = targetHRP.Position
-                        + targetHRP.CFrame.LookVector * offsetZ
-                        + targetHRP.CFrame.RightVector * offsetX
+                -- Row Mode
+                elseif rowActive then
+                    local botIds = {}
+                    for id, _ in pairs(botMapping) do
+                        table.insert(botIds, tonumber(id))
+                    end
+                    table.sort(botIds)
 
-                    moveToPosition(targetPos, targetHRP.Position + targetHRP.CFrame.LookVector * 50)
+                    local index = 1
+                    for i, id in ipairs(botIds) do
+                        if id == localPlayer.UserId then index = i break end
+                    end
 
+                    local targetPos
+                    if index == 1 then
+                        targetPos = targetHRP.Position - targetHRP.CFrame.LookVector * jarakIkut 
+                                    - targetHRP.CFrame.RightVector * sideSpacing
+                    elseif index == 2 then
+                        targetPos = targetHRP.Position - targetHRP.CFrame.LookVector * jarakIkut 
+                                    + targetHRP.CFrame.RightVector * sideSpacing
+                    elseif index == 3 then
+                        targetPos = targetHRP.Position - targetHRP.CFrame.LookVector * (jarakIkut + rowSpacing) 
+                                    - targetHRP.CFrame.RightVector * sideSpacing
+                    elseif index == 4 then
+                        targetPos = targetHRP.Position - targetHRP.CFrame.LookVector * (jarakIkut + rowSpacing) 
+                                    + targetHRP.CFrame.RightVector * sideSpacing
+                    end
+
+                    if targetPos then
+                        moveToPosition(targetPos, targetHRP.Position) -- menghadap VIP
+                    end
+
+                -- Follow Mode
                 elseif followAllowed then
-                    -- ✅ FOLLOW: rapih dengan spacing
                     local botIds = {}
                     for id, _ in pairs(botMapping) do
                         table.insert(botIds, tonumber(id))
@@ -278,7 +336,6 @@ function setupBotFollowSystem()
                         end
                     end
 
-                    -- jarak = jarakIkut + tambahan spacing sesuai urutan
                     local followPos = targetHRP.Position - targetHRP.CFrame.LookVector * (jarakIkut + (index - 1) * followSpacing)
                     moveToPosition(followPos, targetHRP.Position)
                 end
