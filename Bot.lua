@@ -8,7 +8,7 @@ local Options = Library.Options
 
 local Window = Library:CreateWindow({
     Title = "Made by MasterZ",
-    Footer = "v3.6.0",
+    Footer = "v3.6.1",
     Icon = 0,
     NotifySide = "Right",
     ShowCustomCursor = true,
@@ -116,18 +116,19 @@ local function setupClient(player)
         end
     end
 
-    if _G.BotVars.TextChatService and _G.BotVars.TextChatService.TextChannels then
-        local generalChannel = _G.BotVars.TextChatService.TextChannels.RBXGeneral
-        if generalChannel then
-            generalChannel.OnIncomingMessage = function(message)
-                local senderUserId = message.TextSource and message.TextSource.UserId
-                local sender = senderUserId and _G.BotVars.Players:GetPlayerByUserId(senderUserId)
-                if sender then
-                    processMessage(message.Text, sender)
-                end
+    local TextChatService = _G.BotVars.TextChatService
+    local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+
+    if channel and channel.MessageReceived then
+        channel.MessageReceived:Connect(function(message)
+            local senderUserId = message.TextSource and message.TextSource.UserId
+            local sender = senderUserId and _G.BotVars.Players:GetPlayerByUserId(senderUserId)
+            if sender then
+                processMessage(message.Text, sender)
             end
-        end
+        end)
     else
+        -- fallback lama
         player.Chatted:Connect(function(msg)
             processMessage(msg, player)
         end)
