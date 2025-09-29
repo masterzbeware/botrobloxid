@@ -1,33 +1,33 @@
 -- Stop.lua
--- Command !stop: Menghentikan semua aksi bot (follow, shield, row, sync)
+-- Command !stop: Menghentikan semua aksi bot (follow, shield, row, sync, pushup)
 
 return {
     Execute = function(msg, client)
-        local vars = _G.BotVars
+        local vars = _G.BotVars or {}
 
-        -- Nonaktifkan semua formasi / follow / sync
+        -- Nonaktifkan semua mode
         vars.FollowAllowed = false
         vars.ShieldActive = false
         vars.RowActive = false
         vars.CurrentFormasiTarget = nil
-        vars.SyncActive = false  -- Tambahkan ini untuk menghentikan sync
+        vars.SyncActive = false
+        vars.PushupActive = false  -- hentikan pushup
 
-        -- Putuskan koneksi Heartbeat kalau ada
-        if vars.FollowConnection then
-            vars.FollowConnection:Disconnect()
-            vars.FollowConnection = nil
-        end
+        -- Putuskan semua koneksi Heartbeat / loop kalau ada
+        if vars.FollowConnection then pcall(function() vars.FollowConnection:Disconnect() end) vars.FollowConnection = nil end
+        if vars.ShieldConnection then pcall(function() vars.ShieldConnection:Disconnect() end) vars.ShieldConnection = nil end
+        if vars.RowConnection then pcall(function() vars.RowConnection:Disconnect() end) vars.RowConnection = nil end
+        if vars.PushupConnection then pcall(function() task.cancel(vars.PushupConnection) end) vars.PushupConnection = nil end
 
-        -- Notifikasi menggunakan Library Obsidian
-        local success, Library = pcall(function()
-            return loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/Library.lua"))()
+        -- 🔹 Stop animasi push-up kalau masih jalan
+        pcall(function()
+            local args = { "stopAnimation", "Push Up" }
+            game:GetService("ReplicatedStorage")
+                :WaitForChild("Connections")
+                :WaitForChild("dataProviders")
+                :WaitForChild("animationHandler")
+                :InvokeServer(unpack(args))
         end)
-
-        if success and Library then
-            Library:Notify("Bot stopped all actions (including sync)", 3)
-        else
-            warn("[Stop.lua] Gagal load Library.lua untuk notifikasi")
-        end
 
         print("[COMMAND] Bot stopped by client:", client and client.Name or "Unknown")
     end

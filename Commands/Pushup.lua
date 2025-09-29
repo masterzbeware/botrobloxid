@@ -4,6 +4,9 @@ return {
         local vars = _G.BotVars or {}
         local TextChatService = vars.TextChatService or game:GetService("TextChatService")
 
+        -- tandai pushup aktif
+        vars.PushupActive = true
+
         -- Ambil channel chat
         local channel = TextChatService.TextChannels and TextChatService.TextChannels:FindFirstChild("RBXGeneral")
 
@@ -15,10 +18,12 @@ return {
             end
         end
 
-        task.spawn(function()
+        -- Simpan connection biar bisa dihentikan dari Stop.lua
+        vars.PushupConnection = task.spawn(function()
             -- Chat awal
             sendChat("Siap laksanakan!")
             task.wait(5)
+            if not vars.PushupActive then return end
 
             -- 🔹 Play animasi push-up sekali
             pcall(function()
@@ -31,9 +36,9 @@ return {
             end)
 
             -- Chat dengan jeda 5 detik
-            task.wait(5) sendChat("Satu push up!")
-            task.wait(5) sendChat("Dua push up!")
-            task.wait(5) sendChat("Tiga push up, Komandan!")
+            task.wait(5) if not vars.PushupActive then return end sendChat("Satu push up!")
+            task.wait(5) if not vars.PushupActive then return end sendChat("Dua push up!")
+            task.wait(5) if not vars.PushupActive then return end sendChat("Tiga push up, Komandan!")
 
             -- 🔹 Stop animasi setelah chat terakhir
             pcall(function()
@@ -44,6 +49,9 @@ return {
                     :WaitForChild("animationHandler")
                     :InvokeServer(unpack(args))
             end)
+
+            vars.PushupActive = false
+            vars.PushupConnection = nil
         end)
     end
 }
