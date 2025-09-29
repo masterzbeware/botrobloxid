@@ -1,15 +1,16 @@
 -- Stop.lua
--- Command !stop: Menghentikan semua aksi bot (follow, shield, row)
+-- Command !stop: Menghentikan semua aksi bot (follow, shield, row, sync)
 
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars
 
-        -- Nonaktifkan semua formasi / follow
+        -- Nonaktifkan semua formasi / follow / sync
         vars.FollowAllowed = false
         vars.ShieldActive = false
         vars.RowActive = false
         vars.CurrentFormasiTarget = nil
+        vars.SyncActive = false  -- Tambahkan ini untuk menghentikan sync
 
         -- Putuskan koneksi Heartbeat kalau ada
         if vars.FollowConnection then
@@ -23,7 +24,7 @@ return {
         end)
 
         if success and Library then
-            Library:Notify("Bot stopped all actions", 3)
+            Library:Notify("Bot stopped all actions (including sync)", 3)
         else
             warn("[Stop.lua] Gagal load Library.lua untuk notifikasi")
         end
