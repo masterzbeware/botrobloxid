@@ -5,24 +5,12 @@ return {
         local RunService = vars.RunService
         local player = vars.LocalPlayer
 
-        -- 🔹 Blok jika RockPaperMode aktif
-        if vars.RockPaperModeActive then
-            local channel = vars.TextChatService.TextChannels and vars.TextChatService.TextChannels.RBXGeneral
-            if channel then
-                pcall(function()
-                    channel:SendAsync("Tidak bisa mengeksekusi Ikuti saat RockPaper Mode aktif!")
-                end)
-            end
-            return
-        end
-
         vars.FollowAllowed = true
         vars.ShieldActive = false
         vars.RowActive = false
         vars.CurrentFormasiTarget = client
 
         local humanoid, myRootPart, moving
-
         local function updateBotRefs()
             local character = player.Character or player.CharacterAdded:Wait()
             humanoid = character:WaitForChild("Humanoid")
@@ -42,7 +30,7 @@ return {
             moving = false
         end
 
-        -- Putuskan koneksi lama
+        -- Putuskan koneksi lama dulu
         if vars.FollowConnection then vars.FollowConnection:Disconnect() end
 
         vars.FollowConnection = RunService.Heartbeat:Connect(function()
@@ -50,16 +38,19 @@ return {
             local targetHRP = client.Character:FindFirstChild("HumanoidRootPart")
             if not targetHRP then return end
 
+            -- 🔹 Ambil jarak dari UI
             local jarakIkut = tonumber(vars.JarakIkut) or 5
             local followSpacing = tonumber(vars.FollowSpacing) or 2
 
+            -- 🔹 Definisi urutan bot FIXED (bukan sort UserId lagi)
             local orderedBots = {
-                "8802945328",
-                "8802949363",
-                "8802939883",
-                "8802998147",
+                "8802945328", -- Bot1 - XBODYGUARDVIP01
+                "8802949363", -- Bot2 - XBODYGUARDVIP02
+                "8802939883", -- Bot3 - XBODYGUARDVIP03
+                "8802998147", -- Bot4 - XBODYGUARDVIP04
             }
 
+            -- cari index bot ini
             local myUserId = tostring(player.UserId)
             local index = 1
             for i, uid in ipairs(orderedBots) do
@@ -69,6 +60,7 @@ return {
                 end
             end
 
+            -- 🔹 Hitung posisi ikuti VIP
             local followPos = targetHRP.Position - targetHRP.CFrame.LookVector * (jarakIkut + (index - 1) * followSpacing)
             moveToPosition(followPos)
         end)

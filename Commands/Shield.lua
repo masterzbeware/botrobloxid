@@ -1,24 +1,13 @@
--- Shield.lua
+-- Shield.lua (Shield formation + warning dengan delay 1 menit)
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars or {}
-
-        -- 🔹 Blok jika RockPaperMode aktif
-        if vars.RockPaperModeActive then
-            local channel = vars.TextChatService.TextChannels and vars.TextChatService.TextChannels.RBXGeneral
-            if channel then
-                pcall(function()
-                    channel:SendAsync("Tidak bisa mengeksekusi Shield saat RockPaper Mode aktif!")
-                end)
-            end
-            return
-        end
-
         local RunService = vars.RunService or game:GetService("RunService")
         local Players = game:GetService("Players")
         local TextChatService = vars.TextChatService or game:GetService("TextChatService")
         local player = vars.LocalPlayer or Players.LocalPlayer
 
+        -- Toggle shield mode
         vars.ShieldActive = not vars.ShieldActive
         vars.FollowAllowed = false
         vars.RowActive = false
@@ -35,6 +24,7 @@ return {
             return
         end
 
+        -- Ambil nilai dari Bot.lua
         local shieldDistance = tonumber(vars.ShieldDistance) or 5
         local shieldSpacing  = tonumber(vars.ShieldSpacing) or 4
 
@@ -52,6 +42,7 @@ return {
         end
         table.sort(botIds)
 
+        -- Bot references
         local humanoid, myRootPart, moving
         local function updateBotRefs()
             local character = player.Character or player.CharacterAdded:Wait()
@@ -61,6 +52,7 @@ return {
         player.CharacterAdded:Connect(updateBotRefs)
         updateBotRefs()
 
+        -- Timestamp terakhir chat
         local lastWarningTime = 0
         local warningDelay = 15 -- detik
 
@@ -79,6 +71,7 @@ return {
             end
         end
 
+        -- Shield loop
         vars.ShieldConnection = RunService.Heartbeat:Connect(function()
             if not vars.ToggleAktif or not vars.ShieldActive then return end
             if not vars.CurrentFormasiTarget or not vars.CurrentFormasiTarget.Character then return end
@@ -87,6 +80,7 @@ return {
             local targetHRP = vars.CurrentFormasiTarget.Character:FindFirstChild("HumanoidRootPart")
             if not targetHRP then return end
 
+            -- Tentukan posisi Shield
             local index = 1
             for i, id in ipairs(botIds) do
                 if id == player.UserId then index = i break end
@@ -107,24 +101,26 @@ return {
 
             moveToPosition(targetPos, targetHRP.Position + targetHRP.CFrame.LookVector * 50)
 
+            -- 🔹 Deteksi pemain lain mendekati VIP (hanya non-bot)
             local now = tick()
             if now - lastWarningTime >= warningDelay then
                 for _, plr in ipairs(Players:GetPlayers()) do
                     if plr ~= player and plr ~= vars.CurrentFormasiTarget then
                         local userIdStr = tostring(plr.UserId)
-                        if not botMapping[userIdStr] then
+                        if not botMapping[userIdStr] then  -- hanya pemain non-bot
                             local char = plr.Character
                             if char and char:FindFirstChild("HumanoidRootPart") then
                                 local dist = (char.HumanoidRootPart.Position - targetHRP.Position).Magnitude
                                 if dist <= shieldDistance then
+                                    -- Kirim chat global peringatan dengan nama pemain
                                     local channel = TextChatService.TextChannels and TextChatService.TextChannels.RBXGeneral
                                     if channel then
                                         pcall(function()
-                                            channel:SendAsync(plr.Name .. " Harap menjauh dari Area VIP!")
+                                            channel:SendAsync(plr.Name .. " Harap menjauh ini Area Vip!")
                                         end)
                                     end
-                                    lastWarningTime = now
-                                    break
+                                    lastWarningTime = now -- update timestamp terakhir
+                                    break -- cukup satu chat per warningDelay
                                 end
                             end
                         end

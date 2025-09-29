@@ -1,19 +1,6 @@
--- Sync.lua
 return {
     Execute = function(msg, client)
         local Vars = _G.BotVars
-
-        -- 🔹 Blok jika RockPaperMode aktif
-        if Vars.RockPaperModeActive then
-            local channel = Vars.TextChatService.TextChannels and Vars.TextChatService.TextChannels.RBXGeneral
-            if channel then
-                pcall(function()
-                    channel:SendAsync("Tidak bisa mengeksekusi Sync saat RockPaper Mode aktif!")
-                end)
-            end
-            return
-        end
-
         local targetName = msg:match("^!sync%s+(.+)")
         if targetName then
             local found = nil
@@ -23,7 +10,6 @@ return {
                     break
                 end
             end
-
             if found then
                 local args = { found }
                 game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("RequestSync"):FireServer(unpack(args))
