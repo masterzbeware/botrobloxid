@@ -8,7 +8,7 @@ local Options = Library.Options
 
 local Window = Library:CreateWindow({
     Title = "Made by MasterZ",
-    Footer = "v3.2.0",
+    Footer = "v3.4.0",
     Icon = 0,
     NotifySide = "Right",
     ShowCustomCursor = true,
@@ -50,7 +50,8 @@ debugPrint("Detected identity: " .. _G.BotVars.BotIdentity)
 
 -- Commands Loader
 local Commands = {}
-local commandFiles = { "Ikuti.lua", "Stop.lua", "Shield.lua", "Row.lua", "Sync.lua" } -- RockPaper tidak dimasukkan
+local commandFiles = { "Ikuti.lua", "Stop.lua", "Shield.lua", "Row.lua", "Sync.lua", "RockPaper.lua", "CekKhodam.lua" }
+
 for _, fileName in ipairs(commandFiles) do
     local url = repoBase .. fileName
     local success, response = pcall(function() return game:HttpGet(url) end)
@@ -95,9 +96,14 @@ local function setupClient(player)
         end
 
         -- Games toggle (semua pemain bisa !rockpaper)
-        if _G.BotVars.GamesEnabled and msg:lower():match("^!rockpaper") then
-            local rockPaperCmd = loadstring(game:HttpGet(repoBase .. "RockPaper.lua"))()
-            rockPaperCmd.Execute(msg, sender)
+        if _G.BotVars.GamesEnabled then
+            if msg:lower():match("^!rockpaper") then
+                local rockPaperCmd = loadstring(game:HttpGet(repoBase .. "RockPaper.lua"))()
+                rockPaperCmd.Execute(msg, sender)
+            elseif msg:lower():match("^!cekkhodam") then
+                local cekKhodamCmd = loadstring(game:HttpGet(repoBase .. "CekKhodam.lua"))()
+                cekKhodamCmd.Execute(msg, sender)
+            end
         end
     end
 
@@ -134,6 +140,7 @@ GroupBox1:AddInput("BotIdentity", {
     Placeholder = "Auto-detected bot info",
 })
 
+-- VIP toggle
 GroupBox1:AddToggle("AktifkanBot", {
     Text = "Enable Bot System (VIP only)",
     Default = false,
@@ -145,11 +152,11 @@ GroupBox1:AddToggle("AktifkanBot", {
     end,
 })
 
--- 🔹 Toggle Games
+-- Games toggle
 GroupBox1:AddToggle("EnableGames", {
-    Text = "Enable Games (!rockpaper for all)",
+    Text = "Enable Games (!rockpaper & !cekkhodam for all)",
     Default = false,
-    Tooltip = "On = Semua pemain bisa pakai !rockpaper",
+    Tooltip = "On = Semua pemain bisa pakai !rockpaper dan !cekkhodam",
     Callback = function(Value)
         _G.BotVars.GamesEnabled = Value
         debugPrint("GamesEnabled set to: " .. tostring(Value))
@@ -157,7 +164,7 @@ GroupBox1:AddToggle("EnableGames", {
     end,
 })
 
--- 🔹 Input untuk spacing & distance
+-- Input spacing & distance
 GroupBox1:AddInput("JarakIkutInput", { Default = tostring(_G.BotVars.JarakIkut), Text = "Follow Distance (VIP)", Placeholder = "Example: 5",
     Callback = function(Value) _G.BotVars.JarakIkut = tonumber(Value) end
 })
