@@ -1,46 +1,52 @@
-local Players = game:GetService("Players")
-local TextChatService = game:GetService("TextChatService")
+-- RockPaper.lua
+return {
+    Execute = function(msg, client)
+        local vars = _G.BotVars
 
--- Ambil channel RBXGeneral
-local channel
-if TextChatService.TextChannels then
-    channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
-end
+        -- 🔹 Delay 20 detik per pemain
+        local playerCooldowns = vars.RockPaperCooldowns or {}
+        vars.RockPaperCooldowns = playerCooldowns
 
-local function sendChat(msg)
-    if channel then
-        pcall(function()
-            channel:SendAsync(msg)
-        end)
-    else
-        warn("Channel RBXGeneral tidak ditemukan!")
-    end
-end
-
--- Listener untuk setiap pemain
-local function setupPlayer(player)
-    if TextChatService.TextChannels and channel then
-        channel.OnIncomingMessage = function(message)
-            local senderUserId = message.TextSource and message.TextSource.UserId
-            local sender = senderUserId and Players:GetPlayerByUserId(senderUserId)
-            if sender and message.Text:lower():match("^!rockpaper") then
-                sendChat("Siap laksanakan!")
-            end
+        local lastUsed = playerCooldowns[client.UserId] or 0
+        local currentTime = tick()
+        if currentTime - lastUsed < 20 then
+            print("[RockPaper] Tunggu " .. math.ceil(20 - (currentTime - lastUsed)) .. " detik lagi untuk " .. client.Name)
+            return
         end
-    else
-        -- Fallback jika TextChatService tidak tersedia
-        player.Chatted:Connect(function(msg)
-            if msg:lower():match("^!rockpaper") then
-                sendChat("Siap laksanakan!")
-            end
+
+        playerCooldowns[client.UserId] = currentTime
+
+        -- 🔹 TextChatService
+        local TextChatService = game:GetService("TextChatService")
+        local channel
+        if TextChatService.TextChannels then
+            channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+        end
+
+        if not channel then
+            warn("Channel RBXGeneral tidak ditemukan!")
+            return
+        end
+
+        -- 🔹 Pilihan random
+        local choices = { "Batu", "Kertas", "Gunting" }
+        local choice = choices[math.random(1, #choices)]
+
+        -- 🔹 Kirim chat otomatis
+        local messageText = client.Name .. " memulai RockPaper! Bot memilih: " .. choice
+        pcall(function()
+            channel:SendAsync(messageText)
+        end)
+        print("[RockPaper] " .. messageText)
+
+        -- 🔹 Set flag RockPaperMode agar Shield/Sync/Row tidak bisa digunakan
+        vars.RockPaperModeActive = true
+        print("[RockPaper] RockPaper Mode aktif. Shield, Sync, dan Row sementara dinonaktifkan.")
+
+        -- 🔹 Reset mode setelah 5 detik
+        task.delay(5, function()
+            vars.RockPaperModeActive = false
+            print("[RockPaper] RockPaper Mode selesai. Shield, Sync, Row kembali aktif.")
         end)
     end
-end
-
--- Terapkan ke semua pemain yang sudah ada
-for _, plr in ipairs(Players:GetPlayers()) do
-    setupPlayer(plr)
-end
-
--- Listener untuk pemain baru
-Players.PlayerAdded:Connect(setupPlayer)
+}
