@@ -1,12 +1,15 @@
 -- Stats.lua
 -- Command !stats untuk menampilkan UserId, AccountAge, Followers, Following, Join Date
 -- Bisa cek pemain lain dengan !stats {username}
+-- Menggunakan SystemMessage agar UserID tidak menjadi ####
+-- Join Date menggunakan API RoProxy
 
 return {
     Execute = function(msg, client)
         local Players = game:GetService("Players")
         local HttpService = game:GetService("HttpService")
         local vars = _G.BotVars
+        local StarterGui = game:GetService("StarterGui")
 
         vars.StatsCooldowns = vars.StatsCooldowns or {}
         local playerCooldowns = vars.StatsCooldowns
@@ -66,12 +69,13 @@ return {
             followingCount = data.count or 0
         end)
 
-        -- Ambil Join Date (Account Creation) via API Roblox
+        -- Ambil Join Date via RoProxy
         pcall(function()
-            local url = "https://users.roblox.com/v1/users/" .. userId
+            local url = "https://users.roproxy.com/v1/users/" .. userId
             local response = HttpService:GetAsync(url)
             local data = HttpService:JSONDecode(response)
             if data and data.created then
+                -- Format tanggal: YYYY-MM-DDTHH:MM:SS.000Z
                 local year, month, day = data.created:match("^(%d+)%-(%d+)%-(%d+)")
                 if year and month and day then
                     joinDate = day .. "/" .. month .. "/" .. year
@@ -81,16 +85,20 @@ return {
 
         -- Buat message
         local messageText = string.format(
-            "📊 Statistik %s:\n- User ID: %d\n- Account Age (days): %d\n- Followers: %d\n- Following: %d\n- Join Date: %s",
-            targetPlayer.Name, userId, accountAge, followersCount, followingCount, joinDate
+            "📊 Statistik %s:\n- User ID: %s\n- Account Age (days): %d\n- Followers: %d\n- Following: %d\n- Join Date: %s",
+            targetPlayer.Name, tostring(userId), accountAge, followersCount, followingCount, joinDate
         )
 
-        -- Kirim chat
-        local TextChatService = game:GetService("TextChatService")
-        local channel = TextChatService.TextChannels and TextChatService.TextChannels:FindFirstChild("RBXGeneral")
-        if not channel then warn("Channel RBXGeneral tidak ditemukan!") return end
+        -- Kirim chat sebagai SystemMessage agar UserID tidak menjadi ####
+        pcall(function()
+            StarterGui:SetCore("ChatMakeSystemMessage", {
+                Text = messageText,
+                Color = Color3.fromRGB(0, 255, 128),
+                Font = Enum.Font.SourceSansBold,
+                FontSize = Enum.FontSize.Size18
+            })
+        end)
 
-        pcall(function() channel:SendAsync(messageText) end)
         print("[Stats] " .. messageText)
     end
 }
