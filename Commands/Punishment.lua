@@ -1,11 +1,14 @@
 -- Punishment.lua
+-- Modul untuk command !pushup
+
 return {
     Execute = function(msg, client)
-        local TextChatService = game:GetService("TextChatService")
-        local channel = TextChatService.TextChannels and TextChatService.TextChannels.RBXGeneral
+        -- Ambil TextChatService dari global bot vars
+        local TextChatService = _G.BotVars.TextChatService
+        local channel = TextChatService and TextChatService.TextChannels and TextChatService.TextChannels.RBXGeneral
 
-        -- Hanya merespons "!pushup"
-        if msg == "!pushup" and channel then
+        -- Respon hanya untuk !pushup
+        if msg:lower() == "!pushup" and channel then
             pcall(function()
                 channel:SendAsync("JAYA JAYA JAYA")
             end)

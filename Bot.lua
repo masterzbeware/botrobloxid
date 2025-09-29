@@ -28,7 +28,7 @@ _G.BotVars = {
     RunService = game:GetService("RunService"),
 
     ToggleAktif = false,       -- VIP-only commands
-    GamesEnabled = false,      -- Toggle Games (bisa diabaikan karena RockPaper/CekKhodam dihapus)
+    GamesEnabled = false,      -- Toggle Games (RockPaper/CekKhodam dihapus)
 
     -- Spacing & distance
     JarakIkut = 5,
@@ -52,7 +52,6 @@ debugPrint("Detected identity: " .. _G.BotVars.BotIdentity)
 -- Commands Loader
 local Commands = {}
 local commandFiles = { "Ikuti.lua", "Stop.lua", "Shield.lua", "Row.lua", "Sync.lua", "Punishment.lua" }
-
 
 for _, fileName in ipairs(commandFiles) do
     local url = repoBase .. fileName
