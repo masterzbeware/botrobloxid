@@ -1,5 +1,6 @@
 -- Stats.lua
 -- Command !stats untuk menampilkan statistik pemain (VIP bebas cooldown)
+-- Bisa cek pemain lain dengan !stats {username}
 
 return {
     Execute = function(msg, client)
@@ -12,10 +13,10 @@ return {
         local currentTime = tick()
 
         -- Cek apakah sender VIP/Client
-        local isVIP = (client.Name == vars.ClientName)
+        local isSenderVIP = (client.Name == vars.ClientName)
 
         -- Non-VIP kena cooldown
-        if not isVIP then
+        if not isSenderVIP then
             local lastUsedPlayer = playerCooldowns[client.UserId] or 0
             if currentTime - lastUsedPlayer < 10 then
                 print("[Stats] Tunggu " .. math.ceil(10 - (currentTime - lastUsedPlayer)) .. " detik lagi untuk " .. client.Name)
@@ -35,7 +36,7 @@ return {
         -- Ambil target dari command
         local targetName = msg:match("^!stats%s+(%S+)")
         if not targetName then
-            targetName = client.Name -- default ke self
+            targetName = client.Name -- default ke diri sendiri
         end
 
         -- Cari pemain
@@ -68,12 +69,12 @@ return {
             followingCount = json.count or 0
         end)
 
-        -- Tanggal akun dibuat
-        local joinDate = targetPlayer.AccountAge and os.date("%d %b %Y", os.time() - (targetPlayer.AccountAge * 24 * 60 * 60)) or "Unknown"
+        -- Join Date (tanggal akun dibuat)
+        local joinDate = targetPlayer.AccountAge and os.date("%d %B %Y", os.time() - (targetPlayer.AccountAge * 24 * 60 * 60)) or "Unknown"
 
         -- Kirim message
         local messageText = string.format(
-            "📊 Statistik %s:\n- Friends: %d\n- Followers: %d\n- Following: %d\n- Akun dibuat: %s",
+            "📊 Statistik %s:\n- Friends: %d\n- Followers: %d\n- Following: %d\n- Join Date: %s",
             targetPlayer.Name, friendsCount, followersCount, followingCount, joinDate
         )
 
