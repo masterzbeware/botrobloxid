@@ -44,7 +44,7 @@ return {
         local choice = choices[math.random(1, #choices)]
 
         -- 🔹 Kirim chat otomatis
-        local messageText = client.Name .. " memulai RockPaper! Bot memilih: " .. choice
+        local messageText = client.Name .. " memulai RockPaper! | Saya memilih :" .. choice
         pcall(function()
             channel:SendAsync(messageText)
         end)

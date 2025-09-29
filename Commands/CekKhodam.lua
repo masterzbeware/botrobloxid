@@ -48,7 +48,7 @@ return {
         local choice = khodams[math.random(1, #khodams)]
 
         -- 🔹 Kirim chat otomatis
-        local messageText = client.Name .. " melakukan cek khodam! Hasil: " .. choice
+        local messageText = client.Name .. " melakukan cek khodam! | Hasil: " .. choice
         pcall(function()
             channel:SendAsync(messageText)
         end)
