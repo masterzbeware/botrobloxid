@@ -3,9 +3,12 @@
 
 local repoBase = "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Commands/"
 local obsidianRepo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
+
+-- Load library
 local Library = loadstring(game:HttpGet(obsidianRepo .. "Library.lua"))()
 local Options = Library.Options
 
+-- Create UI window
 local Window = Library:CreateWindow({
     Title = "Made by MasterZ",
     Footer = "v3.1.0",
@@ -15,11 +18,12 @@ local Window = Library:CreateWindow({
 })
 local Tabs = { Main = Window:AddTab("Main", "user") }
 
+-- Debug print helper
 local function debugPrint(msg)
     print("[DEBUG] " .. tostring(msg))
 end
 
--- Global Variables
+-- Global variables
 _G.BotVars = {
     Players = game:GetService("Players"),
     TextChatService = game:GetService("TextChatService"),
@@ -28,7 +32,7 @@ _G.BotVars = {
     RunService = game:GetService("RunService"),
 
     ToggleAktif = false,       -- VIP-only commands
-    GamesEnabled = false,      -- Toggle Games (RockPaper/CekKhodam bisa diabaikan)
+    GamesEnabled = false,      -- optional, currently unused
 
     -- Spacing & distance
     JarakIkut = 5,
@@ -37,9 +41,6 @@ _G.BotVars = {
     ShieldSpacing = 4,
     RowSpacing = 4,
     SideSpacing = 4,
-
-    -- Jargon
-    JargonCommand = "!jargon",
 }
 
 -- Identity Detection
@@ -54,7 +55,7 @@ debugPrint("Detected identity: " .. _G.BotVars.BotIdentity)
 
 -- Commands Loader
 local Commands = {}
-local commandFiles = { "Ikuti.lua", "Stop.lua", "Shield.lua", "Row.lua", "Sync.lua", "Topdown.lua", "Jargon.lua" }
+local commandFiles = { "Ikuti.lua", "Stop.lua", "Shield.lua", "Row.lua", "Sync.lua", "Topdown.lua", "Punishment.lua" }
 
 for _, fileName in ipairs(commandFiles) do
     local url = repoBase .. fileName
@@ -63,7 +64,7 @@ for _, fileName in ipairs(commandFiles) do
         local func, err = loadstring(response)
         if func then
             local status, cmdTable = pcall(func)
-            if status and type(cmdTable) == "table" then
+            if status and type(cmdTable) == "table" and cmdTable.Execute then
                 local nameKey = fileName:sub(1, #fileName - 4)
                 Commands[nameKey:lower()] = cmdTable
                 debugPrint("Loaded command via HTTP: " .. nameKey)
@@ -78,25 +79,31 @@ for _, fileName in ipairs(commandFiles) do
     end
 end
 
--- Handle Chat Commands
+-- Handle VIP commands
 local function handleCommand(msg, client)
     msg = msg:lower()
     for name, cmd in pairs(Commands) do
-        if msg:match("^!" .. name) and cmd.Execute then
+        -- Exact command match or with extra arguments
+        if msg:match("^!" .. name .. "%s*") then
             debugPrint("Executing command: " .. name .. " by " .. client.Name)
-            cmd.Execute(msg, client)
+            local ok, err = pcall(function()
+                cmd.Execute(msg, client)
+            end)
+            if not ok then
+                warn("Command error [" .. name .. "]: " .. tostring(err))
+            end
         end
     end
 end
 
--- Setup Client Listener
+-- Setup client listener
 local function setupClient(player)
     local client = player
 
     local function processMessage(msg, sender)
         msg = msg:lower()
 
-        -- Semua pemain bisa !stats
+        -- Universal command: !stats
         if msg:match("^!stats") then
             local statsCmd = loadstring(game:HttpGet(repoBase .. "Stats.lua"))()
             statsCmd.Execute(msg, sender)
@@ -109,7 +116,7 @@ local function setupClient(player)
         end
     end
 
-    -- Gunakan TextChatService jika tersedia
+    -- TextChatService listener if available
     if _G.BotVars.TextChatService and _G.BotVars.TextChatService.TextChannels then
         local generalChannel = _G.BotVars.TextChatService.TextChannels:FindFirstChild("RBXGeneral")
         if generalChannel then
@@ -122,13 +129,14 @@ local function setupClient(player)
             end
         end
     else
+        -- Fallback
         player.Chatted:Connect(function(msg)
             processMessage(msg, player)
         end)
     end
 end
 
--- Apply listener ke semua pemain
+-- Apply listener to all players
 for _, plr in ipairs(_G.BotVars.Players:GetPlayers()) do
     setupClient(plr)
 end
@@ -137,7 +145,6 @@ _G.BotVars.Players.PlayerAdded:Connect(setupClient)
 -- UI
 local GroupBox1 = Tabs.Main:AddLeftGroupbox("Bot Options")
 
--- Bot Identity
 GroupBox1:AddInput("BotIdentity", {
     Default = _G.BotVars.BotIdentity,
     Text = "Bot Identity",
@@ -148,7 +155,7 @@ GroupBox1:AddInput("BotIdentity", {
 GroupBox1:AddToggle("AktifkanBot", {
     Text = "Enable Bot System (VIP only)",
     Default = false,
-    Tooltip = "Enable to accept VIP chat commands (!ikuti, !stop, dll)",
+    Tooltip = "Enable to accept VIP chat commands (!ikuti, !stop, !pushup, dll)",
     Callback = function(Value)
         _G.BotVars.ToggleAktif = Value
         debugPrint("ToggleAktif set to: " .. tostring(Value))
@@ -174,19 +181,6 @@ GroupBox1:AddInput("RowSpacingInput", { Default = tostring(_G.BotVars.RowSpacing
 })
 GroupBox1:AddInput("SideSpacingInput", { Default = tostring(_G.BotVars.SideSpacing), Text = "Side Spacing (Kiri-Kanan)", Placeholder = "Example: 4",
     Callback = function(Value) _G.BotVars.SideSpacing = tonumber(Value) end
-})
-
--- UI khusus Jargon (hanya textbox, tanpa toggle)
-local GroupBoxJargon = Tabs.Main:AddLeftGroupbox("Jargon Command")
-
-GroupBoxJargon:AddInput("JargonText", {
-    Default = _G.BotVars.JargonCommand,
-    Text = "Jargon Command",
-    Placeholder = "Masukkan command untuk Jargon",
-    Callback = function(Value)
-        _G.BotVars.JargonCommand = Value
-        debugPrint("JargonCommand set to: " .. tostring(Value))
-    end
 })
 
 Library:Notify("Bot System Loaded!", 3)
