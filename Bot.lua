@@ -1,4 +1,6 @@
--- Bot.lua (update dengan Punishment.lua)
+-- Bot.lua
+-- MasterZ Beware Bot System (Dispatcher Only)
+
 local repoBase = "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Commands/"
 local obsidianRepo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
 local Library = loadstring(game:HttpGet(obsidianRepo .. "Library.lua"))()
@@ -6,7 +8,7 @@ local Options = Library.Options
 
 local Window = Library:CreateWindow({
     Title = "Made by MasterZ",
-    Footer = "v3.4.0",
+    Footer = "v3.5.0",
     Icon = 0,
     NotifySide = "Right",
     ShowCustomCursor = true,
@@ -25,9 +27,10 @@ _G.BotVars = {
     ClientName = "FiestaGuardVip",
     RunService = game:GetService("RunService"),
 
-    ToggleAktif = false,
-    GamesEnabled = false,
+    ToggleAktif = false,       -- VIP-only commands
+    GamesEnabled = false,      -- Toggle Games (bisa diabaikan karena RockPaper/CekKhodam dihapus)
 
+    -- Spacing & distance
     JarakIkut = 5,
     FollowSpacing = 2,
     ShieldDistance = 5,
@@ -46,9 +49,10 @@ local botMapping = {
 _G.BotVars.BotIdentity = botMapping[tostring(_G.BotVars.LocalPlayer.UserId)] or "Unknown Bot"
 debugPrint("Detected identity: " .. _G.BotVars.BotIdentity)
 
--- Commands Loader (tambahkan Punishment.lua)
+-- Commands Loader
 local Commands = {}
 local commandFiles = { "Ikuti.lua", "Stop.lua", "Shield.lua", "Row.lua", "Sync.lua", "Punishment.lua" }
+
 
 for _, fileName in ipairs(commandFiles) do
     local url = repoBase .. fileName
@@ -57,7 +61,7 @@ for _, fileName in ipairs(commandFiles) do
         local func, err = loadstring(response)
         if func then
             local status, cmdTable = pcall(func)
-            if status and type(cmdTable) == "table" and cmdTable.Execute then
+            if status and type(cmdTable) == "table" then
                 local nameKey = fileName:sub(1, #fileName - 4)
                 Commands[nameKey:lower()] = cmdTable
                 debugPrint("Loaded command via HTTP: " .. nameKey)
@@ -76,12 +80,9 @@ end
 local function handleCommand(msg, client)
     msg = msg:lower()
     for name, cmd in pairs(Commands) do
-        if msg:match("^!" .. name .. "%s*") and cmd.Execute then
+        if msg:match("^!" .. name) and cmd.Execute then
             debugPrint("Executing command: " .. name .. " by " .. client.Name)
-            local ok, err = pcall(function()
-                cmd.Execute(msg, client)
-            end)
-            if not ok then warn("Command error [" .. name .. "]: " .. tostring(err)) end
+            cmd.Execute(msg, client)
         end
     end
 end
@@ -93,24 +94,29 @@ local function setupClient(player)
     local function processMessage(msg, sender)
         msg = msg:lower()
 
+        -- Semua pemain bisa !stats
         if msg:match("^!stats") then
             local statsCmd = loadstring(game:HttpGet(repoBase .. "Stats.lua"))()
             statsCmd.Execute(msg, sender)
             return
         end
 
+        -- VIP-only commands
         if sender.Name == _G.BotVars.ClientName and _G.BotVars.ToggleAktif then
             handleCommand(msg, sender)
         end
     end
 
+    -- Gunakan TextChatService jika tersedia
     if _G.BotVars.TextChatService and _G.BotVars.TextChatService.TextChannels then
         local generalChannel = _G.BotVars.TextChatService.TextChannels:FindFirstChild("RBXGeneral")
         if generalChannel then
             generalChannel.OnIncomingMessage = function(message)
                 local senderUserId = message.TextSource and message.TextSource.UserId
                 local sender = senderUserId and _G.BotVars.Players:GetPlayerByUserId(senderUserId)
-                if sender then processMessage(message.Text, sender) end
+                if sender then
+                    processMessage(message.Text, sender)
+                end
             end
         end
     else
@@ -121,21 +127,25 @@ local function setupClient(player)
 end
 
 -- Apply listener ke semua pemain
-for _, plr in ipairs(_G.BotVars.Players:GetPlayers()) do setupClient(plr) end
+for _, plr in ipairs(_G.BotVars.Players:GetPlayers()) do
+    setupClient(plr)
+end
 _G.BotVars.Players.PlayerAdded:Connect(setupClient)
 
 -- UI
 local GroupBox1 = Tabs.Main:AddLeftGroupbox("Bot Options")
+
 GroupBox1:AddInput("BotIdentity", {
     Default = _G.BotVars.BotIdentity,
     Text = "Bot Identity",
     Placeholder = "Auto-detected bot info",
 })
 
+-- VIP toggle
 GroupBox1:AddToggle("AktifkanBot", {
     Text = "Enable Bot System (VIP only)",
     Default = false,
-    Tooltip = "Enable to accept VIP chat commands (!ikuti, !stop, !pushup, dll)",
+    Tooltip = "Enable to accept VIP chat commands (!ikuti, !stop, dll)",
     Callback = function(Value)
         _G.BotVars.ToggleAktif = Value
         debugPrint("ToggleAktif set to: " .. tostring(Value))
@@ -145,17 +155,23 @@ GroupBox1:AddToggle("AktifkanBot", {
 
 -- Input spacing & distance
 GroupBox1:AddInput("JarakIkutInput", { Default = tostring(_G.BotVars.JarakIkut), Text = "Follow Distance (VIP)", Placeholder = "Example: 5",
-    Callback = function(Value) _G.BotVars.JarakIkut = tonumber(Value) end })
+    Callback = function(Value) _G.BotVars.JarakIkut = tonumber(Value) end
+})
 GroupBox1:AddInput("FollowSpacingInput", { Default = tostring(_G.BotVars.FollowSpacing), Text = "Follow Spacing (Antar Bot)", Placeholder = "Example: 2",
-    Callback = function(Value) _G.BotVars.FollowSpacing = tonumber(Value) end })
+    Callback = function(Value) _G.BotVars.FollowSpacing = tonumber(Value) end
+})
 GroupBox1:AddInput("ShieldDistanceInput", { Default = tostring(_G.BotVars.ShieldDistance), Text = "Shield Distance (VIP)", Placeholder = "Example: 5",
-    Callback = function(Value) _G.BotVars.ShieldDistance = tonumber(Value) end })
+    Callback = function(Value) _G.BotVars.ShieldDistance = tonumber(Value) end
+})
 GroupBox1:AddInput("ShieldSpacingInput", { Default = tostring(_G.BotVars.ShieldSpacing), Text = "Shield Spacing (Rows)", Placeholder = "Example: 4",
-    Callback = function(Value) _G.BotVars.ShieldSpacing = tonumber(Value) end })
+    Callback = function(Value) _G.BotVars.ShieldSpacing = tonumber(Value) end
+})
 GroupBox1:AddInput("RowSpacingInput", { Default = tostring(_G.BotVars.RowSpacing), Text = "Row Spacing (Baris)", Placeholder = "Example: 4",
-    Callback = function(Value) _G.BotVars.RowSpacing = tonumber(Value) end })
+    Callback = function(Value) _G.BotVars.RowSpacing = tonumber(Value) end
+})
 GroupBox1:AddInput("SideSpacingInput", { Default = tostring(_G.BotVars.SideSpacing), Text = "Side Spacing (Kiri-Kanan)", Placeholder = "Example: 4",
-    Callback = function(Value) _G.BotVars.SideSpacing = tonumber(Value) end })
+    Callback = function(Value) _G.BotVars.SideSpacing = tonumber(Value) end
+})
 
 Library:Notify("Bot System Loaded!", 3)
 debugPrint("Bot.lua finished loading")
