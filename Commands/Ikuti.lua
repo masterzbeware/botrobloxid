@@ -1,4 +1,6 @@
--- Ikuti.lua (Perbaikan kompatibilitas dengan Topdown)
+-- Ikuti.lua
+-- Command !ikuti: Bot mengikuti pemain VIP
+
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars
@@ -10,24 +12,9 @@ return {
             return
         end
 
-        -- Matikan semua mode lain
-        vars.TopdownActive = false
-        if vars.TopdownConnection then
-            vars.TopdownConnection:Disconnect()
-            vars.TopdownConnection = nil
-        end
-        vars.ShieldActive = false
-        if vars.ShieldConnection then
-            vars.ShieldConnection:Disconnect()
-            vars.ShieldConnection = nil
-        end
-        vars.RowActive = false
-        if vars.RowConnection then
-            vars.RowConnection:Disconnect()
-            vars.RowConnection = nil
-        end
-
         vars.FollowAllowed = true
+        vars.ShieldActive = false
+        vars.RowActive = false
         vars.CurrentFormasiTarget = client
 
         local humanoid, myRootPart, moving
@@ -55,35 +42,40 @@ return {
         -- Putuskan koneksi lama dulu
         if vars.FollowConnection then vars.FollowConnection:Disconnect() end
 
-        vars.FollowConnection = RunService.Heartbeat:Connect(function()
-            if not vars.FollowAllowed or not client.Character then return end
-            local targetHRP = client.Character:FindFirstChild("HumanoidRootPart")
-            if not targetHRP then return end
+        -- 🔹 Safety check untuk Heartbeat
+        if RunService.Heartbeat then
+            vars.FollowConnection = RunService.Heartbeat:Connect(function()
+                if not vars.FollowAllowed or not client.Character then return end
+                local targetHRP = client.Character:FindFirstChild("HumanoidRootPart")
+                if not targetHRP then return end
 
-            local jarakIkut = tonumber(vars.JarakIkut) or 5
-            local followSpacing = tonumber(vars.FollowSpacing) or 2
+                local jarakIkut = tonumber(vars.JarakIkut) or 5
+                local followSpacing = tonumber(vars.FollowSpacing) or 2
 
-            -- Urutan bot FIXED
-            local orderedBots = {
-                "8802945328", -- Bot1
-                "8802949363", -- Bot2
-                "8802939883", -- Bot3
-                "8802998147", -- Bot4
-            }
+                -- Urutan bot FIXED
+                local orderedBots = {
+                    "8802945328", -- Bot1
+                    "8802949363", -- Bot2
+                    "8802939883", -- Bot3
+                    "8802998147", -- Bot4
+                }
 
-            local myUserId = tostring(player.UserId)
-            local index = 1
-            for i, uid in ipairs(orderedBots) do
-                if uid == myUserId then
-                    index = i
-                    break
+                local myUserId = tostring(player.UserId)
+                local index = 1
+                for i, uid in ipairs(orderedBots) do
+                    if uid == myUserId then
+                        index = i
+                        break
+                    end
                 end
-            end
 
-            -- Hitung posisi ikuti VIP
-            local followPos = targetHRP.Position - targetHRP.CFrame.LookVector * (jarakIkut + (index - 1) * followSpacing)
-            moveToPosition(followPos)
-        end)
+                -- Hitung posisi ikuti VIP
+                local followPos = targetHRP.Position - targetHRP.CFrame.LookVector * (jarakIkut + (index - 1) * followSpacing)
+                moveToPosition(followPos)
+            end)
+        else
+            warn("[Ikuti] RunService.Heartbeat tidak tersedia!")
+        end
 
         print("[COMMAND] Bot mengikuti client:", client.Name)
     end
