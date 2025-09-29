@@ -5,15 +5,16 @@ return {
     Execute = function(msg, client)
         local vars = _G.BotVars
 
-        -- Setup table stats per pemain
-        vars.PlayerStats = vars.PlayerStats or {}
-        local stats = vars.PlayerStats[client.UserId] or { RockPaper = 0, CekKhodam = 0 }
-        vars.PlayerStats[client.UserId] = stats
+        vars.Stats = vars.Stats or {}  -- pastikan tabel Stats ada
+        local userStats = vars.Stats[client.UserId] or {}
 
-        -- Jika memanggil sendiri, tampilkan stats mereka
+        local rockPaperCount = userStats.RockPaperCount or 0
+        local cekKhodamCount = userStats.CekKhodamCount or 0
+
+        -- Tampilkan pesan ke chat
         local messageText = string.format(
             "📊 Statistik %s:\n- RockPaper dimainkan: %d kali\n- CekKhodam dimainkan: %d kali",
-            client.Name, stats.RockPaper, stats.CekKhodam
+            client.Name, rockPaperCount, cekKhodamCount
         )
 
         -- Kirim ke TextChatService
@@ -31,6 +32,7 @@ return {
         pcall(function()
             channel:SendAsync(messageText)
         end)
+
         print("[Stats] " .. messageText)
     end
 }
