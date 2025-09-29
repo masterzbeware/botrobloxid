@@ -75,7 +75,7 @@ return {
         local function moveToPosition(targetPos, lookAtPos)
             if not humanoid or not myRootPart then return end
             if moving then return end
-            if (myRootPart.Position - targetPos).Magnitude < 2 then return end
+            if (myRootPart.Position - targetPos).Magnitude < 1 then return end
 
             moving = true
             humanoid:MoveTo(targetPos)
@@ -104,21 +104,21 @@ return {
 
             local targetPos, lookAtPos
             if index == 1 then
-                -- Bot1 depan VIP
+                -- Bot1 depan VIP, membelakangi VIP tapi menghadap ke depan
                 targetPos = targetHRP.Position + targetHRP.CFrame.LookVector * shieldDistance
-                lookAtPos = targetHRP.Position - targetHRP.CFrame.LookVector * 50
+                lookAtPos = targetPos + targetHRP.CFrame.LookVector * 50
             elseif index == 2 then
                 -- Bot2 kanan belakang VIP
                 targetPos = targetHRP.Position - targetHRP.CFrame.RightVector * shieldSpacing - targetHRP.CFrame.LookVector * (shieldDistance / 2)
-                lookAtPos = targetHRP.Position + targetHRP.CFrame.LookVector * 50
+                lookAtPos = targetPos + targetHRP.CFrame.LookVector * 50
             elseif index == 3 then
                 -- Bot3 kiri belakang VIP
                 targetPos = targetHRP.Position + targetHRP.CFrame.RightVector * shieldSpacing - targetHRP.CFrame.LookVector * (shieldDistance / 2)
-                lookAtPos = targetHRP.Position + targetHRP.CFrame.LookVector * 50
+                lookAtPos = targetPos + targetHRP.CFrame.LookVector * 50
             else
                 -- fallback
                 targetPos = targetHRP.Position - targetHRP.CFrame.LookVector * shieldDistance
-                lookAtPos = targetHRP.Position + targetHRP.CFrame.LookVector * 50
+                lookAtPos = targetPos + targetHRP.CFrame.LookVector * 50
             end
 
             moveToPosition(targetPos, lookAtPos)
