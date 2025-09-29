@@ -33,8 +33,8 @@ return {
         -- Pilihan khodam random
         local khodams = {
             "Pocong Botak", "Cacing Gendut", "Kuntilanak Selfie", "Jin Kentut Api",
-            "Genderuwo Imut", "Pocong Nyeker", "Tuyul Pencinta Cilok", "Kuyang Kesasar",
-            "Pocong Joget Koplo", "Jin Botak Licin"
+            "Genderuwo Imut", "Pocong Nyeker", "Cilok Basi", "Kuyang Kesasar",
+            "Pocong Koplo", "Jin Botak Licin"
         }
         local choice = khodams[math.random(1, #khodams)]
 
