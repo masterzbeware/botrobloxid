@@ -11,7 +11,7 @@ local Options = Library.Options
 -- Create UI window
 local Window = Library:CreateWindow({
     Title = "Made by MasterZ",
-    Footer = "v3.1.0",
+    Footer = "v2.2.0",
     Icon = 0,
     NotifySide = "Right",
     ShowCustomCursor = true,
@@ -55,7 +55,7 @@ debugPrint("Detected identity: " .. _G.BotVars.BotIdentity)
 
 -- Commands Loader
 local Commands = {}
-local commandFiles = { "Ikuti.lua", "Stop.lua", "Shield.lua", "Row.lua", "Sync.lua", "Topdown.lua", "Punishment.lua" }
+local commandFiles = { "Ikuti.lua", "Stop.lua", "Shield.lua", "Row.lua", "Sync.lua", "Punishment.lua" }
 
 for _, fileName in ipairs(commandFiles) do
     local url = repoBase .. fileName
