@@ -1,5 +1,5 @@
 -- RockPaper.lua
--- Command !rockpaper dengan cooldown per pemain dan global + tracking untuk stats
+-- Command !rockpaper dengan cooldown per pemain dan global + tracking untuk stats + emoji
 
 return {
     Execute = function(msg, client)
@@ -19,7 +19,7 @@ return {
         -- 🔹 Setup global cooldown
         vars.RockPaperGlobalCooldown = vars.RockPaperGlobalCooldown or 0
         if currentTime - vars.RockPaperGlobalCooldown < 5 then
-            print("[RockPaper] Tunggu " .. math.ceil(10 - (currentTime - vars.RockPaperGlobalCooldown)) .. " detik lagi untuk semua pemain")
+            print("[RockPaper] Tunggu " .. math.ceil(5 - (currentTime - vars.RockPaperGlobalCooldown)) .. " detik lagi untuk semua pemain")
             return
         end
 
@@ -44,12 +44,20 @@ return {
             return
         end
 
-        -- 🔹 Pilihan random
-        local choices = { "Batu", "Kertas", "Gunting" }
+        -- 🔹 Pilihan random dengan emoji
+        local choices = {
+            { Name = "Batu", Emoji = "✊" },
+            { Name = "Kertas", Emoji = "✋" },
+            { Name = "Gunting", Emoji = "✌️" }
+        }
         local choice = choices[math.random(1, #choices)]
 
         -- 🔹 Kirim chat otomatis
-        local messageText = client.Name .. " memulai RockPaper! | Saya memilih: " .. choice
+        local messageText = string.format(
+            "%s memulai RockPaper! Saya memilih: %s %s",
+            client.Name, choice.Name, choice.Emoji
+        )
+
         pcall(function()
             channel:SendAsync(messageText)
         end)
