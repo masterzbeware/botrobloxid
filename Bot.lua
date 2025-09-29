@@ -8,7 +8,7 @@ local Options = Library.Options
 
 local Window = Library:CreateWindow({
     Title = "Made by MasterZ",
-    Footer = "v3.3.0",
+    Footer = "v3.4.0",
     Icon = 0,
     NotifySide = "Right",
     ShowCustomCursor = true,
@@ -90,6 +90,15 @@ local function setupClient(player)
     local client = player
 
     local function processMessage(msg, sender)
+        msg = msg:lower()
+
+        -- Semua pemain bisa !stats
+        if msg:match("^!stats") then
+            local statsCmd = loadstring(game:HttpGet(repoBase .. "Stats.lua"))()
+            statsCmd.Execute(msg, sender)
+            return
+        end
+
         -- VIP-only commands
         if sender.Name == _G.BotVars.ClientName and _G.BotVars.ToggleAktif then
             handleCommand(msg, sender)
@@ -97,10 +106,10 @@ local function setupClient(player)
 
         -- Games toggle (semua pemain bisa !rockpaper & !cekkhodam)
         if _G.BotVars.GamesEnabled then
-            if msg:lower():match("^!rockpaper") then
+            if msg:match("^!rockpaper") then
                 local rockPaperCmd = loadstring(game:HttpGet(repoBase .. "RockPaper.lua"))()
                 rockPaperCmd.Execute(msg, sender)
-            elseif msg:lower():match("^!cekkhodam") then
+            elseif msg:match("^!cekkhodam") then
                 local cekKhodamCmd = loadstring(game:HttpGet(repoBase .. "CekKhodam.lua"))()
                 cekKhodamCmd.Execute(msg, sender)
             end
@@ -154,7 +163,7 @@ GroupBox1:AddToggle("AktifkanBot", {
 
 -- Games toggle
 GroupBox1:AddToggle("EnableGames", {
-    Text = "Enable Games (!rockpaper & !cekkhodam for all)",
+    Text = "Enable Games (!rockpaper, !cekkhodam for all)",
     Default = false,
     Tooltip = "On = Semua pemain bisa pakai !rockpaper dan !cekkhodam",
     Callback = function(Value)
