@@ -8,7 +8,7 @@ local Options = Library.Options
 
 local Window = Library:CreateWindow({
     Title = "Made by MasterZ",
-    Footer = "v3.6.2",
+    Footer = "v3.1.0",
     Icon = 0,
     NotifySide = "Right",
     ShowCustomCursor = true,
