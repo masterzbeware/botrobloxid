@@ -43,7 +43,16 @@ return {
         pcall(function()
             channel:SendAsync(messageText)
         end)
-
         print("[RockPaper] " .. messageText)
+
+        -- 🔹 Set flag RockPaperMode agar Shield/Sync/Row tidak bisa digunakan
+        vars.RockPaperModeActive = true
+        print("[RockPaper] RockPaper Mode aktif. Shield, Sync, dan Row sementara dinonaktifkan.")
+
+        -- 🔹 Reset mode setelah 5 detik (bisa diubah sesuai kebutuhan)
+        task.delay(5, function()
+            vars.RockPaperModeActive = false
+            print("[RockPaper] RockPaper Mode selesai. Shield, Sync, Row kembali aktif.")
+        end)
     end
 }

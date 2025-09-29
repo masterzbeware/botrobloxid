@@ -1,6 +1,12 @@
 return {
     Execute = function(msg, client)
         local Vars = _G.BotVars
+
+        -- 🔹 Cek RockPaper Mode
+        if Vars.RockPaperModeActive then
+            return
+        end
+
         local targetName = msg:match("^!sync%s+(.+)")
         if targetName then
             local found = nil

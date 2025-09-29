@@ -2,6 +2,18 @@
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars or {}
+
+        -- 🔹 Cek RockPaper Mode
+        if vars.RockPaperModeActive then
+            local channel = vars.TextChatService.TextChannels and vars.TextChatService.TextChannels.RBXGeneral
+            if channel then
+                pcall(function()
+                    channel:SendAsync("Tidak bisa mengeksekusi Shield saat RockPaper Mode aktif!")
+                end)
+            end
+            return
+        end
+
         local RunService = vars.RunService or game:GetService("RunService")
         local Players = game:GetService("Players")
         local TextChatService = vars.TextChatService or game:GetService("TextChatService")
@@ -112,15 +124,15 @@ return {
                             if char and char:FindFirstChild("HumanoidRootPart") then
                                 local dist = (char.HumanoidRootPart.Position - targetHRP.Position).Magnitude
                                 if dist <= shieldDistance then
-                                    -- Kirim chat global peringatan dengan nama pemain
+                                    -- Kirim chat global peringatan
                                     local channel = TextChatService.TextChannels and TextChatService.TextChannels.RBXGeneral
                                     if channel then
                                         pcall(function()
-                                            channel:SendAsync(plr.Name .. " Harap menjauh ini Area Vip!")
+                                            channel:SendAsync(plr.Name .. " Harap menjauh dari Area VIP!")
                                         end)
                                     end
-                                    lastWarningTime = now -- update timestamp terakhir
-                                    break -- cukup satu chat per warningDelay
+                                    lastWarningTime = now
+                                    break
                                 end
                             end
                         end

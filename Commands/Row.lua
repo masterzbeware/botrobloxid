@@ -2,6 +2,18 @@
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars or {}
+
+        -- 🔹 Cek RockPaper Mode
+        if vars.RockPaperModeActive then
+            local channel = vars.TextChatService.TextChannels and vars.TextChatService.TextChannels.RBXGeneral
+            if channel then
+                pcall(function()
+                    channel:SendAsync("Tidak bisa mengeksekusi Row saat RockPaper Mode aktif!")
+                end)
+            end
+            return
+        end
+
         local Players = game:GetService("Players")
         local RunService = game:GetService("RunService")
         local TextChatService = game:GetService("TextChatService")
@@ -22,7 +34,7 @@ return {
         })
 
         if vars.RowActive then
-            -- 🔹 Chat global awal (sebelum barisan terbentuk)
+            -- 🔹 Chat global awal
             local channel = TextChatService.TextChannels and TextChatService.TextChannels.RBXGeneral
             if channel then
                 pcall(function()
