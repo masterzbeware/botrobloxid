@@ -1,7 +1,5 @@
--- Simple RockPaper Chat Response
 local Players = game:GetService("Players")
 local TextChatService = game:GetService("TextChatService")
-local LocalPlayer = Players.LocalPlayer
 
 -- Ambil channel RBXGeneral
 local channel
@@ -9,7 +7,6 @@ if TextChatService.TextChannels then
     channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
 end
 
--- Fungsi kirim chat
 local function sendChat(msg)
     if channel then
         pcall(function()
@@ -20,18 +17,30 @@ local function sendChat(msg)
     end
 end
 
--- Listen chat LocalPlayer
-LocalPlayer.Chatted:Connect(function(msg)
-    if msg:lower():match("^!rockpaper") then
-        sendChat("Siap laksanakan!")
-    end
-end)
-
--- Listen chat dari semua pemain (opsional, jika ingin semua pemain bisa trigger)
-Players.PlayerAdded:Connect(function(player)
-    player.Chatted:Connect(function(msg)
-        if player == LocalPlayer and msg:lower():match("^!rockpaper") then
-            sendChat("Siap laksanakan!")
+-- Listener untuk setiap pemain
+local function setupPlayer(player)
+    if TextChatService.TextChannels and channel then
+        channel.OnIncomingMessage = function(message)
+            local senderUserId = message.TextSource and message.TextSource.UserId
+            local sender = senderUserId and Players:GetPlayerByUserId(senderUserId)
+            if sender and message.Text:lower():match("^!rockpaper") then
+                sendChat("Siap laksanakan!")
+            end
         end
-    end)
-end)
+    else
+        -- Fallback jika TextChatService tidak tersedia
+        player.Chatted:Connect(function(msg)
+            if msg:lower():match("^!rockpaper") then
+                sendChat("Siap laksanakan!")
+            end
+        end)
+    end
+end
+
+-- Terapkan ke semua pemain yang sudah ada
+for _, plr in ipairs(Players:GetPlayers()) do
+    setupPlayer(plr)
+end
+
+-- Listener untuk pemain baru
+Players.PlayerAdded:Connect(setupPlayer)
