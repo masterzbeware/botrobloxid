@@ -38,7 +38,9 @@ _G.BotVars = {
     RowSpacing = 4,
     SideSpacing = 4,
 
-    JargonAktif = false,       -- Toggle untuk !jargon
+    -- Jargon
+    JargonAktif = false,
+    JargonCommand = "!jargon",
 }
 
 -- Identity Detection
@@ -82,12 +84,11 @@ local function handleCommand(msg, client)
     msg = msg:lower()
     for name, cmd in pairs(Commands) do
         if msg:match("^!" .. name) and cmd.Execute then
-            -- Jika command adalah "jargon", cek toggle JargonAktif
+            -- Jika command adalah jargon, cek toggle JargonAktif
             if name == "jargon" and not _G.BotVars.JargonAktif then
                 debugPrint("Jargon command ditekan tapi toggle mati.")
                 return
             end
-
             debugPrint("Executing command: " .. name .. " by " .. client.Name)
             cmd.Execute(msg, client)
         end
@@ -142,6 +143,7 @@ _G.BotVars.Players.PlayerAdded:Connect(setupClient)
 -- UI
 local GroupBox1 = Tabs.Main:AddLeftGroupbox("Bot Options")
 
+-- Bot Identity
 GroupBox1:AddInput("BotIdentity", {
     Default = _G.BotVars.BotIdentity,
     Text = "Bot Identity",
@@ -191,6 +193,16 @@ GroupBoxJargon:AddToggle("EnableJargon", {
         _G.BotVars.JargonAktif = Value
         Library:Notify("Jargon Command " .. (Value and "Enabled" or "Disabled"), 3)
         debugPrint("JargonAktif set to: " .. tostring(Value))
+    end
+})
+
+GroupBoxJargon:AddInput("JargonText", {
+    Default = _G.BotVars.JargonCommand,
+    Text = "Jargon Command",
+    Placeholder = "Masukkan command untuk Jargon",
+    Callback = function(Value)
+        _G.BotVars.JargonCommand = Value
+        debugPrint("JargonCommand set to: " .. tostring(Value))
     end
 })
 
