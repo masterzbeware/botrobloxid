@@ -8,7 +8,7 @@ local Options = Library.Options
 
 local Window = Library:CreateWindow({
     Title = "Made by MasterZ",
-    Footer = "v3.1.0",
+    Footer = "v3.2.0",
     Icon = 0,
     NotifySide = "Right",
     ShowCustomCursor = true,
@@ -91,11 +91,11 @@ local function setupClient(player)
 
     local function processMessage(msg, sender)
         -- VIP-only commands
-        if sender.Name == _G.BotVars.ClientName then
+        if sender.Name == _G.BotVars.ClientName and _G.BotVars.ToggleAktif then
             handleCommand(msg, sender)
         end
 
-        -- Games toggle (semua pemain bisa !rockpaper)
+        -- Games toggle (semua pemain bisa !rockpaper & !cekkhodam)
         if _G.BotVars.GamesEnabled then
             if msg:lower():match("^!rockpaper") then
                 local rockPaperCmd = loadstring(game:HttpGet(repoBase .. "RockPaper.lua"))()

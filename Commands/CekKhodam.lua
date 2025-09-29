@@ -1,43 +1,45 @@
 -- CekKhodam.lua
--- Command !cekkhodam untuk semua pemain
+-- Command !cekkhodam dengan cooldown per pemain dan global
 
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars
 
-        -- Inisialisasi cooldown
+        -- 🔹 Setup table cooldown per pemain
         vars.CekKhodamCooldowns = vars.CekKhodamCooldowns or {}
-        vars.CekKhodamLastGlobal = vars.CekKhodamLastGlobal or 0
-
         local playerCooldowns = vars.CekKhodamCooldowns
-        local lastUsed = playerCooldowns[client.UserId] or 0
+
+        local lastUsedPlayer = playerCooldowns[client.UserId] or 0
         local currentTime = tick()
-
-        -- Cek cooldown per pemain (25 detik)
-        if currentTime - lastUsed < 25 then
-            print("[CekKhodam] Tunggu " .. math.ceil(25 - (currentTime - lastUsed)) .. " detik lagi untuk " .. client.Name)
+        if currentTime - lastUsedPlayer < 25 then
+            print("[CekKhodam] Tunggu " .. math.ceil(25 - (currentTime - lastUsedPlayer)) .. " detik lagi untuk " .. client.Name)
             return
         end
 
-        -- Cek global cooldown untuk semua pemain (10 detik)
-        if currentTime - vars.CekKhodamLastGlobal < 10 then
-            print("[CekKhodam] Tunggu " .. math.ceil(10 - (currentTime - vars.CekKhodamLastGlobal)) .. " detik sebelum semua pemain bisa pakai lagi")
+        -- 🔹 Setup global cooldown
+        vars.CekKhodamGlobalCooldown = vars.CekKhodamGlobalCooldown or 0
+        if currentTime - vars.CekKhodamGlobalCooldown < 10 then
+            print("[CekKhodam] Tunggu " .. math.ceil(10 - (currentTime - vars.CekKhodamGlobalCooldown)) .. " detik lagi untuk semua pemain")
             return
         end
 
-        -- Set cooldown
+        -- 🔹 Update cooldown
         playerCooldowns[client.UserId] = currentTime
-        vars.CekKhodamLastGlobal = currentTime
+        vars.CekKhodamGlobalCooldown = currentTime
 
-        -- Ambil channel RBXGeneral
+        -- 🔹 TextChatService
         local TextChatService = game:GetService("TextChatService")
-        local channel = TextChatService.TextChannels and TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+        local channel
+        if TextChatService.TextChannels then
+            channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+        end
+
         if not channel then
             warn("Channel RBXGeneral tidak ditemukan!")
             return
         end
 
-        -- List khodam
+        -- 🔹 Pilihan khodam random
         local khodams = {
             "Pocong Botak", "Tuyul Gendut", "Kuntilanak Selfie", "Jin Kentut Api",
             "Genderuwo Imut", "Pocong Nyeker", "Tuyul Pencinta Cilok", "Kuyang Kesasar",
@@ -45,11 +47,12 @@ return {
         }
         local choice = khodams[math.random(1, #khodams)]
 
-        -- Kirim chat otomatis
+        -- 🔹 Kirim chat otomatis
         local messageText = client.Name .. " melakukan cek khodam! Hasil: " .. choice
         pcall(function()
             channel:SendAsync(messageText)
         end)
+
         print("[CekKhodam] " .. messageText)
     end
 }
