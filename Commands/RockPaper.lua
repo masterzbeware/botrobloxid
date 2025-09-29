@@ -1,58 +1,96 @@
 -- RockPaper.lua
+-- RockPaper command for MasterZ Beware Bot System
+
 return {
     Execute = function(msg, client)
-        local vars = _G.BotVars
+        local Vars = _G.BotVars
 
-        -- 🔹 Cek toggle RockPaper
-        if vars.RockPaperEnabled == false then
-            print("[RockPaper] Fitur RockPaper sedang OFF, tidak mengeksekusi command.")
+        -- 🔹 Pastikan Bot system aktif
+        if not Vars.ToggleAktif then
+            local channel = Vars.TextChatService.TextChannels and Vars.TextChatService.TextChannels.RBXGeneral
+            if channel then
+                pcall(function()
+                    channel:SendAsync("Bot system not active. Cannot execute RockPaper.")
+                end)
+            end
             return
         end
 
-        -- 🔹 Delay 20 detik per pemain
-        local playerCooldowns = vars.RockPaperCooldowns or {}
-        vars.RockPaperCooldowns = playerCooldowns
-
-        local lastUsed = playerCooldowns[client.UserId] or 0
-        local currentTime = tick()
-        if currentTime - lastUsed < 20 then
-            print("[RockPaper] Tunggu " .. math.ceil(20 - (currentTime - lastUsed)) .. " detik lagi untuk " .. client.Name)
+        -- 🔹 Pastikan RockPaper system enabled
+        if not Vars.RockPaperEnabled then
+            local channel = Vars.TextChatService.TextChannels and Vars.TextChatService.TextChannels.RBXGeneral
+            if channel then
+                pcall(function()
+                    channel:SendAsync("RockPaper system is disabled!")
+                end)
+            end
             return
         end
 
-        playerCooldowns[client.UserId] = currentTime
-
-        -- 🔹 TextChatService
-        local TextChatService = game:GetService("TextChatService")
-        local channel
-        if TextChatService.TextChannels then
-            channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
-        end
-
-        if not channel then
-            warn("Channel RBXGeneral tidak ditemukan!")
+        -- 🔹 Cek apakah RockPaper sudah aktif untuk mencegah spam
+        if Vars.RockPaperModeActive then
+            local channel = Vars.TextChatService.TextChannels and Vars.TextChatService.TextChannels.RBXGeneral
+            if channel then
+                pcall(function()
+                    channel:SendAsync("RockPaper mode is already active!")
+                end)
+            end
             return
         end
 
-        -- 🔹 Pilihan random
-        local choices = { "Batu", "Kertas", "Gunting" }
-        local choice = choices[math.random(1, #choices)]
+        -- 🔹 Ambil target player jika ada
+        local targetName = msg:match("^!rockpaper%s*(.*)")
+        local targetPlayer = nil
+        if targetName and targetName ~= "" then
+            for _, plr in ipairs(Vars.Players:GetPlayers()) do
+                if plr.DisplayName:lower() == targetName:lower() or plr.Name:lower() == targetName:lower() then
+                    targetPlayer = plr
+                    break
+                end
+            end
+        end
 
-        -- 🔹 Kirim chat otomatis
-        local messageText = client.Name .. " memulai RockPaper! Bot memilih: " .. choice
-        pcall(function()
-            channel:SendAsync(messageText)
+        -- 🔹 Aktifkan mode RockPaper
+        Vars.RockPaperModeActive = true
+        Vars.FollowAllowed = false
+        Vars.RowActive = false
+        Vars.ShieldActive = false
+        Vars.CurrentFormasiTarget = targetPlayer or client
+
+        -- 🔹 Kirim notifikasi lokal
+        game.StarterGui:SetCore("SendNotification", {
+            Title = "RockPaper",
+            Text = "RockPaper mode activated by " .. client.Name
+        })
+
+        -- 🔹 Kirim notifikasi global
+        local channel = Vars.TextChatService.TextChannels and Vars.TextChatService.TextChannels.RBXGeneral
+        if channel then
+            pcall(function()
+                local msgText = "RockPaper mode activated by " .. client.Name
+                if targetPlayer then
+                    msgText = msgText .. " targeting " .. targetPlayer.DisplayName
+                end
+                channel:SendAsync(msgText)
+            end)
+        end
+
+        -- 🔹 Durasi RockPaper (misal 10 detik)
+        task.spawn(function()
+            task.wait(10)
+            Vars.RockPaperModeActive = false
+            local channel2 = Vars.TextChatService.TextChannels and Vars.TextChatService.TextChannels.RBXGeneral
+            if channel2 then
+                pcall(function()
+                    channel2:SendAsync("RockPaper mode deactivated!")
+                end)
+            end
+            game.StarterGui:SetCore("SendNotification", {
+                Title = "RockPaper",
+                Text = "RockPaper mode deactivated"
+            })
         end)
-        print("[RockPaper] " .. messageText)
 
-        -- 🔹 Set flag RockPaperMode agar Shield/Sync/Row tidak bisa digunakan
-        vars.RockPaperModeActive = true
-        print("[RockPaper] RockPaper Mode aktif. Shield, Sync, dan Row sementara dinonaktifkan.")
-
-        -- 🔹 Reset mode setelah 5 detik (bisa diubah sesuai kebutuhan)
-        task.delay(5, function()
-            vars.RockPaperModeActive = false
-            print("[RockPaper] RockPaper Mode selesai. Shield, Sync, Row kembali aktif.")
-        end)
+        print("[COMMAND] RockPaper mode activated by", client.Name, "target:", targetPlayer and targetPlayer.Name or "None")
     end
 }

@@ -12,7 +12,7 @@ local Options = Library.Options
 -- ✅ Buat Window UI
 local Window = Library:CreateWindow({
     Title = "Made by MasterZ",
-    Footer = "v1.0.0",
+    Footer = "v3.0.0",
     Icon = 0,
     NotifySide = "Right",
     ShowCustomCursor = true,
@@ -33,10 +33,10 @@ _G.BotVars = {
     ClientName = "FiestaGuardVip",
 
     ToggleAktif = false,
-    RockPaperEnabled = true,
-    RockPaperModeActive = false, -- status mode saat aktif
-    RockPaperCooldowns = {},
+    RockPaperEnabled = true, -- Toggle khusus RockPaper
+    RockPaperCooldowns = {}, -- Cooldown per pemain
 
+    -- 🔹 Default spacing & distance values
     JarakIkut = 5,
     FollowSpacing = 2,
     ShieldDistance = 5,
@@ -84,34 +84,34 @@ for _, fileName in ipairs(commandFiles) do
     end
 end
 
--- ✅ Handle Chat Commands (Updated for RockPaper Mode)
+-- ✅ Handle Chat Commands
 local function handleCommand(msg, client)
-    if not _G.BotVars.ToggleAktif then return end
+    if not _G.BotVars.ToggleAktif then return end -- Bot system harus aktif
     msg = msg:lower()
 
-    -- 🔹 Ambil nama command
-    local cmdName = msg:match("^!(%w+)")
-    if not cmdName then return end
+    for name, cmd in pairs(Commands) do
+        if msg:match("^!" .. name) and cmd.Execute then
+            -- 🔹 Cek khusus RockPaper
+            if name == "rockpaper" and not _G.BotVars.RockPaperEnabled then
+                local channel = _G.BotVars.TextChatService.TextChannels and _G.BotVars.TextChatService.TextChannels.RBXGeneral
+                if channel then
+                    pcall(function()
+                        channel:SendAsync("RockPaper system disabled!")
+                    end)
+                end
+                return
+            end
 
-    -- 🔹 RockPaper selalu bisa dijalankan
-    if cmdName ~= "rockpaper" and _G.BotVars.RockPaperModeActive then
-        game.StarterGui:SetCore("SendNotification", {
-            Title = "Command Blocked",
-            Text = "Tidak bisa menjalankan command '"..cmdName.."' saat RockPaper Mode aktif!"
-        })
-        return
-    end
-
-    -- 🔹 Jalankan command jika ada
-    local cmd = Commands[cmdName]
-    if cmd and cmd.Execute then
-        debugPrint("Executing command: " .. cmdName .. " by " .. client.Name)
-        cmd.Execute(msg, client)
+            debugPrint("Executing command: " .. name .. " by " .. client.Name)
+            cmd.Execute(msg, client)
+        end
     end
 end
 
 -- ✅ Setup Client Listener (VIP + non-VIP for !rockpaper)
 local function setupClient(player)
+    local client = player
+
     if _G.BotVars.TextChatService and _G.BotVars.TextChatService.TextChannels then
         local generalChannel = _G.BotVars.TextChatService.TextChannels.RBXGeneral
         if generalChannel then
@@ -119,8 +119,10 @@ local function setupClient(player)
                 local senderUserId = message.TextSource and message.TextSource.UserId
                 local sender = senderUserId and _G.BotVars.Players:GetPlayerByUserId(senderUserId)
                 if sender then
+                    -- 🔹 Command !rockpaper bisa semua pemain
                     if message.Text:lower():match("^!rockpaper") then
                         handleCommand(message.Text, sender)
+                    -- 🔹 Command lain tetap VIP-only
                     elseif sender.Name == _G.BotVars.ClientName then
                         handleCommand(message.Text, sender)
                     end
