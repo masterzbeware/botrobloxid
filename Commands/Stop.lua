@@ -1,21 +1,34 @@
 -- Stop.lua
--- Command !stop: Menghentikan semua aksi bot (follow, shield, row, sync)
+-- Command !stop: Menghentikan semua aksi bot (follow, shield, row, sync, topdown)
 
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars
 
-        -- Nonaktifkan semua formasi / follow / sync
+        -- Nonaktifkan semua formasi / follow / sync / topdown
         vars.FollowAllowed = false
         vars.ShieldActive = false
         vars.RowActive = false
+        vars.TopdownActive = false   -- Tambahkan ini untuk menghentikan Topdown
         vars.CurrentFormasiTarget = nil
-        vars.SyncActive = false  -- Tambahkan ini untuk menghentikan sync
+        vars.SyncActive = false      -- Tambahkan ini untuk menghentikan sync
 
         -- Putuskan koneksi Heartbeat kalau ada
         if vars.FollowConnection then
             vars.FollowConnection:Disconnect()
             vars.FollowConnection = nil
+        end
+        if vars.ShieldConnection then
+            vars.ShieldConnection:Disconnect()
+            vars.ShieldConnection = nil
+        end
+        if vars.RowConnection then
+            vars.RowConnection:Disconnect()
+            vars.RowConnection = nil
+        end
+        if vars.TopdownConnection then
+            vars.TopdownConnection:Disconnect()
+            vars.TopdownConnection = nil
         end
 
         -- Notifikasi menggunakan Library Obsidian
@@ -24,7 +37,7 @@ return {
         end)
 
         if success and Library then
-            Library:Notify("Bot stopped all actions (including sync)", 3)
+            Library:Notify("Bot stopped all actions (including Topdown & sync)", 3)
         else
             warn("[Stop.lua] Gagal load Library.lua untuk notifikasi")
         end

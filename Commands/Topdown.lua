@@ -1,4 +1,4 @@
--- Topdown.lua (3-bodyguard Top-Down formation + warning)
+-- Topdown.lua (3-bodyguard Top-Down formation + stable movement + warning)
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars or {}
@@ -42,8 +42,9 @@ return {
             return
         end
 
-        local shieldDistance = tonumber(vars.ShieldDistance) or 5
-        local shieldSpacing  = tonumber(vars.ShieldSpacing) or 4
+        -- Atur jarak agar bot tidak bertabrakan
+        local shieldDistance = tonumber(vars.ShieldDistance) or 7
+        local shieldSpacing  = tonumber(vars.ShieldSpacing) or 5
 
         local botMapping = vars.BotMapping or {
             ["8802945328"] = "Bot1 - XBODYGUARDVIP01",
@@ -68,14 +69,16 @@ return {
         player.CharacterAdded:Connect(updateBotRefs)
         updateBotRefs()
 
-        -- Timestamp terakhir chat
+        -- Timestamp terakhir chat & movement cooldown
         local lastWarningTime = 0
         local warningDelay = 18 -- detik
+        local lastMoveTime = 0
+        local moveCooldown = 0.1 -- detik
 
         local function moveToPosition(targetPos, lookAtPos)
             if not humanoid or not myRootPart then return end
             if moving then return end
-            if (myRootPart.Position - targetPos).Magnitude < 1 then return end
+            if (myRootPart.Position - targetPos).Magnitude < 1.5 then return end
 
             moving = true
             humanoid:MoveTo(targetPos)
@@ -104,7 +107,7 @@ return {
 
             local targetPos, lookAtPos
             if index == 1 then
-                -- Bot1 depan VIP, membelakangi VIP tapi menghadap ke depan
+                -- Bot1 depan VIP, menghadap ke depan
                 targetPos = targetHRP.Position + targetHRP.CFrame.LookVector * shieldDistance
                 lookAtPos = targetPos + targetHRP.CFrame.LookVector * 50
             elseif index == 2 then
@@ -121,7 +124,11 @@ return {
                 lookAtPos = targetPos + targetHRP.CFrame.LookVector * 50
             end
 
-            moveToPosition(targetPos, lookAtPos)
+            -- Cek cooldown agar bot tidak bingung
+            if tick() - lastMoveTime > moveCooldown then
+                moveToPosition(targetPos, lookAtPos)
+                lastMoveTime = tick()
+            end
 
             -- 🔹 Deteksi pemain lain mendekati VIP (hanya non-bot)
             local now = tick()
