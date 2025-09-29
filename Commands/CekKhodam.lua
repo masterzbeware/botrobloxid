@@ -10,14 +10,14 @@ return {
 
         local currentTime = tick()
         local lastUsedPlayer = playerCooldowns[client.UserId] or 0
-        if currentTime - lastUsedPlayer < 10 then
-            print("[CekKhodam] Tunggu " .. math.ceil(10 - (currentTime - lastUsedPlayer)) .. " detik lagi untuk " .. client.Name)
+        if currentTime - lastUsedPlayer < 20 then
+            print("[CekKhodam] Tunggu " .. math.ceil(20 - (currentTime - lastUsedPlayer)) .. " detik lagi untuk " .. client.Name)
             return
         end
 
         vars.CekKhodamGlobalCooldown = vars.CekKhodamGlobalCooldown or 0
-        if currentTime - vars.CekKhodamGlobalCooldown < 5 then
-            print("[CekKhodam] Tunggu " .. math.ceil(5 - (currentTime - vars.CekKhodamGlobalCooldown)) .. " detik lagi untuk semua pemain")
+        if currentTime - vars.CekKhodamGlobalCooldown < 15 then
+            print("[CekKhodam] Tunggu " .. math.ceil(15 - (currentTime - vars.CekKhodamGlobalCooldown)) .. " detik lagi untuk semua pemain")
             return
         end
 
