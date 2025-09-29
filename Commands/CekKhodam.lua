@@ -1,5 +1,5 @@
 -- CekKhodam.lua
--- Command !cekkhodam dengan cooldown per pemain dan global
+-- Command !cekkhodam dengan cooldown per pemain dan global + tracking untuk stats
 
 return {
     Execute = function(msg, client)
@@ -26,6 +26,11 @@ return {
         -- 🔹 Update cooldown
         playerCooldowns[client.UserId] = currentTime
         vars.CekKhodamGlobalCooldown = currentTime
+
+        -- 🔹 Update jumlah main untuk stats
+        vars.Stats = vars.Stats or {}
+        vars.Stats[client.UserId] = vars.Stats[client.UserId] or {}
+        vars.Stats[client.UserId].CekKhodamCount = (vars.Stats[client.UserId].CekKhodamCount or 0) + 1
 
         -- 🔹 TextChatService
         local TextChatService = game:GetService("TextChatService")

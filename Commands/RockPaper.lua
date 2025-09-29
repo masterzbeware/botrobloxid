@@ -1,5 +1,5 @@
 -- RockPaper.lua
--- Command !rockpaper dengan cooldown per pemain dan global
+-- Command !rockpaper dengan cooldown per pemain dan global + tracking untuk stats
 
 return {
     Execute = function(msg, client)
@@ -27,6 +27,11 @@ return {
         playerCooldowns[client.UserId] = currentTime
         vars.RockPaperGlobalCooldown = currentTime
 
+        -- 🔹 Update jumlah main untuk stats
+        vars.Stats = vars.Stats or {}
+        vars.Stats[client.UserId] = vars.Stats[client.UserId] or {}
+        vars.Stats[client.UserId].RockPaperCount = (vars.Stats[client.UserId].RockPaperCount or 0) + 1
+
         -- 🔹 TextChatService
         local TextChatService = game:GetService("TextChatService")
         local channel
@@ -44,7 +49,7 @@ return {
         local choice = choices[math.random(1, #choices)]
 
         -- 🔹 Kirim chat otomatis
-        local messageText = client.Name .. " memulai RockPaper! | Saya memilih :" .. choice
+        local messageText = client.Name .. " memulai RockPaper! | Saya memilih: " .. choice
         pcall(function()
             channel:SendAsync(messageText)
         end)
