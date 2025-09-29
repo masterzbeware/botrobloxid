@@ -1,4 +1,4 @@
--- Shield.lua (Shield formation + warning dengan delay 1 menit)
+-- Shield.lua (Shield formation + warning dengan delay 1 menit + target pemain lain)
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars or {}
@@ -7,11 +7,33 @@ return {
         local TextChatService = vars.TextChatService or game:GetService("TextChatService")
         local player = vars.LocalPlayer or Players.LocalPlayer
 
+        -- Ambil argumen dari perintah !shield
+        local args = {}
+        for word in msg:gmatch("%S+") do table.insert(args, word) end
+        local targetNameOrUsername = args[2] -- !shield {name}
+
+        -- Cari pemain target berdasarkan DisplayName atau Username
+        local targetPlayer = nil
+        if targetNameOrUsername then
+            for _, plr in ipairs(Players:GetPlayers()) do
+                if plr.Name:lower() == targetNameOrUsername:lower() or (plr.DisplayName and plr.DisplayName:lower() == targetNameOrUsername:lower()) then
+                    targetPlayer = plr
+                    break
+                end
+            end
+            if not targetPlayer then
+                warn("[Shield] Pemain '" .. targetNameOrUsername .. "' tidak ditemukan.")
+                return
+            end
+        else
+            targetPlayer = client -- fallback ke client jika tidak ada argumen
+        end
+
         -- Toggle shield mode
         vars.ShieldActive = not vars.ShieldActive
         vars.FollowAllowed = false
         vars.RowActive = false
-        vars.CurrentFormasiTarget = client
+        vars.CurrentFormasiTarget = targetPlayer
 
         -- Disconnect previous loops
         if vars.FollowConnection then pcall(function() vars.FollowConnection:Disconnect() end) vars.FollowConnection = nil end
@@ -129,7 +151,7 @@ return {
             end
         end)
 
-        notifyLib:Notify("Shield formation Activated", 3)
-        print("[COMMAND] Shield activated by", client.Name, "distance:", shieldDistance, "spacing:", shieldSpacing)
+        notifyLib:Notify("Shield formation Activated for " .. vars.CurrentFormasiTarget.Name, 3)
+        print("[COMMAND] Shield activated by", client.Name, "targeting:", vars.CurrentFormasiTarget.Name, "distance:", shieldDistance, "spacing:", shieldSpacing)
     end
 }
