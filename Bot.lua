@@ -55,7 +55,7 @@ debugPrint("Detected identity: " .. _G.BotVars.BotIdentity)
 
 -- ✅ Commands Loader
 local Commands = {}
-local commandFiles = { "Ikuti.lua", "Stop.lua", "Shield.lua", "Row.lua", "Sync.lua" } -- RockPaper.lua dihapus
+local commandFiles = { "Ikuti.lua", "Stop.lua", "Shield.lua", "Row.lua", "Sync.lua", "RockPaper"} -- RockPaper.lua dihapus
 
 for _, fileName in ipairs(commandFiles) do
     local url = repoBase .. fileName
