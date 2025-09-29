@@ -12,7 +12,7 @@ local Options = Library.Options
 -- ✅ Buat Window UI
 local Window = Library:CreateWindow({
     Title = "Made by MasterZ",
-    Footer = "v1.0.0",
+    Footer = "v3.0.0",
     Icon = 0,
     NotifySide = "Right",
     ShowCustomCursor = true,
@@ -33,8 +33,6 @@ _G.BotVars = {
     ClientName = "FiestaGuardVip",
 
     ToggleAktif = false,
-    RockPaperEnabled = true, -- Toggle khusus RockPaper
-    RockPaperCooldowns = {}, -- Cooldown per pemain
 
     -- 🔹 Default spacing & distance values
     JarakIkut = 5,
@@ -57,7 +55,7 @@ debugPrint("Detected identity: " .. _G.BotVars.BotIdentity)
 
 -- ✅ Commands Loader
 local Commands = {}
-local commandFiles = { "Ikuti.lua", "Stop.lua", "Shield.lua", "Row.lua", "Sync.lua", "RockPaper.lua"}
+local commandFiles = { "Ikuti.lua", "Stop.lua", "Shield.lua", "Row.lua", "Sync.lua" } -- RockPaper.lua dihapus
 
 for _, fileName in ipairs(commandFiles) do
     local url = repoBase .. fileName
@@ -96,7 +94,7 @@ local function handleCommand(msg, client)
     end
 end
 
--- ✅ Setup Client Listener (VIP + non-VIP for !rockpaper)
+-- ✅ Setup Client Listener (VIP only)
 local function setupClient(player)
     local client = player
 
@@ -106,22 +104,14 @@ local function setupClient(player)
             generalChannel.OnIncomingMessage = function(message)
                 local senderUserId = message.TextSource and message.TextSource.UserId
                 local sender = senderUserId and _G.BotVars.Players:GetPlayerByUserId(senderUserId)
-                if sender then
-                    -- 🔹 Command !rockpaper bisa semua pemain
-                    if message.Text:lower():match("^!rockpaper") then
-                        handleCommand(message.Text, sender)
-                    -- 🔹 Command lain tetap VIP-only
-                    elseif sender.Name == _G.BotVars.ClientName then
-                        handleCommand(message.Text, sender)
-                    end
+                if sender and sender.Name == _G.BotVars.ClientName then
+                    handleCommand(message.Text, sender)
                 end
             end
         end
     else
         player.Chatted:Connect(function(msg)
-            if msg:lower():match("^!rockpaper") then
-                handleCommand(msg, player)
-            elseif player.Name == _G.BotVars.ClientName then
+            if player.Name == _G.BotVars.ClientName then
                 handleCommand(msg, player)
             end
         end)
@@ -146,23 +136,11 @@ GroupBox1:AddInput("BotIdentity", {
 GroupBox1:AddToggle("AktifkanBot", {
     Text = "Enable Bot System",
     Default = false,
-    Tooltip = "Enable to accept chat commands (!ikuti, !stop, !rockpaper, dll)",
+    Tooltip = "Enable to accept chat commands (!ikuti, !stop, dll)",
     Callback = function(Value)
         _G.BotVars.ToggleAktif = Value
         debugPrint("ToggleAktif set to: " .. tostring(Value))
         Library:Notify("Bot System " .. (Value and "Enabled" or "Disabled"), 3)
-    end,
-})
-
--- 🔹 Toggle khusus RockPaper
-GroupBox1:AddToggle("ToggleRockPaper", {
-    Text = "Enable RockPaper Feature",
-    Default = true,
-    Tooltip = "On/Off fitur !rockpaper",
-    Callback = function(Value)
-        _G.BotVars.RockPaperEnabled = Value
-        debugPrint("RockPaperEnabled set to: " .. tostring(Value))
-        Library:Notify("RockPaper Feature " .. (Value and "Enabled" or "Disabled"), 3)
     end,
 })
 
