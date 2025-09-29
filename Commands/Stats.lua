@@ -69,8 +69,23 @@ return {
             followingCount = json.count or 0
         end)
 
-        -- Join Date (tanggal akun dibuat)
-        local joinDate = targetPlayer.AccountAge and os.date("%d %B %Y", os.time() - (targetPlayer.AccountAge * 24 * 60 * 60)) or "Unknown"
+        -- Join Date (tanggal akun dibuat) menggunakan Roblox API
+        local joinDate = "Unknown"
+        pcall(function()
+            local url = "https://users.roblox.com/v1/users/" .. targetPlayer.UserId
+            local response = HttpService:GetAsync(url)
+            local data = HttpService:JSONDecode(response)
+            if data.created then
+                local t = os.date("*t", os.time())
+                local year = tonumber(data.created:sub(1,4))
+                local month = tonumber(data.created:sub(6,7))
+                local day = tonumber(data.created:sub(9,10))
+                local hour = tonumber(data.created:sub(12,13))
+                local min = tonumber(data.created:sub(15,16))
+                local sec = tonumber(data.created:sub(18,19))
+                joinDate = os.date("%d %B %Y", os.time({year=year, month=month, day=day, hour=hour, min=min, sec=sec}))
+            end
+        end)
 
         -- Kirim message
         local messageText = string.format(
