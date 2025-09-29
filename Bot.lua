@@ -33,10 +33,10 @@ _G.BotVars = {
     ClientName = "FiestaGuardVip",
 
     ToggleAktif = false,
-    RockPaperEnabled = true, -- Toggle khusus RockPaper
-    RockPaperCooldowns = {}, -- Cooldown per pemain
+    RockPaperEnabled = true,
+    RockPaperModeActive = false, -- status mode saat aktif
+    RockPaperCooldowns = {},
 
-    -- 🔹 Default spacing & distance values
     JarakIkut = 5,
     FollowSpacing = 2,
     ShieldDistance = 5,
@@ -84,22 +84,34 @@ for _, fileName in ipairs(commandFiles) do
     end
 end
 
--- ✅ Handle Chat Commands
+-- ✅ Handle Chat Commands (Updated for RockPaper Mode)
 local function handleCommand(msg, client)
     if not _G.BotVars.ToggleAktif then return end
     msg = msg:lower()
-    for name, cmd in pairs(Commands) do
-        if msg:match("^!" .. name) and cmd.Execute then
-            debugPrint("Executing command: " .. name .. " by " .. client.Name)
-            cmd.Execute(msg, client)
-        end
+
+    -- 🔹 Ambil nama command
+    local cmdName = msg:match("^!(%w+)")
+    if not cmdName then return end
+
+    -- 🔹 RockPaper selalu bisa dijalankan
+    if cmdName ~= "rockpaper" and _G.BotVars.RockPaperModeActive then
+        game.StarterGui:SetCore("SendNotification", {
+            Title = "Command Blocked",
+            Text = "Tidak bisa menjalankan command '"..cmdName.."' saat RockPaper Mode aktif!"
+        })
+        return
+    end
+
+    -- 🔹 Jalankan command jika ada
+    local cmd = Commands[cmdName]
+    if cmd and cmd.Execute then
+        debugPrint("Executing command: " .. cmdName .. " by " .. client.Name)
+        cmd.Execute(msg, client)
     end
 end
 
 -- ✅ Setup Client Listener (VIP + non-VIP for !rockpaper)
 local function setupClient(player)
-    local client = player
-
     if _G.BotVars.TextChatService and _G.BotVars.TextChatService.TextChannels then
         local generalChannel = _G.BotVars.TextChatService.TextChannels.RBXGeneral
         if generalChannel then
@@ -107,10 +119,8 @@ local function setupClient(player)
                 local senderUserId = message.TextSource and message.TextSource.UserId
                 local sender = senderUserId and _G.BotVars.Players:GetPlayerByUserId(senderUserId)
                 if sender then
-                    -- 🔹 Command !rockpaper bisa semua pemain
                     if message.Text:lower():match("^!rockpaper") then
                         handleCommand(message.Text, sender)
-                    -- 🔹 Command lain tetap VIP-only
                     elseif sender.Name == _G.BotVars.ClientName then
                         handleCommand(message.Text, sender)
                     end
