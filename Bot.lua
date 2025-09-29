@@ -8,7 +8,7 @@ local Options = Library.Options
 
 local Window = Library:CreateWindow({
     Title = "Made by MasterZ",
-    Footer = "v3.2.0",
+    Footer = "v3.1.0",
     Icon = 0,
     NotifySide = "Right",
     ShowCustomCursor = true,
@@ -39,7 +39,6 @@ _G.BotVars = {
     SideSpacing = 4,
 
     -- Jargon
-    JargonAktif = false,
     JargonCommand = "!jargon",
 }
 
@@ -84,11 +83,6 @@ local function handleCommand(msg, client)
     msg = msg:lower()
     for name, cmd in pairs(Commands) do
         if msg:match("^!" .. name) and cmd.Execute then
-            -- Jika command adalah jargon, cek toggle JargonAktif
-            if name == "jargon" and not _G.BotVars.JargonAktif then
-                debugPrint("Jargon command ditekan tapi toggle mati.")
-                return
-            end
             debugPrint("Executing command: " .. name .. " by " .. client.Name)
             cmd.Execute(msg, client)
         end
@@ -182,19 +176,8 @@ GroupBox1:AddInput("SideSpacingInput", { Default = tostring(_G.BotVars.SideSpaci
     Callback = function(Value) _G.BotVars.SideSpacing = tonumber(Value) end
 })
 
--- UI khusus Jargon
+-- UI khusus Jargon (hanya textbox, tanpa toggle)
 local GroupBoxJargon = Tabs.Main:AddLeftGroupbox("Jargon Command")
-
-GroupBoxJargon:AddToggle("EnableJargon", {
-    Text = "Aktifkan !jargon",
-    Default = false,
-    Tooltip = "VIP hanya bisa menggunakan !jargon ketika aktif",
-    Callback = function(Value)
-        _G.BotVars.JargonAktif = Value
-        Library:Notify("Jargon Command " .. (Value and "Enabled" or "Disabled"), 3)
-        debugPrint("JargonAktif set to: " .. tostring(Value))
-    end
-})
 
 GroupBoxJargon:AddInput("JargonText", {
     Default = _G.BotVars.JargonCommand,
