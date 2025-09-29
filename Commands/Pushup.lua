@@ -1,4 +1,4 @@
--- Pushup.lua (bot melakukan animasi push-up + chat berurutan)
+-- Pushup.lua (Push-up training: chat -> delay -> animasi -> chat berurutan -> stop)
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars or {}
@@ -18,28 +18,35 @@ return {
             end
         end
 
-        -- 🔹 Jalankan animasi push-up
-        local args = {
-            "playAnimation",
-            "Push Up"
-        }
-        pcall(function()
-            game:GetService("ReplicatedStorage")
-                :WaitForChild("Connections")
-                :WaitForChild("dataProviders")
-                :WaitForChild("animationHandler")
-                :InvokeServer(unpack(args))
-        end)
-
-        -- 🔹 Urutan chat + jeda
         task.spawn(function()
-            sendChat("Siap laksanakan!")   -- langsung setelah animasi
-            task.wait(5)                   -- jeda 3 detik
-            sendChat("Satu push up!")      -- chat kedua
-            task.wait(5)                   -- jeda lagi
-            sendChat("Dua push up!")       -- chat ketiga
+            -- 🔹 Langkah 1: Chat awal
+            sendChat("Siap laksanakan!")
+
+            -- 🔹 Langkah 2: Tunggu 5 detik
             task.wait(5)
-            sendChat("Tiga push up, Komandan!") -- chat terakhir
+
+            -- 🔹 Langkah 3: Jalankan animasi push-up
+            local args = {
+                "playAnimation",
+                "Push Up"
+            }
+            pcall(function()
+                game:GetService("ReplicatedStorage")
+                    :WaitForChild("Connections")
+                    :WaitForChild("dataProviders")
+                    :WaitForChild("animationHandler")
+                    :InvokeServer(unpack(args))
+            end)
+
+            -- 🔹 Langkah 4: Chat berurutan dengan jeda 5 detik
+            task.wait(5)
+            sendChat("Satu push up!")
+            task.wait(5)
+            sendChat("Dua push up!")
+            task.wait(5)
+            sendChat("Tiga push up, Komandan!")
+
+            -- 🔹 Langkah 5: Stop (selesai, tidak ada loop lagi)
         end)
     end
 }
