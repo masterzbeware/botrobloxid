@@ -1,4 +1,6 @@
 -- Stop.lua
+-- Command !stop: Menghentikan semua aksi bot (follow, shield, row)
+
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars
@@ -15,8 +17,16 @@ return {
             vars.FollowConnection = nil
         end
 
-        local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/Library.lua"))()
-        Library:Notify("Bot stopped all actions", 3)
+        -- Notifikasi menggunakan Library Obsidian
+        local success, Library = pcall(function()
+            return loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/Library.lua"))()
+        end)
+
+        if success and Library then
+            Library:Notify("Bot stopped all actions", 3)
+        else
+            warn("[Stop.lua] Gagal load Library.lua untuk notifikasi")
+        end
 
         print("[COMMAND] Bot stopped by client:", client and client.Name or "Unknown")
     end

@@ -8,7 +8,7 @@ local Options = Library.Options
 
 local Window = Library:CreateWindow({
     Title = "Made by MasterZ",
-    Footer = "v3.6.0",
+    Footer = "v3.6.1",
     Icon = 0,
     NotifySide = "Right",
     ShowCustomCursor = true,
@@ -19,7 +19,7 @@ local function debugPrint(msg)
     print("[DEBUG] " .. tostring(msg))
 end
 
--- 🔹 Global Variables
+-- Global Variables
 _G.BotVars = {
     Players = game:GetService("Players"),
     TextChatService = game:GetService("TextChatService"),
@@ -39,7 +39,7 @@ _G.BotVars = {
     SideSpacing = 4,
 }
 
--- 🔹 Identity Detection
+-- Identity Detection
 local botMapping = {
     ["8802945328"] = "Bot1 - XBODYGUARDVIP01",
     ["8802949363"] = "Bot2 - XBODYGUARDVIP02",
@@ -49,12 +49,9 @@ local botMapping = {
 _G.BotVars.BotIdentity = botMapping[tostring(_G.BotVars.LocalPlayer.UserId)] or "Unknown Bot"
 debugPrint("Detected identity: " .. _G.BotVars.BotIdentity)
 
--- 🔹 Commands Loader
+-- Commands Loader
 local Commands = {}
-local commandFiles = {
-    "Ikuti.lua", "Stop.lua", "Shield.lua", "Row.lua", "Sync.lua",
-    "CekKhodam.lua", "RockPaper.lua", "Stats.lua"
-}
+local commandFiles = { "Ikuti.lua", "Stop.lua", "Shield.lua", "Row.lua", "Sync.lua", "CekKhodam.lua", "RockPaper.lua", "Stats.lua" }
 
 for _, fileName in ipairs(commandFiles) do
     local url = repoBase .. fileName
@@ -78,7 +75,7 @@ for _, fileName in ipairs(commandFiles) do
     end
 end
 
--- 🔹 Handle Chat Commands
+-- Handle Chat Commands
 local function handleCommand(msg, client)
     msg = msg:lower()
     for name, cmd in pairs(Commands) do
@@ -89,7 +86,7 @@ local function handleCommand(msg, client)
     end
 end
 
--- 🔹 Setup Client Listener
+-- Setup Client Listener
 local function setupClient(player)
     local client = player
 
@@ -120,7 +117,7 @@ local function setupClient(player)
         end
     end
 
-    -- 🔹 Listen TextChatService safely
+    -- Gunakan TextChatService jika tersedia
     if _G.BotVars.TextChatService and _G.BotVars.TextChatService.TextChannels then
         local generalChannel = _G.BotVars.TextChatService.TextChannels:FindFirstChild("RBXGeneral")
         if generalChannel then
@@ -139,13 +136,13 @@ local function setupClient(player)
     end
 end
 
--- 🔹 Apply listener ke semua pemain
+-- Apply listener ke semua pemain
 for _, plr in ipairs(_G.BotVars.Players:GetPlayers()) do
     setupClient(plr)
 end
 _G.BotVars.Players.PlayerAdded:Connect(setupClient)
 
--- 🔹 UI
+-- UI
 local GroupBox1 = Tabs.Main:AddLeftGroupbox("Bot Options")
 
 GroupBox1:AddInput("BotIdentity", {
