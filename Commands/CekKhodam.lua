@@ -32,7 +32,7 @@ return {
 
         -- Pilihan khodam random
         local khodams = {
-            "Pocong Botak", "Tuyul Gendut", "Kuntilanak Selfie", "Jin Kentut Api",
+            "Pocong Botak", "Cacing Gendut", "Kuntilanak Selfie", "Jin Kentut Api",
             "Genderuwo Imut", "Pocong Nyeker", "Tuyul Pencinta Cilok", "Kuyang Kesasar",
             "Pocong Joget Koplo", "Jin Botak Licin"
         }
@@ -42,7 +42,7 @@ return {
         local channel = TextChatService.TextChannels and TextChatService.TextChannels:FindFirstChild("RBXGeneral")
         if not channel then warn("Channel RBXGeneral tidak ditemukan!") return end
 
-        local messageText = client.Name .. " melakukan cek khodam! | Hasil: " .. choice
+        local messageText = client.Name .. " melakukan cek khodam! Hasil: " .. choice
         pcall(function() channel:SendAsync(messageText) end)
         print("[CekKhodam] " .. messageText)
     end
