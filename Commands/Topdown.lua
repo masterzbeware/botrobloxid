@@ -29,12 +29,24 @@ return {
             targetPlayer = client -- fallback ke client jika tidak ada argumen
         end
 
+        -- Matikan semua mode lain agar bot tidak bingung
+        vars.FollowAllowed = false
+        vars.ShieldActive = false
+        vars.RowActive = false
+
+        if vars.FollowConnection then vars.FollowConnection:Disconnect() vars.FollowConnection = nil end
+        if vars.ShieldConnection then vars.ShieldConnection:Disconnect() vars.ShieldConnection = nil end
+        if vars.RowConnection then vars.RowConnection:Disconnect() vars.RowConnection = nil end
+
         -- Toggle mode Topdown
         vars.TopdownActive = not vars.TopdownActive
         vars.CurrentFormasiTarget = targetPlayer
 
-        -- Disconnect previous loops
-        if vars.TopdownConnection then pcall(function() vars.TopdownConnection:Disconnect() end) vars.TopdownConnection = nil end
+        -- Disconnect previous Topdown loop
+        if vars.TopdownConnection then
+            pcall(function() vars.TopdownConnection:Disconnect() end)
+            vars.TopdownConnection = nil
+        end
 
         local notifyLib = vars.Library or loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/Library.lua"))()
         if not vars.TopdownActive then
