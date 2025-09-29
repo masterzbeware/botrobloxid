@@ -8,7 +8,7 @@ return {
         local channel = TextChatService.TextChannels and TextChatService.TextChannels:FindFirstChild("RBXGeneral")
         if channel then
             pcall(function()
-                channel:SendAsync("Siap laksanakan!")
+                channel:SendAsync("Siap Komandan!")
             end)
         else
             warn("Channel RBXGeneral tidak ditemukan!")
