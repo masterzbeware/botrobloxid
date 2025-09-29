@@ -1,45 +1,39 @@
 local TextChatService = game:GetService("TextChatService")
 local Players = game:GetService("Players")
-local channel
 
+-- Cari channel RBXGeneral
+local channel
 if TextChatService.TextChannels then
     channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
 end
 
--- Fungsi untuk memilih secara random
-local function randomChoice()
-    local choices = {"Batu", "Kertas", "Gunting"}
-    return choices[math.random(1, #choices)]
-end
-
--- Listener chat
-if channel then
-    channel.OnIncomingMessage = function(message)
-        local senderUserId = message.TextSource and message.TextSource.UserId
-        local sender = senderUserId and Players:GetPlayerByUserId(senderUserId)
-        if sender and message.Text:lower():match("^!rockpaper") then
-            local playerChoice = randomChoice()
-            local botChoice = randomChoice()
-            
-            local resultText = string.format(
-                "%s memilih %s, Saya memilih %s",
-                sender.Name,
-                playerChoice,
-                botChoice
-            )
-            
-            pcall(function()
-                channel:SendAsync(resultText)
-            end)
-        end
-    end
-else
+if not channel then
     warn("Channel RBXGeneral tidak ditemukan!")
 end
 
--- Kirim pesan awal
-if channel then
-    pcall(function()
-        channel:SendAsync("Siap laksanakan!")
+-- Fungsi untuk mengirim pesan ke channel
+local function sendMessage(msg)
+    if channel then
+        pcall(function()
+            channel:SendAsync(msg)
+        end)
+    end
+end
+
+-- Listener chat untuk semua pemain
+Players.PlayerAdded:Connect(function(player)
+    player.Chatted:Connect(function(msg)
+        if msg:lower():match("^!rockpaper") then
+            sendMessage("Siap laksanakan testing")
+        end
+    end)
+end)
+
+-- Listener untuk pemain yang sudah ada saat script dijalankan
+for _, player in ipairs(Players:GetPlayers()) do
+    player.Chatted:Connect(function(msg)
+        if msg:lower():match("^!rockpaper") then
+            sendMessage("Siap laksanakan testing")
+        end
     end)
 end
