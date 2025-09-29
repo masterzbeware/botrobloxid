@@ -28,7 +28,7 @@ _G.BotVars = {
     RunService = game:GetService("RunService"),
 
     ToggleAktif = false,       -- VIP-only commands
-    GamesEnabled = false,      -- Toggle Games (bisa diabaikan karena RockPaper/CekKhodam dihapus)
+    GamesEnabled = false,      -- Toggle Games (RockPaper/CekKhodam bisa diabaikan)
 
     -- Spacing & distance
     JarakIkut = 5,
@@ -37,6 +37,8 @@ _G.BotVars = {
     ShieldSpacing = 4,
     RowSpacing = 4,
     SideSpacing = 4,
+
+    JargonAktif = false,       -- Toggle untuk !jargon
 }
 
 -- Identity Detection
@@ -51,8 +53,7 @@ debugPrint("Detected identity: " .. _G.BotVars.BotIdentity)
 
 -- Commands Loader
 local Commands = {}
-local commandFiles = { "Ikuti.lua", "Stop.lua", "Shield.lua", "Row.lua", "Sync.lua", "Topdown.lua" }
-
+local commandFiles = { "Ikuti.lua", "Stop.lua", "Shield.lua", "Row.lua", "Sync.lua", "Topdown.lua", "Jargon.lua" }
 
 for _, fileName in ipairs(commandFiles) do
     local url = repoBase .. fileName
@@ -81,6 +82,12 @@ local function handleCommand(msg, client)
     msg = msg:lower()
     for name, cmd in pairs(Commands) do
         if msg:match("^!" .. name) and cmd.Execute then
+            -- Jika command adalah "jargon", cek toggle JargonAktif
+            if name == "jargon" and not _G.BotVars.JargonAktif then
+                debugPrint("Jargon command ditekan tapi toggle mati.")
+                return
+            end
+
             debugPrint("Executing command: " .. name .. " by " .. client.Name)
             cmd.Execute(msg, client)
         end
@@ -171,6 +178,20 @@ GroupBox1:AddInput("RowSpacingInput", { Default = tostring(_G.BotVars.RowSpacing
 })
 GroupBox1:AddInput("SideSpacingInput", { Default = tostring(_G.BotVars.SideSpacing), Text = "Side Spacing (Kiri-Kanan)", Placeholder = "Example: 4",
     Callback = function(Value) _G.BotVars.SideSpacing = tonumber(Value) end
+})
+
+-- UI khusus Jargon
+local GroupBoxJargon = Tabs.Main:AddLeftGroupbox("Jargon Command")
+
+GroupBoxJargon:AddToggle("EnableJargon", {
+    Text = "Aktifkan !jargon",
+    Default = false,
+    Tooltip = "VIP hanya bisa menggunakan !jargon ketika aktif",
+    Callback = function(Value)
+        _G.BotVars.JargonAktif = Value
+        Library:Notify("Jargon Command " .. (Value and "Enabled" or "Disabled"), 3)
+        debugPrint("JargonAktif set to: " .. tostring(Value))
+    end
 })
 
 Library:Notify("Bot System Loaded!", 3)
