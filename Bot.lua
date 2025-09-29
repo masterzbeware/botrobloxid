@@ -12,7 +12,7 @@ local Options = Library.Options
 -- ✅ Buat Window UI
 local Window = Library:CreateWindow({
     Title = "Made by MasterZ",
-    Footer = "v3.0.0",
+    Footer = "v1.0.0",
     Icon = 0,
     NotifySide = "Right",
     ShowCustomCursor = true,
@@ -35,6 +35,7 @@ _G.BotVars = {
     ToggleAktif = false,
     RockPaperEnabled = true, -- Toggle khusus RockPaper
     RockPaperCooldowns = {}, -- Cooldown per pemain
+    RockPaperModeActive = false,
 
     -- 🔹 Default spacing & distance values
     JarakIkut = 5,
@@ -86,21 +87,44 @@ end
 
 -- ✅ Handle Chat Commands
 local function handleCommand(msg, client)
-    if not _G.BotVars.ToggleAktif then return end -- Bot system harus aktif
     msg = msg:lower()
 
     for name, cmd in pairs(Commands) do
         if msg:match("^!" .. name) and cmd.Execute then
-            -- 🔹 Cek khusus RockPaper
-            if name == "rockpaper" and not _G.BotVars.RockPaperEnabled then
+
+            -- 🔹 Jika command RockPaper
+            if name == "rockpaper" then
+                if not _G.BotVars.RockPaperEnabled then
+                    local channel = _G.BotVars.TextChatService.TextChannels and _G.BotVars.TextChatService.TextChannels.RBXGeneral
+                    if channel then
+                        pcall(function()
+                            channel:SendAsync("RockPaper system is disabled!")
+                        end)
+                    end
+                    return
+                end
+                -- RockPaper bisa dijalankan semua pemain
+                debugPrint("Executing command: " .. name .. " by " .. client.Name)
+                cmd.Execute(msg, client)
+                return
+            end
+
+            -- 🔹 Command lain harus Bot system aktif
+            if not _G.BotVars.ToggleAktif then return end
+
+            -- 🔹 Block saat RockPaper aktif
+            if _G.BotVars.RockPaperModeActive then
                 local channel = _G.BotVars.TextChatService.TextChannels and _G.BotVars.TextChatService.TextChannels.RBXGeneral
                 if channel then
                     pcall(function()
-                        channel:SendAsync("RockPaper system disabled!")
+                        channel:SendAsync("Tidak bisa menjalankan command lain saat RockPaper aktif!")
                     end)
                 end
                 return
             end
+
+            -- 🔹 VIP-only
+            if client.Name ~= _G.BotVars.ClientName then return end
 
             debugPrint("Executing command: " .. name .. " by " .. client.Name)
             cmd.Execute(msg, client)

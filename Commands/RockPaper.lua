@@ -5,17 +5,6 @@ return {
     Execute = function(msg, client)
         local Vars = _G.BotVars
 
-        -- 🔹 Pastikan Bot system aktif
-        if not Vars.ToggleAktif then
-            local channel = Vars.TextChatService.TextChannels and Vars.TextChatService.TextChannels.RBXGeneral
-            if channel then
-                pcall(function()
-                    channel:SendAsync("Bot system not active. Cannot execute RockPaper.")
-                end)
-            end
-            return
-        end
-
         -- 🔹 Pastikan RockPaper system enabled
         if not Vars.RockPaperEnabled then
             local channel = Vars.TextChatService.TextChannels and Vars.TextChatService.TextChannels.RBXGeneral
@@ -27,7 +16,7 @@ return {
             return
         end
 
-        -- 🔹 Cek apakah RockPaper sudah aktif untuk mencegah spam
+        -- 🔹 Cek apakah RockPaper sudah aktif
         if Vars.RockPaperModeActive then
             local channel = Vars.TextChatService.TextChannels and Vars.TextChatService.TextChannels.RBXGeneral
             if channel then
@@ -52,18 +41,20 @@ return {
 
         -- 🔹 Aktifkan mode RockPaper
         Vars.RockPaperModeActive = true
+
+        -- 🔹 Matikan formasi lain sementara
         Vars.FollowAllowed = false
         Vars.RowActive = false
         Vars.ShieldActive = false
         Vars.CurrentFormasiTarget = targetPlayer or client
 
-        -- 🔹 Kirim notifikasi lokal
+        -- 🔹 Notifikasi lokal
         game.StarterGui:SetCore("SendNotification", {
             Title = "RockPaper",
             Text = "RockPaper mode activated by " .. client.Name
         })
 
-        -- 🔹 Kirim notifikasi global
+        -- 🔹 Notifikasi global
         local channel = Vars.TextChatService.TextChannels and Vars.TextChatService.TextChannels.RBXGeneral
         if channel then
             pcall(function()
@@ -79,12 +70,16 @@ return {
         task.spawn(function()
             task.wait(10)
             Vars.RockPaperModeActive = false
+
+            -- 🔹 Notifikasi global setelah selesai
             local channel2 = Vars.TextChatService.TextChannels and Vars.TextChatService.TextChannels.RBXGeneral
             if channel2 then
                 pcall(function()
                     channel2:SendAsync("RockPaper mode deactivated!")
                 end)
             end
+
+            -- 🔹 Notifikasi lokal
             game.StarterGui:SetCore("SendNotification", {
                 Title = "RockPaper",
                 Text = "RockPaper mode deactivated"
