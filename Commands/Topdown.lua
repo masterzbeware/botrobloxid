@@ -1,4 +1,4 @@
--- Shield.lua (Shield formation + warning dengan delay 1 menit + target pemain lain)
+-- Topdown.lua (3-bodyguard Top-Down formation + warning)
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars or {}
@@ -7,10 +7,10 @@ return {
         local TextChatService = vars.TextChatService or game:GetService("TextChatService")
         local player = vars.LocalPlayer or Players.LocalPlayer
 
-        -- Ambil argumen dari perintah !shield
+        -- Ambil argumen dari perintah !topdown
         local args = {}
         for word in msg:gmatch("%S+") do table.insert(args, word) end
-        local targetNameOrUsername = args[2] -- !shield {name}
+        local targetNameOrUsername = args[2] -- !topdown {name}
 
         -- Cari pemain target berdasarkan DisplayName atau Username
         local targetPlayer = nil
@@ -22,31 +22,26 @@ return {
                 end
             end
             if not targetPlayer then
-                warn("[Shield] Pemain '" .. targetNameOrUsername .. "' tidak ditemukan.")
+                warn("[Topdown] Pemain '" .. targetNameOrUsername .. "' tidak ditemukan.")
                 return
             end
         else
             targetPlayer = client -- fallback ke client jika tidak ada argumen
         end
 
-        -- Toggle shield mode
-        vars.ShieldActive = not vars.ShieldActive
-        vars.FollowAllowed = false
-        vars.RowActive = false
+        -- Toggle mode Topdown
+        vars.TopdownActive = not vars.TopdownActive
         vars.CurrentFormasiTarget = targetPlayer
 
         -- Disconnect previous loops
-        if vars.FollowConnection then pcall(function() vars.FollowConnection:Disconnect() end) vars.FollowConnection = nil end
-        if vars.ShieldConnection then pcall(function() vars.ShieldConnection:Disconnect() end) vars.ShieldConnection = nil end
-        if vars.RowConnection then pcall(function() vars.RowConnection:Disconnect() end) vars.RowConnection = nil end
+        if vars.TopdownConnection then pcall(function() vars.TopdownConnection:Disconnect() end) vars.TopdownConnection = nil end
 
         local notifyLib = vars.Library or loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/Library.lua"))()
-        if not vars.ShieldActive then
-            notifyLib:Notify("Shield formation Deactivated", 3)
+        if not vars.TopdownActive then
+            notifyLib:Notify("Topdown formation Deactivated", 3)
             return
         end
 
-        -- Ambil nilai dari Bot.lua
         local shieldDistance = tonumber(vars.ShieldDistance) or 5
         local shieldSpacing  = tonumber(vars.ShieldSpacing) or 4
 
@@ -54,7 +49,6 @@ return {
             ["8802945328"] = "Bot1 - XBODYGUARDVIP01",
             ["8802949363"] = "Bot2 - XBODYGUARDVIP02",
             ["8802939883"] = "Bot3 - XBODYGUARDVIP03",
-            ["8802998147"] = "Bot4 - XBODYGUARDVIP04",
         }
 
         local botIds = {}
@@ -93,35 +87,41 @@ return {
             end
         end
 
-        -- Shield loop
-        vars.ShieldConnection = RunService.Heartbeat:Connect(function()
-            if not vars.ToggleAktif or not vars.ShieldActive then return end
+        -- Topdown loop
+        vars.TopdownConnection = RunService.Heartbeat:Connect(function()
+            if not vars.ToggleAktif or not vars.TopdownActive then return end
             if not vars.CurrentFormasiTarget or not vars.CurrentFormasiTarget.Character then return end
             if not humanoid or not myRootPart then return end
 
             local targetHRP = vars.CurrentFormasiTarget.Character:FindFirstChild("HumanoidRootPart")
             if not targetHRP then return end
 
-            -- Tentukan posisi Shield
+            -- Tentukan posisi Topdown
             local index = 1
             for i, id in ipairs(botIds) do
                 if id == player.UserId then index = i break end
             end
 
-            local targetPos
+            local targetPos, lookAtPos
             if index == 1 then
+                -- Bot1 depan VIP
                 targetPos = targetHRP.Position + targetHRP.CFrame.LookVector * shieldDistance
+                lookAtPos = targetHRP.Position - targetHRP.CFrame.LookVector * 50
             elseif index == 2 then
-                targetPos = targetHRP.Position - targetHRP.CFrame.RightVector * shieldSpacing
+                -- Bot2 kanan belakang VIP
+                targetPos = targetHRP.Position - targetHRP.CFrame.RightVector * shieldSpacing - targetHRP.CFrame.LookVector * (shieldDistance / 2)
+                lookAtPos = targetHRP.Position + targetHRP.CFrame.LookVector * 50
             elseif index == 3 then
-                targetPos = targetHRP.Position + targetHRP.CFrame.RightVector * shieldSpacing
-            elseif index == 4 then
-                targetPos = targetHRP.Position - targetHRP.CFrame.LookVector * shieldDistance
+                -- Bot3 kiri belakang VIP
+                targetPos = targetHRP.Position + targetHRP.CFrame.RightVector * shieldSpacing - targetHRP.CFrame.LookVector * (shieldDistance / 2)
+                lookAtPos = targetHRP.Position + targetHRP.CFrame.LookVector * 50
             else
+                -- fallback
                 targetPos = targetHRP.Position - targetHRP.CFrame.LookVector * shieldDistance
+                lookAtPos = targetHRP.Position + targetHRP.CFrame.LookVector * 50
             end
 
-            moveToPosition(targetPos, targetHRP.Position + targetHRP.CFrame.LookVector * 50)
+            moveToPosition(targetPos, lookAtPos)
 
             -- 🔹 Deteksi pemain lain mendekati VIP (hanya non-bot)
             local now = tick()
@@ -134,15 +134,14 @@ return {
                             if char and char:FindFirstChild("HumanoidRootPart") then
                                 local dist = (char.HumanoidRootPart.Position - targetHRP.Position).Magnitude
                                 if dist <= shieldDistance then
-                                    -- Kirim chat global peringatan dengan nama pemain
                                     local channel = TextChatService.TextChannels and TextChatService.TextChannels.RBXGeneral
                                     if channel then
                                         pcall(function()
-                                            channel:SendAsync(plr.Name .. " Harap menjauh ini Area Vip!")
+                                            channel:SendAsync(plr.Name .. " Harap menjauh ini Area VIP!")
                                         end)
                                     end
-                                    lastWarningTime = now -- update timestamp terakhir
-                                    break -- cukup satu chat per warningDelay
+                                    lastWarningTime = now
+                                    break
                                 end
                             end
                         end
@@ -151,7 +150,7 @@ return {
             end
         end)
 
-        notifyLib:Notify("Shield formation Activated for " .. vars.CurrentFormasiTarget.Name, 3)
-        print("[COMMAND] Shield activated by", client.Name, "targeting:", vars.CurrentFormasiTarget.Name, "distance:", shieldDistance, "spacing:", shieldSpacing)
+        notifyLib:Notify("Topdown formation Activated for " .. vars.CurrentFormasiTarget.Name, 3)
+        print("[COMMAND] Topdown activated by", client.Name, "targeting:", vars.CurrentFormasiTarget.Name)
     end
 }
