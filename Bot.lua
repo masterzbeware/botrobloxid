@@ -8,7 +8,7 @@ local Options = Library.Options
 
 local Window = Library:CreateWindow({
     Title = "Made by MasterZ",
-    Footer = "v1.5.0",
+    Footer = "v1.1.0",
     Icon = 0,
     NotifySide = "Right",
     ShowCustomCursor = true,
@@ -51,7 +51,7 @@ debugPrint("Detected identity: " .. _G.BotVars.BotIdentity)
 
 -- Commands Loader
 local Commands = {}
-local commandFiles = { "Ikuti.lua", "Stop.lua", "Shield.lua", "Row.lua", "Sync.lua", "Pushup.lua", "Frontline.lua" }
+local commandFiles = { "Ikuti.lua", "Stop.lua", "Shield.lua", "Row.lua", "Sync.lua", "Pushup.lua", "Frontline.lua", "AmbilAlih.lua" }
 
 for _, fileName in ipairs(commandFiles) do
     local url = repoBase .. fileName
@@ -92,13 +92,6 @@ local function setupClient(player)
 
     local function processMessage(msg, sender)
         msg = msg:lower()
-
-        -- Semua pemain bisa !stats
-        if msg:match("^!stats") then
-            local statsCmd = loadstring(game:HttpGet(repoBase .. "Stats.lua"))()
-            statsCmd.Execute(msg, sender)
-            return
-        end
 
         -- VIP-only commands
         if sender.Name == _G.BotVars.ClientName and _G.BotVars.ToggleAktif then
