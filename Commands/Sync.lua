@@ -12,13 +12,25 @@ return {
                     break
                 end
             end
+
             if found then
-                -- cek flag setiap saat sebelum sync
-                spawn(function()
+                -- hentikan sync sebelumnya kalau ada
+                if Vars.SyncConnection then
+                    task.cancel(Vars.SyncConnection)
+                    Vars.SyncConnection = nil
+                end
+
+                -- spawn loop sync dan simpan reference supaya bisa dibatalkan
+                Vars.SyncConnection = task.spawn(function()
                     while Vars.SyncActive do
-                        local args = { found }
-                        game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("RequestSync"):FireServer(unpack(args))
-                        wait(0.5) -- interval sync
+                        local success, err = pcall(function()
+                            local args = { found }
+                            game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("RequestSync"):FireServer(unpack(args))
+                        end)
+                        if not success then
+                            warn("Sync error:", err)
+                        end
+                        task.wait(0.5)
                     end
                 end)
 

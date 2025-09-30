@@ -5,19 +5,39 @@ return {
     Execute = function(msg, client)
         local vars = _G.BotVars or {}
 
-        -- Nonaktifkan semua mode
+        -- 🔹 Nonaktifkan semua mode
         vars.FollowAllowed = false
         vars.ShieldActive = false
         vars.RowActive = false
-        vars.CurrentFormasiTarget = nil
         vars.SyncActive = false
-        vars.PushupActive = false  -- hentikan pushup
+        vars.PushupActive = false
+        vars.CurrentFormasiTarget = nil
 
-        -- Putuskan semua koneksi Heartbeat / loop kalau ada
-        if vars.FollowConnection then pcall(function() vars.FollowConnection:Disconnect() end) vars.FollowConnection = nil end
-        if vars.ShieldConnection then pcall(function() vars.ShieldConnection:Disconnect() end) vars.ShieldConnection = nil end
-        if vars.RowConnection then pcall(function() vars.RowConnection:Disconnect() end) vars.RowConnection = nil end
-        if vars.PushupConnection then pcall(function() task.cancel(vars.PushupConnection) end) vars.PushupConnection = nil end
+        -- 🔹 Hentikan semua koneksi / loop kalau ada
+        if vars.FollowConnection then
+            pcall(function() vars.FollowConnection:Disconnect() end)
+            vars.FollowConnection = nil
+        end
+
+        if vars.ShieldConnection then
+            pcall(function() vars.ShieldConnection:Disconnect() end)
+            vars.ShieldConnection = nil
+        end
+
+        if vars.RowConnection then
+            pcall(function() vars.RowConnection:Disconnect() end)
+            vars.RowConnection = nil
+        end
+
+        if vars.PushupConnection then
+            pcall(function() task.cancel(vars.PushupConnection) end)
+            vars.PushupConnection = nil
+        end
+
+        if vars.SyncConnection then
+            pcall(function() task.cancel(vars.SyncConnection) end)
+            vars.SyncConnection = nil
+        end
 
         -- 🔹 Stop animasi push-up kalau masih jalan
         pcall(function()
@@ -29,6 +49,7 @@ return {
                 :InvokeServer(unpack(args))
         end)
 
+        -- 🔹 Log di output saja
         print("[COMMAND] Bot stopped by client:", client and client.Name or "Unknown")
     end
 }

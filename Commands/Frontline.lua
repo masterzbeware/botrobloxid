@@ -1,10 +1,9 @@
--- Frontline.lua (Frontline formation simple)
+-- Frontline.lua (Frontline formation simple, compatible with Stop.lua)
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars or {}
         local RunService = vars.RunService or game:GetService("RunService")
         local Players = game:GetService("Players")
-        local TextChatService = vars.TextChatService or game:GetService("TextChatService")
         local player = vars.LocalPlayer or Players.LocalPlayer
 
         -- Ambil argumen !frontline {name}
@@ -12,12 +11,12 @@ return {
         for word in msg:gmatch("%S+") do table.insert(args, word) end
         local targetNameOrUsername = args[2]
 
-        -- Cari target (VIP)
+        -- Cari target
         local targetPlayer = nil
         if targetNameOrUsername then
             for _, plr in ipairs(Players:GetPlayers()) do
-                if plr.Name:lower() == targetNameOrUsername:lower() 
-                or (plr.DisplayName and plr.DisplayName:lower() == targetNameOrUsername:lower()) then
+                if plr.Name:lower() == targetNameOrUsername:lower() or
+                   (plr.DisplayName and plr.DisplayName:lower() == targetNameOrUsername:lower()) then
                     targetPlayer = plr
                     break
                 end
@@ -36,13 +35,13 @@ return {
         vars.RowActive = false
         vars.CurrentFormasiTarget = targetPlayer
 
+        -- Disconnect loop lama jika ada
         if vars.FollowConnection then pcall(function() vars.FollowConnection:Disconnect() end) vars.FollowConnection = nil end
         if vars.ShieldConnection then pcall(function() vars.ShieldConnection:Disconnect() end) vars.ShieldConnection = nil end
         if vars.RowConnection then pcall(function() vars.RowConnection:Disconnect() end) vars.RowConnection = nil end
 
-        local notifyLib = vars.Library or loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/Library.lua"))()
         if not vars.ShieldActive then
-            notifyLib:Notify("Frontline formation Deactivated", 3)
+            print("[Frontline] Deactivated")
             return
         end
 
@@ -65,7 +64,7 @@ return {
         end
         table.sort(botIds)
 
-        -- Bot refs
+        -- References
         local humanoid, myRootPart, moving
         local function updateBotRefs()
             local character = player.Character or player.CharacterAdded:Wait()
@@ -81,21 +80,22 @@ return {
             if (myRootPart.Position - targetPos).Magnitude < 2 then return end
 
             moving = true
-            humanoid:MoveTo(targetPos)
-            humanoid.MoveToFinished:Wait()
+            pcall(function()
+                humanoid:MoveTo(targetPos)
+                humanoid.MoveToFinished:Wait()
+                if lookAtPos then
+                    myRootPart.CFrame = CFrame.new(
+                        myRootPart.Position,
+                        Vector3.new(lookAtPos.X, myRootPart.Position.Y, lookAtPos.Z)
+                    )
+                end
+            end)
             moving = false
-
-            if lookAtPos then
-                myRootPart.CFrame = CFrame.new(
-                    myRootPart.Position,
-                    Vector3.new(lookAtPos.X, myRootPart.Position.Y, lookAtPos.Z)
-                )
-            end
         end
 
         -- 🔹 Frontline loop
         vars.ShieldConnection = RunService.Heartbeat:Connect(function()
-            if not vars.ToggleAktif or not vars.ShieldActive then return end
+            if not vars.ShieldActive then return end
             if not vars.CurrentFormasiTarget or not vars.CurrentFormasiTarget.Character then return end
             if not humanoid or not myRootPart then return end
 
@@ -108,31 +108,15 @@ return {
                 if id == player.UserId then index = i break end
             end
 
-            -- Semua bot di depan membelakangi VIP (line formation)
+            -- Line formation di depan VIP
             local offset = (index - ((#botIds + 1) / 2)) * shieldSpacing
             local forward = targetHRP.CFrame.LookVector
             local right   = targetHRP.CFrame.RightVector
-
             local targetPos = targetHRP.Position + forward * shieldDistance + right * offset
 
-            -- Menghadap ke depan (arah VIP melihat)
             moveToPosition(targetPos, targetHRP.Position + forward * 50)
         end)
 
-        -- 🔹 Chat sequence
-        task.spawn(function()
-            task.wait(0.5)
-            local channel = TextChatService.TextChannels and TextChatService.TextChannels.RBXGeneral
-            if channel then
-                pcall(function() channel:SendAsync("Siap laksanakan!") end)
-            end
-            task.wait(3)
-            if channel then
-                pcall(function() channel:SendAsync("Semua sudah masuk barisan!") end)
-            end
-        end)
-
-        notifyLib:Notify("Frontline formation Activated for " .. vars.CurrentFormasiTarget.Name, 3)
-        print("[COMMAND] Frontline activated by", client.Name, "targeting:", vars.CurrentFormasiTarget.Name)
+        print("[Frontline] Activated for", vars.CurrentFormasiTarget.Name)
     end
 }
