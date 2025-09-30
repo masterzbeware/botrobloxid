@@ -27,7 +27,7 @@ _G.BotVars = {
     ClientName = "FiestaGuardVip",
     RunService = game:GetService("RunService"),
 
-    ToggleAktif = true,       -- VIP-only commands
+    ToggleAktif = false,       -- VIP-only commands
     ToggleGameActive = false,   -- Enable bot in this game
 
     -- Spacing & distance
@@ -158,7 +158,7 @@ GroupBox1:AddInput("BotIdentity", {
 -- VIP toggle
 GroupBox1:AddToggle("AktifkanBot", {
     Text = "Enable Bot System (VIP only)",
-    Default = false,
+    Default = true,
     Tooltip = "Enable to accept VIP chat commands (!ikuti, !stop, dll)",
     Callback = function(Value)
         _G.BotVars.ToggleAktif = Value
@@ -170,7 +170,7 @@ GroupBox1:AddToggle("AktifkanBot", {
 -- ToggleGames (Enable/Disable Bot per Game)
 GroupBox1:AddToggle("ToggleGames", {
     Text = "Enable Bot in This Game",
-    Default = true,
+    Default = false,
     Tooltip = "If off, bot will ignore VIP commands in this game",
     Callback = function(Value)
         _G.BotVars.ToggleGameActive = Value
