@@ -1,5 +1,5 @@
 -- Bot.lua
--- MasterZ Beware Bot System (Dispatcher Only, Water-aware Pathfinding Compatible)
+-- MasterZ Beware Bot System (Dispatcher Only)
 
 local repoBase = "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Commands/"
 local obsidianRepo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
@@ -8,7 +8,7 @@ local Options = Library.Options
 
 local Window = Library:CreateWindow({
     Title = "Made by MasterZ",
-    Footer = "v1.0.0",
+    Footer = "v2.1.0",
     Icon = 0,
     NotifySide = "Right",
     ShowCustomCursor = true,
@@ -26,10 +26,8 @@ _G.BotVars = {
     LocalPlayer = game:GetService("Players").LocalPlayer,
     ClientName = "FiestaGuardVip",
     RunService = game:GetService("RunService"),
-    Workspace = game:GetService("Workspace"),
-    PathfindingService = game:GetService("PathfindingService"),
 
-    ToggleAktif = false, -- VIP-only commands
+    ToggleAktif = false,       -- VIP-only commands
 
     -- Spacing & distance
     JarakIkut = 5,
@@ -166,5 +164,5 @@ GroupBox1:AddInput("SideSpacingInput", { Default = tostring(_G.BotVars.SideSpaci
     Callback = function(Value) _G.BotVars.SideSpacing = tonumber(Value) end
 })
 
-Library:Notify("Bot System Loaded! Water-aware Pathfinding Enabled", 3)
-debugPrint("Bot.lua finished loading with Water-aware Pathfinding")
+Library:Notify("Bot System Loaded!", 3)
+debugPrint("Bot.lua finished loading")
