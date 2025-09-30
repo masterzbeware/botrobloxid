@@ -8,7 +8,7 @@ local Options = Library.Options
 
 local Window = Library:CreateWindow({
     Title = "Made by MasterZ",
-    Footer = "v1.0.0",
+    Footer = "v2.1.0",
     Icon = 0,
     NotifySide = "Right",
     ShowCustomCursor = true,
@@ -28,7 +28,6 @@ _G.BotVars = {
     RunService = game:GetService("RunService"),
 
     ToggleAktif = false,       -- VIP-only commands
-    ToggleGameActive = true,   -- Enable bot in this game
 
     -- Spacing & distance
     JarakIkut = 5,
@@ -51,7 +50,7 @@ debugPrint("Detected identity: " .. _G.BotVars.BotIdentity)
 
 -- Commands Loader
 local Commands = {}
-local commandFiles = { "Ikuti.lua", "RightFlank.lua", "Stop.lua", "Shield.lua", "Row.lua", "Sync.lua", "Pushup.lua", "Frontline.lua", "AmbilAlih.lua", "Reset.lua", "Salute.lua", "Rockpaper.lua" }
+local commandFiles = { "Ikuti.lua", "RightFlank.lua", "Stop.lua", "Shield.lua", "Row.lua", "Sync.lua", "Pushup.lua", "Frontline.lua", "AmbilAlih.lua", "Reset.lua", "Salute.lua" }
 
 for _, fileName in ipairs(commandFiles) do
     local url = repoBase .. fileName
@@ -93,14 +92,8 @@ local function setupClient(player)
     local function processMessage(msg, sender)
         msg = msg:lower()
 
-        -- Jika command Rockpaper, semua pemain bisa menjalankan
-        if msg:match("^!rockpaper") and Commands["rockpaper"] and Commands["rockpaper"].Execute then
-            Commands["rockpaper"].Execute(msg, sender)
-            return
-        end
-
-        -- VIP-only commands + ToggleGameActive
-        if sender.Name == _G.BotVars.ClientName and _G.BotVars.ToggleAktif and (_G.BotVars.ToggleGameActive ~= false) then
+        -- VIP-only commands
+        if sender.Name == _G.BotVars.ClientName and _G.BotVars.ToggleAktif then
             handleCommand(msg, sender)
         end
     end
@@ -148,18 +141,6 @@ GroupBox1:AddToggle("AktifkanBot", {
         _G.BotVars.ToggleAktif = Value
         debugPrint("ToggleAktif set to: " .. tostring(Value))
         Library:Notify("Bot System " .. (Value and "Enabled" or "Disabled"), 3)
-    end,
-})
-
--- ToggleGames (Enable/Disable Bot per Game)
-GroupBox1:AddToggle("ToggleGames", {
-    Text = "Enable Bot in This Game",
-    Default = true,
-    Tooltip = "If off, bot will ignore VIP commands in this game",
-    Callback = function(Value)
-        _G.BotVars.ToggleGameActive = Value
-        debugPrint("ToggleGames set to: " .. tostring(Value))
-        Library:Notify("Bot Game Toggle " .. (Value and "Enabled" or "Disabled"), 3)
     end,
 })
 
