@@ -27,12 +27,12 @@ _G.BotVars = {
     ClientName = "FiestaGuardVip",
     RunService = game:GetService("RunService"),
 
-    ToggleAktif = false,       -- VIP-only commands
-    ToggleGameActive = true,   -- Enable bot in this game
+    ToggleAktif = true,       -- VIP-only commands
+    ToggleGameActive = false,   -- Enable bot in this game
 
     -- Spacing & distance
-    JarakIkut = 5,
-    FollowSpacing = 2,
+    JarakIkut = 3,
+    FollowSpacing = 3,
     ShieldDistance = 5,
     ShieldSpacing = 4,
     RowSpacing = 4,
