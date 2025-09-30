@@ -26,17 +26,25 @@ return {
             local success, err = pcall(function()
                 local character = player.Character or player.CharacterAdded:Wait()
                 local humanoid = character:WaitForChild("Humanoid")
+
+                -- pastikan ada Animator
                 local animator = humanoid:FindFirstChildOfClass("Animator")
-
-                if animator then
-                    local saluteAnim = Instance.new("Animation")
-                    saluteAnim.AnimationId = "rbxassetid://3360689775" -- Salute dari catalog
-                    local track = animator:LoadAnimation(saluteAnim)
-                    track:Play()
-
-                    -- Simpan track biar bisa dihentikan dari Stop.lua
-                    vars.SaluteTrack = track
+                if not animator then
+                    animator = Instance.new("Animator")
+                    animator.Parent = humanoid
                 end
+
+                -- buat animasi
+                local saluteAnim = Instance.new("Animation")
+                saluteAnim.AnimationId = "rbxassetid://3360689775" -- Salute dari catalog
+
+                -- load & play
+                local track = animator:LoadAnimation(saluteAnim)
+                track.Priority = Enum.AnimationPriority.Action
+                track:Play()
+
+                -- Simpan track biar bisa dihentikan dari Stop.lua
+                vars.SaluteTrack = track
             end)
             if not success then warn("[Salute] gagal play animasi:", err) end
 

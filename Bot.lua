@@ -8,7 +8,7 @@ local Options = Library.Options
 
 local Window = Library:CreateWindow({
     Title = "Made by MasterZ",
-    Footer = "v1.2.0",
+    Footer = "v3.0.0",
     Icon = 0,
     NotifySide = "Right",
     ShowCustomCursor = true,
@@ -28,7 +28,6 @@ _G.BotVars = {
     RunService = game:GetService("RunService"),
 
     ToggleAktif = false,       -- VIP-only commands
-    GamesEnabled = false,      -- Toggle Games (RockPaper/CekKhodam dihapus)
 
     -- Spacing & distance
     JarakIkut = 5,
