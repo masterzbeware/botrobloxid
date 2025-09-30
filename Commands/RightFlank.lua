@@ -1,4 +1,4 @@
--- FrontlineReverse.lua (Frontline formation membelakangi VIP)
+-- RightFlank.lua (Frontline formation menghadap VIP)
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars or {}
@@ -7,7 +7,7 @@ return {
         local TextChatService = vars.TextChatService or game:GetService("TextChatService")
         local player = vars.LocalPlayer or Players.LocalPlayer
 
-        -- Ambil argumen !frontline {name}
+        -- Ambil argumen !rightflank {name}
         local args = {}
         for word in msg:gmatch("%S+") do table.insert(args, word) end
         local targetNameOrUsername = args[2]
@@ -23,7 +23,7 @@ return {
                 end
             end
             if not targetPlayer then
-                warn("[FrontlineReverse] Pemain '" .. targetNameOrUsername .. "' tidak ditemukan.")
+                warn("[RightFlank] Pemain '" .. targetNameOrUsername .. "' tidak ditemukan.")
                 return
             end
         else
@@ -42,7 +42,7 @@ return {
 
         local notifyLib = vars.Library or loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/Library.lua"))()
         if not vars.ShieldActive then
-            notifyLib:Notify("FrontlineReverse formation Deactivated", 3)
+            notifyLib:Notify("RightFlank formation Deactivated", 3)
             return
         end
 
@@ -93,7 +93,7 @@ return {
             end
         end
 
-        -- 🔹 Frontline reverse loop
+        -- 🔹 RightFlank loop
         vars.ShieldConnection = RunService.Heartbeat:Connect(function()
             if not vars.ToggleAktif or not vars.ShieldActive then return end
             if not vars.CurrentFormasiTarget or not vars.CurrentFormasiTarget.Character then return end
@@ -108,15 +108,15 @@ return {
                 if id == player.UserId then index = i break end
             end
 
-            -- Semua bot di depan VIP (line formation)
+            -- Semua bot di depan (sama seperti Frontline)
             local offset = (index - ((#botIds + 1) / 2)) * shieldSpacing
             local forward = targetHRP.CFrame.LookVector
             local right   = targetHRP.CFrame.RightVector
 
             local targetPos = targetHRP.Position + forward * shieldDistance + right * offset
 
-            -- Menghadap **membelakangi VIP**
-            moveToPosition(targetPos, targetHRP.Position - forward * 50)
+            -- Menghadap langsung ke VIP (tidak membelakangi)
+            moveToPosition(targetPos, targetHRP.Position)
         end)
 
         -- 🔹 Chat sequence
@@ -124,15 +124,15 @@ return {
             task.wait(0.5)
             local channel = TextChatService.TextChannels and TextChatService.TextChannels.RBXGeneral
             if channel then
-                pcall(function() channel:SendAsync("Siap laksanakan reverse frontline!") end)
+                pcall(function() channel:SendAsync("Siap laksanakan RightFlank!") end)
             end
             task.wait(3)
             if channel then
-                pcall(function() channel:SendAsync("Semua sudah masuk barisan membelakangi VIP!") end)
+                pcall(function() channel:SendAsync("Semua sudah masuk barisan RightFlank!") end)
             end
         end)
 
-        notifyLib:Notify("FrontlineReverse formation Activated for " .. vars.CurrentFormasiTarget.Name, 3)
-        print("[COMMAND] FrontlineReverse activated by", client.Name, "targeting:", vars.CurrentFormasiTarget.Name)
+        notifyLib:Notify("RightFlank formation Activated for " .. vars.CurrentFormasiTarget.Name, 3)
+        print("[COMMAND] RightFlank activated by", client.Name, "targeting:", vars.CurrentFormasiTarget.Name)
     end
 }
