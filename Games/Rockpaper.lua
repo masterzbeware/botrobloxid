@@ -2,57 +2,77 @@
 -- Command: Semua pemain bisa menjalankan
 -- Hanya bot dengan ToggleGameActive aktif yang mengeksekusi
 -- Delay global 15 detik per pemain
-local lastUsed = {} -- Menyimpan waktu terakhir tiap pemain menjalankan command
+-- Bisa !rockpaper [pilihan] atau !rockpaper random
+-- Menampilkan hasil menang/kalah/seri
+
+local lastPlayed = {} -- table untuk menyimpan waktu terakhir tiap pemain
 
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars or {}
         local TextChatService = vars.TextChatService or game:GetService("TextChatService")
-        local plrName = client.Name
 
-        -- Cek ToggleGameActive
+        -- Cek ToggleGameActive, jika false, bot tidak menjalankan
         if vars.ToggleGameActive ~= true then
             return
         end
 
-        -- Cek delay 15 detik
-        local currentTime = tick()
-        if lastUsed[plrName] and currentTime - lastUsed[plrName] < 15 then
-            return -- Lewati jika belum 15 detik
+        -- Cek cooldown 15 detik per pemain
+        local now = os.time()
+        if lastPlayed[client.UserId] and now - lastPlayed[client.UserId] < 15 then
+            return
         end
-        lastUsed[plrName] = currentTime
+        lastPlayed[client.UserId] = now
 
-        -- Pilihan: Batu, Kertas, Gunting
         local options = { "Batu", "Kertas", "Gunting" }
 
-        -- Pilihan pemain
-        local playerChoice = options[math.random(1, #options)]
-
-        -- Pilihan bot berdasarkan chance kemenangan
-        local resultRoll = math.random() -- 0.0 - 1.0 untuk menentukan hasil
-        local botChoice
-        if resultRoll < 0.33 then
-            -- Bot menang
-            if playerChoice == "Batu" then botChoice = "Kertas"
-            elseif playerChoice == "Kertas" then botChoice = "Gunting"
-            else botChoice = "Batu"
-            end
-        elseif resultRoll < 0.66 then
-            -- Bot kalah
-            if playerChoice == "Batu" then botChoice = "Gunting"
-            elseif playerChoice == "Kertas" then botChoice = "Batu"
-            else botChoice = "Kertas"
-            end
-        else
-            -- Seri
-            botChoice = playerChoice
+        -- Ambil argumen dari command
+        local args = {}
+        for word in msg:gmatch("%S+") do
+            table.insert(args, word)
         end
 
-        -- Kirim hasil ke RBXGeneral dalam satu pesan
+        local playerChoice
+        if #args >= 2 then
+            -- Jika pemain menentukan pilihan
+            local input = args[2]:lower()
+            if input == "batu" then
+                playerChoice = "Batu"
+            elseif input == "kertas" then
+                playerChoice = "Kertas"
+            elseif input == "gunting" then
+                playerChoice = "Gunting"
+            else
+                -- Pilihan tidak valid, random
+                playerChoice = options[math.random(1, #options)]
+            end
+        else
+            -- Pilihan random
+            playerChoice = options[math.random(1, #options)]
+        end
+
+        local botChoice = options[math.random(1, #options)]
+
+        -- Tentukan hasil
+        local outcome
+        if playerChoice == botChoice then
+            outcome = "Seri!"
+        elseif (playerChoice == "Batu" and botChoice == "Gunting") or
+               (playerChoice == "Gunting" and botChoice == "Kertas") or
+               (playerChoice == "Kertas" and botChoice == "Batu") then
+            outcome = "Kamu menang!"
+        else
+            outcome = "Bot menang!"
+        end
+
+        -- Kirim pesan ke RBXGeneral
         local channel = TextChatService.TextChannels and TextChatService.TextChannels:FindFirstChild("RBXGeneral")
         if channel then
             pcall(function()
-                channel:SendAsync(plrName .. " memilih: " .. playerChoice .. ". Saya memilih: " .. botChoice)
+                -- Pesan pertama: pilihan
+                channel:SendAsync(client.Name .. " memilih: " .. playerChoice .. " ... Bot memilih: " .. botChoice .. "!")
+                -- Pesan kedua: hasil
+                channel:SendAsync("Hasil: " .. outcome)
             end)
         else
             warn("Channel RBXGeneral tidak ditemukan!")
