@@ -2,8 +2,8 @@
 -- Command: Semua pemain bisa menjalankan
 -- Hanya bot dengan ToggleGameActive aktif yang mengeksekusi
 -- Delay global 15 detik per pemain
--- Bisa !rockpaper [pilihan] atau !rockpaper random
--- Menampilkan hasil menang/kalah/seri
+-- Bisa !rockpaper [pilih sendiri] atau !rockpaper
+-- Pesan pertama: pilihan, tunggu 3 detik, pesan kedua: hasil
 
 local lastPlayed = {} -- table untuk menyimpan waktu terakhir tiap pemain
 
@@ -71,6 +71,8 @@ return {
             pcall(function()
                 -- Pesan pertama: pilihan
                 channel:SendAsync(client.Name .. " memilih: " .. playerChoice .. " ... Bot memilih: " .. botChoice .. "!")
+                -- Tunggu 3 detik sebelum mengirim hasil
+                task.wait(3)
                 -- Pesan kedua: hasil
                 channel:SendAsync("Hasil: " .. outcome)
             end)
