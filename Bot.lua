@@ -106,8 +106,7 @@ local function setupClient(player)
     local function processMessage(msg, sender)
         msg = msg:lower()
 
-        -- Jika command game, semua pemain bisa menjalankan
-        -- tapi hanya bot dengan ToggleGames aktif yang mengeksekusi
+        -- Game commands (Rockpaper, ToggleGames) bisa dijalankan oleh semua pemain
         for gameName, gameCmd in pairs(Commands) do
             if msg:match("^!" .. gameName) and gameCmd.Execute then
                 if _G.BotVars.ToggleGameActive == true then
