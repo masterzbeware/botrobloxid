@@ -8,7 +8,7 @@ local Options = Library.Options
 
 local Window = Library:CreateWindow({
     Title = "Made by MasterZ",
-    Footer = "v2.1.0",
+    Footer = "v1.0.0",
     Icon = 0,
     NotifySide = "Right",
     ShowCustomCursor = true,
@@ -93,12 +93,9 @@ local function setupClient(player)
     local function processMessage(msg, sender)
         msg = msg:lower()
 
-        -- Jika command Rockpaper, semua pemain bisa menjalankan,
-        -- tapi hanya bot dengan ToggleGames aktif yang mengeksekusi
+        -- Jika command Rockpaper, semua pemain bisa menjalankan
         if msg:match("^!rockpaper") and Commands["rockpaper"] and Commands["rockpaper"].Execute then
-            if _G.BotVars.ToggleGameActive == true then
-                Commands["rockpaper"].Execute(msg, sender)
-            end
+            Commands["rockpaper"].Execute(msg, sender)
             return
         end
 
