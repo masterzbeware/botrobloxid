@@ -77,7 +77,7 @@ return {
 
         -- Waktu & warning tracking
         local lastWarningTime = 0
-        local warningDelay = 15 -- detik cooldown antar warning
+        local warningDelay = 13 -- detik cooldown antar warning
         local playerWarnings = {} -- simpan jumlah warning per player
 
         local function moveToPosition(targetPos, lookAtPos)
