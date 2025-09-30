@@ -1,4 +1,4 @@
--- Salute.lua (chat /e salute + respon teks)
+-- Salute.lua (chat hormat berurutan + /e salute)
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars or {}
@@ -18,15 +18,22 @@ return {
 
         -- Jalankan coroutine untuk chat salute
         vars.SaluteConnection = task.spawn(function()
-            -- Pertama: jalankan emote salute bawaan Roblox
-            sendChat("/e salute")
+            -- Pertama: kirim chat awal
+            sendChat("Siap hormat, Komandan!")
             task.wait(1.5)
             if not vars.SaluteActive then return end
 
-            -- Tambahan chat seperti hormat
-            sendChat("Siap hormat, Komandan!")
-            task.wait(2.5) if not vars.SaluteActive then return end sendChat("Hormat untuk Komandan!")
-            task.wait(2.5) if not vars.SaluteActive then return end sendChat("Kami siap menerima perintah!")
+            -- Lalu jalankan emote salute
+            sendChat("/e salute")
+
+            -- Chat tambahan setelah hormat
+            task.wait(1) 
+            if not vars.SaluteActive then return end 
+            sendChat("Hormat untuk Komandan!")
+
+            task.wait(1.5) 
+            if not vars.SaluteActive then return end 
+            sendChat("Kami siap menerima perintah!")
 
             vars.SaluteActive = false
             vars.SaluteConnection = nil
