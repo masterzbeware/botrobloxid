@@ -8,7 +8,7 @@ local Options = Library.Options
 
 local Window = Library:CreateWindow({
     Title = "Made by MasterZ",
-    Footer = "v1.0.0",
+    Footer = "v1.1.0",
     Icon = 0,
     NotifySide = "Right",
     ShowCustomCursor = true,
@@ -28,7 +28,7 @@ _G.BotVars = {
     RunService = game:GetService("RunService"),
 
     ToggleAktif = false,       -- VIP-only commands
-    ToggleGameActive = false,   -- Enable bot in this game
+    ToggleGameActive = true,   -- Enable bot in this game
 
     -- Spacing & distance
     JarakIkut = 3,
@@ -158,7 +158,7 @@ GroupBox1:AddInput("BotIdentity", {
 -- VIP toggle
 GroupBox1:AddToggle("AktifkanBot", {
     Text = "Enable Bot System (VIP only)",
-    Default = true,
+    Default = false,
     Tooltip = "Enable to accept VIP chat commands (!ikuti, !stop, dll)",
     Callback = function(Value)
         _G.BotVars.ToggleAktif = Value
@@ -170,7 +170,7 @@ GroupBox1:AddToggle("AktifkanBot", {
 -- ToggleGames (Enable/Disable Bot per Game)
 GroupBox1:AddToggle("ToggleGames", {
     Text = "Enable Bot in This Game",
-    Default = false,
+    Default = true,
     Tooltip = "If off, bot will ignore VIP commands in this game",
     Callback = function(Value)
         _G.BotVars.ToggleGameActive = Value

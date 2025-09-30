@@ -20,7 +20,10 @@ return {
         local channel = TextChatService.TextChannels and TextChatService.TextChannels:FindFirstChild("RBXGeneral")
         if channel then
             pcall(function()
-                channel:SendAsync(client.Name .. " memilih: " .. choice .. "!")
+                -- Pesan 1: Plr.Name memilih choice
+                channel:SendAsync(client.Name .. " memilih: " .. choice)
+                -- Pesan 2: Saya memilih choice
+                channel:SendAsync("Saya memilih: " .. choice)
             end)
         else
             warn("Channel RBXGeneral tidak ditemukan!")
