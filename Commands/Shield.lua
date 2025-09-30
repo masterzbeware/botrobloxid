@@ -1,4 +1,4 @@
--- Shield.lua (Shield formation + warning berlapis)
+-- Shield.lua (Shield formation + warning berlapis + alert ancaman)
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars or {}
@@ -10,9 +10,9 @@ return {
         -- Ambil argumen dari perintah !shield
         local args = {}
         for word in msg:gmatch("%S+") do table.insert(args, word) end
-        local targetNameOrUsername = args[2] -- !shield {name}
+        local targetNameOrUsername = args[2]
 
-        -- Cari pemain target
+        -- Cari target
         local targetPlayer = nil
         if targetNameOrUsername then
             for _, plr in ipairs(Players:GetPlayers()) do
@@ -30,13 +30,12 @@ return {
             targetPlayer = client
         end
 
-        -- Toggle shield mode
+        -- Toggle shield
         vars.ShieldActive = not vars.ShieldActive
         vars.FollowAllowed = false
         vars.RowActive = false
         vars.CurrentFormasiTarget = targetPlayer
 
-        -- Disconnect loops lama
         if vars.FollowConnection then pcall(function() vars.FollowConnection:Disconnect() end) vars.FollowConnection = nil end
         if vars.ShieldConnection then pcall(function() vars.ShieldConnection:Disconnect() end) vars.ShieldConnection = nil end
         if vars.RowConnection then pcall(function() vars.RowConnection:Disconnect() end) vars.RowConnection = nil end
@@ -47,7 +46,7 @@ return {
             return
         end
 
-        -- Ambil nilai dari Bot.lua
+        -- Jarak shield normal
         local shieldDistance = tonumber(vars.ShieldDistance) or 5
         local shieldSpacing  = tonumber(vars.ShieldSpacing) or 4
 
@@ -65,7 +64,6 @@ return {
         end
         table.sort(botIds)
 
-        -- Bot references
         local humanoid, myRootPart, moving
         local function updateBotRefs()
             local character = player.Character or player.CharacterAdded:Wait()
@@ -75,30 +73,25 @@ return {
         player.CharacterAdded:Connect(updateBotRefs)
         updateBotRefs()
 
-        -- Waktu & warning tracking
+        -- Tracking
         local lastWarningTime = 0
-        local warningDelay = 10 -- detik cooldown antar warning
-        local playerWarnings = {} -- simpan jumlah warning per player
+        local warningDelay = 13
+        local playerWarnings = {}
+        local activeThreats = {} -- simpan pemain yg jadi ancaman sementara
 
         local function moveToPosition(targetPos, lookAtPos)
             if not humanoid or not myRootPart then return end
             if moving then return end
             if (myRootPart.Position - targetPos).Magnitude < 2 then return end
-
             moving = true
             humanoid:MoveTo(targetPos)
             humanoid.MoveToFinished:Wait()
             moving = false
-
             if lookAtPos then
-                myRootPart.CFrame = CFrame.new(
-                    myRootPart.Position,
-                    Vector3.new(lookAtPos.X, myRootPart.Position.Y, lookAtPos.Z)
-                )
+                myRootPart.CFrame = CFrame.new(myRootPart.Position, Vector3.new(lookAtPos.X, myRootPart.Position.Y, lookAtPos.Z))
             end
         end
 
-        -- Pesan warning per tingkat
         local warningMessages = {
             [1] = "Harap menjauh ini Area Vip!",
             [2] = "Peringatan kedua! Jangan mendekati VIP!",
@@ -114,12 +107,11 @@ return {
             local targetHRP = vars.CurrentFormasiTarget.Character:FindFirstChild("HumanoidRootPart")
             if not targetHRP then return end
 
-            -- Posisi shield sesuai index bot
+            -- Posisi shield
             local index = 1
             for i, id in ipairs(botIds) do
                 if id == player.UserId then index = i break end
             end
-
             local targetPos
             if index == 1 then
                 targetPos = targetHRP.Position + targetHRP.CFrame.LookVector * shieldDistance
@@ -132,32 +124,56 @@ return {
             else
                 targetPos = targetHRP.Position - targetHRP.CFrame.LookVector * shieldDistance
             end
-
             moveToPosition(targetPos, targetHRP.Position + targetHRP.CFrame.LookVector * 50)
 
-            -- Deteksi pemain lain mendekat
+            -- Deteksi pemain lain
             local now = tick()
             if now - lastWarningTime >= warningDelay then
                 for _, plr in ipairs(Players:GetPlayers()) do
                     if plr ~= player and plr ~= vars.CurrentFormasiTarget then
-                        local userIdStr = tostring(plr.UserId)
-                        if not botMapping[userIdStr] then
+                        if not botMapping[tostring(plr.UserId)] then
                             local char = plr.Character
                             if char and char:FindFirstChild("HumanoidRootPart") then
                                 local dist = (char.HumanoidRootPart.Position - targetHRP.Position).Magnitude
                                 if dist <= shieldDistance then
-                                    -- Hitung warning player
                                     playerWarnings[plr.UserId] = (playerWarnings[plr.UserId] or 0) + 1
                                     local warnCount = playerWarnings[plr.UserId]
-
-                                    -- Pilih pesan
-                                    local msgToSend = warningMessages[warnCount] or warningMessages[3]
-
                                     local channel = TextChatService.TextChannels and TextChatService.TextChannels.RBXGeneral
-                                    if channel then
-                                        pcall(function()
-                                            channel:SendAsync(plr.Name .. " " .. msgToSend)
-                                        end)
+
+                                    if warnCount < 3 then
+                                        local msg = warningMessages[warnCount] or warningMessages[3]
+                                        if channel then
+                                            pcall(function()
+                                                channel:SendAsync(plr.Name .. " " .. msg)
+                                            end)
+                                        end
+                                    else
+                                        -- Warning ke-3 -> status ancaman
+                                        if not activeThreats[plr.UserId] then
+                                            activeThreats[plr.UserId] = tick()
+
+                                            -- Bot lebih mendekat ke VIP
+                                            shieldDistance = math.max(2, shieldDistance - 2)
+
+                                            if channel then
+                                                pcall(function()
+                                                    channel:SendAsync("[SECURITY ALERT] " .. plr.Name .. " dianggap ancaman VIP!!!")
+                                                end)
+                                            end
+
+                                            -- Timer reset setelah 5 detik kalau sudah menjauh
+                                            task.delay(5, function()
+                                                local tgt = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+                                                if tgt and targetHRP then
+                                                    local d = (tgt.Position - targetHRP.Position).Magnitude
+                                                    if d > shieldDistance + 3 then
+                                                        playerWarnings[plr.UserId] = 0
+                                                        activeThreats[plr.UserId] = nil
+                                                        shieldDistance = tonumber(vars.ShieldDistance) or 5 -- reset jarak normal
+                                                    end
+                                                end
+                                            end)
+                                        end
                                     end
 
                                     lastWarningTime = now
@@ -171,6 +187,6 @@ return {
         end)
 
         notifyLib:Notify("Shield formation Activated for " .. vars.CurrentFormasiTarget.Name, 3)
-        print("[COMMAND] Shield activated by", client.Name, "targeting:", vars.CurrentFormasiTarget.Name, "distance:", shieldDistance, "spacing:", shieldSpacing)
+        print("[COMMAND] Shield activated by", client.Name, "targeting:", vars.CurrentFormasiTarget.Name)
     end
 }
