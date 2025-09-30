@@ -108,14 +108,14 @@ return {
                 if id == player.UserId then index = i break end
             end
 
-            -- Semua bot di depan (sama seperti Frontline)
+            -- Posisi sama seperti Frontline
             local offset = (index - ((#botIds + 1) / 2)) * shieldSpacing
             local forward = targetHRP.CFrame.LookVector
             local right   = targetHRP.CFrame.RightVector
 
             local targetPos = targetHRP.Position + forward * shieldDistance + right * offset
 
-            -- Menghadap langsung ke VIP (tidak membelakangi)
+            -- Menghadap langsung ke VIP
             moveToPosition(targetPos, targetHRP.Position)
         end)
 
@@ -124,11 +124,11 @@ return {
             task.wait(0.5)
             local channel = TextChatService.TextChannels and TextChatService.TextChannels.RBXGeneral
             if channel then
-                pcall(function() channel:SendAsync("Siap laksanakan RightFlank!") end)
+                pcall(function() channel:SendAsync("Siap laksanakan Balik kanan!") end)
             end
             task.wait(3)
             if channel then
-                pcall(function() channel:SendAsync("Semua sudah masuk barisan RightFlank!") end)
+                pcall(function() channel:SendAsync("Semua sudah masuk barisan Balik kanan!") end)
             end
         end)
 
