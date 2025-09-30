@@ -1,4 +1,4 @@
--- Pushup.lua (animasi push-up + stop benar setelah chat terakhir)
+-- Pushup.lua (animasi push-up sesuai jumlah, default 3x)
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars or {}
@@ -18,14 +18,17 @@ return {
             end
         end
 
+        -- ambil angka dari command (!pushup 5 -> 5)
+        local jumlah = tonumber(msg:match("!pushup%s+(%d+)")) or 3
+
         -- Simpan connection biar bisa dihentikan dari Stop.lua
         vars.PushupConnection = task.spawn(function()
             -- Chat awal
             sendChat("Siap laksanakan!")
-            task.wait(5)
+            task.wait(2)
             if not vars.PushupActive then return end
 
-            -- 🔹 Play animasi push-up sekali
+            -- 🔹 Mulai animasi push-up
             pcall(function()
                 local args = { "playAnimation", "Push Up" }
                 game:GetService("ReplicatedStorage")
@@ -35,12 +38,19 @@ return {
                     :InvokeServer(unpack(args))
             end)
 
-            -- Chat dengan jeda 5 detik
-            task.wait(5) if not vars.PushupActive then return end sendChat("Satu push up!")
-            task.wait(5) if not vars.PushupActive then return end sendChat("Dua push up!")
-            task.wait(5) if not vars.PushupActive then return end sendChat("Tiga push up, Komandan!")
+            -- Loop push-up sesuai jumlah
+            for i = 1, jumlah do
+                task.wait(5)
+                if not vars.PushupActive then break end
 
-            -- 🔹 Stop animasi setelah chat terakhir
+                if i == jumlah then
+                    sendChat(tostring(i) .. " push up, Komandan!")
+                else
+                    sendChat(tostring(i) .. " push up!")
+                end
+            end
+
+            -- 🔹 Stop animasi setelah selesai
             pcall(function()
                 local args = { "stopAnimation", "Push Up" }
                 game:GetService("ReplicatedStorage")
