@@ -1,7 +1,6 @@
 -- Rockpaper.lua
 -- Command: Semua pemain bisa menjalankan
 -- Hanya bot dengan ToggleGameActive aktif yang mengeksekusi
--- Compatible dengan ToggleGames.lua
 
 return {
     Execute = function(msg, client)
@@ -10,11 +9,6 @@ return {
 
         -- Cek ToggleGameActive, jika false, bot tidak menjalankan
         if vars.ToggleGameActive ~= true then
-            return
-        end
-
-        -- Cek apakah bot sedang stop (misal Stop.lua menandai vars.Stopped)
-        if vars.Stopped then
             return
         end
 
