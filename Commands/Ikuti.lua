@@ -1,11 +1,12 @@
 -- Ikuti.lua
--- Command !ikuti: Bot mengikuti pemain VIP
+-- Command !ikuti: Bot mengikuti pemain VIP dengan Pathfinding
 
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars
         local RunService = vars.RunService
         local player = vars.LocalPlayer
+        local PathfindingService = game:GetService("PathfindingService")
 
         if not RunService then
             warn("[Ikuti] RunService tidak tersedia!")
@@ -34,8 +35,23 @@ return {
             if (myRootPart.Position - targetPos).Magnitude < 2 then return end
 
             moving = true
-            humanoid:MoveTo(targetPos)
-            humanoid.MoveToFinished:Wait()
+
+            -- Buat path
+            local path = PathfindingService:CreatePath({
+                AgentRadius = 2,
+                AgentHeight = 5,
+                AgentCanJump = true,
+                AgentJumpHeight = 10,
+                AgentMaxSlope = 45,
+            })
+            path:ComputeAsync(myRootPart.Position, targetPos)
+
+            local waypoints = path:GetWaypoints()
+            for _, waypoint in ipairs(waypoints) do
+                humanoid:MoveTo(waypoint.Position)
+                humanoid.MoveToFinished:Wait()
+            end
+
             moving = false
         end
 
