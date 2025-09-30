@@ -1,5 +1,5 @@
 -- Stop.lua
--- Command !stop: Menghentikan semua aksi bot (follow, shield, row, sync, pushup)
+-- Command !stop: Menghentikan semua aksi bot (follow, shield, row, sync, pushup, frontline)
 
 return {
     Execute = function(msg, client)
@@ -7,13 +7,13 @@ return {
 
         -- 🔹 Nonaktifkan semua mode
         vars.FollowAllowed = false
-        vars.ShieldActive = false
+        vars.ShieldActive = false      -- hentikan Frontline / Shield
         vars.RowActive = false
         vars.SyncActive = false
         vars.PushupActive = false
         vars.CurrentFormasiTarget = nil
 
-        -- 🔹 Hentikan semua koneksi / loop kalau ada
+        -- 🔹 Hentikan semua koneksi / loop jika ada
         if vars.FollowConnection then
             pcall(function() vars.FollowConnection:Disconnect() end)
             vars.FollowConnection = nil
@@ -39,7 +39,7 @@ return {
             vars.SyncConnection = nil
         end
 
-        -- 🔹 Stop animasi push-up kalau masih jalan
+        -- 🔹 Stop animasi push-up kalau masih berjalan
         pcall(function()
             local args = { "stopAnimation", "Push Up" }
             game:GetService("ReplicatedStorage")
@@ -49,7 +49,7 @@ return {
                 :InvokeServer(unpack(args))
         end)
 
-        -- 🔹 Log di output saja
+        -- 🔹 Log di output
         print("[COMMAND] Bot stopped by client:", client and client.Name or "Unknown")
     end
 }
