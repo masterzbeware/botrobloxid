@@ -1,5 +1,5 @@
 -- Ikuti.lua
--- Command !ikuti: Bot mengikuti pemain VIP, menghindari halangan & mencari jalan jika ada water
+-- Bot mengikuti pemain VIP, menghindari halangan & air (tidak berjalan di water)
 
 return {
     Execute = function(msg, client)
@@ -31,7 +31,6 @@ return {
         player.CharacterAdded:Connect(updateBotRefs)
         updateBotRefs()
 
-        -- Fungsi cek water di posisi
         local function isWater(pos)
             local region = Region3.new(pos - Vector3.new(2,2,2), pos + Vector3.new(2,2,2))
             local parts = Workspace:FindPartsInRegion3(region, nil, 50)
@@ -50,40 +49,41 @@ return {
 
             moving = true
 
-            local safeTarget = targetPos
-            if isWater(safeTarget) then
-                -- Geser target sementara jika air
-                safeTarget = safeTarget + Vector3.new(0,0,3)
+            local function computeSafePath(startPos, endPos)
+                local path = PathfindingService:CreatePath({
+                    AgentRadius = 2,
+                    AgentHeight = 5,
+                    AgentCanJump = true,
+                    AgentJumpHeight = 10,
+                    AgentMaxSlope = 45,
+                })
+                path:ComputeAsync(startPos, endPos)
+                local waypoints = path:GetWaypoints()
+                -- Cek tiap waypoint
+                for i, wp in ipairs(waypoints) do
+                    if isWater(wp.Position) then
+                        return false, path
+                    end
+                end
+                return true, path
             end
 
-            -- Pathfinding
-            local path = PathfindingService:CreatePath({
-                AgentRadius = 2,
-                AgentHeight = 5,
-                AgentCanJump = true,
-                AgentJumpHeight = 10,
-                AgentMaxSlope = 45,
-            })
-
-            path:ComputeAsync(myRootPart.Position, safeTarget)
+            local safe, path = computeSafePath(myRootPart.Position, targetPos)
+            local attempts = 0
+            while not safe and attempts < 5 do
+                -- Geser target sedikit untuk mencari jalur aman
+                targetPos = targetPos + Vector3.new(2,0,2)
+                safe, path = computeSafePath(myRootPart.Position, targetPos)
+                attempts = attempts + 1
+            end
 
             local waypoints = path:GetWaypoints()
-
-            -- Jika ada waypoint di air, coba recompute dengan offset kecil
-            for i, waypoint in ipairs(waypoints) do
-                local wpPos = waypoint.Position
-                if isWater(wpPos) then
-                    -- Geser waypoint sedikit ke sisi kanan/kiri
-                    wpPos = wpPos + Vector3.new(3,0,0)
-                    path:ComputeAsync(myRootPart.Position, wpPos)
-                    waypoints = path:GetWaypoints()
-                    break
-                end
-            end
-
-            -- Jalankan waypoint
             for _, waypoint in ipairs(waypoints) do
                 if not vars.FollowAllowed then break end
+                if isWater(waypoint.Position) then
+                    -- Skip waypoint di water
+                    continue
+                end
                 humanoid:MoveTo(waypoint.Position)
                 local reached = humanoid.MoveToFinished:Wait()
                 if not reached then break end
@@ -92,10 +92,8 @@ return {
             moving = false
         end
 
-        -- Putuskan koneksi lama dulu
         if vars.FollowConnection then vars.FollowConnection:Disconnect() end
 
-        -- 🔹 Heartbeat update
         if RunService.Heartbeat then
             vars.FollowConnection = RunService.Heartbeat:Connect(function()
                 if not vars.FollowAllowed or not client.Character then return end
@@ -105,7 +103,6 @@ return {
                 local jarakIkut = tonumber(vars.JarakIkut) or 5
                 local followSpacing = tonumber(vars.FollowSpacing) or 2
 
-                -- Urutan bot FIXED
                 local orderedBots = {
                     "8802945328", -- Bot1
                     "8802949363", -- Bot2
@@ -122,7 +119,6 @@ return {
                     end
                 end
 
-                -- Hitung posisi ikuti VIP
                 local followPos = targetHRP.Position - targetHRP.CFrame.LookVector * (jarakIkut + (index - 1) * followSpacing)
                 moveToPosition(followPos)
             end)
