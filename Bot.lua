@@ -1,7 +1,7 @@
 -- Bot.lua
 -- MasterZ Beware Bot System (Dispatcher Only)
 
-local repoBase = "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Commands/"
+local repoBase = "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/"
 local obsidianRepo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
 local Library = loadstring(game:HttpGet(obsidianRepo .. "Library.lua"))()
 local Options = Library.Options
@@ -49,31 +49,44 @@ local botMapping = {
 _G.BotVars.BotIdentity = botMapping[tostring(_G.BotVars.LocalPlayer.UserId)] or "Unknown Bot"
 debugPrint("Detected identity: " .. _G.BotVars.BotIdentity)
 
--- Commands Loader
+-- Commands Loader (Commands + Games)
 local Commands = {}
-local commandFiles = { "Ikuti.lua", "RightFlank.lua", "Stop.lua", "Shield.lua", "Row.lua", "Sync.lua", "Pushup.lua", "Frontline.lua", "AmbilAlih.lua", "Reset.lua", "Salute.lua", "Rockpaper.lua" }
 
-for _, fileName in ipairs(commandFiles) do
-    local url = repoBase .. fileName
-    local success, response = pcall(function() return game:HttpGet(url) end)
-    if success and response then
-        local func, err = loadstring(response)
-        if func then
-            local status, cmdTable = pcall(func)
-            if status and type(cmdTable) == "table" then
-                local nameKey = fileName:sub(1, #fileName - 4)
-                Commands[nameKey:lower()] = cmdTable
-                debugPrint("Loaded command via HTTP: " .. nameKey)
+local function loadFolder(folderName)
+    local files = {} -- daftar file .lua per folder
+    if folderName == "Commands" then
+        files = { "Ikuti.lua", "RightFlank.lua", "Stop.lua", "Shield.lua", "Row.lua", "Sync.lua", "Pushup.lua", "Frontline.lua", "AmbilAlih.lua", "Reset.lua", "Salute.lua" }
+    elseif folderName == "Games" then
+        files = { "Rockpaper.lua" } -- tambah game lain di sini
+    end
+
+    for _, fileName in ipairs(files) do
+        local url = repoBase .. folderName .. "/" .. fileName
+        local success, response = pcall(function() return game:HttpGet(url) end)
+        if success and response then
+            local func, err = loadstring(response)
+            if func then
+                local status, cmdTable = pcall(func)
+                if status and type(cmdTable) == "table" then
+                    local nameKey = fileName:sub(1, #fileName - 4)
+                    Commands[nameKey:lower()] = cmdTable
+                    debugPrint("Loaded " .. folderName .. " file: " .. nameKey)
+                else
+                    debugPrint("Failed executing " .. folderName .. " chunk: " .. fileName)
+                end
             else
-                debugPrint("Failed executing command chunk: " .. fileName)
+                debugPrint("Failed loadstring: " .. folderName .. "/" .. fileName)
             end
         else
-            debugPrint("Failed loadstring: " .. fileName)
+            debugPrint("Failed HttpGet: " .. folderName .. "/" .. fileName)
         end
-    else
-        debugPrint("Failed HttpGet: " .. fileName)
     end
 end
+
+-- Load Commands
+loadFolder("Commands")
+-- Load Games
+loadFolder("Games")
 
 -- Handle Chat Commands
 local function handleCommand(msg, client)
