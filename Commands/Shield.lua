@@ -1,4 +1,4 @@
--- Shield.lua (Shield formation + warning berlapis + alert ancaman)
+-- Shield.lua (Shield formation + warning berlapis + alert ancaman + reset realtime)
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars or {}
@@ -47,7 +47,8 @@ return {
         end
 
         -- Jarak shield normal
-        local shieldDistance = tonumber(vars.ShieldDistance) or 5
+        local defaultShieldDistance = tonumber(vars.ShieldDistance) or 5
+        local shieldDistance = defaultShieldDistance
         local shieldSpacing  = tonumber(vars.ShieldSpacing) or 4
 
         local botMapping = vars.BotMapping or {
@@ -77,7 +78,8 @@ return {
         local lastWarningTime = 0
         local warningDelay = 13
         local playerWarnings = {}
-        local activeThreats = {} -- simpan pemain yg jadi ancaman sementara
+        local lastNearTime = {} -- simpan kapan terakhir kali dekat
+        local activeThreats = {}
 
         local function moveToPosition(targetPos, lookAtPos)
             if not humanoid or not myRootPart then return end
@@ -126,8 +128,9 @@ return {
             end
             moveToPosition(targetPos, targetHRP.Position + targetHRP.CFrame.LookVector * 50)
 
-            -- Deteksi pemain lain
             local now = tick()
+
+            -- Deteksi pemain lain
             if now - lastWarningTime >= warningDelay then
                 for _, plr in ipairs(Players:GetPlayers()) do
                     if plr ~= player and plr ~= vars.CurrentFormasiTarget then
@@ -136,6 +139,10 @@ return {
                             if char and char:FindFirstChild("HumanoidRootPart") then
                                 local dist = (char.HumanoidRootPart.Position - targetHRP.Position).Magnitude
                                 if dist <= shieldDistance then
+                                    -- Simpan waktu terakhir dia dekat
+                                    lastNearTime[plr.UserId] = now
+
+                                    -- Tambah warning
                                     playerWarnings[plr.UserId] = (playerWarnings[plr.UserId] or 0) + 1
                                     local warnCount = playerWarnings[plr.UserId]
                                     local channel = TextChatService.TextChannels and TextChatService.TextChannels.RBXGeneral
@@ -148,11 +155,8 @@ return {
                                             end)
                                         end
                                     else
-                                        -- Warning ke-3 -> status ancaman
                                         if not activeThreats[plr.UserId] then
-                                            activeThreats[plr.UserId] = tick()
-
-                                            -- Bot lebih mendekat ke VIP
+                                            activeThreats[plr.UserId] = true
                                             shieldDistance = math.max(2, shieldDistance - 2)
 
                                             if channel then
@@ -160,27 +164,27 @@ return {
                                                     channel:SendAsync("[SECURITY ALERT] " .. plr.Name .. " dianggap ancaman VIP!!!")
                                                 end)
                                             end
-
-                                            -- Timer reset setelah 5 detik kalau sudah menjauh
-                                            task.delay(5, function()
-                                                local tgt = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
-                                                if tgt and targetHRP then
-                                                    local d = (tgt.Position - targetHRP.Position).Magnitude
-                                                    if d > shieldDistance + 3 then
-                                                        playerWarnings[plr.UserId] = 0
-                                                        activeThreats[plr.UserId] = nil
-                                                        shieldDistance = tonumber(vars.ShieldDistance) or 5 -- reset jarak normal
-                                                    end
-                                                end
-                                            end)
                                         end
                                     end
-
                                     lastWarningTime = now
                                     break
                                 end
                             end
                         end
+                    end
+                end
+            end
+
+            -- 🔹 Reset realtime jika sudah menjauh 5 detik
+            for userId, lastNear in pairs(lastNearTime) do
+                local plr = Players:GetPlayerByUserId(userId)
+                if plr and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                    local dist = (plr.Character.HumanoidRootPart.Position - targetHRP.Position).Magnitude
+                    if dist > shieldDistance + 3 and (now - lastNear) >= 5 then
+                        playerWarnings[userId] = 0
+                        activeThreats[userId] = nil
+                        lastNearTime[userId] = nil
+                        shieldDistance = defaultShieldDistance -- reset ke jarak normal
                     end
                 end
             end
