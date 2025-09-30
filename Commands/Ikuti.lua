@@ -1,5 +1,5 @@
 -- Ikuti.lua
--- Command !ikuti: Bot mengikuti pemain VIP, menghindari halangan & water
+-- Command !ikuti: Bot mengikuti pemain VIP, menghindari halangan & mencari jalan jika ada water
 
 return {
     Execute = function(msg, client)
@@ -50,7 +50,13 @@ return {
 
             moving = true
 
-            -- Pathfinding dengan obstacle & water avoidance
+            local safeTarget = targetPos
+            if isWater(safeTarget) then
+                -- Geser target sementara jika air
+                safeTarget = safeTarget + Vector3.new(0,0,3)
+            end
+
+            -- Pathfinding
             local path = PathfindingService:CreatePath({
                 AgentRadius = 2,
                 AgentHeight = 5,
@@ -59,20 +65,25 @@ return {
                 AgentMaxSlope = 45,
             })
 
-            -- Jika targetPos ada water, cari posisi sedikit menggeser
-            if isWater(targetPos) then
-                targetPos = targetPos + Vector3.new(0,0,3) -- geser 3 stud, bisa disesuaikan
-            end
+            path:ComputeAsync(myRootPart.Position, safeTarget)
 
-            path:ComputeAsync(myRootPart.Position, targetPos)
             local waypoints = path:GetWaypoints()
 
+            -- Jika ada waypoint di air, coba recompute dengan offset kecil
+            for i, waypoint in ipairs(waypoints) do
+                local wpPos = waypoint.Position
+                if isWater(wpPos) then
+                    -- Geser waypoint sedikit ke sisi kanan/kiri
+                    wpPos = wpPos + Vector3.new(3,0,0)
+                    path:ComputeAsync(myRootPart.Position, wpPos)
+                    waypoints = path:GetWaypoints()
+                    break
+                end
+            end
+
+            -- Jalankan waypoint
             for _, waypoint in ipairs(waypoints) do
                 if not vars.FollowAllowed then break end
-                if isWater(waypoint.Position) then
-                    -- Skip waypoint di air
-                    continue
-                end
                 humanoid:MoveTo(waypoint.Position)
                 local reached = humanoid.MoveToFinished:Wait()
                 if not reached then break end
