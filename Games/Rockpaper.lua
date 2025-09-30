@@ -1,22 +1,27 @@
 -- Rockpaper.lua
--- Command: Semua pemain bisa menjalankan, tapi hanya bot dengan ToggleGames aktif yang mengeksekusi
+-- Command: Semua pemain bisa menjalankan
+-- Hanya bot dengan ToggleGameActive aktif yang mengeksekusi
+-- Compatible dengan StopGames.lua
 
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars or {}
         local TextChatService = vars.TextChatService or game:GetService("TextChatService")
 
-        -- Cek ToggleGames sebelum bot mengeksekusi
+        -- Cek ToggleGameActive, jika false, bot tidak menjalankan
         if vars.ToggleGameActive ~= true then
-            -- ToggleGames mati, bot tidak mengirim pesan
             return
         end
 
-        -- Mengirim chat ke RBXGeneral
+        -- Random pilihan: Batu, Kertas, Gunting
+        local options = { "Batu", "Kertas", "Gunting" }
+        local choice = options[math.random(1, #options)]
+
+        -- Kirim hasil ke RBXGeneral
         local channel = TextChatService.TextChannels and TextChatService.TextChannels:FindFirstChild("RBXGeneral")
         if channel then
             pcall(function()
-                channel:SendAsync("Siap laksanakan!")
+                channel:SendAsync(client.Name .. " memilih: " .. choice .. "!")
             end)
         else
             warn("Channel RBXGeneral tidak ditemukan!")

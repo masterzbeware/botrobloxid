@@ -57,7 +57,7 @@ local function loadFolder(folderName)
     if folderName == "Commands" then
         files = { "Ikuti.lua", "RightFlank.lua", "Stop.lua", "Shield.lua", "Row.lua", "Sync.lua", "Pushup.lua", "Frontline.lua", "AmbilAlih.lua", "Reset.lua", "Salute.lua" }
     elseif folderName == "Games" then
-        files = { "Rockpaper.lua" } -- tambah game lain di sini
+        files = { "Rockpaper.lua", "ToggleGames.lua" } -- tambah game lain di sini
     end
 
     for _, fileName in ipairs(files) do
@@ -106,13 +106,15 @@ local function setupClient(player)
     local function processMessage(msg, sender)
         msg = msg:lower()
 
-        -- Jika command Rockpaper, semua pemain bisa menjalankan,
+        -- Jika command game, semua pemain bisa menjalankan
         -- tapi hanya bot dengan ToggleGames aktif yang mengeksekusi
-        if msg:match("^!rockpaper") and Commands["rockpaper"] and Commands["rockpaper"].Execute then
-            if _G.BotVars.ToggleGameActive == true then
-                Commands["rockpaper"].Execute(msg, sender)
+        for gameName, gameCmd in pairs(Commands) do
+            if msg:match("^!" .. gameName) and gameCmd.Execute then
+                if _G.BotVars.ToggleGameActive == true then
+                    gameCmd.Execute(msg, sender)
+                end
+                return
             end
-            return
         end
 
         -- VIP-only commands + ToggleGameActive
