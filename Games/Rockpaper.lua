@@ -1,6 +1,6 @@
 -- Rockpaper.lua
 -- Command: Semua pemain bisa menjalankan
--- Hanya bot dengan ToggleGameActive aktif yang mengeksekusi
+-- Hanya bot dengan ToggleGames aktif yang mengeksekusi
 -- Delay global 15 detik per pemain
 -- Bisa !rockpaper [pilih sendiri] atau !rockpaper
 -- Pesan pertama: pilihan, tunggu 3 detik, pesan kedua: hasil
@@ -12,12 +12,12 @@ return {
         local vars = _G.BotVars or {}
         local TextChatService = vars.TextChatService or game:GetService("TextChatService")
 
-        -- Cek ToggleGameActive, jika false, bot tidak menjalankan
-        if vars.ToggleGameActive ~= true then
+        -- ✅ Cek ToggleGames, jika false, bot tidak menjalankan
+        if vars.ToggleGames ~= true then
             return
         end
 
-        -- Cek cooldown 15 detik per pemain
+        -- ⏳ Cek cooldown 15 detik per pemain
         local now = os.time()
         if lastPlayed[client.UserId] and now - lastPlayed[client.UserId] < 15 then
             return
@@ -26,7 +26,7 @@ return {
 
         local options = { "Batu", "Kertas", "Gunting" }
 
-        -- Ambil argumen dari command
+        -- 🎲 Ambil argumen dari command
         local args = {}
         for word in msg:gmatch("%S+") do
             table.insert(args, word)
@@ -53,7 +53,7 @@ return {
 
         local botChoice = options[math.random(1, #options)]
 
-        -- Tentukan hasil
+        -- ⚖️ Tentukan hasil
         local outcome
         if playerChoice == botChoice then
             outcome = "Seri!"
@@ -65,7 +65,7 @@ return {
             outcome = "Bot menang!"
         end
 
-        -- Kirim pesan ke RBXGeneral
+        -- 📢 Kirim pesan ke RBXGeneral
         local channel = TextChatService.TextChannels and TextChatService.TextChannels:FindFirstChild("RBXGeneral")
         if channel then
             pcall(function()
