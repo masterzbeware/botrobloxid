@@ -5,7 +5,6 @@ return {
         local RunService = vars.RunService
         local Players = game:GetService("Players")
         local TextChatService = vars.TextChatService or game:GetService("TextChatService")
-        local player = vars.LocalPlayer
 
         if not RunService then
             warn("[Absen] RunService tidak tersedia!")
@@ -14,7 +13,6 @@ return {
 
         vars.AbsenActive = true
 
-        -- Bot Mapping (urutan absen)
         local orderedBots = {
             "8802945328", -- Bot1
             "8802949363", -- Bot2
@@ -31,15 +29,15 @@ return {
             return nil
         end
 
-        -- Ambil channel chat
         local channel = TextChatService.TextChannels and TextChatService.TextChannels:FindFirstChild("RBXGeneral")
-        local function sendChat(text)
+        local function sendChat(botIndex)
             if channel then
-                pcall(function() channel:SendAsync(text) end)
+                pcall(function()
+                    channel:SendAsync("Laporan Komandan, Barisan " .. botIndex .. " hadir")
+                end)
             end
         end
 
-        -- Ambil semua bot player references
         local botRefs = {}
         for i, uid in ipairs(orderedBots) do
             local botPlayer = getBotByUserId(uid)
@@ -64,13 +62,6 @@ return {
             return
         end
 
-        -- Posisi default di belakang VIP (barisan)
-        local defaultPositions = {}
-        for i, bot in ipairs(botRefs) do
-            defaultPositions[i] = targetHRP.Position - targetHRP.CFrame.LookVector * jarakBaris - targetHRP.CFrame.RightVector * ((i-1) * spacing)
-        end
-
-        -- Fungsi gerak bot ke posisi dan menghadap target
         local function moveTo(bot, targetPos, lookAtPos)
             if not bot.humanoid or not bot.hrp then return end
             bot.humanoid:MoveTo(targetPos)
@@ -80,7 +71,7 @@ return {
             end
         end
 
-        -- 🔹 Coroutine absen bergantian maju → lapor → kembali ke barisan belakang VIP
+        -- Coroutine absen bergantian
         task.spawn(function()
             for i, bot in ipairs(botRefs) do
                 -- Maju ke depan Client (+3 stud)
@@ -88,8 +79,8 @@ return {
                 moveTo(bot, forwardPos, targetHRP.Position)
                 task.wait(0.5)
 
-                -- Kirim chat hanya bot yang maju
-                sendChat("Laporan Komandan, Barisan " .. i .. " hadir")
+                -- Kirim chat hanya bot yang maju sekarang
+                sendChat(i)
                 task.wait(1)
 
                 -- Kembali ke posisi barisan belakang VIP (Ikuti.lua style)
