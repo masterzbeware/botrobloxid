@@ -28,9 +28,10 @@ _G.BotVars = {
     RunService = game:GetService("RunService"),
 
     ToggleAktif = false,       -- VIP-only commands
+    ToggleGames = false,       -- 🔹 Games toggle
 
     -- Spacing & distance
-    JarakIkut = 5,
+    JarakIkut = 3,
     FollowSpacing = 2,
     ShieldDistance = 5,
     ShieldSpacing = 4,
@@ -50,7 +51,18 @@ debugPrint("Detected identity: " .. _G.BotVars.BotIdentity)
 
 -- Commands Loader
 local Commands = {}
-local commandFiles = { "Ikuti.lua", "Stop.lua", "Shield.lua", "Row.lua", "Sync.lua", "Pushup.lua", "Frontline.lua", "AmbilAlih.lua", "Reset.lua", "Salute.lua" }
+local commandFiles = {
+    "Ikuti.lua",
+    "Stop.lua",
+    "Shield.lua",
+    "Row.lua",
+    "Sync.lua",
+    "Pushup.lua",
+    "Frontline.lua",
+    "AmbilAlih.lua",
+    "Reset.lua",
+    "Salute.lua"
+}
 
 for _, fileName in ipairs(commandFiles) do
     local url = repoBase .. fileName
@@ -95,6 +107,12 @@ local function setupClient(player)
         -- VIP-only commands
         if sender.Name == _G.BotVars.ClientName and _G.BotVars.ToggleAktif then
             handleCommand(msg, sender)
+        end
+
+        -- Games toggle commands (jika mau dihubungkan ke command khusus)
+        if sender.Name == _G.BotVars.ClientName and _G.BotVars.ToggleGames then
+            -- contoh: kalau nanti ada command game tambahan
+            -- handleCommand(msg, sender)
         end
     end
 
@@ -144,23 +162,53 @@ GroupBox1:AddToggle("AktifkanBot", {
     end,
 })
 
+-- 🔹 Games toggle
+GroupBox1:AddToggle("AktifkanGames", {
+    Text = "Enable Games System",
+    Default = false,
+    Tooltip = "Enable/disable games-related commands or features",
+    Callback = function(Value)
+        _G.BotVars.ToggleGames = Value
+        debugPrint("ToggleGames set to: " .. tostring(Value))
+        Library:Notify("Games System " .. (Value and "Enabled" or "Disabled"), 3)
+    end,
+})
+
 -- Input spacing & distance
-GroupBox1:AddInput("JarakIkutInput", { Default = tostring(_G.BotVars.JarakIkut), Text = "Follow Distance (VIP)", Placeholder = "Example: 5",
+GroupBox1:AddInput("JarakIkutInput", {
+    Default = tostring(_G.BotVars.JarakIkut),
+    Text = "Follow Distance (VIP)",
+    Placeholder = "Example: 3",
     Callback = function(Value) _G.BotVars.JarakIkut = tonumber(Value) end
 })
-GroupBox1:AddInput("FollowSpacingInput", { Default = tostring(_G.BotVars.FollowSpacing), Text = "Follow Spacing (Antar Bot)", Placeholder = "Example: 2",
+GroupBox1:AddInput("FollowSpacingInput", {
+    Default = tostring(_G.BotVars.FollowSpacing),
+    Text = "Follow Spacing (Antar Bot)",
+    Placeholder = "Example: 2",
     Callback = function(Value) _G.BotVars.FollowSpacing = tonumber(Value) end
 })
-GroupBox1:AddInput("ShieldDistanceInput", { Default = tostring(_G.BotVars.ShieldDistance), Text = "Shield Distance (VIP)", Placeholder = "Example: 5",
+GroupBox1:AddInput("ShieldDistanceInput", {
+    Default = tostring(_G.BotVars.ShieldDistance),
+    Text = "Shield Distance (VIP)",
+    Placeholder = "Example: 5",
     Callback = function(Value) _G.BotVars.ShieldDistance = tonumber(Value) end
 })
-GroupBox1:AddInput("ShieldSpacingInput", { Default = tostring(_G.BotVars.ShieldSpacing), Text = "Shield Spacing (Rows)", Placeholder = "Example: 4",
+GroupBox1:AddInput("ShieldSpacingInput", {
+    Default = tostring(_G.BotVars.ShieldSpacing),
+    Text = "Shield Spacing (Rows)",
+    Placeholder = "Example: 4",
     Callback = function(Value) _G.BotVars.ShieldSpacing = tonumber(Value) end
 })
-GroupBox1:AddInput("RowSpacingInput", { Default = tostring(_G.BotVars.RowSpacing), Text = "Row Spacing (Baris)", Placeholder = "Example: 4",
+GroupBox1:AddInput("RowSpacingInput", {
+    Default = tostring(_G.BotVars.RowSpacing),
+    Text = "Row Spacing (Baris)",
+    Placeholder = "Example: 4",
     Callback = function(Value) _G.BotVars.RowSpacing = tonumber(Value) end
 })
-GroupBox1:AddInput("SideSpacingInput", { Default = tostring(_G.BotVars.SideSpacing), Text = "Side Spacing (Kiri-Kanan)", Placeholder = "Example: 4",
+GroupBox1:AddInput("SideSpacingInput", {
+    Default = tostring(_G.BotVars.SideSpacing),
+    Text = "Side Spacing (Kiri-Kanan)",
+    Placeholder = "Example: 4",
     Callback = function(Value) _G.BotVars.SideSpacing = tonumber(Value) end
 })
 

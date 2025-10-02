@@ -49,6 +49,16 @@ return {
                 :InvokeServer(unpack(args))
         end)
 
+        -- 🔹 Kirim leaveSync supaya benar-benar unsync dari server
+        pcall(function()
+            local args = { "leaveSync" }
+            game:GetService("ReplicatedStorage")
+                :WaitForChild("Connections")
+                :WaitForChild("dataProviders")
+                :WaitForChild("animationHandler")
+                :InvokeServer(unpack(args))
+        end)
+
         -- 🔹 Log di output
         print("[COMMAND] Bot stopped by client:", client and client.Name or "Unknown")
     end
