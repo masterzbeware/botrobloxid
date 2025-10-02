@@ -69,7 +69,8 @@ local commandFiles = {
     "Frontline.lua",
     "AmbilAlih.lua",
     "Reset.lua",
-    "Salute.lua"
+    "Salute.lua",
+    "Absen.lua",
 }
 
 local gameFiles = {
