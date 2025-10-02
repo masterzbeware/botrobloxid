@@ -1,5 +1,5 @@
 -- Circle.lua
--- Command !circlemove: Bot mengelilingi VIP, menghadap ke depan, jalan normal
+-- Command !circlemove: Bot mengelilingi VIP/Client, menghadap depan global, jalan normal
 
 return {
     Execute = function(msg, client)
@@ -54,23 +54,10 @@ return {
         local radius = tonumber(vars.CircleRadius) or 6
         local speed  = tonumber(vars.CircleSpeed) or 1 -- rotasi per detik
 
-        -- Bot mapping
-        local botMapping = vars.BotMapping or {
-            ["8802945328"] = "Bot1",
-            ["8802949363"] = "Bot2",
-            ["8802939883"] = "Bot3",
-            ["8802998147"] = "Bot4",
-        }
-
-        local botIds = {}
-        for idStr, _ in pairs(botMapping) do
-            local n = tonumber(idStr)
-            if n then table.insert(botIds, n) end
-        end
-        table.sort(botIds)
-
         -- Bot references
-        local humanoid, myRootPart, moving
+        local humanoid, myRootPart
+        local moving = false
+
         local function updateBotRefs()
             local character = player.Character or player.CharacterAdded:Wait()
             humanoid = character:WaitForChild("Humanoid")
@@ -90,6 +77,18 @@ return {
             moving = false
         end
 
+        -- 🔹 Ambil semua bot aktif (exclude target)
+        local function getActiveBots()
+            local bots = {}
+            for _, plr in ipairs(Players:GetPlayers()) do
+                if plr ~= targetPlayer then
+                    table.insert(bots, plr)
+                end
+            end
+            table.sort(bots, function(a,b) return a.UserId < b.UserId end)
+            return bots
+        end
+
         -- 🔹 Circle loop
         local startTime = tick()
         vars.CircleMoveConnection = RunService.Heartbeat:Connect(function()
@@ -99,21 +98,23 @@ return {
             local targetHRP = vars.CurrentFormasiTarget.Character:FindFirstChild("HumanoidRootPart")
             if not targetHRP then return end
 
-            -- Index bot
+            -- Ambil semua bot aktif
+            local activeBots = getActiveBots()
+            local totalBots = #activeBots
+            if totalBots == 0 then return end
+
+            -- Tentukan index bot ini di activeBots
             local index = 1
-            for i, id in ipairs(botIds) do
-                if id == player.UserId then index = i break end
+            for i, plr in ipairs(activeBots) do
+                if plr == player then index = i break end
             end
 
-            -- Tentukan posisi mengelilingi VIP (tetap rapi)
-            local totalBots = #botIds
+            -- Hitung posisi mengelilingi target
             local angle = ((tick() - startTime) * speed + (index-1)/totalBots*math.pi*2) % (math.pi*2)
             local offset = Vector3.new(math.cos(angle)*radius, 0, math.sin(angle)*radius)
             local targetPos = targetHRP.Position + offset
 
-            -- Jalan normal ke posisi target (MoveTo)
             moveToPosition(targetPos)
-            -- Tidak mengubah CFrame, jadi menghadap default (depan global)
         end)
 
         print("[CircleMove] Activated around", vars.CurrentFormasiTarget.Name)
