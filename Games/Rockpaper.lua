@@ -2,7 +2,7 @@
 -- Command: Semua pemain bisa menjalankan
 -- Hanya bot dengan ToggleGames aktif yang mengeksekusi
 -- Delay global 15 detik per pemain
--- Bisa !rockpaper [pilih sendiri] atau !rockpaper
+-- Bisa !rockpaper [batu/kertas/gunting] atau !rockpaper
 -- Pesan pertama: pilihan, tunggu 3 detik, pesan kedua: hasil
 
 local lastPlayed = {} -- table untuk menyimpan waktu terakhir tiap pemain
@@ -12,7 +12,7 @@ return {
         local vars = _G.BotVars or {}
         local TextChatService = vars.TextChatService or game:GetService("TextChatService")
 
-        -- ✅ Cek ToggleGames, jika false, bot tidak menjalankan
+        -- ✅ Cek ToggleGames (harus true)
         if vars.ToggleGames ~= true then
             return
         end
@@ -26,7 +26,7 @@ return {
 
         local options = { "Batu", "Kertas", "Gunting" }
 
-        -- 🎲 Ambil argumen dari command
+        -- 🔡 Ambil argumen dari command
         local args = {}
         for word in msg:gmatch("%S+") do
             table.insert(args, word)
@@ -43,35 +43,35 @@ return {
             elseif input == "gunting" then
                 playerChoice = "Gunting"
             else
-                -- Pilihan tidak valid, random
+                -- Pilihan tidak valid → random
                 playerChoice = options[math.random(1, #options)]
             end
         else
-            -- Pilihan random
+            -- Tidak ada argumen → random
             playerChoice = options[math.random(1, #options)]
         end
 
         local botChoice = options[math.random(1, #options)]
 
-        -- ⚖️ Tentukan hasil
+        -- 🏆 Tentukan hasil
         local outcome
         if playerChoice == botChoice then
             outcome = "Seri!"
-        elseif (playerChoice == "Batu" and botChoice == "Gunting") or
-               (playerChoice == "Gunting" and botChoice == "Kertas") or
-               (playerChoice == "Kertas" and botChoice == "Batu") then
+        elseif (playerChoice == "Batu" and botChoice == "Gunting")
+            or (playerChoice == "Gunting" and botChoice == "Kertas")
+            or (playerChoice == "Kertas" and botChoice == "Batu") then
             outcome = "Kamu menang!"
         else
             outcome = "Bot menang!"
         end
 
-        -- 📢 Kirim pesan ke RBXGeneral
+        -- 💬 Kirim pesan ke RBXGeneral
         local channel = TextChatService.TextChannels and TextChatService.TextChannels:FindFirstChild("RBXGeneral")
         if channel then
             pcall(function()
                 -- Pesan pertama: pilihan
                 channel:SendAsync(client.Name .. " memilih: " .. playerChoice .. " ... Bot memilih: " .. botChoice .. "!")
-                -- Tunggu 3 detik sebelum mengirim hasil
+                -- Tunggu 3 detik sebelum kirim hasil
                 task.wait(3)
                 -- Pesan kedua: hasil
                 channel:SendAsync("Hasil: " .. outcome)

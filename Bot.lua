@@ -2,8 +2,8 @@
 -- MasterZ Beware Bot System (Dispatcher Only)
 
 -- 📂 Repo Path
-local repoBase   = "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Commands/"
-local gamesRepo  = "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Games/"
+local repoBase     = "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Commands/"
+local gamesRepo    = "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Games/"
 local obsidianRepo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
 
 -- 📦 UI Library
@@ -13,7 +13,7 @@ local Options = Library.Options
 -- 📋 Window Setup
 local Window = Library:CreateWindow({
     Title = "Made by MasterZ",
-    Footer = "v2.5.0",
+    Footer = "v2.5.1",
     Icon = 0,
     NotifySide = "Right",
     ShowCustomCursor = true,
@@ -72,7 +72,7 @@ local commandFiles = {
 }
 
 local gameFiles = {
-    "Rockpaper.lua", -- contoh file
+    "Rockpaper.lua", -- contoh file game
 }
 
 -- Loader untuk Commands folder
@@ -135,13 +135,13 @@ local function setupClient(player)
     local function processMessage(msg, sender)
         msg = msg:lower()
 
-        -- VIP-only commands
+        -- VIP-only commands (hanya clientName yg bisa trigger)
         if sender.Name == _G.BotVars.ClientName and _G.BotVars.ToggleAktif then
             handleCommand(msg, sender)
         end
 
-        -- Games-only commands
-        if sender.Name == _G.BotVars.ClientName and _G.BotVars.ToggleGames then
+        -- Games-only commands (semua pemain bisa trigger)
+        if _G.BotVars.ToggleGames then
             handleCommand(msg, sender)
         end
     end
@@ -196,31 +196,49 @@ GroupBox1:AddToggle("AktifkanBot", {
 GroupBox1:AddToggle("AktifkanGames", {
     Text = "Enable Game Commands",
     Default = false,
-    Tooltip = "Enable to accept game-specific chat commands (!game1, !game2, dll)",
+    Tooltip = "Enable to accept game-specific chat commands (!rockpaper, dll)",
     Callback = function(Value)
-        _G.BotVars.ToggleGameActive = Value -- alias biar Rockpaper.lua jalan
+        _G.BotVars.ToggleGames = Value -- ✅ disamakan dengan Rockpaper.lua
         debugPrint("ToggleGames set to: " .. tostring(Value))
         Library:Notify("Game Commands " .. (Value and "Enabled" or "Disabled"), 3)
     end,
 })
 
 -- Input spacing & distance
-GroupBox1:AddInput("JarakIkutInput", { Default = tostring(_G.BotVars.JarakIkut), Text = "Follow Distance (VIP)", Placeholder = "Example: 5",
+GroupBox1:AddInput("JarakIkutInput", {
+    Default = tostring(_G.BotVars.JarakIkut),
+    Text = "Follow Distance (VIP)",
+    Placeholder = "Example: 5",
     Callback = function(Value) _G.BotVars.JarakIkut = tonumber(Value) end
 })
-GroupBox1:AddInput("FollowSpacingInput", { Default = tostring(_G.BotVars.FollowSpacing), Text = "Follow Spacing (Antar Bot)", Placeholder = "Example: 2",
+GroupBox1:AddInput("FollowSpacingInput", {
+    Default = tostring(_G.BotVars.FollowSpacing),
+    Text = "Follow Spacing (Antar Bot)",
+    Placeholder = "Example: 2",
     Callback = function(Value) _G.BotVars.FollowSpacing = tonumber(Value) end
 })
-GroupBox1:AddInput("ShieldDistanceInput", { Default = tostring(_G.BotVars.ShieldDistance), Text = "Shield Distance (VIP)", Placeholder = "Example: 5",
+GroupBox1:AddInput("ShieldDistanceInput", {
+    Default = tostring(_G.BotVars.ShieldDistance),
+    Text = "Shield Distance (VIP)",
+    Placeholder = "Example: 5",
     Callback = function(Value) _G.BotVars.ShieldDistance = tonumber(Value) end
 })
-GroupBox1:AddInput("ShieldSpacingInput", { Default = tostring(_G.BotVars.ShieldSpacing), Text = "Shield Spacing (Rows)", Placeholder = "Example: 4",
+GroupBox1:AddInput("ShieldSpacingInput", {
+    Default = tostring(_G.BotVars.ShieldSpacing),
+    Text = "Shield Spacing (Rows)",
+    Placeholder = "Example: 4",
     Callback = function(Value) _G.BotVars.ShieldSpacing = tonumber(Value) end
 })
-GroupBox1:AddInput("RowSpacingInput", { Default = tostring(_G.BotVars.RowSpacing), Text = "Row Spacing (Baris)", Placeholder = "Example: 4",
+GroupBox1:AddInput("RowSpacingInput", {
+    Default = tostring(_G.BotVars.RowSpacing),
+    Text = "Row Spacing (Baris)",
+    Placeholder = "Example: 4",
     Callback = function(Value) _G.BotVars.RowSpacing = tonumber(Value) end
 })
-GroupBox1:AddInput("SideSpacingInput", { Default = tostring(_G.BotVars.SideSpacing), Text = "Side Spacing (Kiri-Kanan)", Placeholder = "Example: 4",
+GroupBox1:AddInput("SideSpacingInput", {
+    Default = tostring(_G.BotVars.SideSpacing),
+    Text = "Side Spacing (Kiri-Kanan)",
+    Placeholder = "Example: 4",
     Callback = function(Value) _G.BotVars.SideSpacing = tonumber(Value) end
 })
 
