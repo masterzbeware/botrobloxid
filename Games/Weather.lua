@@ -3,7 +3,7 @@
 -- Semua pemain bisa menjalankan
 -- Hanya bot dengan ToggleGames aktif yang mengeksekusi
 -- Delay global 6 detik (untuk semua pemain)
--- Mengambil data cuaca real dari OpenWeatherMap
+-- Mengambil data cuaca real dari wttr.in (tanpa API Key)
 
 local HttpService = game:GetService("HttpService")
 local lastWeatherCheck = 0 -- global timestamp
@@ -15,13 +15,6 @@ return {
 
         -- ✅ Cek ToggleGames (harus true)
         if vars.ToggleGames ~= true then
-            return
-        end
-
-        -- ✅ Cek API Key
-        local apiKey = vars.OpenWeatherKey
-        if not apiKey or apiKey == "" then
-            warn("OpenWeatherMap API Key belum diset di _G.BotVars.OpenWeatherKey")
             return
         end
 
@@ -41,14 +34,11 @@ return {
             return -- tidak ada daerah
         end
 
-        local daerah = args[2]
+        -- gabung semua argumen jadi nama daerah (supaya bisa support nama lebih dari 1 kata, contoh: "jawa barat")
+        local daerah = table.concat(args, " ", 2)
 
-        -- 🌍 URL API OpenWeather
-        local url = string.format(
-            "https://api.openweathermap.org/data/2.5/weather?q=%s&appid=%s&units=metric&lang=id",
-            HttpService:UrlEncode(daerah),
-            apiKey
-        )
+        -- 🌍 URL API wttr.in
+        local url = string.format("https://wttr.in/%s?format=j1", HttpService:UrlEncode(daerah))
 
         local success, response = pcall(function()
             return HttpService:GetAsync(url)
@@ -57,10 +47,10 @@ return {
         local hasil = nil
         if success then
             local data = HttpService:JSONDecode(response)
-            if data and data.weather and data.main then
-                local kondisi = data.weather[1].description or "Tidak diketahui"
-                local suhu = data.main.temp or "?"
-                hasil = string.format("Cuaca di %s: %s, suhu %.1f°C", daerah, kondisi, suhu)
+            if data and data.current_condition and data.current_condition[1] then
+                local kondisi = data.current_condition[1].weatherDesc[1].value or "Tidak diketahui"
+                local suhu = data.current_condition[1].temp_C or "?"
+                hasil = string.format("Cuaca di %s: %s, suhu %s°C", daerah, kondisi, suhu)
             else
                 hasil = "Gagal membaca data cuaca untuk " .. daerah
             end
