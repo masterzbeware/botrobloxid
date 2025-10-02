@@ -1,11 +1,10 @@
--- Absen.lua (revisi maju ke depan Client)
+-- Absen.lua (bergantian maju ke depan Client dan lapor)
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars
         local RunService = vars.RunService
         local Players = game:GetService("Players")
         local TextChatService = vars.TextChatService or game:GetService("TextChatService")
-        local player = vars.LocalPlayer
 
         if not RunService then
             warn("[Absen] RunService tidak tersedia!")
@@ -14,15 +13,24 @@ return {
 
         vars.AbsenActive = true
 
-        local humanoid, myRootPart, moving
-        local function updateBotRefs()
-            local character = player.Character or player.CharacterAdded:Wait()
-            humanoid = character:WaitForChild("Humanoid")
-            myRootPart = character:WaitForChild("HumanoidRootPart")
-        end
-        player.CharacterAdded:Connect(updateBotRefs)
-        updateBotRefs()
+        -- Bot Mapping (urutan absen)
+        local orderedBots = {
+            "8802945328", -- Bot1
+            "8802949363", -- Bot2
+            "8802939883", -- Bot3
+            "8802998147", -- Bot4
+        }
 
+        local function getBotByUserId(userId)
+            for _, plr in ipairs(Players:GetPlayers()) do
+                if tostring(plr.UserId) == userId then
+                    return plr
+                end
+            end
+            return nil
+        end
+
+        -- Ambil channel chat
         local channel = TextChatService.TextChannels and TextChatService.TextChannels:FindFirstChild("RBXGeneral")
         local function sendChat(text)
             if channel then
@@ -30,55 +38,66 @@ return {
             end
         end
 
-        -- Bot Mapping untuk urutan lapor
-        local orderedBots = {
-            "8802945328", "8802949363", "8802939883", "8802998147"
-        }
-
-        local myUserId = tostring(player.UserId)
-        local index = 1
+        -- Ambil semua bot player references
+        local botRefs = {}
         for i, uid in ipairs(orderedBots) do
-            if uid == myUserId then index = i break end
+            local botPlayer = getBotByUserId(uid)
+            if botPlayer and botPlayer.Character then
+                local humanoid = botPlayer.Character:FindFirstChild("Humanoid")
+                local hrp = botPlayer.Character:FindFirstChild("HumanoidRootPart")
+                if humanoid and hrp then
+                    botRefs[i] = {
+                        player = botPlayer,
+                        humanoid = humanoid,
+                        hrp = hrp
+                    }
+                end
+            end
         end
 
+        -- Pastikan posisi formasi default (barisan belakang)
+        local jarakBaris = tonumber(vars.JarakIkut) or 6
+        local spacing = tonumber(vars.FollowSpacing) or 4
         local targetHRP = client.Character and client.Character:FindFirstChild("HumanoidRootPart")
         if not targetHRP then
             warn("[Absen] Client belum siap!")
             return
         end
 
-        local jarakBaris = tonumber(vars.JarakIkut) or 6
-        local spacing = tonumber(vars.FollowSpacing) or 4
-        local defaultPos = targetHRP.Position - targetHRP.CFrame.LookVector * jarakBaris - targetHRP.CFrame.RightVector * ((index-1) * spacing)
+        local defaultPositions = {}
+        for i, bot in ipairs(botRefs) do
+            defaultPositions[i] = targetHRP.Position - targetHRP.CFrame.LookVector * jarakBaris - targetHRP.CFrame.RightVector * ((i-1) * spacing)
+        end
 
-        task.spawn(function()
-            -- Pindah ke depan VIP (+LookVector 3 stud)
-            local forwardPos = targetHRP.Position + targetHRP.CFrame.LookVector * 3
-            moveToPosition = function(targetPos, lookAtPos)
-                if not humanoid or not myRootPart then return end
-                if moving then return end
-                moving = true
-                humanoid:MoveTo(targetPos)
-                humanoid.MoveToFinished:Wait()
-                moving = false
-                if lookAtPos then
-                    myRootPart.CFrame = CFrame.new(myRootPart.Position, Vector3.new(lookAtPos.X, myRootPart.Position.Y, lookAtPos.Z))
-                end
+        -- Fungsi gerak bot ke posisi dan menghadap target
+        local function moveTo(bot, targetPos, lookAtPos)
+            if not bot.humanoid or not bot.hrp then return end
+            bot.humanoid:MoveTo(targetPos)
+            bot.humanoid.MoveToFinished:Wait()
+            if lookAtPos then
+                bot.hrp.CFrame = CFrame.new(bot.hrp.Position, Vector3.new(lookAtPos.X, bot.hrp.Position.Y, lookAtPos.Z))
             end
+        end
 
-            moveToPosition(forwardPos, targetHRP.Position)
-            task.wait(1) -- tunggu sebentar
+        -- 🔹 Coroutine untuk absen bergantian
+        task.spawn(function()
+            for i, bot in ipairs(botRefs) do
+                -- Maju ke depan Client (+3 stud)
+                local forwardPos = targetHRP.Position + targetHRP.CFrame.LookVector * 3
+                moveTo(bot, forwardPos, targetHRP.Position)
+                task.wait(0.5)
 
-            -- Kirim chat
-            sendChat("Laporan Komandan, Barisan " .. index .. " hadir")
-            task.wait(3)
+                -- Kirim chat lapor
+                sendChat("Laporan Komandan, Barisan " .. i .. " hadir")
+                task.wait(1)
 
-            -- Kembali ke posisi default
-            moveToPosition(defaultPos, targetHRP.Position + targetHRP.CFrame.LookVector * 50)
-
+                -- Kembali ke posisi default
+                moveTo(bot, defaultPositions[i], targetHRP.Position + targetHRP.CFrame.LookVector * 50)
+                task.wait(0.5)
+            end
             vars.AbsenActive = false
         end)
 
-        print("[COMMAND] Absen aktif, Bot barisan:", index)
+        print("[COMMAND] Absen bergantian aktif untuk semua bot")
     end
 }
