@@ -89,7 +89,7 @@ return {
 
                 -- Kirim chat lapor
                 sendChat("Laporan Komandan, Barisan " .. i .. " hadir")
-                task.wait(1)
+                task.wait(5)
 
                 -- Kembali ke posisi awal
                 moveTo(bot, defaultPositions[i], targetHRP.Position + targetHRP.CFrame.LookVector * 50)
