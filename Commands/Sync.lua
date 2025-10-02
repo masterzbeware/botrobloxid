@@ -1,4 +1,4 @@
--- Sync.lua (tanpa notifikasi, pilih target via nama)
+-- Sync.lua (versi fix, pakai commandHandler dari RemoteSpy)
 return {
     Execute = function(msg, client)
         local Vars = _G.BotVars
@@ -23,14 +23,16 @@ return {
                 Vars.SyncConnection = nil
             end
 
-            -- buat loop sync baru
+            -- buat loop sync baru via commandHandler
             Vars.SyncConnection = task.spawn(function()
                 while Vars.SyncActive do
                     local success, err = pcall(function()
+                        local args = { "sync", found.UserId }
                         game:GetService("ReplicatedStorage")
-                            :WaitForChild("Events")
-                            :WaitForChild("RequestSync")
-                            :FireServer(found)
+                            :WaitForChild("Connections")
+                            :WaitForChild("dataProviders")
+                            :WaitForChild("commandHandler")
+                            :InvokeServer(unpack(args))
                     end)
                     if not success then
                         warn("Sync error:", err)
