@@ -3,10 +3,21 @@
 -- Semua pemain bisa menjalankan
 -- Hanya bot dengan ToggleGames aktif yang mengeksekusi
 -- Delay global 6 detik (untuk semua pemain)
--- Mengambil data cuaca real dari wttr.in (tanpa API Key)
+-- Mengambil data cuaca real dari api.met.no (tanpa API key)
 
 local HttpService = game:GetService("HttpService")
 local lastWeatherCheck = 0 -- global timestamp
+
+-- 🗺️ Mapping nama kota → koordinat (lat, lon)
+local lokasi = {
+    jakarta = { lat = -6.2, lon = 106.8 },
+    depok   = { lat = -6.4, lon = 106.8 },
+    bandung = { lat = -6.9, lon = 107.6 },
+    surabaya= { lat = -7.2, lon = 112.7 },
+    medan   = { lat = 3.6, lon = 98.7 },
+    bali    = { lat = -8.6, lon = 115.2 },
+    sumatera= { lat = -0.9, lon = 100.4 }
+}
 
 return {
     Execute = function(msg, client)
@@ -34,11 +45,23 @@ return {
             return -- tidak ada daerah
         end
 
-        -- gabung semua argumen jadi nama daerah (supaya bisa support nama lebih dari 1 kata, contoh: "jawa barat")
-        local daerah = table.concat(args, " ", 2)
+        local daerah = args[2]:lower()
+        local pos = lokasi[daerah]
+        if not pos then
+            local channel = TextChatService.TextChannels and TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+            if channel then
+                pcall(function()
+                    channel:SendAsync("Daerah '" .. daerah .. "' belum terdaftar.")
+                end)
+            end
+            return
+        end
 
-        -- 🌍 URL API wttr.in
-        local url = string.format("https://wttr.in/%s?format=j1", HttpService:UrlEncode(daerah))
+        -- 🌍 URL API MET Norway
+        local url = string.format(
+            "https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=%s&lon=%s",
+            pos.lat, pos.lon
+        )
 
         local success, response = pcall(function()
             return HttpService:GetAsync(url)
@@ -47,10 +70,11 @@ return {
         local hasil = nil
         if success then
             local data = HttpService:JSONDecode(response)
-            if data and data.current_condition and data.current_condition[1] then
-                local kondisi = data.current_condition[1].weatherDesc[1].value or "Tidak diketahui"
-                local suhu = data.current_condition[1].temp_C or "?"
-                hasil = string.format("Cuaca di %s: %s, suhu %s°C", daerah, kondisi, suhu)
+            if data and data.properties and data.properties.timeseries and data.properties.timeseries[1] then
+                local current = data.properties.timeseries[1].data
+                local temp = current.instant.details.air_temperature or "?"
+                local wind = current.instant.details.wind_speed or "?"
+                hasil = string.format("Cuaca di %s: Suhu %.1f°C, Angin %.1f m/s", daerah, temp, wind)
             else
                 hasil = "Gagal membaca data cuaca untuk " .. daerah
             end

@@ -13,7 +13,7 @@ local Options = Library.Options
 -- 📋 Window Setup
 local Window = Library:CreateWindow({
     Title = "Made by MasterZ",
-    Footer = "v2.6.0",
+    Footer = "v2.2.0",
     Icon = 0,
     NotifySide = "Right",
     ShowCustomCursor = true,
