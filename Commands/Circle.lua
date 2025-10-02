@@ -1,4 +1,6 @@
--- CircleMove.lua (Bot mengelilingi VIP, menghadap ke depan, jalan normal)
+-- Circle.lua
+-- Command !circlemove: Bot mengelilingi VIP, menghadap ke depan, jalan normal
+
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars or {}
@@ -34,10 +36,14 @@ return {
         vars.FollowAllowed = false
         vars.RowActive = false
         vars.ShieldActive = false
+        vars.FrontlineActive = false
         vars.CurrentFormasiTarget = targetPlayer
 
         -- Disconnect loop lama
-        if vars.CircleMoveConnection then pcall(function() vars.CircleMoveConnection:Disconnect() end) vars.CircleMoveConnection = nil end
+        if vars.CircleMoveConnection then
+            pcall(function() vars.CircleMoveConnection:Disconnect() end)
+            vars.CircleMoveConnection = nil
+        end
 
         if not vars.CircleMoveActive then
             print("[CircleMove] Deactivated")

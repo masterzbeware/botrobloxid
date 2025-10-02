@@ -12,6 +12,7 @@ return {
             return
         end
 
+        -- 🔹 Atur mode Ikuti
         vars.FollowAllowed = true
         vars.ShieldActive = false
         vars.RowActive = false
@@ -50,9 +51,14 @@ return {
         -- Putuskan koneksi lama dulu
         if vars.FollowConnection then pcall(function() vars.FollowConnection:Disconnect() end) vars.FollowConnection = nil end
 
-        -- 🔹 Safety check untuk Heartbeat
+        -- 🔹 Heartbeat loop Ikuti
         if RunService.Heartbeat then
             vars.FollowConnection = RunService.Heartbeat:Connect(function()
+                -- ⚠️ Jika bot sedang absen, skip Ikuti agar tidak tabrakan
+                vars.AbsenActive = vars.AbsenActive or {}
+                local myId = tostring(player.UserId)
+                if vars.AbsenActive[myId] then return end
+
                 if not vars.FollowAllowed or not client.Character then return end
                 local targetHRP = client.Character:FindFirstChild("HumanoidRootPart")
                 if not targetHRP then return end

@@ -1,5 +1,5 @@
 -- Stop.lua
--- Command !stop: Menghentikan semua aksi bot (follow, shield, row, sync, pushup, frontline)
+-- Command !stop: Menghentikan semua aksi bot (follow, shield, row, sync, pushup, frontline, circle)
 
 return {
     Execute = function(msg, client)
@@ -7,10 +7,12 @@ return {
 
         -- 🔹 Nonaktifkan semua mode
         vars.FollowAllowed = false
-        vars.ShieldActive = false      -- hentikan Frontline / Shield
+        vars.ShieldActive = false
         vars.RowActive = false
         vars.SyncActive = false
         vars.PushupActive = false
+        vars.FrontlineActive = false
+        vars.CircleMoveActive = false  -- tambahkan ini untuk CircleMove
         vars.CurrentFormasiTarget = nil
 
         -- 🔹 Hentikan semua koneksi / loop jika ada
@@ -37,6 +39,11 @@ return {
         if vars.SyncConnection then
             pcall(function() task.cancel(vars.SyncConnection) end)
             vars.SyncConnection = nil
+        end
+
+        if vars.CircleMoveConnection then
+            pcall(function() vars.CircleMoveConnection:Disconnect() end)
+            vars.CircleMoveConnection = nil
         end
 
         -- 🔹 Stop animasi push-up kalau masih berjalan
