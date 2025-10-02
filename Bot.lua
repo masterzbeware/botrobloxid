@@ -13,7 +13,7 @@ local Options = Library.Options
 -- 📋 Window Setup
 local Window = Library:CreateWindow({
     Title = "Made by MasterZ",
-    Footer = "v1.5.0",
+    Footer = "v2.5.0",
     Icon = 0,
     NotifySide = "Right",
     ShowCustomCursor = true,
@@ -198,7 +198,7 @@ GroupBox1:AddToggle("AktifkanGames", {
     Default = false,
     Tooltip = "Enable to accept game-specific chat commands (!game1, !game2, dll)",
     Callback = function(Value)
-        _G.BotVars.ToggleGames = Value
+        _G.BotVars.ToggleGameActive = Value -- alias biar Rockpaper.lua jalan
         debugPrint("ToggleGames set to: " .. tostring(Value))
         Library:Notify("Game Commands " .. (Value and "Enabled" or "Disabled"), 3)
     end,
