@@ -1,9 +1,8 @@
 -- Coinflip.lua
--- Command: !coinflip
--- Semua pemain bisa menjalankan
--- Hanya bot dengan ToggleGames aktif yang mengeksekusi
+-- Semua pemain bisa menjalankan !coinflip
+-- Bot harus ToggleGames aktif
 -- Delay global 6 detik (untuk semua pemain)
--- Random hasil: Kepala atau Ekor
+-- Random hasil: Kepala 🪙 atau Ekor 🎯
 
 local lastFlip = 0 -- global timestamp
 
@@ -20,18 +19,26 @@ return {
         -- ⏳ Cek cooldown global 6 detik
         local now = os.time()
         if now - lastFlip < 6 then
+            -- opsional: kirim pesan "Tunggu sebentar" ke pemain
             return
         end
         lastFlip = now
 
         -- 🔮 Pilih random
-        local hasil = math.random(1, 2) == 1 and "Kepala" or "Ekor"
+        local hasil, emoji
+        if math.random(1, 2) == 1 then
+            hasil = "Heads"
+            emoji = "🪙"
+        else
+            hasil = "Tails"
+            emoji = "🪙"
+        end
 
         -- 💬 Kirim pesan
         local channel = TextChatService.TextChannels and TextChatService.TextChannels:FindFirstChild("RBXGeneral")
         if channel then
             pcall(function()
-                channel:SendAsync(client.Name .. " melempar koin... hasilnya: " .. hasil .. "!")
+                channel:SendAsync(client.Name .. " melempar koin... hasilnya: " .. hasil .. " " .. emoji .. "!")
             end)
         else
             warn("Channel RBXGeneral tidak ditemukan!")

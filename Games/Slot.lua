@@ -1,7 +1,6 @@
 -- Slot.lua
--- Command: !slot
--- Semua pemain bisa menjalankan
--- Hanya bot dengan ToggleGames aktif yang mengeksekusi
+-- Semua pemain bisa menjalankan !slot
+-- Bot harus ToggleGames aktif
 -- Delay global 6 detik (untuk semua pemain)
 -- Mesin slot sederhana dengan emoji
 
@@ -20,6 +19,7 @@ return {
         -- ⏳ Cek cooldown global 6 detik
         local now = os.time()
         if now - lastSlot < 6 then
+            -- opsional: kirim pesan "Tunggu sebentar" ke pemain
             return
         end
         lastSlot = now

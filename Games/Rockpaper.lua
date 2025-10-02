@@ -1,9 +1,8 @@
 -- Rockpaper.lua
--- Command: Semua pemain bisa menjalankan
--- Hanya bot dengan ToggleGames aktif yang mengeksekusi
+-- Semua pemain bisa menjalankan !rockpaper
+-- Bot harus ToggleGames aktif
 -- Delay global 6 detik (untuk semua pemain)
 -- Bisa !rockpaper [batu/kertas/gunting] atau !rockpaper
--- Pesan pertama: pilihan, tunggu 3 detik, pesan kedua: hasil
 
 local lastPlayed = 0 -- global timestamp (bukan per pemain)
 
@@ -19,7 +18,8 @@ return {
 
         -- ⏳ Cek cooldown global 6 detik
         local now = os.time()
-        if now - lastPlayed < 8 then
+        if now - lastPlayed < 6 then
+            -- opsional: kirim pesan "Tunggu sebentar" ke pemain
             return
         end
         lastPlayed = now
