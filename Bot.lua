@@ -2,8 +2,8 @@
 -- MasterZ Beware Bot System (Dispatcher Only)
 
 -- 📂 Repo Path
-local repoBase     = "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Commands/"
-local gamesRepo    = "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Games/"
+local repoBase   = "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Commands/"
+local gamesRepo  = "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Games/"
 local obsidianRepo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
 
 -- 📦 UI Library
@@ -13,7 +13,7 @@ local Options = Library.Options
 -- 📋 Window Setup
 local Window = Library:CreateWindow({
     Title = "Made by MasterZ",
-    Footer = "v2.5.1",
+    Footer = "v2.6.0",
     Icon = 0,
     NotifySide = "Right",
     ShowCustomCursor = true,
@@ -33,8 +33,8 @@ _G.BotVars = {
     ClientName = "FiestaGuardVip",
     RunService = game:GetService("RunService"),
 
-    ToggleAktif = false,       -- VIP-only commands
-    ToggleGames = false,       -- Game commands
+    ToggleAktif = false,   -- VIP-only commands
+    ToggleGames = false,   -- Game commands
 
     -- Spacing & distance
     JarakIkut = 5,
@@ -56,7 +56,8 @@ _G.BotVars.BotIdentity = botMapping[tostring(_G.BotVars.LocalPlayer.UserId)] or 
 debugPrint("Detected identity: " .. _G.BotVars.BotIdentity)
 
 -- 📂 Commands Loader
-local Commands = {}
+local VIPCommands = {}
+local GameCommands = {}
 
 local commandFiles = {
     "Ikuti.lua",
@@ -72,10 +73,10 @@ local commandFiles = {
 }
 
 local gameFiles = {
-    "Rockpaper.lua", -- contoh file game
+    "Rockpaper.lua", -- contoh game
 }
 
--- Loader untuk Commands folder
+-- Loader untuk Commands folder (VIP only)
 for _, fileName in ipairs(commandFiles) do
     local url = repoBase .. fileName
     local success, response = pcall(function() return game:HttpGet(url) end)
@@ -85,14 +86,14 @@ for _, fileName in ipairs(commandFiles) do
             local status, cmdTable = pcall(func)
             if status and type(cmdTable) == "table" then
                 local nameKey = fileName:sub(1, #fileName - 4)
-                Commands[nameKey:lower()] = cmdTable
-                debugPrint("Loaded command: " .. nameKey)
+                VIPCommands[nameKey:lower()] = cmdTable
+                debugPrint("Loaded VIP command: " .. nameKey)
             else
-                debugPrint("Failed executing: " .. fileName)
+                debugPrint("Failed executing VIP: " .. fileName)
             end
         end
     else
-        debugPrint("Failed HttpGet: " .. fileName)
+        debugPrint("Failed HttpGet VIP: " .. fileName)
     end
 end
 
@@ -106,21 +107,21 @@ for _, fileName in ipairs(gameFiles) do
             local status, cmdTable = pcall(func)
             if status and type(cmdTable) == "table" then
                 local nameKey = fileName:sub(1, #fileName - 4)
-                Commands[nameKey:lower()] = cmdTable
-                debugPrint("Loaded game command: " .. nameKey)
+                GameCommands[nameKey:lower()] = cmdTable
+                debugPrint("Loaded Game command: " .. nameKey)
             else
-                debugPrint("Failed executing game file: " .. fileName)
+                debugPrint("Failed executing Game: " .. fileName)
             end
         end
     else
-        debugPrint("Failed HttpGet game: " .. fileName)
+        debugPrint("Failed HttpGet Game: " .. fileName)
     end
 end
 
 -- ⚡ Handle Commands
-local function handleCommand(msg, client)
+local function handleCommand(msg, client, cmdTable)
     msg = msg:lower()
-    for name, cmd in pairs(Commands) do
+    for name, cmd in pairs(cmdTable) do
         if msg:match("^!" .. name) and cmd.Execute then
             debugPrint("Executing command: " .. name .. " by " .. client.Name)
             cmd.Execute(msg, client)
@@ -130,23 +131,21 @@ end
 
 -- 👂 Setup Client Listener
 local function setupClient(player)
-    local client = player
-
     local function processMessage(msg, sender)
         msg = msg:lower()
 
-        -- VIP-only commands (hanya clientName yg bisa trigger)
+        -- VIP-only commands (hanya jalan kalau ToggleAktif aktif)
         if sender.Name == _G.BotVars.ClientName and _G.BotVars.ToggleAktif then
-            handleCommand(msg, sender)
+            handleCommand(msg, sender, VIPCommands)
         end
 
-        -- Games-only commands (semua pemain bisa trigger)
+        -- Games-only commands (semua player bisa pakai)
         if _G.BotVars.ToggleGames then
-            handleCommand(msg, sender)
+            handleCommand(msg, sender, GameCommands)
         end
     end
 
-    -- Gunakan TextChatService jika tersedia
+    -- Listener pakai TextChatService
     if _G.BotVars.TextChatService and _G.BotVars.TextChatService.TextChannels then
         local generalChannel = _G.BotVars.TextChatService.TextChannels:FindFirstChild("RBXGeneral")
         if generalChannel then
@@ -198,47 +197,29 @@ GroupBox1:AddToggle("AktifkanGames", {
     Default = false,
     Tooltip = "Enable to accept game-specific chat commands (!rockpaper, dll)",
     Callback = function(Value)
-        _G.BotVars.ToggleGames = Value -- ✅ disamakan dengan Rockpaper.lua
+        _G.BotVars.ToggleGames = Value
         debugPrint("ToggleGames set to: " .. tostring(Value))
         Library:Notify("Game Commands " .. (Value and "Enabled" or "Disabled"), 3)
     end,
 })
 
 -- Input spacing & distance
-GroupBox1:AddInput("JarakIkutInput", {
-    Default = tostring(_G.BotVars.JarakIkut),
-    Text = "Follow Distance (VIP)",
-    Placeholder = "Example: 5",
+GroupBox1:AddInput("JarakIkutInput", { Default = tostring(_G.BotVars.JarakIkut), Text = "Follow Distance (VIP)", Placeholder = "Example: 5",
     Callback = function(Value) _G.BotVars.JarakIkut = tonumber(Value) end
 })
-GroupBox1:AddInput("FollowSpacingInput", {
-    Default = tostring(_G.BotVars.FollowSpacing),
-    Text = "Follow Spacing (Antar Bot)",
-    Placeholder = "Example: 2",
+GroupBox1:AddInput("FollowSpacingInput", { Default = tostring(_G.BotVars.FollowSpacing), Text = "Follow Spacing (Antar Bot)", Placeholder = "Example: 2",
     Callback = function(Value) _G.BotVars.FollowSpacing = tonumber(Value) end
 })
-GroupBox1:AddInput("ShieldDistanceInput", {
-    Default = tostring(_G.BotVars.ShieldDistance),
-    Text = "Shield Distance (VIP)",
-    Placeholder = "Example: 5",
+GroupBox1:AddInput("ShieldDistanceInput", { Default = tostring(_G.BotVars.ShieldDistance), Text = "Shield Distance (VIP)", Placeholder = "Example: 5",
     Callback = function(Value) _G.BotVars.ShieldDistance = tonumber(Value) end
 })
-GroupBox1:AddInput("ShieldSpacingInput", {
-    Default = tostring(_G.BotVars.ShieldSpacing),
-    Text = "Shield Spacing (Rows)",
-    Placeholder = "Example: 4",
+GroupBox1:AddInput("ShieldSpacingInput", { Default = tostring(_G.BotVars.ShieldSpacing), Text = "Shield Spacing (Rows)", Placeholder = "Example: 4",
     Callback = function(Value) _G.BotVars.ShieldSpacing = tonumber(Value) end
 })
-GroupBox1:AddInput("RowSpacingInput", {
-    Default = tostring(_G.BotVars.RowSpacing),
-    Text = "Row Spacing (Baris)",
-    Placeholder = "Example: 4",
+GroupBox1:AddInput("RowSpacingInput", { Default = tostring(_G.BotVars.RowSpacing), Text = "Row Spacing (Baris)", Placeholder = "Example: 4",
     Callback = function(Value) _G.BotVars.RowSpacing = tonumber(Value) end
 })
-GroupBox1:AddInput("SideSpacingInput", {
-    Default = tostring(_G.BotVars.SideSpacing),
-    Text = "Side Spacing (Kiri-Kanan)",
-    Placeholder = "Example: 4",
+GroupBox1:AddInput("SideSpacingInput", { Default = tostring(_G.BotVars.SideSpacing), Text = "Side Spacing (Kiri-Kanan)", Placeholder = "Example: 4",
     Callback = function(Value) _G.BotVars.SideSpacing = tonumber(Value) end
 })
 

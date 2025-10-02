@@ -70,7 +70,7 @@ return {
         if channel then
             pcall(function()
                 -- Pesan pertama: pilihan
-                channel:SendAsync(client.Name .. " memilih: " .. playerChoice .. " ... Bot memilih: " .. botChoice .. "!")
+                channel:SendAsync(client.Name .. " memilih: " .. playerChoice .. " ... Saya memilih: " .. botChoice .. "!")
                 -- Tunggu 3 detik sebelum kirim hasil
                 task.wait(3)
                 -- Pesan kedua: hasil
