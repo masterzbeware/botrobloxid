@@ -13,7 +13,7 @@ local Options = Library.Options
 -- 📋 Window Setup
 local Window = Library:CreateWindow({
     Title = "Made by MasterZ",
-    Footer = "v2.2.0",
+    Footer = "v1.2.0",
     Icon = 0,
     NotifySide = "Right",
     ShowCustomCursor = true,
@@ -37,7 +37,7 @@ _G.BotVars = {
     ToggleGames = false,   -- Game commands
 
     -- Spacing & distance
-    JarakIkut = 5,
+    JarakIkut = 3,
     FollowSpacing = 2,
     ShieldDistance = 5,
     ShieldSpacing = 4,
