@@ -1,11 +1,11 @@
 -- Rockpaper.lua
 -- Command: Semua pemain bisa menjalankan
 -- Hanya bot dengan ToggleGames aktif yang mengeksekusi
--- Delay global 15 detik per pemain
+-- Delay global 6 detik (untuk semua pemain)
 -- Bisa !rockpaper [batu/kertas/gunting] atau !rockpaper
 -- Pesan pertama: pilihan, tunggu 3 detik, pesan kedua: hasil
 
-local lastPlayed = {} -- table untuk menyimpan waktu terakhir tiap pemain
+local lastPlayed = 0 -- global timestamp (bukan per pemain)
 
 return {
     Execute = function(msg, client)
@@ -17,12 +17,12 @@ return {
             return
         end
 
-        -- ⏳ Cek cooldown 15 detik per pemain
+        -- ⏳ Cek cooldown global 6 detik
         local now = os.time()
-        if lastPlayed[client.UserId] and now - lastPlayed[client.UserId] < 15 then
+        if now - lastPlayed < 8 then
             return
         end
-        lastPlayed[client.UserId] = now
+        lastPlayed = now
 
         local options = { "Batu", "Kertas", "Gunting" }
 
@@ -34,7 +34,6 @@ return {
 
         local playerChoice
         if #args >= 2 then
-            -- Jika pemain menentukan pilihan
             local input = args[2]:lower()
             if input == "batu" then
                 playerChoice = "Batu"
@@ -43,11 +42,9 @@ return {
             elseif input == "gunting" then
                 playerChoice = "Gunting"
             else
-                -- Pilihan tidak valid → random
                 playerChoice = options[math.random(1, #options)]
             end
         else
-            -- Tidak ada argumen → random
             playerChoice = options[math.random(1, #options)]
         end
 
@@ -69,11 +66,8 @@ return {
         local channel = TextChatService.TextChannels and TextChatService.TextChannels:FindFirstChild("RBXGeneral")
         if channel then
             pcall(function()
-                -- Pesan pertama: pilihan
                 channel:SendAsync(client.Name .. " memilih: " .. playerChoice .. " ... Saya memilih: " .. botChoice .. "!")
-                -- Tunggu 3 detik sebelum kirim hasil
                 task.wait(3)
-                -- Pesan kedua: hasil
                 channel:SendAsync("Hasil: " .. outcome)
             end)
         else
