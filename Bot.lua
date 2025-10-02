@@ -74,7 +74,8 @@ local commandFiles = {
 
 local gameFiles = {
     "Rockpaper.lua", -- contoh game
-    "Weather.lua", -- contoh game
+    "Coinflip.lua", -- contoh game
+    "Slot.lua", -- contoh game
 }
 
 -- Loader untuk Commands folder (VIP only)
