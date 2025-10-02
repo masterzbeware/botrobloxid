@@ -1,5 +1,5 @@
 -- Absen.lua
--- Bergantian maju ke depan Client dan lapor, kembali ke barisan belakang VIP
+-- Bergantian maju ke depan Client, lapor, kemudian kembali ke barisan belakang VIP
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars
@@ -13,11 +13,12 @@ return {
             return
         end
 
-        -- 🔹 Inisialisasi flag per bot
-        vars.AbsenActive = vars.AbsenActive or {}
-        local myId = tostring(player.UserId)
-        if vars.AbsenActive[myId] then return end -- skip jika bot ini sudah menjalankan absen
-        vars.AbsenActive[myId] = true
+        -- 🔹 Cegah eksekusi bersamaan
+        if vars.AbsenActive then
+            warn("[Absen] Absen sedang berjalan, tunggu sampai selesai.")
+            return
+        end
+        vars.AbsenActive = true
 
         -- Bot Mapping (urutan absen)
         local orderedBots = {
@@ -44,7 +45,7 @@ return {
             end
         end
 
-        -- Ambil semua bot references
+        -- Ambil semua bot player references
         local botRefs = {}
         for i, uid in ipairs(orderedBots) do
             local botPlayer = getBotByUserId(uid)
@@ -66,7 +67,7 @@ return {
         local targetHRP = client.Character and client.Character:FindFirstChild("HumanoidRootPart")
         if not targetHRP then
             warn("[Absen] Client belum siap!")
-            vars.AbsenActive[myId] = nil
+            vars.AbsenActive = false
             return
         end
 
@@ -89,29 +90,24 @@ return {
         -- 🔹 Coroutine absen bergantian maju → lapor → kembali ke barisan belakang VIP
         task.spawn(function()
             for i, bot in ipairs(botRefs) do
-                if bot.player.UserId == player.UserId then
-                    -- Maju ke depan Client (+3 stud)
-                    local forwardPos = targetHRP.Position + targetHRP.CFrame.LookVector * 3
-                    moveTo(bot, forwardPos, targetHRP.Position)
-                    task.wait(0.5)
+                -- Maju ke depan Client (+3 stud)
+                local forwardPos = targetHRP.Position + targetHRP.CFrame.LookVector * 3
+                moveTo(bot, forwardPos, targetHRP.Position)
+                task.wait(0.5)
 
-                    -- Kirim chat hanya bot yang maju
-                    sendChat("Laporan Komandan, Barisan " .. i .. " hadir")
-                    task.wait(1)
+                -- Kirim chat hanya bot yang maju
+                sendChat("Laporan Komandan, Barisan " .. i .. " hadir")
+                task.wait(1)
 
-                    -- Kembali ke posisi barisan belakang VIP (Ikuti.lua style)
-                    local backOffset = jarakBaris + (i-1) * spacing
-                    local behindPos = targetHRP.Position - targetHRP.CFrame.LookVector * backOffset
-                    moveTo(bot, behindPos, targetHRP.Position + targetHRP.CFrame.LookVector * 50)
-                    task.wait(0.5)
-                else
-                    -- Bot lain tetap di posisi default
-                    moveTo(bot, defaultPositions[i], targetHRP.Position + targetHRP.CFrame.LookVector * 50)
-                end
+                -- Kembali ke posisi barisan belakang VIP (Ikuti.lua style)
+                local backOffset = jarakBaris + (i-1) * spacing
+                local behindPos = targetHRP.Position - targetHRP.CFrame.LookVector * backOffset
+                moveTo(bot, behindPos, targetHRP.Position + targetHRP.CFrame.LookVector * 50)
+                task.wait(0.5)
             end
-            vars.AbsenActive[myId] = nil
+            vars.AbsenActive = false
         end)
 
-        print("[COMMAND] Absen bergantian aktif untuk bot", player.Name)
+        print("[COMMAND] Absen bergantian aktif untuk semua bot")
     end
 }
