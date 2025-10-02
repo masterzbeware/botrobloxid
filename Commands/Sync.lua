@@ -1,7 +1,7 @@
 return {
     Execute = function(msg, client)
         local Vars = _G.BotVars
-        Vars.SyncActive = true  -- flag untuk kontrol
+        Vars.SyncActive = true  -- flag untuk kontrol sync
 
         local targetName = msg:match("^!sync%s+(.+)")
         if targetName then
@@ -20,12 +20,14 @@ return {
                     Vars.SyncConnection = nil
                 end
 
-                -- spawn loop sync dan simpan reference supaya bisa dibatalkan
+                -- loop sync baru
                 Vars.SyncConnection = task.spawn(function()
                     while Vars.SyncActive do
                         local success, err = pcall(function()
-                            local args = { found }
-                            game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("RequestSync"):FireServer(unpack(args))
+                            game:GetService("ReplicatedStorage")
+                                :WaitForChild("Events")
+                                :WaitForChild("RequestSync")
+                                :FireServer(found)
                         end)
                         if not success then
                             warn("Sync error:", err)
