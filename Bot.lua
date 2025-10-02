@@ -13,7 +13,7 @@ local Options = Library.Options
 -- 📋 Window Setup
 local Window = Library:CreateWindow({
     Title = "Made by MasterZ",
-    Footer = "v1.2.0",
+    Footer = "v1.5.0",
     Icon = 0,
     NotifySide = "Right",
     ShowCustomCursor = true,
@@ -38,11 +38,11 @@ _G.BotVars = {
 
     -- Spacing & distance
     JarakIkut = 3,
-    FollowSpacing = 2,
+    FollowSpacing = 4,
     ShieldDistance = 5,
     ShieldSpacing = 4,
     RowSpacing = 4,
-    SideSpacing = 4,
+    SideSpacing = 5,
 }
 
 -- 🤖 Identity Detection

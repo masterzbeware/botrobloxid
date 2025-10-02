@@ -1,10 +1,11 @@
--- Absen.lua (bergantian maju ke depan Client dan lapor, kemudian kembali ke posisi awal)
+-- Absen.lua (bergantian maju ke depan Client dan lapor, kembali ke barisan belakang VIP)
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars
         local RunService = vars.RunService
         local Players = game:GetService("Players")
         local TextChatService = vars.TextChatService or game:GetService("TextChatService")
+        local player = vars.LocalPlayer
 
         if not RunService then
             warn("[Absen] RunService tidak tersedia!")
@@ -63,7 +64,7 @@ return {
             return
         end
 
-        -- Posisi awal barisan
+        -- Posisi default di belakang VIP (barisan)
         local defaultPositions = {}
         for i, bot in ipairs(botRefs) do
             defaultPositions[i] = targetHRP.Position - targetHRP.CFrame.LookVector * jarakBaris - targetHRP.CFrame.RightVector * ((i-1) * spacing)
@@ -79,7 +80,7 @@ return {
             end
         end
 
-        -- 🔹 Coroutine absen bergantian maju → lapor → kembali
+        -- 🔹 Coroutine absen bergantian maju → lapor → kembali ke barisan belakang VIP
         task.spawn(function()
             for i, bot in ipairs(botRefs) do
                 -- Maju ke depan Client (+3 stud)
@@ -87,12 +88,14 @@ return {
                 moveTo(bot, forwardPos, targetHRP.Position)
                 task.wait(0.5)
 
-                -- Kirim chat lapor
+                -- Kirim chat hanya bot yang maju
                 sendChat("Laporan Komandan, Barisan " .. i .. " hadir")
-                task.wait(5)
+                task.wait(1)
 
-                -- Kembali ke posisi awal
-                moveTo(bot, defaultPositions[i], targetHRP.Position + targetHRP.CFrame.LookVector * 50)
+                -- Kembali ke posisi barisan belakang VIP (Ikuti.lua style)
+                local backOffset = jarakBaris + (i-1) * spacing
+                local behindPos = targetHRP.Position - targetHRP.CFrame.LookVector * backOffset
+                moveTo(bot, behindPos, targetHRP.Position + targetHRP.CFrame.LookVector * 50)
                 task.wait(0.5)
             end
             vars.AbsenActive = false
