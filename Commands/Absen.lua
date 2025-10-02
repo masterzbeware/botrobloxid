@@ -1,4 +1,4 @@
--- Absen.lua (bergantian maju ke depan Client dan lapor)
+-- Absen.lua (bergantian maju ke depan Client dan lapor, kemudian kembali ke posisi awal)
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars
@@ -55,7 +55,6 @@ return {
             end
         end
 
-        -- Pastikan posisi formasi default (barisan belakang)
         local jarakBaris = tonumber(vars.JarakIkut) or 6
         local spacing = tonumber(vars.FollowSpacing) or 4
         local targetHRP = client.Character and client.Character:FindFirstChild("HumanoidRootPart")
@@ -64,6 +63,7 @@ return {
             return
         end
 
+        -- Posisi awal barisan
         local defaultPositions = {}
         for i, bot in ipairs(botRefs) do
             defaultPositions[i] = targetHRP.Position - targetHRP.CFrame.LookVector * jarakBaris - targetHRP.CFrame.RightVector * ((i-1) * spacing)
@@ -79,7 +79,7 @@ return {
             end
         end
 
-        -- 🔹 Coroutine untuk absen bergantian
+        -- 🔹 Coroutine absen bergantian maju → lapor → kembali
         task.spawn(function()
             for i, bot in ipairs(botRefs) do
                 -- Maju ke depan Client (+3 stud)
@@ -91,7 +91,7 @@ return {
                 sendChat("Laporan Komandan, Barisan " .. i .. " hadir")
                 task.wait(1)
 
-                -- Kembali ke posisi default
+                -- Kembali ke posisi awal
                 moveTo(bot, defaultPositions[i], targetHRP.Position + targetHRP.CFrame.LookVector * 50)
                 task.wait(0.5)
             end

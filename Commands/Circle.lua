@@ -1,4 +1,4 @@
--- Circle.lua (Bot mengelilingi VIP, formasi lingkaran)
+-- CircleMove.lua (Bot mengelilingi VIP, menghadap ke depan, jalan normal)
 return {
   Execute = function(msg, client)
       local vars = _G.BotVars or {}
@@ -6,12 +6,12 @@ return {
       local Players = game:GetService("Players")
       local player = vars.LocalPlayer or Players.LocalPlayer
 
-      -- Ambil argumen !circle {name}
+      -- Ambil argumen !circlemove {name}
       local args = {}
       for word in msg:gmatch("%S+") do table.insert(args, word) end
       local targetNameOrUsername = args[2]
 
-      -- Cari pemain target
+      -- Cari target
       local targetPlayer = nil
       if targetNameOrUsername then
           for _, plr in ipairs(Players:GetPlayers()) do
@@ -22,7 +22,7 @@ return {
               end
           end
           if not targetPlayer then
-              warn("[Circle] Pemain '" .. targetNameOrUsername .. "' tidak ditemukan.")
+              warn("[CircleMove] Pemain '" .. targetNameOrUsername .. "' tidak ditemukan.")
               return
           end
       else
@@ -30,17 +30,17 @@ return {
       end
 
       -- Toggle mode
-      vars.CircleActive = not vars.CircleActive
+      vars.CircleMoveActive = not vars.CircleMoveActive
       vars.FollowAllowed = false
       vars.RowActive = false
       vars.ShieldActive = false
       vars.CurrentFormasiTarget = targetPlayer
 
       -- Disconnect loop lama
-      if vars.CircleConnection then pcall(function() vars.CircleConnection:Disconnect() end) vars.CircleConnection = nil end
+      if vars.CircleMoveConnection then pcall(function() vars.CircleMoveConnection:Disconnect() end) vars.CircleMoveConnection = nil end
 
-      if not vars.CircleActive then
-          print("[Circle] Deactivated")
+      if not vars.CircleMoveActive then
+          print("[CircleMove] Deactivated")
           return
       end
 
@@ -63,7 +63,7 @@ return {
       end
       table.sort(botIds)
 
-      -- References
+      -- Bot references
       local humanoid, myRootPart, moving
       local function updateBotRefs()
           local character = player.Character or player.CharacterAdded:Wait()
@@ -73,7 +73,7 @@ return {
       player.CharacterAdded:Connect(updateBotRefs)
       updateBotRefs()
 
-      local function moveToPosition(targetPos, lookAtPos)
+      local function moveToPosition(targetPos)
           if not humanoid or not myRootPart then return end
           if moving then return end
           if (myRootPart.Position - targetPos).Magnitude < 0.5 then return end
@@ -82,16 +82,12 @@ return {
           humanoid:MoveTo(targetPos)
           humanoid.MoveToFinished:Wait()
           moving = false
-
-          if lookAtPos then
-              myRootPart.CFrame = CFrame.new(myRootPart.Position, Vector3.new(lookAtPos.X, myRootPart.Position.Y, lookAtPos.Z))
-          end
       end
 
       -- 🔹 Circle loop
       local startTime = tick()
-      vars.CircleConnection = RunService.Heartbeat:Connect(function()
-          if not vars.CircleActive or not vars.CurrentFormasiTarget or not vars.CurrentFormasiTarget.Character then return end
+      vars.CircleMoveConnection = RunService.Heartbeat:Connect(function()
+          if not vars.CircleMoveActive or not vars.CurrentFormasiTarget or not vars.CurrentFormasiTarget.Character then return end
           if not humanoid or not myRootPart then return end
 
           local targetHRP = vars.CurrentFormasiTarget.Character:FindFirstChild("HumanoidRootPart")
@@ -103,15 +99,17 @@ return {
               if id == player.UserId then index = i break end
           end
 
-          -- Tentukan posisi mengelilingi VIP
+          -- Tentukan posisi mengelilingi VIP (tetap rapi)
           local totalBots = #botIds
           local angle = ((tick() - startTime) * speed + (index-1)/totalBots*math.pi*2) % (math.pi*2)
           local offset = Vector3.new(math.cos(angle)*radius, 0, math.sin(angle)*radius)
           local targetPos = targetHRP.Position + offset
 
-          moveToPosition(targetPos, targetHRP.Position)
+          -- Jalan normal ke posisi target (MoveTo)
+          moveToPosition(targetPos)
+          -- Tidak mengubah CFrame, jadi menghadap default (depan global)
       end)
 
-      print("[Circle] Activated around", vars.CurrentFormasiTarget.Name)
+      print("[CircleMove] Activated around", vars.CurrentFormasiTarget.Name)
   end
 }
