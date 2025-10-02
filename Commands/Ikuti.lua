@@ -1,5 +1,5 @@
 -- Ikuti.lua
--- Command !ikuti: Bot mengikuti pemain VIP
+-- Command !ikuti: Bot mengikuti pemain VIP secara rapih berbaris ke belakang
 
 return {
     Execute = function(msg, client)
@@ -15,6 +15,7 @@ return {
         vars.FollowAllowed = true
         vars.ShieldActive = false
         vars.RowActive = false
+        vars.FrontlineActive = false
         vars.CurrentFormasiTarget = client
 
         local humanoid, myRootPart, moving
@@ -28,7 +29,7 @@ return {
         player.CharacterAdded:Connect(updateBotRefs)
         updateBotRefs()
 
-        local function moveToPosition(targetPos)
+        local function moveToPosition(targetPos, lookAtPos)
             if not humanoid or not myRootPart then return end
             if moving then return end
             if (myRootPart.Position - targetPos).Magnitude < 2 then return end
@@ -37,10 +38,17 @@ return {
             humanoid:MoveTo(targetPos)
             humanoid.MoveToFinished:Wait()
             moving = false
+
+            if lookAtPos then
+                myRootPart.CFrame = CFrame.new(
+                    myRootPart.Position,
+                    Vector3.new(lookAtPos.X, myRootPart.Position.Y, lookAtPos.Z)
+                )
+            end
         end
 
         -- Putuskan koneksi lama dulu
-        if vars.FollowConnection then vars.FollowConnection:Disconnect() end
+        if vars.FollowConnection then pcall(function() vars.FollowConnection:Disconnect() end) vars.FollowConnection = nil end
 
         -- 🔹 Safety check untuk Heartbeat
         if RunService.Heartbeat then
@@ -49,10 +57,10 @@ return {
                 local targetHRP = client.Character:FindFirstChild("HumanoidRootPart")
                 if not targetHRP then return end
 
-                local jarakIkut = tonumber(vars.JarakIkut) or 5
-                local followSpacing = tonumber(vars.FollowSpacing) or 2
+                local jarakIkut = tonumber(vars.JarakIkut) or 6   -- jarak minimum belakang VIP
+                local followSpacing = tonumber(vars.FollowSpacing) or 4 -- jarak antar bot
 
-                -- Urutan bot FIXED
+                -- Bot Mapping agar urutan rapi
                 local orderedBots = {
                     "8802945328", -- Bot1
                     "8802949363", -- Bot2
@@ -69,14 +77,16 @@ return {
                     end
                 end
 
-                -- Hitung posisi ikuti VIP
-                local followPos = targetHRP.Position - targetHRP.CFrame.LookVector * (jarakIkut + (index - 1) * followSpacing)
-                moveToPosition(followPos)
+                -- 🔹 Posisi barisan di belakang target (VIP)
+                local backOffset = jarakIkut + (index - 1) * followSpacing
+                local targetPos = targetHRP.Position - targetHRP.CFrame.LookVector * backOffset
+
+                moveToPosition(targetPos, targetHRP.Position + targetHRP.CFrame.LookVector * 50)
             end)
         else
             warn("[Ikuti] RunService.Heartbeat tidak tersedia!")
         end
 
-        print("[COMMAND] Bot mengikuti client:", client.Name)
+        print("[COMMAND] Formasi Ikuti aktif, target:", client.Name)
     end
 }
