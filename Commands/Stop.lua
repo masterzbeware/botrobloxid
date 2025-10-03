@@ -1,5 +1,5 @@
 -- Stop.lua
--- Command !stop: Menghentikan semua aksi bot (follow, shield, row, sync, pushup, frontline, circle)
+-- Command !stop: Menghentikan semua aksi bot (follow, shield, row, sync, pushup, frontline, circle, reporting)
 
 return {
     Execute = function(msg, client)
@@ -12,7 +12,8 @@ return {
         vars.SyncActive = false
         vars.PushupActive = false
         vars.FrontlineActive = false
-        vars.CircleMoveActive = false  -- tambahkan ini untuk CircleMove
+        vars.CircleMoveActive = false
+        vars.ReportingActive = false  -- ⬅️ Tambahan untuk Reporting.lua
         vars.CurrentFormasiTarget = nil
 
         -- 🔹 Hentikan semua koneksi / loop jika ada
