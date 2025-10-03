@@ -24,7 +24,7 @@ return {
                         channel:SendAsync("⚠️ Melakukan Reporting dengan akun @" .. vars.ReportingTarget .. " ke sistem moderasi Roblox...")
                         channel:SendAsync("⚠️ Data @" .. vars.ReportingTarget .. " sudah terkirim. Menunggu respon moderator...")
                     end)
-                    task.wait(10) -- cooldown 10 detik
+                    task.wait(15) -- cooldown 10 detik
                 end
             end)
         else
