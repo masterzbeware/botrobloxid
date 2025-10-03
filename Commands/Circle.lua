@@ -51,8 +51,8 @@ return {
         end
 
         -- Config
-        local radius = tonumber(vars.CircleRadius) or 6
-        local speed  = tonumber(vars.CircleSpeed) or 1 -- rotasi per detik
+        local baseRadius = tonumber(vars.CircleRadius) or 6
+        local speed      = tonumber(vars.CircleSpeed) or 1 -- rotasi per detik
 
         -- Bot references
         local humanoid, myRootPart
@@ -77,11 +77,13 @@ return {
             moving = false
         end
 
-        -- 🔹 Ambil semua bot aktif (exclude target)
+        -- 🔹 Ambil semua bot aktif (exclude target & player biasa)
         local function getActiveBots()
             local bots = {}
+            -- kalau kamu punya daftar bot, masukkan ke _G.BotPlayers
+            local botList = _G.BotPlayers or {}
             for _, plr in ipairs(Players:GetPlayers()) do
-                if plr ~= targetPlayer then
+                if plr ~= targetPlayer and table.find(botList, plr) then
                     table.insert(bots, plr)
                 end
             end
@@ -104,14 +106,12 @@ return {
             if totalBots == 0 then return end
 
             -- Tentukan index bot ini di activeBots
-            local index = 1
-            for i, plr in ipairs(activeBots) do
-                if plr == player then index = i break end
-            end
+            local index = table.find(activeBots, player) or 1
 
             -- Hitung posisi mengelilingi target
+            local dynamicRadius = baseRadius + (totalBots * 0.5) -- tambah jarak biar gak dempet
             local angle = ((tick() - startTime) * speed + (index-1)/totalBots*math.pi*2) % (math.pi*2)
-            local offset = Vector3.new(math.cos(angle)*radius, 0, math.sin(angle)*radius)
+            local offset = Vector3.new(math.cos(angle)*dynamicRadius, 0, math.sin(angle)*dynamicRadius)
             local targetPos = targetHRP.Position + offset
 
             moveToPosition(targetPos)
