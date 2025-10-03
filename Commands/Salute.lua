@@ -13,7 +13,7 @@ return {
         for word in msg:gmatch("%S+") do table.insert(args, word) end
         local targetNameOrUsername = args[2]
 
-        local targetPlayerName = "Komandan"
+        local targetPlayerName = nil
         if targetNameOrUsername then
             for _, plr in ipairs(Players:GetPlayers()) do
                 if plr.Name:lower() == targetNameOrUsername:lower() or 
@@ -34,12 +34,17 @@ return {
 
         -- Jalankan coroutine untuk chat salute
         vars.SaluteConnection = task.spawn(function()
-            -- Pertama: kirim chat awal
-            sendChat("Siap hormat, Komandan " .. targetPlayerName .. "!")
+            -- Chat pertama
+            if targetPlayerName then
+                sendChat("Siap laksanakan, " .. targetPlayerName .. "!")
+            else
+                sendChat("Siap laksanakan, Komandan!")
+            end
+            
             task.wait(1.5)
             if not vars.SaluteActive then return end
 
-            -- Lalu jalankan emote salute
+            -- Jalankan emote salute
             sendChat("/e salute")
 
             vars.SaluteActive = false
