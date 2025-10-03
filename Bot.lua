@@ -73,6 +73,8 @@ local commandFiles = {
     "Absen.lua",
     "Circle.lua",
     "Bubarbarisan.lua",
+    "Location.lua",
+    "Reporting.lua",
 }
 
 local gameFiles = {
