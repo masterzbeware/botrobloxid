@@ -105,7 +105,7 @@ return {
       end
 
       -- Kirim header + isi log satu per satu
-      local delayPerMessage = 10 -- detik antar kirim
+      local delayPerMessage = 5 -- detik antar kirim
       local maxMessages = 10 -- batas pesan
       local total = #logs
       local startIndex = math.max(total - maxMessages + 1, 1)

@@ -36,7 +36,7 @@ return {
         local channel = vars.TextChatService and vars.TextChatService.TextChannels and vars.TextChatService.TextChannels.RBXGeneral
         if channel then
             pcall(function()
-                channel:SendAsync("Siap barisan kiri & kanan dibentuk!")
+                channel:SendAsync("Siap laksanakan, Komandan!")
             end)
         end
 
