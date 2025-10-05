@@ -1,6 +1,6 @@
 -- LogChat.lua
 -- Command: !logchat {displayname/username}
--- Fungsi: Menampilkan riwayat chat pemain dengan format sederhana dan jeda antar pesan
+-- Fungsi: Menampilkan riwayat chat pemain dengan format sederhana, bersih dari tag HTML
 
 return {
   Execute = function(msg, client)
@@ -9,15 +9,15 @@ return {
       local Players = game:GetService("Players")
       local channel = TextChatService.TextChannels and TextChatService.TextChannels:FindFirstChild("RBXGeneral")
 
-      -- Simpan log chat global
+      -- Penyimpanan log chat global
       _G.ChatLogs = _G.ChatLogs or {}
 
-      -- Setup listener global satu kali saja
+      -- Listener chat global hanya sekali
       if not _G.ChatLogListenerSet then
           _G.ChatLogListenerSet = true
           print("[LogChat] Chat listener aktif.")
 
-          -- TextChatService (baru)
+          -- Listener untuk sistem TextChatService
           if TextChatService and TextChatService.TextChannels then
               local generalChannel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
               if generalChannel then
@@ -25,9 +25,12 @@ return {
                       local senderUserId = message.TextSource and message.TextSource.UserId
                       local sender = senderUserId and Players:GetPlayerByUserId(senderUserId)
                       if sender then
+                          -- Bersihkan tag HTML (<font>, <b>, dll)
+                          local cleanText = string.gsub(message.Text, "<.->", "")
+
                           local logs = _G.ChatLogs[sender.UserId] or {}
                           table.insert(logs, {
-                              text = message.Text,
+                              text = cleanText,
                               time = os.date("%H:%M:%S")
                           })
                           _G.ChatLogs[sender.UserId] = logs
@@ -36,12 +39,13 @@ return {
               end
           end
 
-          -- Sistem lama (Player.Chatted)
+          -- Listener untuk sistem chat lama (Player.Chatted)
           for _, player in ipairs(Players:GetPlayers()) do
               player.Chatted:Connect(function(text)
+                  local cleanText = string.gsub(text, "<.->", "")
                   local logs = _G.ChatLogs[player.UserId] or {}
                   table.insert(logs, {
-                      text = text,
+                      text = cleanText,
                       time = os.date("%H:%M:%S")
                   })
                   _G.ChatLogs[player.UserId] = logs
@@ -50,9 +54,10 @@ return {
 
           Players.PlayerAdded:Connect(function(player)
               player.Chatted:Connect(function(text)
+                  local cleanText = string.gsub(text, "<.->", "")
                   local logs = _G.ChatLogs[player.UserId] or {}
                   table.insert(logs, {
-                      text = text,
+                      text = cleanText,
                       time = os.date("%H:%M:%S")
                   })
                   _G.ChatLogs[player.UserId] = logs
@@ -60,7 +65,7 @@ return {
           end)
       end
 
-      -- Ambil argumen dari command
+      -- Ambil argumen command (!logchat {nama})
       local args = string.split(msg, " ")
       local targetName = args[2]
 
@@ -71,7 +76,7 @@ return {
           return
       end
 
-      -- Cari pemain berdasarkan nama atau display name
+      -- Cari pemain berdasarkan displayname / username
       local targetPlayer = nil
       for _, player in ipairs(Players:GetPlayers()) do
           if string.lower(player.Name) == string.lower(targetName)
@@ -91,7 +96,7 @@ return {
           return
       end
 
-      -- Ambil log chat pemain
+      -- Ambil log chat
       local logs = _G.ChatLogs[targetPlayer.UserId]
 
       if not logs or #logs == 0 then
@@ -99,9 +104,9 @@ return {
           return
       end
 
-      -- Kirim header + riwayat satu per satu dengan jeda
-      local delayPerMessage = 2
-      local maxMessages = 10
+      -- Kirim header + isi log satu per satu
+      local delayPerMessage = 2 -- detik antar kirim
+      local maxMessages = 10 -- batas pesan
       local total = #logs
       local startIndex = math.max(total - maxMessages + 1, 1)
 
