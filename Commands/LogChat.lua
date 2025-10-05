@@ -113,7 +113,7 @@ return {
 
       task.spawn(function()
           -- Header
-          channel:SendAsync("History chat " .. targetPlayer.DisplayName .. " (@" .. targetPlayer.Name .. ") - Menampilkan " .. jumlah .. " pesan terakhir:")
+          channel:SendAsync("History chat " .. targetPlayer.DisplayName .. " (@" .. targetPlayer.Name .. ":")
           task.wait(delayPerMessage)
 
           -- Kirim satu per satu
