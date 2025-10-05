@@ -1,6 +1,6 @@
 -- LogChat.lua
 -- Command: !logchat {displayname/username}
--- Fungsi: Menyimpan dan menampilkan riwayat chat pemain secara bertahap
+-- Fungsi: Menyimpan dan menampilkan riwayat chat pemain satu per satu dengan jeda
 
 return {
   Execute = function(msg, client)
@@ -9,7 +9,7 @@ return {
       local Players = game:GetService("Players")
       local channel = TextChatService.TextChannels and TextChatService.TextChannels:FindFirstChild("RBXGeneral")
 
-      -- Pastikan penyimpanan log tersedia
+      -- Inisialisasi penyimpanan log
       _G.ChatLogs = _G.ChatLogs or {}
 
       -- Setup listener global (hanya sekali)
@@ -36,7 +36,7 @@ return {
               end
           end
 
-          -- Sistem chat lama (Chatted event)
+          -- Sistem chat lama (Chatted)
           for _, player in ipairs(Players:GetPlayers()) do
               player.Chatted:Connect(function(text)
                   local logs = _G.ChatLogs[player.UserId] or {}
@@ -91,7 +91,7 @@ return {
           return
       end
 
-      -- Ambil log chat pemain
+      -- Ambil log chat
       local logs = _G.ChatLogs[targetPlayer.UserId]
 
       if not logs or #logs == 0 then
@@ -99,15 +99,18 @@ return {
           return
       end
 
-      -- Kirim chat satu per satu
-      channel:SendAsync("History chat " .. targetPlayer.DisplayName .. " (@" .. targetPlayer.Name .. "):")
-
+      -- Kirim header dulu, lalu jeda sebelum kirim isi chat
       local delayPerMessage = 2 -- detik jeda antar pesan
-      local maxMessages = 10    -- batas maksimal pesan yang dikirim
+      local maxMessages = 10    -- batas pesan yang dikirim
       local total = #logs
       local startIndex = math.max(total - maxMessages + 1, 1)
 
       task.spawn(function()
+          -- Kirim header
+          channel:SendAsync("History chat " .. targetPlayer.DisplayName .. " (@" .. targetPlayer.Name .. "):")
+          task.wait(delayPerMessage)
+
+          -- Kirim log satu per satu
           for i = startIndex, total do
               local entry = logs[i]
               local messageText = "[" .. entry.time .. "] " .. entry.text
