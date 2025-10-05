@@ -28,7 +28,7 @@ return {
                           local logs = _G.ChatLogs[sender.UserId] or {}
                           table.insert(logs, {
                               text = message.Text,
-                              time = os.date("%H:%M:%S"),
+                              time = os.date("%H:%M:%S")
                           })
                           _G.ChatLogs[sender.UserId] = logs
                       end
@@ -42,7 +42,7 @@ return {
                   local logs = _G.ChatLogs[player.UserId] or {}
                   table.insert(logs, {
                       text = text,
-                      time = os.date("%H:%M:%S"),
+                      time = os.date("%H:%M:%S")
                   })
                   _G.ChatLogs[player.UserId] = logs
               end)
@@ -53,7 +53,7 @@ return {
                   local logs = _G.ChatLogs[player.UserId] or {}
                   table.insert(logs, {
                       text = text,
-                      time = os.date("%H:%M:%S"),
+                      time = os.date("%H:%M:%S")
                   })
                   _G.ChatLogs[player.UserId] = logs
               end)
