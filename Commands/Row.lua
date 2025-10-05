@@ -1,71 +1,60 @@
 -- Row.lua
+-- Command !row: Bot membentuk dua barisan (kiri & kanan) di belakang pemain target
+
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars
+        local RunService = vars.RunService
+        local player = vars.LocalPlayer
 
-        -- 🔹 Blok jika RockPaperMode aktif
-        if vars.RockPaperModeActive then
-            local channel = vars.TextChatService.TextChannels and vars.TextChatService.TextChannels.RBXGeneral
-            if channel then
-                pcall(function()
-                    channel:SendAsync("Tidak bisa mengeksekusi Row saat RockPaper Mode aktif!")
-                end)
-            end
+        if not RunService then
+            warn("[Row] RunService tidak tersedia!")
             return
         end
 
-        local Players = game:GetService("Players")
-        local RunService = game:GetService("RunService")
-        local TextChatService = game:GetService("TextChatService")
-        local localPlayer = vars.LocalPlayer or Players.LocalPlayer
-
+        -- 🔹 Nonaktifkan mode lain
         vars.RowActive = not vars.RowActive
         vars.FollowAllowed = false
         vars.ShieldActive = false
+        vars.FrontlineActive = false
         vars.CurrentFormasiTarget = client
-        vars.RowFormationAnnounced = false
 
+        -- 🔹 Notifikasi status
         game.StarterGui:SetCore("SendNotification", {
             Title = "Formation Command",
             Text = "Row " .. (vars.RowActive and "Activated" or "Deactivated")
         })
 
-        if vars.RowActive then
-            local channel = TextChatService.TextChannels and TextChatService.TextChannels.RBXGeneral
-            if channel then
-                pcall(function()
-                    channel:SendAsync("Siap laksanakan!")
-                end)
-            end
-
-            task.delay(3, function()
-                if vars.RowActive and not vars.RowFormationAnnounced then
-                    vars.RowFormationAnnounced = true
-                    local channel2 = TextChatService.TextChannels and TextChatService.TextChannels.RBXGeneral
-                    if channel2 then
-                        pcall(function()
-                            channel2:SendAsync("Semua sudah masuk barisan!")
-                        end)
-                    end
-                end
-            end)
-        else
+        if not vars.RowActive then
+            print("[ROW] Dinonaktifkan")
             return
         end
 
-        local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
-        local humanoid = character:WaitForChild("Humanoid")
-        local myRootPart = character:WaitForChild("HumanoidRootPart")
+        print("[ROW] Formasi Row diaktifkan. Target:", client.Name)
 
-        local followDistance = vars.JarakIkut or 5
-        local rowSpacing     = vars.RowSpacing or 4
-        local sideSpacing    = vars.SideSpacing or 4
-        local moving = false
+        -- Kirim pesan ke chat
+        local channel = vars.TextChatService and vars.TextChatService.TextChannels and vars.TextChatService.TextChannels.RBXGeneral
+        if channel then
+            pcall(function()
+                channel:SendAsync("Siap barisan kiri & kanan dibentuk!")
+            end)
+        end
+
+        -- Referensi bot
+        local humanoid, myRootPart, moving
+        local function updateBotRefs()
+            local character = player.Character or player.CharacterAdded:Wait()
+            humanoid = character:WaitForChild("Humanoid")
+            myRootPart = character:WaitForChild("HumanoidRootPart")
+        end
+
+        player.CharacterAdded:Connect(updateBotRefs)
+        updateBotRefs()
 
         local function moveToPosition(targetPos, lookAtPos)
             if not humanoid or not myRootPart then return end
             if moving then return end
-            if (myRootPart.Position - targetPos).Magnitude < 2 then return true end
+            if (myRootPart.Position - targetPos).Magnitude < 2 then return end
 
             moving = true
             humanoid:MoveTo(targetPos)
@@ -78,41 +67,57 @@ return {
                     Vector3.new(lookAtPos.X, myRootPart.Position.Y, lookAtPos.Z)
                 )
             end
-            return (myRootPart.Position - targetPos).Magnitude < 2
         end
 
-        RunService.Heartbeat:Connect(function()
-            if not vars.RowActive then return end
-            if not vars.CurrentFormasiTarget or not vars.CurrentFormasiTarget.Character then return end
+        -- Putuskan koneksi lama
+        if vars.RowConnection then pcall(function() vars.RowConnection:Disconnect() end) vars.RowConnection = nil end
 
-            local targetHRP = vars.CurrentFormasiTarget.Character:FindFirstChild("HumanoidRootPart")
-            if not targetHRP then return end
+        -- 🔹 Loop utama barisan 2 kiri-kanan
+        if RunService.Heartbeat then
+            vars.RowConnection = RunService.Heartbeat:Connect(function()
+                if not vars.RowActive or not client.Character then return end
+                local targetHRP = client.Character:FindFirstChild("HumanoidRootPart")
+                if not targetHRP then return end
 
-            local orderedBots = {
-                "8802945328",
-                "8802949363",
-                "8802939883",
-                "8802998147",
-            }
+                -- Mapping bot
+                local orderedBots = {
+                    "8802945328", -- Bot1
+                    "8802949363", -- Bot2
+                    "8802939883", -- Bot3
+                    "8802998147", -- Bot4
+                }
 
-            local myUserId = tostring(localPlayer.UserId)
-            local index = 1
-            for i, uid in ipairs(orderedBots) do
-                if uid == myUserId then
-                    index = i
-                    break
+                local myUserId = tostring(player.UserId)
+                local index = 1
+                for i, uid in ipairs(orderedBots) do
+                    if uid == myUserId then
+                        index = i
+                        break
+                    end
                 end
-            end
 
-            local rowIndex = math.floor((index - 1) / 2)
-            local sideIndex = (index - 1) % 2
-            local baseBack = followDistance + (rowIndex * rowSpacing)
-            local offsetSide = (sideIndex == 0 and -1 or 1) * sideSpacing
-            local targetPos = targetHRP.Position
-                - targetHRP.CFrame.LookVector * baseBack
-                + targetHRP.CFrame.RightVector * offsetSide
+                -- 🔹 Posisi dua barisan kiri & kanan
+                local jarakBelakang = tonumber(vars.JarakIkut) or 6
+                local jarakAntarBaris = tonumber(vars.RowSpacing) or 4
+                local jarakSamping = tonumber(vars.SideSpacing) or 5
 
-            moveToPosition(targetPos, targetHRP.Position)
-        end)
+                -- Baris dihitung per 2 bot: (1 kiri, 2 kanan), (3 kiri, 4 kanan)
+                local rowIndex = math.floor((index - 1) / 2)
+                local isLeft = ((index - 1) % 2 == 0)
+
+                local backOffset = jarakBelakang + (rowIndex * jarakAntarBaris)
+                local sideOffset = (isLeft and -1 or 1) * jarakSamping
+
+                -- Posisi akhir formasi
+                local targetPos =
+                    targetHRP.Position
+                    - targetHRP.CFrame.LookVector * backOffset
+                    + targetHRP.CFrame.RightVector * sideOffset
+
+                moveToPosition(targetPos, targetHRP.Position + targetHRP.CFrame.LookVector * 50)
+            end)
+        else
+            warn("[Row] RunService.Heartbeat tidak tersedia!")
+        end
     end
 }
