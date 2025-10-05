@@ -1,6 +1,6 @@
 -- LogChat.lua
 -- Command: !logchat {displayname/username}
--- Fungsi: Menyimpan dan menampilkan riwayat chat pemain satu per satu dengan jeda
+-- Fungsi: Menampilkan riwayat chat pemain dengan format sederhana dan jeda antar pesan
 
 return {
   Execute = function(msg, client)
@@ -9,15 +9,15 @@ return {
       local Players = game:GetService("Players")
       local channel = TextChatService.TextChannels and TextChatService.TextChannels:FindFirstChild("RBXGeneral")
 
-      -- Inisialisasi penyimpanan log
+      -- Simpan log chat global
       _G.ChatLogs = _G.ChatLogs or {}
 
-      -- Setup listener global (hanya sekali)
+      -- Setup listener global satu kali saja
       if not _G.ChatLogListenerSet then
           _G.ChatLogListenerSet = true
           print("[LogChat] Chat listener aktif.")
 
-          -- Sistem chat baru (TextChatService)
+          -- TextChatService (baru)
           if TextChatService and TextChatService.TextChannels then
               local generalChannel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
               if generalChannel then
@@ -36,7 +36,7 @@ return {
               end
           end
 
-          -- Sistem chat lama (Chatted)
+          -- Sistem lama (Player.Chatted)
           for _, player in ipairs(Players:GetPlayers()) do
               player.Chatted:Connect(function(text)
                   local logs = _G.ChatLogs[player.UserId] or {}
@@ -60,7 +60,7 @@ return {
           end)
       end
 
-      -- Parsing argumen command
+      -- Ambil argumen dari command
       local args = string.split(msg, " ")
       local targetName = args[2]
 
@@ -71,7 +71,7 @@ return {
           return
       end
 
-      -- Cari pemain
+      -- Cari pemain berdasarkan nama atau display name
       local targetPlayer = nil
       for _, player in ipairs(Players:GetPlayers()) do
           if string.lower(player.Name) == string.lower(targetName)
@@ -91,7 +91,7 @@ return {
           return
       end
 
-      -- Ambil log chat
+      -- Ambil log chat pemain
       local logs = _G.ChatLogs[targetPlayer.UserId]
 
       if not logs or #logs == 0 then
@@ -99,21 +99,21 @@ return {
           return
       end
 
-      -- Kirim header dulu, lalu jeda sebelum kirim isi chat
-      local delayPerMessage = 2 -- detik jeda antar pesan
-      local maxMessages = 10    -- batas pesan yang dikirim
+      -- Kirim header + riwayat satu per satu dengan jeda
+      local delayPerMessage = 2
+      local maxMessages = 10
       local total = #logs
       local startIndex = math.max(total - maxMessages + 1, 1)
 
       task.spawn(function()
-          -- Kirim header
+          -- Header dulu
           channel:SendAsync("History chat " .. targetPlayer.DisplayName .. " (@" .. targetPlayer.Name .. "):")
           task.wait(delayPerMessage)
 
-          -- Kirim log satu per satu
+          -- Kirim satu per satu
           for i = startIndex, total do
               local entry = logs[i]
-              local messageText = "[" .. entry.time .. "] " .. entry.text
+              local messageText = string.format("[%s] %s", entry.time, entry.text)
               channel:SendAsync(messageText)
               task.wait(delayPerMessage)
           end
