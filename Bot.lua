@@ -13,7 +13,7 @@ local Options = Library.Options
 -- 📋 Window Setup
 local Window = Library:CreateWindow({
     Title = "Made by MasterZ",
-    Footer = "v1.0.0",
+    Footer = "v1.1.0",
     Icon = 0,
     NotifySide = "Right",
     ShowCustomCursor = true,
@@ -75,6 +75,7 @@ local commandFiles = {
     "Bubarbarisan.lua",
     "Location.lua",
     "LogChat.lua",
+    "Patroli.lua",
 }
 
 local gameFiles = {
