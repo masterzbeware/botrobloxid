@@ -1,11 +1,11 @@
 -- Stop.lua
--- Command !stop: Menghentikan semua aksi bot (follow, shield, row, sync, pushup, frontline, circle, reporting)
+-- Command !stop: Menghentikan semua aksi bot (follow, shield, row, sync, pushup, frontline, circle, reporting, logchat)
 
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars or {}
 
-        -- 🔹 Nonaktifkan semua mode
+        -- 🔹 Nonaktifkan semua mode utama
         vars.FollowAllowed = false
         vars.ShieldActive = false
         vars.RowActive = false
@@ -13,7 +13,7 @@ return {
         vars.PushupActive = false
         vars.FrontlineActive = false
         vars.CircleMoveActive = false
-        vars.ReportingActive = false  -- ⬅️ Tambahan untuk Reporting.lua
+        vars.ReportingActive = false
         vars.CurrentFormasiTarget = nil
 
         -- 🔹 Hentikan semua koneksi / loop jika ada
@@ -67,7 +67,35 @@ return {
                 :InvokeServer(unpack(args))
         end)
 
-        -- 🔹 Log di output
+        -- 🔹 Tambahan: Matikan listener LogChat.lua
+        if _G.ChatLogListenerSet then
+            _G.ChatLogListenerSet = false
+
+            -- Lepas event TextChatService jika ada
+            local TextChatService = game:GetService("TextChatService")
+            if TextChatService and TextChatService.TextChannels then
+                local generalChannel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+                if generalChannel and generalChannel.OnIncomingMessage then
+                    -- Reset OnIncomingMessage agar tidak aktif
+                    generalChannel.OnIncomingMessage = nil
+                end
+            end
+
+            -- Lepas semua koneksi Chatted player
+            local Players = game:GetService("Players")
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player.Chatted then
+                    pcall(function()
+                        -- Tidak bisa Disconnect langsung, jadi cukup beri tanda kalau listener dimatikan
+                        player.Chatted:Connect(function() end)
+                    end)
+                end
+            end
+
+            print("[LogChat] Semua listener chat dimatikan oleh !stop.")
+        end
+
+        -- 🔹 Log output
         print("[COMMAND] Bot stopped by client:", client and client.Name or "Unknown")
     end
 }
