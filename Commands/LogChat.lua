@@ -1,6 +1,6 @@
 -- LogChat.lua
 -- Command: !logchat {displayname/username}
--- Fungsi: Menyimpan dan menampilkan riwayat chat pemain
+-- Fungsi: Menyimpan dan menampilkan riwayat chat pemain secara bertahap
 
 return {
   Execute = function(msg, client)
@@ -9,15 +9,15 @@ return {
       local Players = game:GetService("Players")
       local channel = TextChatService.TextChannels and TextChatService.TextChannels:FindFirstChild("RBXGeneral")
 
-      -- Pastikan tempat penyimpanan log tersedia
+      -- Pastikan penyimpanan log tersedia
       _G.ChatLogs = _G.ChatLogs or {}
 
-      -- Inisialisasi listener global (hanya sekali)
+      -- Setup listener global (hanya sekali)
       if not _G.ChatLogListenerSet then
           _G.ChatLogListenerSet = true
           print("[LogChat] Chat listener aktif.")
 
-          -- Listener untuk TextChatService (sistem chat baru)
+          -- Sistem chat baru (TextChatService)
           if TextChatService and TextChatService.TextChannels then
               local generalChannel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
               if generalChannel then
@@ -36,7 +36,7 @@ return {
               end
           end
 
-          -- Listener untuk sistem chat lama (Chatted event)
+          -- Sistem chat lama (Chatted event)
           for _, player in ipairs(Players:GetPlayers()) do
               player.Chatted:Connect(function(text)
                   local logs = _G.ChatLogs[player.UserId] or {}
@@ -66,12 +66,12 @@ return {
 
       if not targetName then
           if channel then
-              channel:SendAsync("Format perintah salah. Gunakan: !logchat {displayname/username}")
+              channel:SendAsync("Format salah. Gunakan: !logchat {displayname/username}")
           end
           return
       end
 
-      -- Cari player berdasarkan username atau displayname
+      -- Cari pemain
       local targetPlayer = nil
       for _, player in ipairs(Players:GetPlayers()) do
           if string.lower(player.Name) == string.lower(targetName)
@@ -99,20 +99,21 @@ return {
           return
       end
 
-      -- Tentukan jumlah pesan yang ingin dikirim (default 10)
-      local maxMessages = 10
+      -- Kirim chat satu per satu
+      channel:SendAsync("History chat " .. targetPlayer.DisplayName .. " (@" .. targetPlayer.Name .. "):")
+
+      local delayPerMessage = 2 -- detik jeda antar pesan
+      local maxMessages = 10    -- batas maksimal pesan yang dikirim
       local total = #logs
       local startIndex = math.max(total - maxMessages + 1, 1)
 
-      -- Buat daftar ringkasan pesan
-      local summary = {}
-      table.insert(summary, "Riwayat chat untuk " .. targetPlayer.DisplayName .. " (@" .. targetPlayer.Name .. "):")
-
-      for i = startIndex, total do
-          local entry = logs[i]
-          table.insert(summary, "[" .. entry.time .. "] " .. entry.text)
-      end
-
-      channel:SendAsync(table.concat(summary, "\n"))
+      task.spawn(function()
+          for i = startIndex, total do
+              local entry = logs[i]
+              local messageText = "[" .. entry.time .. "] " .. entry.text
+              channel:SendAsync(messageText)
+              task.wait(delayPerMessage)
+          end
+      end)
   end
 }
