@@ -1,4 +1,4 @@
--- ModeBuaya.lua (Stop Compatible & No Repeat Until All Sent)
+-- ModeBuaya.lua (Stop Compatible & Rapi Berbaris)
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars
@@ -99,9 +99,12 @@ return {
         if vars.FollowConnection then pcall(function() vars.FollowConnection:Disconnect() end) vars.FollowConnection = nil end
         if vars.ModeBuayaChatConnection then pcall(function() vars.ModeBuayaChatConnection:Disconnect() end) vars.ModeBuayaChatConnection = nil end
 
-        -- Heartbeat loop (follow)
+        -- 🔹 Heartbeat loop (follow + rapi berbaris)
         vars.FollowConnection = RunService.Heartbeat:Connect(function()
             if not vars.FollowAllowed then return end
+            vars.AbsenActive = vars.AbsenActive or {}
+            local myId = tostring(player.UserId)
+            if vars.AbsenActive[myId] then return end
 
             if not targetPlayer or not targetPlayer.Character then return end
             local targetHRP = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
@@ -110,17 +113,35 @@ return {
             local jarakIkut = tonumber(vars.JarakIkut) or 6
             local followSpacing = tonumber(vars.FollowSpacing) or 4
 
-            local targetPos = targetHRP.Position - targetHRP.CFrame.LookVector * jarakIkut
+            -- 🔹 Bot Mapping agar rapi
+            local orderedBots = {
+                "8802945328", -- Bot1
+                "8802949363", -- Bot2
+                "8802939883", -- Bot3
+                "8802998147", -- Bot4
+            }
+            local myUserId = tostring(player.UserId)
+            local index = 1
+            for i, uid in ipairs(orderedBots) do
+                if uid == myUserId then
+                    index = i
+                    break
+                end
+            end
+
+            local backOffset = jarakIkut + (index - 1) * followSpacing
+            local targetPos = targetHRP.Position - targetHRP.CFrame.LookVector * backOffset
+
             moveToPosition(targetPos, targetHRP.Position + targetHRP.CFrame.LookVector * 50)
         end)
 
-        -- Heartbeat loop (chat + emoji)
+        -- 🔹 Heartbeat loop (chat + emoji)
         vars.ModeBuayaChatTimer = 0
         vars.ModeBuayaChatConnection = RunService.Heartbeat:Connect(function(step)
             if not vars.FollowAllowed then return end
 
             vars.ModeBuayaChatTimer = (vars.ModeBuayaChatTimer or 0) + step
-            if vars.ModeBuayaChatTimer >= 18 then
+            if vars.ModeBuayaChatTimer >= 22 then
                 vars.ModeBuayaChatTimer = 0
                 if targetPlayer and targetPlayer.Parent and channel then
                     local name = targetPlayer.DisplayName or targetPlayer.Name
@@ -142,10 +163,6 @@ return {
                     pcall(function() channel:SendAsync(emojiMessage) end)
                 end
             end
-        end)
-
-        pcall(function()
-            channel:SendAsync("[COMMAND] ModeBuaya aktif, target: " .. targetPlayer.Name)
         end)
     end
 }
