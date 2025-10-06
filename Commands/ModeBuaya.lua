@@ -1,4 +1,4 @@
--- ModeBuaya.lua (Stop Compatible)
+-- ModeBuaya.lua (Stop Compatible & No Repeat Until All Sent)
 return {
   Execute = function(msg, client)
       local vars = _G.BotVars
@@ -30,12 +30,17 @@ return {
           "Kau cantik hari ini, {name}, dan aku suka.",
           "Jika cinta adalah seni, {name}, kau adalah karyaku yang paling berharga.",
           "Ngemil apa yang paling enak, {name}? Ngemilikin kamu sepenuhnya.",
-          "Sejak kenal kamu, {name}, aku jadi tau tujuan hidupku.",
-          "Ngemil apa yang paling enak, {name}? Ngemilikin kamu sepenuhnya."
+          "Aku temenin ya, {name}, aku nggak mau kamu jadi butiran debu tanpa aku."
       }
 
       -- 🔹 Emoji baper
-      local emojiList = {"❤️","🥰","😘","💖","🐊","😍","💌"}
+      local emojiList = {"😘"}
+
+      -- 🔹 Copy list sementara untuk menghindari duplikasi
+      local unusedChatList = {}
+      for _, v in ipairs(chatList) do
+          table.insert(unusedChatList, v)
+      end
 
       -- 🔹 Atur mode ModeBuaya
       vars.FollowAllowed = true
@@ -73,11 +78,11 @@ return {
           end
       end
 
-      -- 🔹 Hentikan koneksi lama jika ada
+      -- Hentikan koneksi lama jika ada
       if vars.FollowConnection then pcall(function() vars.FollowConnection:Disconnect() end) vars.FollowConnection = nil end
       if vars.ModeBuayaChatConnection then pcall(function() vars.ModeBuayaChatConnection:Disconnect() end) vars.ModeBuayaChatConnection = nil end
 
-      -- 🔹 Heartbeat loop (follow)
+      -- Heartbeat loop (follow)
       if RunService.Heartbeat then
           vars.FollowConnection = RunService.Heartbeat:Connect(function()
               if not vars.FollowAllowed then return end -- kompatibel dengan !stop
@@ -107,7 +112,7 @@ return {
               moveToPosition(targetPos, targetHRP.Position + targetHRP.CFrame.LookVector * 50)
           end)
 
-          -- 🔹 Heartbeat loop (chat + emoji)
+          -- Heartbeat loop (chat + emoji)
           vars.ModeBuayaChatTimer = 0
           vars.ModeBuayaChatConnection = RunService.Heartbeat:Connect(function(step)
               if not vars.FollowAllowed then return end -- kompatibel dengan !stop
@@ -117,10 +122,21 @@ return {
                   vars.ModeBuayaChatTimer = 0
                   if client and client.Parent and channel then
                       local name = client.DisplayName or client.Name
-                      -- Pesan kata-kata
-                      local msgIndex = math.random(1, #chatList)
-                      local message = chatList[msgIndex]:gsub("{name}", name)
+
+                      -- Reset unusedChatList jika kosong
+                      if #unusedChatList == 0 then
+                          for _, v in ipairs(chatList) do
+                              table.insert(unusedChatList, v)
+                          end
+                      end
+
+                      -- Ambil chat acak dari unusedChatList
+                      local idx = math.random(1, #unusedChatList)
+                      local message = unusedChatList[idx]:gsub("{name}", name)
+                      table.remove(unusedChatList, idx) -- hapus agar tidak terulang
+
                       pcall(function() channel:SendAsync(message) end)
+
                       -- Pesan emoji
                       local emojiIndex = math.random(1, #emojiList)
                       local emojiMessage = emojiList[emojiIndex]
