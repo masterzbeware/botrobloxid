@@ -19,12 +19,11 @@ return {
             _G.ChatLogListenerSet = true
             print("[LogChat] Chat listener aktif.")
 
-            -- 🔸 Listener untuk sistem TextChatService (baru)
+            -- 🔸 Listener TextChatService (baru)
             if TextChatService and TextChatService.TextChannels then
                 local generalChannel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
                 if generalChannel then
                     generalChannel.OnIncomingMessage = function(message)
-                        -- Jika listener sudah dimatikan oleh !stop, jangan lanjut
                         if not _G.ChatLogListenerSet then return end
 
                         local senderUserId = message.TextSource and message.TextSource.UserId
@@ -35,17 +34,20 @@ return {
                             cleanText = string.gsub(cleanText, "[^\32-\126]", "")
 
                             local logs = _G.ChatLogs[sender.UserId] or {}
-                            table.insert(logs, {
-                                text = cleanText,
-                                time = os.date("%H:%M:%S")
-                            })
-                            _G.ChatLogs[sender.UserId] = logs
+                            -- 🔹 Cek duplikasi
+                            if not (logs[#logs] and logs[#logs].text == cleanText) then
+                                table.insert(logs, {
+                                    text = cleanText,
+                                    time = os.date("%H:%M:%S")
+                                })
+                                _G.ChatLogs[sender.UserId] = logs
+                            end
                         end
                     end
                 end
             end
 
-            -- 🔸 Listener untuk sistem chat lama (Player.Chatted)
+            -- 🔸 Listener Player.Chatted (opsional, untuk pemain lama)
             local function connectPlayerChat(player)
                 player.Chatted:Connect(function(text)
                     if not _G.ChatLogListenerSet then return end
@@ -53,11 +55,14 @@ return {
                     cleanText = string.gsub(cleanText, "[^\32-\126]", "")
 
                     local logs = _G.ChatLogs[player.UserId] or {}
-                    table.insert(logs, {
-                        text = cleanText,
-                        time = os.date("%H:%M:%S")
-                    })
-                    _G.ChatLogs[player.UserId] = logs
+                    -- 🔹 Cek duplikasi
+                    if not (logs[#logs] and logs[#logs].text == cleanText) then
+                        table.insert(logs, {
+                            text = cleanText,
+                            time = os.date("%H:%M:%S")
+                        })
+                        _G.ChatLogs[player.UserId] = logs
+                    end
                 end)
             end
 
@@ -112,7 +117,7 @@ return {
         local total = #logs
         local jumlah = math.clamp(jumlahPesan, 1, 50) -- batas maksimal 50
         local startIndex = math.max(total - jumlah + 1, 1)
-        local delayPerMessage = 5 -- jeda antar pesan
+        local delayPerMessage = 2 -- jeda antar pesan
 
         task.spawn(function()
             -- Header
