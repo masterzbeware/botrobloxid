@@ -1,6 +1,5 @@
 -- Stop.lua
--- Command !stop: Menghentikan semua aksi bot (follow, shield, row, square, wedge, sync, pushup, frontline, circle, reporting, ModeBuaya, RoomVIP, logchat)
--- Termasuk mereset whitelist dan memutus semua koneksi aktif
+-- Command !stop: Menghentikan semua aksi bot, termasuk Barrier, Wedge, Square, dsb.
 
 return {
     Execute = function(msg, client)
@@ -11,7 +10,8 @@ return {
         vars.ShieldActive = false
         vars.RowActive = false
         vars.SquareActive = false
-        vars.WedgeActive = false -- 🔸 Tambahan untuk Wedge
+        vars.WedgeActive = false
+        vars.BarrierActive = false -- 🔸 Tambahan untuk Barrier
         vars.SyncActive = false
         vars.PushupActive = false
         vars.FrontlineActive = false
@@ -40,7 +40,8 @@ return {
             "ShieldConnection",
             "RowConnection",
             "SquareConnection",
-            "WedgeConnection", -- 🔸 Hentikan loop Wedge
+            "WedgeConnection",
+            "BarrierConnection", -- 🔸 Tambahan untuk Barrier
             "PushupConnection",
             "SyncConnection",
             "CircleMoveConnection",
