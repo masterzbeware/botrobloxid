@@ -1,6 +1,6 @@
 -- Profile.lua
 -- Perintah: !profile {displayname/username}
--- Mengambil jumlah Connections, Followers, dan Following lewat RemoteFunction game
+-- Mengambil jumlah Connections, Followers, dan Following lewat RemoteFunction
 
 return {
   Execute = function(msg, client)
@@ -9,28 +9,35 @@ return {
       local ReplicatedStorage = game:GetService("ReplicatedStorage")
       local Players = game:GetService("Players")
 
-      local content = msg.Text or ""
-      local args = string.split(content, " ")
+      -- Ambil teks pesan dari berbagai kemungkinan field
+      local content = (msg.Text or msg.Message or msg.Body or ""):lower()
+      local channel = TextChatService.TextChannels and TextChatService.TextChannels:FindFirstChild("RBXGeneral")
 
-      -- Format wajib: !profile {displayname/username}
-      if #args < 2 then
-          local channel = TextChatService.TextChannels and TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+      -- Pastikan mengandung !profile
+      if not string.find(content, "!profile") then
+          if channel then channel:SendAsync("⚠️ Tidak ada perintah !profile ditemukan.") end
+          return
+      end
+
+      -- Ambil argumen setelah !profile
+      local _, _, arg = string.find(content, "!profile%s+([%w_%-]+)")
+      if not arg or arg == "" then
           if channel then
               channel:SendAsync("⚠️ Format salah! Gunakan: !profile {displayname/username}")
           end
           return
       end
 
-      local searchName = args[2]
+      local searchName = arg
       local targetUserId
       local foundPlayer
 
-      -- Coba cari berdasarkan username dulu
+      -- Coba cari berdasarkan username (offline user)
       pcall(function()
           targetUserId = Players:GetUserIdFromNameAsync(searchName)
       end)
 
-      -- Kalau gagal, coba cari player yang sedang online (display name cocok)
+      -- Kalau gagal, coba cari player yang sedang online (display name / username cocok)
       if not targetUserId then
           for _, player in ipairs(Players:GetPlayers()) do
               if string.lower(player.DisplayName) == string.lower(searchName) or string.lower(player.Name) == string.lower(searchName) then
@@ -43,18 +50,16 @@ return {
 
       -- Jika tetap tidak ditemukan
       if not targetUserId then
-          local channel = TextChatService.TextChannels and TextChatService.TextChannels:FindFirstChild("RBXGeneral")
           if channel then
               channel:SendAsync("❌ Pengguna '" .. searchName .. "' tidak ditemukan.")
           end
           return
       end
 
-      -- Akses channel RBXGeneral
-      local channel = TextChatService.TextChannels and TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+      -- Ambil RemoteFunction
       local playerDataProvider = ReplicatedStorage:WaitForChild("Connections"):WaitForChild("dataProviders"):WaitForChild("playerData")
 
-      -- Panggil data player via RemoteFunction
+      -- Panggil getPlayerStats
       local statsResult
       local success, err = pcall(function()
           local argsStats = {"getPlayerStats", targetUserId}
@@ -68,7 +73,7 @@ return {
           return
       end
 
-      -- Ambil data dengan fallback nama field
+      -- Ambil data aman
       local connections = statsResult.Connections or statsResult.connections or statsResult.Friends or 0
       local followers = statsResult.Followers or statsResult.followers or 0
       local following = statsResult.Following or statsResult.following or 0
