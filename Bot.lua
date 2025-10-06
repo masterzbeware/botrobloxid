@@ -79,6 +79,7 @@ local commandFiles = {
     "ModeBuaya.lua",
     "Square.lua",
     "Wedge.lua",
+    "Barrier.lua",
 }
 
 local gameFiles = {
