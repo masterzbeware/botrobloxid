@@ -1,6 +1,6 @@
 -- Stop.lua
--- Command !stop: Menghentikan semua aksi bot (follow, shield, row, sync, pushup, frontline, circle, reporting, ModeBuaya chat, logchat)
--- Termasuk mereset whitelist target
+-- Command !stop: Menghentikan semua aksi bot (follow, shield, row, sync, pushup, frontline, circle, reporting, ModeBuaya, RoomVIP, logchat)
+-- Termasuk mereset whitelist dan memutus semua koneksi aktif
 
 return {
     Execute = function(msg, client)
@@ -17,63 +17,68 @@ return {
         vars.ReportingActive = false
         vars.CurrentFormasiTarget = nil
 
-        -- 🔹 Hentikan semua koneksi / loop jika ada
-        if vars.FollowConnection then
-            pcall(function() vars.FollowConnection:Disconnect() end)
-            vars.FollowConnection = nil
+        -- 🔹 Hentikan semua koneksi / loop utama
+        local function safeDisconnect(connName)
+            if vars[connName] then
+                pcall(function()
+                    if typeof(vars[connName]) == "RBXScriptConnection" then
+                        vars[connName]:Disconnect()
+                    elseif typeof(vars[connName]) == "thread" then
+                        task.cancel(vars[connName])
+                    end
+                end)
+                vars[connName] = nil
+            end
         end
 
-        if vars.ShieldConnection then
-            pcall(function() vars.ShieldConnection:Disconnect() end)
-            vars.ShieldConnection = nil
+        local disconnectList = {
+            "FollowConnection",
+            "ShieldConnection",
+            "RowConnection",
+            "PushupConnection",
+            "SyncConnection",
+            "CircleMoveConnection",
+            "ModeBuayaChatConnection",
+            "RoomVIPConnection",
+        }
+
+        for _, name in ipairs(disconnectList) do
+            safeDisconnect(name)
         end
 
-        if vars.RowConnection then
-            pcall(function() vars.RowConnection:Disconnect() end)
-            vars.RowConnection = nil
+        -- 🔹 Hentikan task async (spawn / loop) tambahan
+        local cancelList = {
+            "RoomVIPTask",
+        }
+
+        for _, name in ipairs(cancelList) do
+            if vars[name] then
+                pcall(function() task.cancel(vars[name]) end)
+                vars[name] = nil
+            end
         end
 
-        if vars.PushupConnection then
-            pcall(function() task.cancel(vars.PushupConnection) end)
-            vars.PushupConnection = nil
-        end
-
-        if vars.SyncConnection then
-            pcall(function() task.cancel(vars.SyncConnection) end)
-            vars.SyncConnection = nil
-        end
-
-        if vars.CircleMoveConnection then
-            pcall(function() vars.CircleMoveConnection:Disconnect() end)
-            vars.CircleMoveConnection = nil
-        end
-
-        if vars.ModeBuayaChatConnection then
-            pcall(function() vars.ModeBuayaChatConnection:Disconnect() end)
-            vars.ModeBuayaChatConnection = nil
-        end
-
-        -- 🔹 Stop animasi push-up jika masih berjalan
+        -- 🔹 Stop animasi Push Up jika masih berjalan
         pcall(function()
             local args = { "stopAnimation", "Push Up" }
             local animationHandler = game:GetService("ReplicatedStorage")
-                                        :WaitForChild("Connections")
-                                        :WaitForChild("dataProviders")
-                                        :WaitForChild("animationHandler")
+                :WaitForChild("Connections")
+                :WaitForChild("dataProviders")
+                :WaitForChild("animationHandler")
             animationHandler:InvokeServer(unpack(args))
         end)
 
-        -- 🔹 Kirim leaveSync supaya benar-benar unsync dari server
+        -- 🔹 Leave Sync jika masih aktif
         pcall(function()
             local args = { "leaveSync" }
             local animationHandler = game:GetService("ReplicatedStorage")
-                                        :WaitForChild("Connections")
-                                        :WaitForChild("dataProviders")
-                                        :WaitForChild("animationHandler")
+                :WaitForChild("Connections")
+                :WaitForChild("dataProviders")
+                :WaitForChild("animationHandler")
             animationHandler:InvokeServer(unpack(args))
         end)
 
-        -- 🔹 Matikan listener LogChat.lua
+        -- 🔹 Matikan listener LogChat.lua jika aktif
         if _G.ChatLogListenerSet then
             _G.ChatLogListenerSet = false
 
@@ -97,13 +102,16 @@ return {
             print("[LogChat] Semua listener chat dimatikan oleh !stop.")
         end
 
-        -- 🔹 Bersihkan whitelist target
+        -- 🔹 Reset whitelist target
         if vars.WhitelistTargets then
             vars.WhitelistTargets = {}
             print("[Stop] Whitelist target telah di-reset.")
         end
 
+        -- 🔹 Reset flag RoomVIP
+        vars.RoomVIPActive = false
+
         -- 🔹 Log output
-        print("[COMMAND] Bot stopped by client:", client and client.Name or "Unknown")
+        print("[COMMAND] Semua aktivitas bot dihentikan oleh:", client and client.Name or "Unknown")
     end
 }

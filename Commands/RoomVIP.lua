@@ -1,6 +1,6 @@
 -- RoomVIP.lua
--- 4 Bot bergerak bergantian ke posisi 1-9, lalu formasi baris
--- Destroy vipDoor hanya sekali
+-- Bot1–4 bergerak bergantian ke posisi 1–9, lalu formasi baris.
+-- Destroy vipDoor hanya sekali dan bisa dihentikan kapan saja lewat !stop
 
 return {
   Execute = function(msg, client)
@@ -13,12 +13,22 @@ return {
           return
       end
 
-      -- Reset mode
+      -- 🔹 Reset mode sebelum mulai
       vars.FollowAllowed = false
       vars.RowActive = false
       vars.FrontlineActive = false
 
-      -- 🔹 Destroy vipDoor hanya sekali
+      -- 🔹 Hentikan RoomVIP sebelumnya (kalau masih aktif)
+      if vars.RoomVIPTask then
+          pcall(function() task.cancel(vars.RoomVIPTask) end)
+          vars.RoomVIPTask = nil
+      end
+      if vars.RoomVIPConnection then
+          pcall(function() vars.RoomVIPConnection:Disconnect() end)
+          vars.RoomVIPConnection = nil
+      end
+
+      -- 🔹 Destroy vipDoor sekali saja
       task.spawn(function()
           if vars.VipDoorsCleared then
               print("[RoomVIP] Semua vipDoor sudah dihancurkan sebelumnya.")
@@ -46,7 +56,7 @@ return {
           end
       end)
 
-      -- 🔹 Referensi karakter
+      -- 🔹 Referensi bot
       local humanoid, myRootPart, moving
       local function updateBotRefs()
           local character = player.Character or player.CharacterAdded:Wait()
@@ -58,13 +68,14 @@ return {
 
       local function moveToPosition(targetPos)
           if not humanoid or not myRootPart then return end
+          if not vars or vars.FollowAllowed == false then return end
           moving = true
           humanoid:MoveTo(targetPos)
           humanoid.MoveToFinished:Wait()
           moving = false
       end
 
-      -- 🔹 Posisi RoomVIP
+      -- 🔹 Daftar posisi koordinat RoomVIP
       local positions = {
           Vector3.new(-105.11, 4.00, 9.90),
           Vector3.new(-105.08, 7.41, 3.38),
@@ -77,7 +88,7 @@ return {
           Vector3.new(-122.51, 24.00, 11.29)
       }
 
-      -- 🔹 Urutan bot
+      -- 🔹 Urutan bot (sesuai ID)
       local orderedBots = {
           "8802945328", -- Bot1
           "8802949363", -- Bot2
@@ -101,12 +112,16 @@ return {
 
       print("[RoomVIP] Bot" .. botIndex .. " mulai menjalankan rute RoomVIP...")
 
-      -- 🔹 Gerak bergantian antar bot
-      task.spawn(function()
+      -- 🔹 Jalankan rute dengan task (agar bisa dihentikan !stop)
+      vars.RoomVIPTask = task.spawn(function()
           for i = 1, #positions do
+              if not vars or vars.FollowAllowed == false then
+                  print("[RoomVIP] Dihentikan oleh !stop.")
+                  return
+              end
+
               local targetStep = i - (botIndex - 1)
               if targetStep > 0 and targetStep <= #positions then
-                  -- Tunggu sesuai urutan supaya gantian
                   task.wait((botIndex - 1) * 2)
                   moveToPosition(positions[targetStep])
                   print("[RoomVIP] Bot" .. botIndex .. " ke posisi " .. targetStep)
@@ -114,12 +129,13 @@ return {
               task.wait(1.5)
           end
 
-          -- 🔹 Setelah semua bot selesai, aktifkan mode formasi barisan
+          -- 🔹 Setelah semua bot selesai, aktifkan mode barisan (ikuti)
           if botIndex == #orderedBots then
               print("[RoomVIP] Semua bot selesai, aktifkan formasi barisan.")
               vars.FollowAllowed = true
               vars.CurrentFormasiTarget = client
 
+              -- Bersihkan koneksi lama
               if vars.FollowConnection then
                   pcall(function() vars.FollowConnection:Disconnect() end)
                   vars.FollowConnection = nil
@@ -146,6 +162,8 @@ return {
                   local targetPos = targetHRP.Position - targetHRP.CFrame.LookVector * backOffset
                   humanoid:MoveTo(targetPos)
               end)
+
+              vars.RoomVIPConnection = vars.FollowConnection
           end
       end)
   end
