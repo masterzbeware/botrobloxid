@@ -1,5 +1,5 @@
 -- Stop.lua
--- Command !stop: Menghentikan semua aksi bot (follow, shield, row, sync, pushup, frontline, circle, square, reporting, ModeBuaya, RoomVIP, logchat)
+-- Command !stop: Menghentikan semua aksi bot (follow, shield, row, square, wedge, sync, pushup, frontline, circle, reporting, ModeBuaya, RoomVIP, logchat)
 -- Termasuk mereset whitelist dan memutus semua koneksi aktif
 
 return {
@@ -11,6 +11,7 @@ return {
         vars.ShieldActive = false
         vars.RowActive = false
         vars.SquareActive = false
+        vars.WedgeActive = false -- 🔸 Tambahan untuk Wedge
         vars.SyncActive = false
         vars.PushupActive = false
         vars.FrontlineActive = false
@@ -38,7 +39,8 @@ return {
             "FollowConnection",
             "ShieldConnection",
             "RowConnection",
-            "SquareConnection", -- 🔸 Tambahan agar !stop juga hentikan Square.lua
+            "SquareConnection",
+            "WedgeConnection", -- 🔸 Hentikan loop Wedge
             "PushupConnection",
             "SyncConnection",
             "CircleMoveConnection",
@@ -111,6 +113,9 @@ return {
             vars.WhitelistTargets = {}
             print("[Stop] Whitelist target telah di-reset.")
         end
+
+        -- 🔹 Reset flag RoomVIP
+        vars.RoomVIPActive = false
 
         -- 🔹 Log output
         print("[COMMAND] Semua aktivitas bot dihentikan oleh:", client and client.Name or "Unknown")
