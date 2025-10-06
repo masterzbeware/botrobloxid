@@ -1,4 +1,4 @@
--- Shield.lua (Shield formation + warning dengan delay + whitelist dari Addtarget.lua)
+-- Shield.lua (Shield formation + warning dengan delay + whitelist + kompatibel dengan Stop.lua)
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars or {}
@@ -8,6 +8,7 @@ return {
         local player = vars.LocalPlayer or Players.LocalPlayer
 
         vars.WhitelistTargets = vars.WhitelistTargets or {} -- pastikan ada whitelist
+        vars.ShieldActive = vars.ShieldActive or false
 
         -- Ambil argumen dari perintah !shield
         local args = {}
@@ -37,10 +38,11 @@ return {
         vars.RowActive = false
         vars.CurrentFormasiTarget = targetPlayer
 
-        -- Disconnect previous loops
-        if vars.FollowConnection then pcall(function() vars.FollowConnection:Disconnect() end) vars.FollowConnection = nil end
-        if vars.ShieldConnection then pcall(function() vars.ShieldConnection:Disconnect() end) vars.ShieldConnection = nil end
-        if vars.RowConnection then pcall(function() vars.RowConnection:Disconnect() end) vars.RowConnection = nil end
+        -- Disconnect previous Shield loop jika ada
+        if vars.ShieldConnection then
+            pcall(function() vars.ShieldConnection:Disconnect() end)
+            vars.ShieldConnection = nil
+        end
 
         local notifyLib = vars.Library or loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/Library.lua"))()
         if not vars.ShieldActive then
@@ -48,7 +50,7 @@ return {
             return
         end
 
-        -- Ambil nilai dari Bot.lua
+        -- Ambil nilai formasi
         local shieldDistance = tonumber(vars.ShieldDistance) or 5
         local shieldSpacing  = tonumber(vars.ShieldSpacing) or 4
 
@@ -131,7 +133,7 @@ return {
                 for _, plr in ipairs(Players:GetPlayers()) do
                     if plr ~= player and plr ~= vars.CurrentFormasiTarget then
                         local userIdStr = tostring(plr.UserId)
-                        if not botMapping[userIdStr] and not vars.WhitelistTargets[userIdStr] then  -- hanya non-bot & non-whitelist
+                        if not botMapping[userIdStr] and not vars.WhitelistTargets[userIdStr] then
                             local char = plr.Character
                             if char and char:FindFirstChild("HumanoidRootPart") then
                                 local dist = (char.HumanoidRootPart.Position - targetHRP.Position).Magnitude
@@ -143,8 +145,8 @@ return {
                                             channel:SendAsync(plr.Name .. " Harap menjauh dari area VIP!")
                                         end)
                                     end
-                                    lastWarningTime = now -- update timestamp terakhir
-                                    break -- cukup satu chat per warningDelay
+                                    lastWarningTime = now
+                                    break
                                 end
                             end
                         end

@@ -1,5 +1,6 @@
 -- Stop.lua
 -- Command !stop: Menghentikan semua aksi bot (follow, shield, row, sync, pushup, frontline, circle, reporting, logchat)
+-- Termasuk mereset whitelist target
 
 return {
     Execute = function(msg, client)
@@ -50,49 +51,51 @@ return {
         -- 🔹 Stop animasi push-up kalau masih berjalan
         pcall(function()
             local args = { "stopAnimation", "Push Up" }
-            game:GetService("ReplicatedStorage")
-                :WaitForChild("Connections")
-                :WaitForChild("dataProviders")
-                :WaitForChild("animationHandler")
-                :InvokeServer(unpack(args))
+            local animationHandler = game:GetService("ReplicatedStorage")
+                                        :WaitForChild("Connections")
+                                        :WaitForChild("dataProviders")
+                                        :WaitForChild("animationHandler")
+            animationHandler:InvokeServer(unpack(args))
         end)
 
         -- 🔹 Kirim leaveSync supaya benar-benar unsync dari server
         pcall(function()
             local args = { "leaveSync" }
-            game:GetService("ReplicatedStorage")
-                :WaitForChild("Connections")
-                :WaitForChild("dataProviders")
-                :WaitForChild("animationHandler")
-                :InvokeServer(unpack(args))
+            local animationHandler = game:GetService("ReplicatedStorage")
+                                        :WaitForChild("Connections")
+                                        :WaitForChild("dataProviders")
+                                        :WaitForChild("animationHandler")
+            animationHandler:InvokeServer(unpack(args))
         end)
 
-        -- 🔹 Tambahan: Matikan listener LogChat.lua
+        -- 🔹 Matikan listener LogChat.lua
         if _G.ChatLogListenerSet then
             _G.ChatLogListenerSet = false
 
-            -- Lepas event TextChatService jika ada
             local TextChatService = game:GetService("TextChatService")
             if TextChatService and TextChatService.TextChannels then
                 local generalChannel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
                 if generalChannel and generalChannel.OnIncomingMessage then
-                    -- Reset OnIncomingMessage agar tidak aktif
                     generalChannel.OnIncomingMessage = nil
                 end
             end
 
-            -- Lepas semua koneksi Chatted player
             local Players = game:GetService("Players")
             for _, player in ipairs(Players:GetPlayers()) do
                 if player.Chatted then
                     pcall(function()
-                        -- Tidak bisa Disconnect langsung, jadi cukup beri tanda kalau listener dimatikan
                         player.Chatted:Connect(function() end)
                     end)
                 end
             end
 
             print("[LogChat] Semua listener chat dimatikan oleh !stop.")
+        end
+
+        -- 🔹 Bersihkan whitelist target
+        if vars.WhitelistTargets then
+            vars.WhitelistTargets = {}
+            print("[Stop] Whitelist target telah di-reset.")
         end
 
         -- 🔹 Log output

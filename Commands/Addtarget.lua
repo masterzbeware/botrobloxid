@@ -1,9 +1,10 @@
 -- Addtarget.lua
+-- Command !addtarget {DisplayName/Username}: Menambahkan pemain ke whitelist agar Shield.lua tidak memberi peringatan
 return {
   Execute = function(msg, client)
       local Players = game:GetService("Players")
       local vars = _G.BotVars or {}
-      vars.WhitelistTargets = vars.WhitelistTargets or {} -- daftar target yang diabaikan
+      vars.WhitelistTargets = vars.WhitelistTargets or {} -- pastikan selalu ada
 
       -- Ambil argumen dari perintah !addtarget
       local args = {}
@@ -15,7 +16,7 @@ return {
           return
       end
 
-      -- Cari pemain target
+      -- Cari pemain target berdasarkan DisplayName atau Username
       local targetPlayer = nil
       for _, plr in ipairs(Players:GetPlayers()) do
           if plr.Name:lower() == targetNameOrUsername:lower() or (plr.DisplayName and plr.DisplayName:lower() == targetNameOrUsername:lower()) then
@@ -36,6 +37,11 @@ return {
           print("[Addtarget] Pemain " .. targetPlayer.Name .. " telah ditambahkan ke whitelist.")
       else
           print("[Addtarget] Pemain " .. targetPlayer.Name .. " sudah ada di whitelist.")
+      end
+
+      -- 🔹 Opsional: notifikasi ke client jika Library tersedia
+      if vars.Library then
+          vars.Library:Notify("Whitelist updated: " .. targetPlayer.Name, 3)
       end
   end
 }
