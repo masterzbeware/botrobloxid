@@ -47,6 +47,9 @@ return {
             "Aku janji, {name}, aku setia.",
             "Kau cantik hari ini, {name}, dan aku suka.",
             "Kamu mau kemana sayang, {name}?",
+            "Kiw Kiw {name}",
+            "Sayang sini {name}",
+            "Sayang peluk abang {name}"
         }
 
         -- 🔹 Emoji baper
