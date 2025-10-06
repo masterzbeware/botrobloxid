@@ -17,6 +17,7 @@ return {
       vars.FollowAllowed = false
       vars.RowActive = false
       vars.FrontlineActive = false
+      vars.StopAll = false
 
       -- 🔹 Hentikan RoomVIP sebelumnya
       if vars.RoomVIPTask then
@@ -34,7 +35,6 @@ return {
               print("[RoomVIP] Semua vipDoor sudah dihancurkan sebelumnya.")
               return
           end
-
           local detectorsFolder = game.Workspace:FindFirstChild("Detectors")
           if detectorsFolder then
               local vipFolder = detectorsFolder:FindFirstChild("vipDoors")
@@ -48,15 +48,11 @@ return {
                   end
                   print("[RoomVIP] vipDoor dihancurkan:", destroyed)
                   vars.VipDoorsCleared = true
-              else
-                  warn("[RoomVIP] Folder vipDoors tidak ditemukan.")
               end
-          else
-              warn("[RoomVIP] Folder Detectors tidak ditemukan.")
           end
       end)
 
-      -- 🔹 Referensi karakter bot
+      -- 🔹 Setup karakter
       local humanoid, myRootPart
       local function updateBotRefs()
           local character = player.Character or player.CharacterAdded:Wait()
@@ -66,17 +62,13 @@ return {
       player.CharacterAdded:Connect(updateBotRefs)
       updateBotRefs()
 
-      -- 🔹 Fungsi jalan ke posisi
       local function moveToPosition(targetPos)
-          if not humanoid or not myRootPart then
-              warn("[RoomVIP] Humanoid atau RootPart tidak ditemukan.")
-              return
-          end
+          if not humanoid or not myRootPart then return end
           humanoid:MoveTo(targetPos)
           humanoid.MoveToFinished:Wait()
       end
 
-      -- 🔹 Posisi target RoomVIP
+      -- 🔹 Koordinat posisi RoomVIP
       local positions = {
           Vector3.new(-105.11, 4.00, 9.90),
           Vector3.new(-105.08, 7.41, 3.38),
@@ -89,7 +81,7 @@ return {
           Vector3.new(-122.51, 24.00, 11.29)
       }
 
-      -- 🔹 Urutan bot berdasarkan UserId
+      -- 🔹 Urutan bot (UserId)
       local orderedBots = {
           "8802945328", -- Bot1
           "8802949363", -- Bot2
@@ -98,42 +90,41 @@ return {
       }
 
       local myUserId = tostring(player.UserId)
-      local botIndex = 0
-      for i, uid in ipairs(orderedBots) do
-          if uid == myUserId then
-              botIndex = i
-              break
-          end
-      end
-
-      if botIndex == 0 then
-          warn("[RoomVIP] Bot ini tidak terdaftar.")
+      local botIndex = table.find(orderedBots, myUserId)
+      if not botIndex then
+          warn("[RoomVIP] Bot ini tidak terdaftar!")
           return
       end
 
       print("[RoomVIP] Bot" .. botIndex .. " mulai menjalankan rute RoomVIP...")
 
-      -- 🔹 Jalankan rute RoomVIP
+      -- 🔹 Jalankan pergerakan bot
       vars.RoomVIPTask = task.spawn(function()
-          for i = 1, #positions do
-              -- Jika dihentikan oleh !stop
-              if not vars or vars.StopAll == true then
+          for posIndex = 1, #positions do
+              if vars.StopAll then
                   print("[RoomVIP] Dihentikan oleh !stop.")
                   return
               end
 
-              local targetStep = i - (botIndex - 1)
-              if targetStep > 0 and targetStep <= #positions then
-                  local delay = (botIndex - 1) * 2
-                  task.wait(delay)
-                  print("[RoomVIP] Bot" .. botIndex .. " menuju posisi " .. targetStep)
-                  moveToPosition(positions[targetStep])
-              end
-              task.wait(1)
+              -- Logika giliran
+              -- Bot1 langsung jalan, bot lain tunggu bot sebelumnya selesai
+              local delayBefore = (botIndex - 1) * 2
+              task.wait(delayBefore)
+
+              print("[RoomVIP] Bot" .. botIndex .. " menuju posisi " .. posIndex)
+              moveToPosition(positions[posIndex])
+
+              -- Tunggu agar bot di belakang punya waktu menyusul
+              task.wait(1.5)
           end
 
-          -- 🔹 Setelah selesai semua, aktifkan barisan
-          if botIndex == #orderedBots then
+          -- 🔹 Setelah semua posisi selesai → aktifkan barisan
+          print("[RoomVIP] Bot" .. botIndex .. " telah selesai ke posisi terakhir.")
+          vars.FinishCount = vars.FinishCount or 0
+          vars.FinishCount += 1
+
+          -- Jika semua bot sudah selesai
+          if vars.FinishCount >= #orderedBots then
               print("[RoomVIP] Semua bot selesai, aktifkan formasi barisan.")
 
               vars.FollowAllowed = true
@@ -152,19 +143,13 @@ return {
 
                   local jarakIkut = tonumber(vars.JarakIkut) or 6
                   local followSpacing = tonumber(vars.FollowSpacing) or 4
+                  local index = table.find(orderedBots, myUserId) or 1
 
-                  local myIndex = 1
-                  for i, uid in ipairs(orderedBots) do
-                      if uid == myUserId then
-                          myIndex = i
-                          break
-                      end
-                  end
-
-                  local backOffset = jarakIkut + (myIndex - 1) * followSpacing
+                  local backOffset = jarakIkut + (index - 1) * followSpacing
                   local targetPos = targetHRP.Position - targetHRP.CFrame.LookVector * backOffset
-
                   humanoid:MoveTo(targetPos)
+
+                  -- Pastikan menghadap ke depan
                   myRootPart.CFrame = CFrame.new(
                       myRootPart.Position,
                       Vector3.new(targetHRP.Position.X, myRootPart.Position.Y, targetHRP.Position.Z)
