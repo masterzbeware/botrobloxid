@@ -1,125 +1,149 @@
 -- Wedge.lua
--- Command !wedge: Bot membentuk formasi segitiga (Wedge) di belakang VIP
--- Kompatibel dengan Stop.lua
+-- Command !wedge: Bot membentuk formasi segitiga (Wedge) di belakang target atau client jika tidak ada target
 
 return {
-  Execute = function(msg, client)
-      local vars = _G.BotVars
-      local RunService = vars.RunService
-      local player = vars.LocalPlayer
+    Execute = function(msg, client)
+        local vars = _G.BotVars
+        local RunService = vars.RunService
+        local player = vars.LocalPlayer
 
-      if not RunService then
-          warn("[Wedge] RunService tidak tersedia!")
-          return
-      end
+        if not RunService then
+            warn("[Wedge] RunService tidak tersedia!")
+            return
+        end
 
-      -- 🔹 Nonaktifkan mode lain
-      vars.WedgeActive = not vars.WedgeActive
-      vars.FollowAllowed = false
-      vars.RowActive = false
-      vars.SquareActive = false
-      vars.ShieldActive = false
-      vars.FrontlineActive = false
-      vars.CircleMoveActive = false
-      vars.PushupActive = false
-      vars.SyncActive = false
-      vars.ReportingActive = false
-      vars.RoomVIPActive = false
-      vars.CurrentFormasiTarget = client
+        -- 🔹 Nonaktifkan mode lain
+        vars.WedgeActive = not vars.WedgeActive
+        vars.FollowAllowed = false
+        vars.RowActive = false
+        vars.SquareActive = false
+        vars.ShieldActive = false
+        vars.FrontlineActive = false
+        vars.CircleMoveActive = false
+        vars.PushupActive = false
+        vars.SyncActive = false
+        vars.ReportingActive = false
+        vars.RoomVIPActive = false
 
-      if not vars.WedgeActive then
-          print("[WEDGE] Dinonaktifkan")
-          if vars.WedgeConnection then
-              pcall(function() vars.WedgeConnection:Disconnect() end)
-              vars.WedgeConnection = nil
-          end
-          return
-      end
+        -- 🔹 Tentukan target
+        local target
+        local args = {}
+        for word in msg:gmatch("%S+") do
+            table.insert(args, word)
+        end
 
-      print("[WEDGE] Formasi Wedge diaktifkan. Target:", client.Name)
+        if #args > 1 then
+            local searchName = table.concat(args, " ", 2) -- gabungkan argumen setelah !wedge
+            -- Cari pemain dengan displayname atau username sesuai input
+            for _, plr in ipairs(game.Players:GetPlayers()) do
+                if plr.DisplayName:lower():find(searchName:lower()) or plr.Name:lower():find(searchName:lower()) then
+                    target = plr
+                    break
+                end
+            end
+            if not target then
+                print("[WEDGE] Target tidak ditemukan. Menggunakan client sebagai target.")
+                target = client
+            end
+        else
+            target = client
+        end
 
-      -- 🔹 Referensi karakter bot
-      local humanoid, myRootPart, moving
-      local function updateBotRefs()
-          local character = player.Character or player.CharacterAdded:Wait()
-          humanoid = character:WaitForChild("Humanoid")
-          myRootPart = character:WaitForChild("HumanoidRootPart")
-      end
-      player.CharacterAdded:Connect(updateBotRefs)
-      updateBotRefs()
+        vars.CurrentFormasiTarget = target
 
-      local function moveToPosition(targetPos, lookAtPos)
-          if not humanoid or not myRootPart then return end
-          if moving then return end
-          if (myRootPart.Position - targetPos).Magnitude < 1 then return end
+        if not vars.WedgeActive then
+            print("[WEDGE] Dinonaktifkan")
+            if vars.WedgeConnection then
+                pcall(function() vars.WedgeConnection:Disconnect() end)
+                vars.WedgeConnection = nil
+            end
+            return
+        end
 
-          moving = true
-          humanoid:MoveTo(targetPos)
-          humanoid.MoveToFinished:Wait()
-          moving = false
+        print("[WEDGE] Formasi Wedge diaktifkan. Target:", target.Name)
 
-          if lookAtPos then
-              myRootPart.CFrame = CFrame.new(
-                  myRootPart.Position,
-                  Vector3.new(lookAtPos.X, myRootPart.Position.Y, lookAtPos.Z)
-              )
-          end
-      end
+        -- 🔹 Referensi karakter bot
+        local humanoid, myRootPart, moving
+        local function updateBotRefs()
+            local character = player.Character or player.CharacterAdded:Wait()
+            humanoid = character:WaitForChild("Humanoid")
+            myRootPart = character:WaitForChild("HumanoidRootPart")
+        end
+        player.CharacterAdded:Connect(updateBotRefs)
+        updateBotRefs()
 
-      -- 🔹 Putuskan koneksi lama
-      if vars.WedgeConnection then
-          pcall(function() vars.WedgeConnection:Disconnect() end)
-          vars.WedgeConnection = nil
-      end
+        local function moveToPosition(targetPos, lookAtPos)
+            if not humanoid or not myRootPart then return end
+            if moving then return end
+            if (myRootPart.Position - targetPos).Magnitude < 1 then return end
 
-      -- 🔹 Loop Heartbeat
-      if RunService.Heartbeat then
-          vars.WedgeConnection = RunService.Heartbeat:Connect(function()
-              if not vars.WedgeActive or not client.Character then return end
-              local targetHRP = client.Character:FindFirstChild("HumanoidRootPart")
-              if not targetHRP then return end
+            moving = true
+            humanoid:MoveTo(targetPos)
+            humanoid.MoveToFinished:Wait()
+            moving = false
 
-              -- 🔹 Urutan bot
-              local orderedBots = {
-                  "8802945328", -- B1 kiri dekat VIP
-                  "8802939883", -- B2 kiri jauh
-                  "8802949363", -- B3 kanan dekat VIP
-                  "8802998147", -- B4 kanan jauh
-              }
+            if lookAtPos then
+                myRootPart.CFrame = CFrame.new(
+                    myRootPart.Position,
+                    Vector3.new(lookAtPos.X, myRootPart.Position.Y, lookAtPos.Z)
+                )
+            end
+        end
 
-              local myUserId = tostring(player.UserId)
-              local index = 1
-              for i, uid in ipairs(orderedBots) do
-                  if uid == myUserId then
-                      index = i
-                      break
-                  end
-              end
+        -- 🔹 Putuskan koneksi lama
+        if vars.WedgeConnection then
+            pcall(function() vars.WedgeConnection:Disconnect() end)
+            vars.WedgeConnection = nil
+        end
 
-              -- 🔹 Konfigurasi jarak
-              local jarakDepan = tonumber(vars.JarakDepan) or 4   -- dekat VIP
-              local jarakBelakang = tonumber(vars.JarakBelakang) or 6 -- jauh VIP
-              local jarakSamping = tonumber(vars.SideSpacing) or 3
+        -- 🔹 Loop Heartbeat
+        if RunService.Heartbeat then
+            vars.WedgeConnection = RunService.Heartbeat:Connect(function()
+                if not vars.WedgeActive or not target.Character then return end
+                local targetHRP = target.Character:FindFirstChild("HumanoidRootPart")
+                if not targetHRP then return end
 
-              -- 🔹 Offset bot (Z negatif = di belakang VIP)
-              local offsetMap = {
-                  [1] = Vector3.new(-jarakSamping, 0, -jarakDepan),      -- B1 kiri dekat VIP
-                  [2] = Vector3.new(-jarakSamping*2, 0, -jarakBelakang), -- B2 kiri jauh
-                  [3] = Vector3.new(jarakSamping, 0, -jarakDepan),       -- B3 kanan dekat VIP
-                  [4] = Vector3.new(jarakSamping*2, 0, -jarakBelakang),  -- B4 kanan jauh
-              }
+                -- 🔹 Urutan bot
+                local orderedBots = {
+                    "8802945328", -- B1 kiri dekat VIP
+                    "8802939883", -- B2 kiri jauh
+                    "8802949363", -- B3 kanan dekat VIP
+                    "8802998147", -- B4 kanan jauh
+                }
 
-              local offset = offsetMap[index] or Vector3.zero
-              local cframe = targetHRP.CFrame
-              local targetPos = (cframe.Position
-                  + cframe.RightVector * offset.X
-                  + cframe.UpVector * offset.Y
-                  + cframe.LookVector * offset.Z)
+                local myUserId = tostring(player.UserId)
+                local index = 1
+                for i, uid in ipairs(orderedBots) do
+                    if uid == myUserId then
+                        index = i
+                        break
+                    end
+                end
 
-              moveToPosition(targetPos, targetHRP.Position)
-          end)
-      else
-          warn("[Wedge] RunService.Heartbeat tidak tersedia!")
-      end
-  end
+                -- 🔹 Konfigurasi jarak
+                local jarakDepan = tonumber(vars.JarakDepan) or 4   -- dekat VIP
+                local jarakBelakang = tonumber(vars.JarakBelakang) or 6 -- jauh VIP
+                local jarakSamping = tonumber(vars.SideSpacing) or 3
+
+                -- 🔹 Offset bot (Z negatif = di belakang VIP)
+                local offsetMap = {
+                    [1] = Vector3.new(-jarakSamping, 0, -jarakDepan),      -- B1 kiri dekat VIP
+                    [2] = Vector3.new(-jarakSamping*2, 0, -jarakBelakang), -- B2 kiri jauh
+                    [3] = Vector3.new(jarakSamping, 0, -jarakDepan),       -- B3 kanan dekat VIP
+                    [4] = Vector3.new(jarakSamping*2, 0, -jarakBelakang),  -- B4 kanan jauh
+                }
+
+                local offset = offsetMap[index] or Vector3.zero
+                local cframe = targetHRP.CFrame
+                local targetPos = (cframe.Position
+                    + cframe.RightVector * offset.X
+                    + cframe.UpVector * offset.Y
+                    + cframe.LookVector * offset.Z)
+
+                moveToPosition(targetPos, targetHRP.Position)
+            end)
+        else
+            warn("[Wedge] RunService.Heartbeat tidak tersedia!")
+        end
+    end
 }
