@@ -76,6 +76,7 @@ local commandFiles = {
     "Location.lua",
     "LogChat.lua",
     "Addtarget.lua",
+    "ModeBuaya.lua",
 }
 
 local gameFiles = {
