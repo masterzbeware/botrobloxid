@@ -1,5 +1,5 @@
 -- Wedge.lua
--- Command !wedge: Bot membentuk formasi segitiga (Wedge) mengelilingi target VIP
+-- Command !wedge: Bot membentuk formasi segitiga (Wedge) di belakang target VIP
 -- Kompatibel dengan Stop.lua
 
 return {
@@ -80,7 +80,7 @@ return {
               local targetHRP = client.Character:FindFirstChild("HumanoidRootPart")
               if not targetHRP then return end
 
-              -- 🔹 Mapping bot (sesuaikan dengan UserId)
+              -- 🔹 Mapping bot (UserId)
               local orderedBots = {
                   "8802945328", -- B1 kiri depan
                   "8802939883", -- B2 kiri belakang
@@ -102,12 +102,12 @@ return {
               local jarakBelakang = tonumber(vars.JarakBelakang) or 6
               local jarakSamping = tonumber(vars.SideSpacing) or 3
 
-              -- 🔹 Offset posisi per bot
+              -- 🔹 Offset posisi per bot (Z negatif = di belakang VIP)
               local offsetMap = {
-                  [1] = Vector3.new(-jarakSamping, 0, jarakDepan),     -- B1 kiri depan
-                  [2] = Vector3.new(-jarakSamping*2, 0, jarakBelakang),-- B2 kiri belakang
-                  [3] = Vector3.new(jarakSamping, 0, jarakDepan),      -- B3 kanan depan
-                  [4] = Vector3.new(jarakSamping*2, 0, jarakBelakang), -- B4 kanan belakang
+                  [1] = Vector3.new(-jarakSamping, 0, -jarakDepan),      -- B1 kiri depan (dekat VIP)
+                  [2] = Vector3.new(-jarakSamping*2, 0, -jarakBelakang), -- B2 kiri belakang
+                  [3] = Vector3.new(jarakSamping, 0, -jarakDepan),       -- B3 kanan depan (dekat VIP)
+                  [4] = Vector3.new(jarakSamping*2, 0, -jarakBelakang),  -- B4 kanan belakang
               }
 
               local offset = offsetMap[index] or Vector3.zero
@@ -117,7 +117,7 @@ return {
                   + cframe.UpVector * offset.Y
                   + cframe.LookVector * offset.Z)
 
-              moveToPosition(targetPos, targetHRP.Position + targetHRP.CFrame.LookVector * 50)
+              moveToPosition(targetPos, targetHRP.Position)
           end)
       else
           warn("[Wedge] RunService.Heartbeat tidak tersedia!")
