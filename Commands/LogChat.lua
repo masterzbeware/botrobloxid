@@ -5,127 +5,130 @@
 -- Kompatibel dengan Stop.lua (listener dapat dimatikan dengan !stop)
 
 return {
-  Execute = function(msg, client)
-      local vars = _G.BotVars or {}
-      local TextChatService = vars.TextChatService or game:GetService("TextChatService")
-      local Players = game:GetService("Players")
-      local channel = TextChatService.TextChannels and TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+    Execute = function(msg, client)
+        local vars = _G.BotVars or {}
+        local TextChatService = vars.TextChatService or game:GetService("TextChatService")
+        local Players = game:GetService("Players")
+        local channel = TextChatService.TextChannels and TextChatService.TextChannels:FindFirstChild("RBXGeneral")
 
-      -- 🔹 Inisialisasi penyimpanan global
-      _G.ChatLogs = _G.ChatLogs or {}
+        -- 🔹 Inisialisasi penyimpanan global
+        _G.ChatLogs = _G.ChatLogs or {}
 
-      -- 🔹 Listener hanya aktif sekali
-      if not _G.ChatLogListenerSet then
-          _G.ChatLogListenerSet = true
-          print("[LogChat] Chat listener aktif.")
+        -- 🔹 Listener hanya aktif sekali
+        if not _G.ChatLogListenerSet then
+            _G.ChatLogListenerSet = true
+            print("[LogChat] Chat listener aktif.")
 
-          -- 🔸 Listener untuk sistem TextChatService (baru)
-          if TextChatService and TextChatService.TextChannels then
-              local generalChannel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
-              if generalChannel then
-                  generalChannel.OnIncomingMessage = function(message)
-                      -- Jika listener sudah dimatikan oleh !stop, jangan lanjut
-                      if not _G.ChatLogListenerSet then return end
+            -- 🔸 Listener untuk sistem TextChatService (baru)
+            if TextChatService and TextChatService.TextChannels then
+                local generalChannel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+                if generalChannel then
+                    generalChannel.OnIncomingMessage = function(message)
+                        -- Jika listener sudah dimatikan oleh !stop, jangan lanjut
+                        if not _G.ChatLogListenerSet then return end
 
-                      local senderUserId = message.TextSource and message.TextSource.UserId
-                      local sender = senderUserId and Players:GetPlayerByUserId(senderUserId)
-                      if sender then
-                          -- Bersihkan tag HTML (<font>, <b>, dsb)
-                          local cleanText = string.gsub(message.Text, "<.->", "")
+                        local senderUserId = message.TextSource and message.TextSource.UserId
+                        local sender = senderUserId and Players:GetPlayerByUserId(senderUserId)
+                        if sender then
+                            -- Bersihkan tag HTML dan karakter aneh
+                            local cleanText = string.gsub(message.Text, "<[^<>]->", "")
+                            cleanText = string.gsub(cleanText, "[^\32-\126]", "")
 
-                          local logs = _G.ChatLogs[sender.UserId] or {}
-                          table.insert(logs, {
-                              text = cleanText,
-                              time = os.date("%H:%M:%S")
-                          })
-                          _G.ChatLogs[sender.UserId] = logs
-                      end
-                  end
-              end
-          end
+                            local logs = _G.ChatLogs[sender.UserId] or {}
+                            table.insert(logs, {
+                                text = cleanText,
+                                time = os.date("%H:%M:%S")
+                            })
+                            _G.ChatLogs[sender.UserId] = logs
+                        end
+                    end
+                end
+            end
 
-          -- 🔸 Listener untuk sistem chat lama (Player.Chatted)
-          local function connectPlayerChat(player)
-              player.Chatted:Connect(function(text)
-                  if not _G.ChatLogListenerSet then return end
-                  local cleanText = string.gsub(text, "<.->", "")
-                  local logs = _G.ChatLogs[player.UserId] or {}
-                  table.insert(logs, {
-                      text = cleanText,
-                      time = os.date("%H:%M:%S")
-                  })
-                  _G.ChatLogs[player.UserId] = logs
-              end)
-          end
+            -- 🔸 Listener untuk sistem chat lama (Player.Chatted)
+            local function connectPlayerChat(player)
+                player.Chatted:Connect(function(text)
+                    if not _G.ChatLogListenerSet then return end
+                    local cleanText = string.gsub(text, "<[^<>]->", "")
+                    cleanText = string.gsub(cleanText, "[^\32-\126]", "")
 
-          for _, player in ipairs(Players:GetPlayers()) do
-              connectPlayerChat(player)
-          end
+                    local logs = _G.ChatLogs[player.UserId] or {}
+                    table.insert(logs, {
+                        text = cleanText,
+                        time = os.date("%H:%M:%S")
+                    })
+                    _G.ChatLogs[player.UserId] = logs
+                end)
+            end
 
-          Players.PlayerAdded:Connect(connectPlayerChat)
-      end
+            for _, player in ipairs(Players:GetPlayers()) do
+                connectPlayerChat(player)
+            end
 
-      -- 🔹 Ambil argumen command (!logchat {nama} {angka})
-      local args = string.split(msg, " ")
-      local targetName = args[2]
-      local jumlahPesan = tonumber(args[3]) or 5 -- default 5 jika tidak diisi
+            Players.PlayerAdded:Connect(connectPlayerChat)
+        end
 
-      if not targetName then
-          if channel then
-              channel:SendAsync("Format salah. Gunakan: !logchat {displayname/username} {jumlah_pesan(optional)}")
-          end
-          return
-      end
+        -- 🔹 Ambil argumen command (!logchat {nama} {angka})
+        local args = string.split(msg, " ")
+        local targetName = args[2]
+        local jumlahPesan = tonumber(args[3]) or 5 -- default 5 jika tidak diisi
 
-      -- 🔹 Cari pemain berdasarkan displayname / username
-      local targetPlayer = nil
-      for _, player in ipairs(Players:GetPlayers()) do
-          if string.lower(player.Name) == string.lower(targetName)
-          or string.lower(player.DisplayName) == string.lower(targetName) then
-              targetPlayer = player
-              break
-          end
-      end
+        if not targetName then
+            if channel then
+                channel:SendAsync("Format salah. Gunakan: !logchat {displayname/username} {jumlah_pesan(optional)}")
+            end
+            return
+        end
 
-      if not channel then
-          warn("[LogChat] Channel RBXGeneral tidak ditemukan.")
-          return
-      end
+        -- 🔹 Cari pemain berdasarkan displayname / username
+        local targetPlayer = nil
+        for _, player in ipairs(Players:GetPlayers()) do
+            if string.lower(player.Name) == string.lower(targetName)
+            or string.lower(player.DisplayName) == string.lower(targetName) then
+                targetPlayer = player
+                break
+            end
+        end
 
-      if not targetPlayer then
-          channel:SendAsync("Pemain '" .. targetName .. "' tidak ditemukan di server ini.")
-          return
-      end
+        if not channel then
+            warn("[LogChat] Channel RBXGeneral tidak ditemukan.")
+            return
+        end
 
-      -- 🔹 Ambil log chat pemain
-      local logs = _G.ChatLogs[targetPlayer.UserId]
+        if not targetPlayer then
+            channel:SendAsync("Pemain '" .. targetName .. "' tidak ditemukan di server ini.")
+            return
+        end
 
-      if not logs or #logs == 0 then
-          channel:SendAsync("Tidak ditemukan riwayat chat untuk " .. targetPlayer.DisplayName .. " (@" .. targetPlayer.Name .. ").")
-          return
-      end
+        -- 🔹 Ambil log chat pemain
+        local logs = _G.ChatLogs[targetPlayer.UserId]
 
-      -- 🔹 Batasi jumlah pesan dan kirim satu per satu
-      local total = #logs
-      local jumlah = math.clamp(jumlahPesan, 1, 50) -- batas maksimal 50
-      local startIndex = math.max(total - jumlah + 1, 1)
-      local delayPerMessage = 2 -- jeda antar pesan
+        if not logs or #logs == 0 then
+            channel:SendAsync("Tidak ditemukan riwayat chat untuk " .. targetPlayer.DisplayName .. " (@" .. targetPlayer.Name .. ").")
+            return
+        end
 
-      task.spawn(function()
-          -- Header
-          channel:SendAsync("History chat " .. targetPlayer.DisplayName .. " (@" .. targetPlayer.Name .. ":")
-          task.wait(delayPerMessage)
+        -- 🔹 Batasi jumlah pesan dan kirim satu per satu
+        local total = #logs
+        local jumlah = math.clamp(jumlahPesan, 1, 50) -- batas maksimal 50
+        local startIndex = math.max(total - jumlah + 1, 1)
+        local delayPerMessage = 5 -- jeda antar pesan
 
-          -- Kirim satu per satu
-          for i = startIndex, total do
-              local entry = logs[i]
-              local messageText = string.format("[%s] %s", entry.time, entry.text)
-              channel:SendAsync(messageText)
-              task.wait(delayPerMessage)
-          end
+        task.spawn(function()
+            -- Header
+            channel:SendAsync("History chat " .. targetPlayer.DisplayName .. " (@" .. targetPlayer.Name .. "):")
+            task.wait(delayPerMessage)
 
-          -- Log ke console
-          print(string.format("[LogChat] Dikirim %d pesan terakhir dari %s (%s)", jumlah, targetPlayer.DisplayName, targetPlayer.Name))
-      end)
-  end
+            -- Kirim satu per satu
+            for i = startIndex, total do
+                local entry = logs[i]
+                local messageText = string.format("[%s] %s", entry.time, entry.text)
+                channel:SendAsync(messageText)
+                task.wait(delayPerMessage)
+            end
+
+            -- Log ke console
+            print(string.format("[LogChat] Dikirim %d pesan terakhir dari %s (%s)", jumlah, targetPlayer.DisplayName, targetPlayer.Name))
+        end)
+    end
 }

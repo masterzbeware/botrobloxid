@@ -90,28 +90,26 @@ return {
             end
         end
 
-        -- 🔹 Coroutine absen bergantian maju → lapor → kembali ke barisan belakang VIP
+        -- 🔹 Coroutine absen bergantian maju → lapor → kembali
         task.spawn(function()
             for _, bot in ipairs(botRefs) do
                 if bot.player.UserId == player.UserId then
-                    task.spawn(function()
-                        -- Delay kecil sesuai urutan (biar rapi, tapi nggak kelamaan)
-                        task.wait((bot.index - 1) * 0.5)
+                    -- Maju ke depan Client (+3 stud)
+                    local forwardPos = targetHRP.Position + targetHRP.CFrame.LookVector * 3
+                    moveTo(bot, forwardPos, targetHRP.Position)
 
-                        -- Maju ke depan Client (+3 stud)
-                        local forwardPos = targetHRP.Position + targetHRP.CFrame.LookVector * 3
-                        moveTo(bot, forwardPos, targetHRP.Position)
-                        task.wait(0.2)
+                    task.wait(0.3) -- jeda kecil sebelum chat
 
-                        -- Kirim chat hanya bot yang maju
-                        sendChat("Laporan Komandan, Barisan " .. bot.index .. " hadir")
-                        task.wait(0.5)
+                    -- Kirim chat
+                    sendChat("Laporan Komandan, Barisan " .. bot.index .. " hadir")
 
-                        -- Kembali ke posisi barisan belakang VIP
-                        local backOffset = jarakBaris + (bot.index - 1) * spacing
-                        local behindPos = targetHRP.Position - targetHRP.CFrame.LookVector * backOffset
-                        moveTo(bot, behindPos, targetHRP.Position + targetHRP.CFrame.LookVector * 50)
-                    end)
+                    -- Tunggu delay tetap 3 detik sebelum bot berikutnya maju
+                    task.wait(3)
+
+                    -- Kembali ke posisi barisan belakang VIP
+                    local backOffset = jarakBaris + (bot.index - 1) * spacing
+                    local behindPos = targetHRP.Position - targetHRP.CFrame.LookVector * backOffset
+                    moveTo(bot, behindPos, targetHRP.Position + targetHRP.CFrame.LookVector * 50)
                 else
                     -- Bot lain tetap di posisi default
                     moveTo(bot, defaultPositions[bot.index], targetHRP.Position + targetHRP.CFrame.LookVector * 50)
