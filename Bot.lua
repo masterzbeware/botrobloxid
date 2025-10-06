@@ -63,7 +63,6 @@ local commandFiles = {
     "Ikuti.lua",
     "Stop.lua",
     "RoomVIP.lua",
-    "Profile.lua",
     "Shield.lua",
     "Row.lua",
     "Sync.lua",
