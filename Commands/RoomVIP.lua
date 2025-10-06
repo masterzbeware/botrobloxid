@@ -1,6 +1,6 @@
 -- RoomVIP.lua
--- Bot1–4 bergerak bergantian ke posisi 1–9, lalu formasi baris.
--- Destroy vipDoor hanya sekali dan bisa dihentikan kapan saja lewat !stop
+-- Bot1–4 bergerak bergantian ke posisi 1–9, lalu formasi baris seperti Ikuti.lua.
+-- Destroy vipDoor hanya sekali dan bisa dihentikan kapan saja lewat !stop.
 
 return {
   Execute = function(msg, client)
@@ -68,7 +68,6 @@ return {
 
       local function moveToPosition(targetPos)
           if not humanoid or not myRootPart then return end
-          if not vars or vars.FollowAllowed == false then return end
           moving = true
           humanoid:MoveTo(targetPos)
           humanoid.MoveToFinished:Wait()
@@ -112,7 +111,7 @@ return {
 
       print("[RoomVIP] Bot" .. botIndex .. " mulai menjalankan rute RoomVIP...")
 
-      -- 🔹 Jalankan rute dengan task (agar bisa dihentikan !stop)
+      -- 🔹 Jalankan rute RoomVIP
       vars.RoomVIPTask = task.spawn(function()
           for i = 1, #positions do
               if not vars or vars.FollowAllowed == false then
@@ -122,16 +121,17 @@ return {
 
               local targetStep = i - (botIndex - 1)
               if targetStep > 0 and targetStep <= #positions then
-                  task.wait((botIndex - 1) * 2)
+                  task.wait((botIndex - 1) * 2) -- jeda bergantian antar bot
                   moveToPosition(positions[targetStep])
                   print("[RoomVIP] Bot" .. botIndex .. " ke posisi " .. targetStep)
               end
               task.wait(1.5)
           end
 
-          -- 🔹 Setelah semua bot selesai, aktifkan mode barisan (ikuti)
+          -- 🔹 Setelah semua bot selesai, aktifkan formasi barisan menghadap client
           if botIndex == #orderedBots then
               print("[RoomVIP] Semua bot selesai, aktifkan formasi barisan.")
+
               vars.FollowAllowed = true
               vars.CurrentFormasiTarget = client
 
@@ -160,7 +160,13 @@ return {
 
                   local backOffset = jarakIkut + (index - 1) * followSpacing
                   local targetPos = targetHRP.Position - targetHRP.CFrame.LookVector * backOffset
+
                   humanoid:MoveTo(targetPos)
+                  -- 🔹 Hadapkan ke arah depan (menghadap target)
+                  myRootPart.CFrame = CFrame.new(
+                      myRootPart.Position,
+                      Vector3.new(targetHRP.Position.X, myRootPart.Position.Y, targetHRP.Position.Z)
+                  )
               end)
 
               vars.RoomVIPConnection = vars.FollowConnection
