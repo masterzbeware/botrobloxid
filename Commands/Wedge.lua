@@ -1,5 +1,5 @@
 -- Wedge.lua
--- Command !wedge: Bot membentuk formasi segitiga (Wedge) di belakang target VIP
+-- Command !wedge: Bot membentuk formasi segitiga (Wedge) di belakang VIP
 -- Kompatibel dengan Stop.lua
 
 return {
@@ -13,7 +13,7 @@ return {
           return
       end
 
-      -- 🔹 Nonaktifkan mode lain sebelum mengaktifkan Wedge
+      -- 🔹 Nonaktifkan mode lain
       vars.WedgeActive = not vars.WedgeActive
       vars.FollowAllowed = false
       vars.RowActive = false
@@ -27,7 +27,6 @@ return {
       vars.RoomVIPActive = false
       vars.CurrentFormasiTarget = client
 
-      -- 🔹 Jika dinonaktifkan, hentikan koneksi & keluar
       if not vars.WedgeActive then
           print("[WEDGE] Dinonaktifkan")
           if vars.WedgeConnection then
@@ -67,25 +66,25 @@ return {
           end
       end
 
-      -- 🔹 Putuskan koneksi Wedge lama jika ada
+      -- 🔹 Putuskan koneksi lama
       if vars.WedgeConnection then
           pcall(function() vars.WedgeConnection:Disconnect() end)
           vars.WedgeConnection = nil
       end
 
-      -- 🔹 Simpan koneksi baru ke vars.WedgeConnection
+      -- 🔹 Loop Heartbeat
       if RunService.Heartbeat then
           vars.WedgeConnection = RunService.Heartbeat:Connect(function()
               if not vars.WedgeActive or not client.Character then return end
               local targetHRP = client.Character:FindFirstChild("HumanoidRootPart")
               if not targetHRP then return end
 
-              -- 🔹 Mapping bot (UserId)
+              -- 🔹 Urutan bot
               local orderedBots = {
-                  "8802945328", -- B1 kiri depan
-                  "8802939883", -- B2 kiri belakang
-                  "8802949363", -- B3 kanan depan
-                  "8802998147", -- B4 kanan belakang
+                  "8802945328", -- B1 kiri dekat VIP
+                  "8802939883", -- B2 kiri jauh
+                  "8802949363", -- B3 kanan dekat VIP
+                  "8802998147", -- B4 kanan jauh
               }
 
               local myUserId = tostring(player.UserId)
@@ -98,16 +97,16 @@ return {
               end
 
               -- 🔹 Konfigurasi jarak
-              local jarakDepan = tonumber(vars.JarakDepan) or 4
-              local jarakBelakang = tonumber(vars.JarakBelakang) or 6
+              local jarakDepan = tonumber(vars.JarakDepan) or 4   -- dekat VIP
+              local jarakBelakang = tonumber(vars.JarakBelakang) or 6 -- jauh VIP
               local jarakSamping = tonumber(vars.SideSpacing) or 3
 
-              -- 🔹 Offset posisi per bot (Z negatif = di belakang VIP)
+              -- 🔹 Offset bot (Z negatif = di belakang VIP)
               local offsetMap = {
-                  [1] = Vector3.new(-jarakSamping, 0, -jarakDepan),      -- B1 kiri depan (dekat VIP)
-                  [2] = Vector3.new(-jarakSamping*2, 0, -jarakBelakang), -- B2 kiri belakang
-                  [3] = Vector3.new(jarakSamping, 0, -jarakDepan),       -- B3 kanan depan (dekat VIP)
-                  [4] = Vector3.new(jarakSamping*2, 0, -jarakBelakang),  -- B4 kanan belakang
+                  [1] = Vector3.new(-jarakSamping, 0, -jarakDepan),      -- B1 kiri dekat VIP
+                  [2] = Vector3.new(-jarakSamping*2, 0, -jarakBelakang), -- B2 kiri jauh
+                  [3] = Vector3.new(jarakSamping, 0, -jarakDepan),       -- B3 kanan dekat VIP
+                  [4] = Vector3.new(jarakSamping*2, 0, -jarakBelakang),  -- B4 kanan jauh
               }
 
               local offset = offsetMap[index] or Vector3.zero
