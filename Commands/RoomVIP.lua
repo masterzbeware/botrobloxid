@@ -1,5 +1,6 @@
 -- RoomVIP.lua
--- Bot1 dan Bot2 bergantian menuju titik-titik 1-9, lalu formasi baris di belakang pemain
+-- Bot1 & Bot2 bergantian ke posisi 1-9, lalu formasi baris
+-- Hancurkan vipDoor hanya sekali (jika belum pernah dihancurkan)
 
 return {
   Execute = function(msg, client)
@@ -16,6 +17,40 @@ return {
       vars.FollowAllowed = false
       vars.RowActive = false
       vars.FrontlineActive = false
+
+      -- 🔹 Hancurkan semua vipDoor di workspace.Detectors.vipDoors (jika belum pernah)
+      task.spawn(function()
+          if vars.VipDoorsCleared then
+              print("[RoomVIP] Semua vipDoor sudah pernah dihancurkan, lewati proses ini.")
+              return
+          end
+
+          local detectorsFolder = game.Workspace:FindFirstChild("Detectors")
+          if detectorsFolder then
+              local vipFolder = detectorsFolder:FindFirstChild("vipDoors")
+              if vipFolder then
+                  local destroyedCount = 0
+                  for _, obj in ipairs(vipFolder:GetDescendants()) do
+                      if obj:IsA("Part") and obj.Name == "vipDoor" and obj.Parent then
+                          obj:Destroy()
+                          destroyedCount += 1
+                      end
+                  end
+
+                  if destroyedCount > 0 then
+                      print("[RoomVIP] " .. destroyedCount .. " vipDoor berhasil dihancurkan!")
+                  else
+                      print("[RoomVIP] Tidak ada vipDoor tersisa untuk dihancurkan.")
+                  end
+
+                  vars.VipDoorsCleared = true
+              else
+                  warn("[RoomVIP] Folder vipDoors tidak ditemukan di dalam Detectors.")
+              end
+          else
+              warn("[RoomVIP] Folder Detectors tidak ditemukan di Workspace.")
+          end
+      end)
 
       local humanoid, myRootPart, moving
       local function updateBotRefs()
@@ -34,7 +69,7 @@ return {
           moving = false
       end
 
-      -- Koordinat posisi
+      -- 🔹 Daftar posisi koordinat Room VIP
       local positions = {
           Vector3.new(-105.11, 4.00, 9.90),
           Vector3.new(-105.08, 7.41, 3.38),
@@ -47,7 +82,7 @@ return {
           Vector3.new(-122.51, 24.00, 11.29)
       }
 
-      -- Urutan bot
+      -- 🔹 Urutan bot yang digunakan
       local orderedBots = {
           "8802945328", -- Bot1
           "8802949363", -- Bot2
@@ -62,35 +97,33 @@ return {
           end
       end
 
-      -- Kalau bukan Bot1 atau Bot2, diam saja
       if botIndex == 0 then
-          warn("[RoomVIP] Bot ini tidak termasuk dalam formasi RoomVIP.")
+          warn("[RoomVIP] Bot ini tidak termasuk dalam daftar RoomVIP.")
           return
       end
 
-      print("[RoomVIP] Bot"..botIndex.." siap bergerak...")
+      print("[RoomVIP] Bot"..botIndex.." mulai menjalankan rute RoomVIP...")
 
       task.spawn(function()
-          -- Bot1 & Bot2 bergerak bergantian
           for i = 1, #positions do
               if botIndex == 1 then
-                  -- Bot1: langsung ke posisi i
+                  -- 🔹 Bot1 jalan dulu
                   moveToPosition(positions[i])
                   print("[RoomVIP] Bot1 ke Posisi "..i)
-                  task.wait(1) -- beri waktu sedikit agar Bot2 bisa jalan
+                  task.wait(1.5)
               elseif botIndex == 2 then
-                  -- Bot2: tunggu Bot1 lebih dulu naik satu level
+                  -- 🔹 Bot2 tunggu Bot1 dulu baru ikut
                   if i > 1 then
-                      task.wait(3.5) -- waktu menunggu giliran Bot1
+                      task.wait(3.5)
                       moveToPosition(positions[i-1])
                       print("[RoomVIP] Bot2 ke Posisi "..(i-1))
                   end
               end
           end
 
-          -- Kalau Bot2 terakhir juga sudah selesai posisi 9 → masuk formasi
+          -- 🔹 Setelah semua selesai, Bot2 aktifkan mode formasi baris
           if botIndex == 2 then
-              print("[RoomVIP] Semua posisi selesai. Masuk formasi barisan...")
+              print("[RoomVIP] Semua posisi selesai. Masuk mode barisan...")
               vars.FollowAllowed = true
               vars.CurrentFormasiTarget = client
 
@@ -125,7 +158,6 @@ return {
 
                   local backOffset = jarakIkut + (index - 1) * followSpacing
                   local targetPos = targetHRP.Position - targetHRP.CFrame.LookVector * backOffset
-
                   humanoid:MoveTo(targetPos)
               end)
           end
