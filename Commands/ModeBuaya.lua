@@ -24,13 +24,10 @@ return {
           "Enak ya jadi kamu, {name}, kalau mau lihat bidadari, tinggal lihat di kaca.",
           "Sejak kenal kamu, {name}, aku jadi tau tujuan hidupku.",
           "Hari-hariku jadi lebih berwarna sejak ada kamu, {name}, biasanya kelabu.",
-          "Kamu kok jahat banget sih, {name}, berani-beraninya mencuri hatiku.",
           "Kamu baik, {name}, tunggu aku persiapkan diri untuk jadi imam kamu ya.",
           "Aku janji, {name}, aku setia.",
           "Kau cantik hari ini, {name}, dan aku suka.",
-          "Jika cinta adalah seni, {name}, kau adalah karyaku yang paling berharga.",
-          "Ngemil apa yang paling enak, {name}? Ngemilikin kamu sepenuhnya.",
-          "Aku temenin ya, {name}, aku nggak mau kamu jadi butiran debu tanpa aku."
+          "Ngemil apa yang paling enak, {name}? Ngemilikin kamu sepenuhnya."
       }
 
       -- 🔹 Emoji baper
@@ -118,7 +115,7 @@ return {
               if not vars.FollowAllowed then return end -- kompatibel dengan !stop
 
               vars.ModeBuayaChatTimer = (vars.ModeBuayaChatTimer or 0) + step
-              if vars.ModeBuayaChatTimer >= 10 then
+              if vars.ModeBuayaChatTimer >= 15 then
                   vars.ModeBuayaChatTimer = 0
                   if client and client.Parent and channel then
                       local name = client.DisplayName or client.Name
