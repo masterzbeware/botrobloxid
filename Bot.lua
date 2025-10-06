@@ -13,7 +13,7 @@ local Options = Library.Options
 -- 📋 Window Setup
 local Window = Library:CreateWindow({
     Title = "Made by MasterZ",
-    Footer = "v1.0.0",
+    Footer = "v1.5.0",
     Icon = 0,
     NotifySide = "Right",
     ShowCustomCursor = true,
@@ -73,7 +73,6 @@ local commandFiles = {
     "Reset.lua",
     "Salute.lua",
     "Absen.lua",
-    "Circle.lua",
     "Bubarbarisan.lua",
     "Location.lua",
     "LogChat.lua",
