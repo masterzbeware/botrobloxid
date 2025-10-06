@@ -1,15 +1,14 @@
 -- Profile.lua
--- Perintah: !profile {displayname/username}
--- Mengambil jumlah Connections, Followers, dan Following lewat RemoteFunction
+-- Perintah: !profile {userid}
+-- Mengambil jumlah Connections, Followers, dan Following via RemoteFunction
 
 return {
   Execute = function(msg, client)
       local vars = _G.BotVars or {}
       local TextChatService = vars.TextChatService or game:GetService("TextChatService")
       local ReplicatedStorage = game:GetService("ReplicatedStorage")
-      local Players = game:GetService("Players")
 
-      -- Ambil teks pesan dari berbagai kemungkinan field
+      -- Ambil isi pesan dari berbagai kemungkinan field
       local content = (msg.Text or msg.Message or msg.Body or ""):lower()
       local channel = TextChatService.TextChannels and TextChatService.TextChannels:FindFirstChild("RBXGeneral")
 
@@ -19,39 +18,19 @@ return {
           return
       end
 
-      -- Ambil argumen setelah !profile
-      local _, _, arg = string.find(content, "!profile%s+([%w_%-]+)")
-      if not arg or arg == "" then
+      -- Ambil angka userId setelah !profile
+      local _, _, userIdStr = string.find(content, "!profile%s+(%d+)")
+      if not userIdStr then
           if channel then
-              channel:SendAsync("⚠️ Format salah! Gunakan: !profile {displayname/username}")
+              channel:SendAsync("⚠️ Format salah! Gunakan: !profile {UserId}\nContoh: !profile 9102461210")
           end
           return
       end
 
-      local searchName = arg
-      local targetUserId
-      local foundPlayer
-
-      -- Coba cari berdasarkan username (offline user)
-      pcall(function()
-          targetUserId = Players:GetUserIdFromNameAsync(searchName)
-      end)
-
-      -- Kalau gagal, coba cari player yang sedang online (display name / username cocok)
-      if not targetUserId then
-          for _, player in ipairs(Players:GetPlayers()) do
-              if string.lower(player.DisplayName) == string.lower(searchName) or string.lower(player.Name) == string.lower(searchName) then
-                  targetUserId = player.UserId
-                  foundPlayer = player
-                  break
-              end
-          end
-      end
-
-      -- Jika tetap tidak ditemukan
-      if not targetUserId then
+      local userId = tonumber(userIdStr)
+      if not userId then
           if channel then
-              channel:SendAsync("❌ Pengguna '" .. searchName .. "' tidak ditemukan.")
+              channel:SendAsync("❌ UserId tidak valid!")
           end
           return
       end
@@ -62,13 +41,13 @@ return {
       -- Panggil getPlayerStats
       local statsResult
       local success, err = pcall(function()
-          local argsStats = {"getPlayerStats", targetUserId}
+          local argsStats = {"getPlayerStats", userId}
           statsResult = playerDataProvider:InvokeServer(unpack(argsStats))
       end)
 
       if not success or not statsResult then
           if channel then
-              channel:SendAsync("⚠️ Gagal mengambil data profil untuk " .. searchName .. ".")
+              channel:SendAsync("⚠️ Gagal mengambil data profil untuk UserId " .. tostring(userId) .. ".")
           end
           return
       end
@@ -81,11 +60,8 @@ return {
       -- Kirim hasil ke chat
       if channel then
           local message = string.format(
-              "📊 Profil %s:\n👥 Connections: %d\n📈 Followers: %d\n📉 Following: %d",
-              foundPlayer and foundPlayer.DisplayName or searchName,
-              connections,
-              followers,
-              following
+              "📊 Profil UserId %d:\n👥 Connections: %d\n📈 Followers: %d\n📉 Following: %d",
+              userId, connections, followers, following
           )
           pcall(function()
               channel:SendAsync(message)
