@@ -43,7 +43,6 @@ return {
 
         -- 🔹 Chat romantis
         local chatList = {
-            "Kamu kalau butuh apa-apa, bilang ke aku ya, {name}.",
             "Sejak kenal kamu, {name}, aku jadi tau tujuan hidupku.",
             "Aku janji, {name}, aku setia.",
             "Kau cantik hari ini, {name}, dan aku suka.",
