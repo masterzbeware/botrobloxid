@@ -51,7 +51,7 @@ return {
         }
 
         -- 🔹 Emoji baper
-        local emojiList = {"😘","😚"}
+        local emojiList = {"😘"}
 
         -- 🔹 Copy list sementara untuk menghindari duplikasi
         local unusedChatList = {}
@@ -141,7 +141,7 @@ return {
             if not vars.FollowAllowed then return end
 
             vars.ModeBuayaChatTimer = (vars.ModeBuayaChatTimer or 0) + step
-            if vars.ModeBuayaChatTimer >= 22 then
+            if vars.ModeBuayaChatTimer >= 18 then
                 vars.ModeBuayaChatTimer = 0
                 if targetPlayer and targetPlayer.Parent and channel then
                     local name = targetPlayer.DisplayName or targetPlayer.Name
