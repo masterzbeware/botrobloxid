@@ -1,6 +1,6 @@
 -- RoomVIP.lua
 -- Bot1–4 bergerak bergantian ke posisi 1–9, lalu formasi baris.
--- Destroy vipDoor hanya sekali dan bisa dihentikan kapan saja lewat !stop
+-- Destroy vipDoor hanya sekali dan bisa dihentikan kapan saja lewat !stop.
 
 return {
   Execute = function(msg, client)
@@ -18,7 +18,7 @@ return {
       vars.RowActive = false
       vars.FrontlineActive = false
 
-      -- 🔹 Hentikan RoomVIP sebelumnya (kalau masih aktif)
+      -- 🔹 Hentikan RoomVIP sebelumnya
       if vars.RoomVIPTask then
           pcall(function() task.cancel(vars.RoomVIPTask) end)
           vars.RoomVIPTask = nil
@@ -41,7 +41,7 @@ return {
               if vipFolder then
                   local destroyed = 0
                   for _, obj in ipairs(vipFolder:GetDescendants()) do
-                      if obj:IsA("Part") and obj.Name == "vipDoor" and obj.Parent then
+                      if obj:IsA("Part") and obj.Name == "vipDoor" then
                           obj:Destroy()
                           destroyed += 1
                       end
@@ -56,8 +56,8 @@ return {
           end
       end)
 
-      -- 🔹 Referensi bot
-      local humanoid, myRootPart, moving
+      -- 🔹 Referensi karakter bot
+      local humanoid, myRootPart
       local function updateBotRefs()
           local character = player.Character or player.CharacterAdded:Wait()
           humanoid = character:WaitForChild("Humanoid")
@@ -66,16 +66,17 @@ return {
       player.CharacterAdded:Connect(updateBotRefs)
       updateBotRefs()
 
+      -- 🔹 Fungsi jalan ke posisi
       local function moveToPosition(targetPos)
-          if not humanoid or not myRootPart then return end
-          if not vars or vars.FollowAllowed == false then return end
-          moving = true
+          if not humanoid or not myRootPart then
+              warn("[RoomVIP] Humanoid atau RootPart tidak ditemukan.")
+              return
+          end
           humanoid:MoveTo(targetPos)
           humanoid.MoveToFinished:Wait()
-          moving = false
       end
 
-      -- 🔹 Daftar posisi koordinat RoomVIP
+      -- 🔹 Posisi target RoomVIP
       local positions = {
           Vector3.new(-105.11, 4.00, 9.90),
           Vector3.new(-105.08, 7.41, 3.38),
@@ -88,7 +89,7 @@ return {
           Vector3.new(-122.51, 24.00, 11.29)
       }
 
-      -- 🔹 Urutan bot (sesuai ID)
+      -- 🔹 Urutan bot berdasarkan UserId
       local orderedBots = {
           "8802945328", -- Bot1
           "8802949363", -- Bot2
@@ -106,32 +107,35 @@ return {
       end
 
       if botIndex == 0 then
-          warn("[RoomVIP] Bot ini tidak terdaftar dalam RoomVIP.")
+          warn("[RoomVIP] Bot ini tidak terdaftar.")
           return
       end
 
       print("[RoomVIP] Bot" .. botIndex .. " mulai menjalankan rute RoomVIP...")
 
-      -- 🔹 Jalankan rute dengan task (agar bisa dihentikan !stop)
+      -- 🔹 Jalankan rute RoomVIP
       vars.RoomVIPTask = task.spawn(function()
           for i = 1, #positions do
-              if not vars or vars.FollowAllowed == false then
+              -- Jika dihentikan oleh !stop
+              if not vars or vars.StopAll == true then
                   print("[RoomVIP] Dihentikan oleh !stop.")
                   return
               end
 
               local targetStep = i - (botIndex - 1)
               if targetStep > 0 and targetStep <= #positions then
-                  task.wait((botIndex - 1) * 2)
+                  local delay = (botIndex - 1) * 2
+                  task.wait(delay)
+                  print("[RoomVIP] Bot" .. botIndex .. " menuju posisi " .. targetStep)
                   moveToPosition(positions[targetStep])
-                  print("[RoomVIP] Bot" .. botIndex .. " ke posisi " .. targetStep)
               end
-              task.wait(1.5)
+              task.wait(1)
           end
 
-          -- 🔹 Setelah semua bot selesai, aktifkan mode barisan (ikuti)
+          -- 🔹 Setelah selesai semua, aktifkan barisan
           if botIndex == #orderedBots then
               print("[RoomVIP] Semua bot selesai, aktifkan formasi barisan.")
+
               vars.FollowAllowed = true
               vars.CurrentFormasiTarget = client
 
@@ -149,18 +153,22 @@ return {
                   local jarakIkut = tonumber(vars.JarakIkut) or 6
                   local followSpacing = tonumber(vars.FollowSpacing) or 4
 
-                  local myUserId = tostring(player.UserId)
-                  local index = 1
+                  local myIndex = 1
                   for i, uid in ipairs(orderedBots) do
                       if uid == myUserId then
-                          index = i
+                          myIndex = i
                           break
                       end
                   end
 
-                  local backOffset = jarakIkut + (index - 1) * followSpacing
+                  local backOffset = jarakIkut + (myIndex - 1) * followSpacing
                   local targetPos = targetHRP.Position - targetHRP.CFrame.LookVector * backOffset
+
                   humanoid:MoveTo(targetPos)
+                  myRootPart.CFrame = CFrame.new(
+                      myRootPart.Position,
+                      Vector3.new(targetHRP.Position.X, myRootPart.Position.Y, targetHRP.Position.Z)
+                  )
               end)
 
               vars.RoomVIPConnection = vars.FollowConnection
