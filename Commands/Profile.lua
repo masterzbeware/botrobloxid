@@ -1,7 +1,5 @@
--- Profile.lua
+-- Profile.lua (versi anti-error)
 -- Perintah: !profile {displayname/username}
--- Aman dari sensor Roblox (tidak perlu mengetik UserId langsung)
--- Mengambil jumlah Connections, Followers, dan Following via RemoteFunction
 
 return {
   Execute = function(msg, client)
@@ -10,38 +8,35 @@ return {
       local ReplicatedStorage = game:GetService("ReplicatedStorage")
       local Players = game:GetService("Players")
 
-      -- Ambil teks pesan (berbagai kemungkinan field tergantung versi TextChatService)
-      local content = (msg.Text or msg.Message or msg.Body or ""):lower()
+      local content = tostring(msg.Text or msg.Message or msg.Body or "")
       local channel = TextChatService.TextChannels and TextChatService.TextChannels:FindFirstChild("RBXGeneral")
 
-      -- Pastikan mengandung perintah !profile
-      if not string.find(content, "!profile") then
-          if channel then channel:SendAsync("⚠️ Tidak ada perintah !profile ditemukan.") end
+      -- Cek apakah pesan mengandung perintah !profile
+      if not string.find(content:lower(), "!profile") then return end
+
+      -- Ambil nama setelah !profile
+      local _, _, nameArg = string.find(content, "!profile%s+([%w_%-]+)")
+      if not nameArg or nameArg == "" then
+          if channel then channel:SendAsync("⚠️ Format salah! Gunakan: !profile {username/displayname}") end
           return
       end
 
-      -- Ambil argumen setelah !profile (username atau displayname)
-      local _, _, username = string.find(content, "!profile%s+([%w_%-]+)")
-      if not username or username == "" then
-          if channel then
-              channel:SendAsync("⚠️ Format salah! Gunakan: !profile {username/displayname}")
-          end
-          return
-      end
+      local username = nameArg
+      local targetUserId = nil
+      local foundPlayer = nil
 
-      local targetUserId
-      local foundPlayer
-
-      -- Coba cari berdasarkan username (offline / global)
-      local successGetId, err = pcall(function()
-          targetUserId = Players:GetUserIdFromNameAsync(username)
+      -- Coba dapatkan UserId via username (global)
+      local ok, result = pcall(function()
+          return Players:GetUserIdFromNameAsync(username)
       end)
 
-      -- Kalau gagal, coba cari player yang sedang online (display name cocok)
-      if not successGetId or not targetUserId then
+      if ok and result then
+          targetUserId = result
+      else
+          -- Kalau gagal, cari di pemain yang sedang online (cocokkan DisplayName / Name)
           for _, player in ipairs(Players:GetPlayers()) do
               if string.lower(player.DisplayName) == string.lower(username)
-                  or string.lower(player.Name) == string.lower(username) then
+              or string.lower(player.Name) == string.lower(username) then
                   targetUserId = player.UserId
                   foundPlayer = player
                   break
@@ -49,21 +44,20 @@ return {
           end
       end
 
-      -- Jika tidak ditemukan sama sekali
+      -- Kalau masih belum ketemu
       if not targetUserId then
           if channel then
-              channel:SendAsync("❌ Pengguna '" .. username .. "' tidak ditemukan.")
+              channel:SendAsync("❌ Pengguna '" .. username .. "' tidak ditemukan di sistem Roblox.")
           end
           return
       end
 
-      -- Ambil RemoteFunction
+      -- Ambil data dari server
       local playerDataProvider = ReplicatedStorage
           :WaitForChild("Connections")
           :WaitForChild("dataProviders")
           :WaitForChild("playerData")
 
-      -- Panggil fungsi getPlayerStats di server
       local statsResult
       local success, err = pcall(function()
           local argsStats = {"getPlayerStats", targetUserId}
@@ -74,24 +68,21 @@ return {
           if channel then
               channel:SendAsync("⚠️ Gagal mengambil data profil untuk " .. username .. ".")
           end
+          warn("InvokeServer error:", err)
           return
       end
 
-      -- Ambil data aman (fallback jika field beda nama)
       local connections = statsResult.Connections or statsResult.connections or statsResult.Friends or 0
       local followers = statsResult.Followers or statsResult.followers or 0
       local following = statsResult.Following or statsResult.following or 0
 
-      -- Kirim hasil ke chat
       if channel then
           local displayName = foundPlayer and foundPlayer.DisplayName or username
           local message = string.format(
               "📊 Profil %s:\n👥 Connections: %d\n📈 Followers: %d\n📉 Following: %d",
               displayName, connections, followers, following
           )
-          pcall(function()
-              channel:SendAsync(message)
-          end)
+          pcall(function() channel:SendAsync(message) end)
       end
   end
 }
