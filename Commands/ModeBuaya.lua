@@ -1,6 +1,4 @@
--- ModeBuaya.lua
--- Command !modebuaya {displayname/username}: Bot mengikuti pemain tertentu dan mengirim chat acak setiap 10 detik
-
+-- ModeBuaya.lua (Diperbaiki)
 return {
   Execute = function(msg, client)
       local vars = _G.BotVars
@@ -10,6 +8,12 @@ return {
       if not RunService then
           warn("[ModeBuaya] RunService tidak tersedia!")
           return
+      end
+
+      local TextChatService = vars.TextChatService or game:GetService("TextChatService")
+      local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+      if not channel then
+          warn("[ModeBuaya] Channel RBXGeneral tidak ditemukan!")
       end
 
       -- 🔹 Daftar chat romantis
@@ -111,18 +115,18 @@ return {
               moveToPosition(targetPos, targetHRP.Position + targetHRP.CFrame.LookVector * 50)
           end)
 
-          -- 🔹 Heartbeat loop ModeBuaya (chat acak setiap 10 detik)
+          -- 🔹 Heartbeat loop ModeBuaya (chat acak setiap 10 detik via TextChatService)
           vars.ModeBuayaChatTimer = 0
           vars.ModeBuayaChatConnection = RunService.Heartbeat:Connect(function(step)
               vars.ModeBuayaChatTimer = (vars.ModeBuayaChatTimer or 0) + step
               if vars.ModeBuayaChatTimer >= 10 then
                   vars.ModeBuayaChatTimer = 0
-                  if client and client.Parent then
+                  if client and client.Parent and channel then
                       local name = client.DisplayName or client.Name
                       local msgIndex = math.random(1, #chatList)
                       local message = chatList[msgIndex]:gsub("{name}", name)
                       pcall(function()
-                          player:Chat(message)
+                          channel:SendAsync(message)
                       end)
                   end
               end
