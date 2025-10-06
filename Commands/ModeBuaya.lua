@@ -26,7 +26,7 @@ return {
       }
 
       -- 🔹 Emoji baper
-      local emojiList = {"😘"}
+      local emojiList = {"😘","😚"}
 
       -- 🔹 Copy list sementara untuk menghindari duplikasi
       local unusedChatList = {}
