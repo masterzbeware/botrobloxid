@@ -54,7 +54,7 @@ return {
         local function moveToPosition(targetPos, lookAtPos)
             if not humanoid or not myRootPart then return end
             if moving then return end
-            if (myRootPart.Position - targetPos).Magnitude < 2 then return end
+            if (myRootPart.Position - targetPos).Magnitude < 1 then return end
 
             moving = true
             humanoid:MoveTo(targetPos)
@@ -79,7 +79,7 @@ return {
                 local targetHRP = client.Character:FindFirstChild("HumanoidRootPart")
                 if not targetHRP then return end
 
-                -- Mapping bot
+                -- Mapping bot (sesuaikan dengan UserId masing-masing bot)
                 local orderedBots = {
                     "8802945328", -- Bot1
                     "8802949363", -- Bot2
@@ -97,11 +97,11 @@ return {
                 end
 
                 -- 🔹 Posisi dua barisan kiri & kanan
-                local jarakBelakang = tonumber(vars.JarakIkut) or 6
-                local jarakAntarBaris = tonumber(vars.RowSpacing) or 4
-                local jarakSamping = tonumber(vars.SideSpacing) or 5
+                local jarakBelakang = tonumber(vars.JarakIkut) or 4
+                local jarakAntarBaris = tonumber(vars.RowSpacing) or 3
+                local jarakSamping = tonumber(vars.SideSpacing) or 2
 
-                -- Baris dihitung per 2 bot: (1 kiri, 2 kanan), (3 kiri, 4 kanan)
+                -- Hitung baris & sisi
                 local rowIndex = math.floor((index - 1) / 2)
                 local isLeft = ((index - 1) % 2 == 0)
 
