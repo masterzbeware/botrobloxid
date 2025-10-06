@@ -1,6 +1,6 @@
 -- Barrier.lua
 -- Command !barrier: Bot membentuk formasi penghalang di sekitar VIP
--- Kompatibel dengan Stop.lua
+-- Kompatibel dengan Stop.lua & Ikuti.lua
 -- Bisa menarget pemain tertentu dengan !barrier {displayname/username}
 -- Jika tidak ada argumen, default ke client
 
@@ -15,9 +15,10 @@ return {
             return
         end
 
-        -- 🔹 Nonaktifkan mode lain
+        -- 🔹 Toggle Barrier
         vars.BarrierActive = not vars.BarrierActive
-        vars.FollowAllowed = false
+
+        -- 🔹 Nonaktifkan mode formasi lain tapi jangan matikan FollowAllowed agar Ikuti tetap jalan
         vars.RowActive = false
         vars.SquareActive = false
         vars.WedgeActive = false
@@ -30,7 +31,7 @@ return {
         vars.RoomVIPActive = false
 
         -- 🔹 Tentukan target
-        local target
+        local target = client
         local args = {}
         for word in msg:gmatch("%S+") do
             table.insert(args, word)
@@ -48,12 +49,11 @@ return {
                 print("[BARRIER] Target tidak ditemukan. Menggunakan client sebagai target.")
                 target = client
             end
-        else
-            target = client
         end
 
         vars.CurrentFormasiTarget = target
 
+        -- 🔹 Jika dinonaktifkan, hentikan koneksi & keluar
         if not vars.BarrierActive then
             print("[BARRIER] Dinonaktifkan")
             if vars.BarrierConnection then
@@ -97,7 +97,7 @@ return {
             vars.BarrierConnection = nil
         end
 
-        -- 🔹 Loop Heartbeat
+        -- 🔹 Heartbeat loop
         if RunService.Heartbeat then
             vars.BarrierConnection = RunService.Heartbeat:Connect(function()
                 if not vars.BarrierActive or not target.Character then return end
@@ -123,14 +123,14 @@ return {
 
                 -- 🔹 Konfigurasi jarak
                 local jarakSamping = tonumber(vars.SideSpacing) or 3
-                local jarakDepanBelakang = tonumber(vars.FrontBackSpacing) or 0 -- VIP di tengah
+                local jarakDepanBelakang = tonumber(vars.FrontBackSpacing) or 0
 
                 -- 🔹 Offset posisi per bot
                 local offsetMap = {
-                    [1] = Vector3.new(-2*jarakSamping, 0, jarakDepanBelakang), -- B1 kiri paling kiri
-                    [2] = Vector3.new(-jarakSamping, 0, jarakDepanBelakang),   -- B2 kiri dekat VIP
-                    [3] = Vector3.new(jarakSamping, 0, jarakDepanBelakang),    -- B3 kanan dekat VIP
-                    [4] = Vector3.new(2*jarakSamping, 0, jarakDepanBelakang),  -- B4 kanan paling kanan
+                    [1] = Vector3.new(-2*jarakSamping, 0, jarakDepanBelakang),
+                    [2] = Vector3.new(-jarakSamping, 0, jarakDepanBelakang),
+                    [3] = Vector3.new(jarakSamping, 0, jarakDepanBelakang),
+                    [4] = Vector3.new(2*jarakSamping, 0, jarakDepanBelakang),
                 }
 
                 local offset = offsetMap[index] or Vector3.zero
@@ -140,7 +140,7 @@ return {
                     + cframe.UpVector * offset.Y
                     + cframe.LookVector * offset.Z)
 
-                -- 🔹 Menghadap sama seperti VIP
+                -- 🔹 Tetap menghadap sama seperti VIP
                 moveToPosition(targetPos, targetHRP.CFrame.LookVector)
             end)
         else
