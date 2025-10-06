@@ -1,6 +1,6 @@
 -- RoomVIP.lua
--- Bot1 & Bot2 bergantian ke posisi 1-9, lalu formasi baris
--- Hancurkan vipDoor hanya sekali (jika belum pernah dihancurkan)
+-- 4 Bot bergerak bergantian ke posisi 1-9, lalu formasi baris
+-- Destroy vipDoor hanya sekali
 
 return {
   Execute = function(msg, client)
@@ -18,10 +18,10 @@ return {
       vars.RowActive = false
       vars.FrontlineActive = false
 
-      -- 🔹 Hancurkan semua vipDoor di workspace.Detectors.vipDoors (jika belum pernah)
+      -- 🔹 Destroy vipDoor hanya sekali
       task.spawn(function()
           if vars.VipDoorsCleared then
-              print("[RoomVIP] Semua vipDoor sudah pernah dihancurkan, lewati proses ini.")
+              print("[RoomVIP] Semua vipDoor sudah dihancurkan sebelumnya.")
               return
           end
 
@@ -29,29 +29,24 @@ return {
           if detectorsFolder then
               local vipFolder = detectorsFolder:FindFirstChild("vipDoors")
               if vipFolder then
-                  local destroyedCount = 0
+                  local destroyed = 0
                   for _, obj in ipairs(vipFolder:GetDescendants()) do
                       if obj:IsA("Part") and obj.Name == "vipDoor" and obj.Parent then
                           obj:Destroy()
-                          destroyedCount += 1
+                          destroyed += 1
                       end
                   end
-
-                  if destroyedCount > 0 then
-                      print("[RoomVIP] " .. destroyedCount .. " vipDoor berhasil dihancurkan!")
-                  else
-                      print("[RoomVIP] Tidak ada vipDoor tersisa untuk dihancurkan.")
-                  end
-
+                  print("[RoomVIP] vipDoor dihancurkan:", destroyed)
                   vars.VipDoorsCleared = true
               else
-                  warn("[RoomVIP] Folder vipDoors tidak ditemukan di dalam Detectors.")
+                  warn("[RoomVIP] Folder vipDoors tidak ditemukan.")
               end
           else
-              warn("[RoomVIP] Folder Detectors tidak ditemukan di Workspace.")
+              warn("[RoomVIP] Folder Detectors tidak ditemukan.")
           end
       end)
 
+      -- 🔹 Referensi karakter
       local humanoid, myRootPart, moving
       local function updateBotRefs()
           local character = player.Character or player.CharacterAdded:Wait()
@@ -69,7 +64,7 @@ return {
           moving = false
       end
 
-      -- 🔹 Daftar posisi koordinat Room VIP
+      -- 🔹 Posisi RoomVIP
       local positions = {
           Vector3.new(-105.11, 4.00, 9.90),
           Vector3.new(-105.08, 7.41, 3.38),
@@ -82,10 +77,12 @@ return {
           Vector3.new(-122.51, 24.00, 11.29)
       }
 
-      -- 🔹 Urutan bot yang digunakan
+      -- 🔹 Urutan bot
       local orderedBots = {
           "8802945328", -- Bot1
           "8802949363", -- Bot2
+          "8802939883", -- Bot3
+          "8802998147", -- Bot4
       }
 
       local myUserId = tostring(player.UserId)
@@ -98,32 +95,28 @@ return {
       end
 
       if botIndex == 0 then
-          warn("[RoomVIP] Bot ini tidak termasuk dalam daftar RoomVIP.")
+          warn("[RoomVIP] Bot ini tidak terdaftar dalam RoomVIP.")
           return
       end
 
-      print("[RoomVIP] Bot"..botIndex.." mulai menjalankan rute RoomVIP...")
+      print("[RoomVIP] Bot" .. botIndex .. " mulai menjalankan rute RoomVIP...")
 
+      -- 🔹 Gerak bergantian antar bot
       task.spawn(function()
           for i = 1, #positions do
-              if botIndex == 1 then
-                  -- 🔹 Bot1 jalan dulu
-                  moveToPosition(positions[i])
-                  print("[RoomVIP] Bot1 ke Posisi "..i)
-                  task.wait(1.5)
-              elseif botIndex == 2 then
-                  -- 🔹 Bot2 tunggu Bot1 dulu baru ikut
-                  if i > 1 then
-                      task.wait(3.5)
-                      moveToPosition(positions[i-1])
-                      print("[RoomVIP] Bot2 ke Posisi "..(i-1))
-                  end
+              local targetStep = i - (botIndex - 1)
+              if targetStep > 0 and targetStep <= #positions then
+                  -- Tunggu sesuai urutan supaya gantian
+                  task.wait((botIndex - 1) * 2)
+                  moveToPosition(positions[targetStep])
+                  print("[RoomVIP] Bot" .. botIndex .. " ke posisi " .. targetStep)
               end
+              task.wait(1.5)
           end
 
-          -- 🔹 Setelah semua selesai, Bot2 aktifkan mode formasi baris
-          if botIndex == 2 then
-              print("[RoomVIP] Semua posisi selesai. Masuk mode barisan...")
+          -- 🔹 Setelah semua bot selesai, aktifkan mode formasi barisan
+          if botIndex == #orderedBots then
+              print("[RoomVIP] Semua bot selesai, aktifkan formasi barisan.")
               vars.FollowAllowed = true
               vars.CurrentFormasiTarget = client
 
@@ -140,16 +133,9 @@ return {
                   local jarakIkut = tonumber(vars.JarakIkut) or 6
                   local followSpacing = tonumber(vars.FollowSpacing) or 4
 
-                  local orderedFollowBots = {
-                      "8802945328",
-                      "8802949363",
-                      "8802939883",
-                      "8802998147",
-                  }
-
                   local myUserId = tostring(player.UserId)
                   local index = 1
-                  for i, uid in ipairs(orderedFollowBots) do
+                  for i, uid in ipairs(orderedBots) do
                       if uid == myUserId then
                           index = i
                           break
