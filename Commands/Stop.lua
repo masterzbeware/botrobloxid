@@ -1,5 +1,5 @@
 -- Stop.lua
--- Command !stop: Menghentikan semua aksi bot (follow, shield, row, sync, pushup, frontline, circle, reporting, logchat)
+-- Command !stop: Menghentikan semua aksi bot (follow, shield, row, sync, pushup, frontline, circle, reporting, ModeBuaya chat, logchat)
 -- Termasuk mereset whitelist target
 
 return {
@@ -48,7 +48,12 @@ return {
             vars.CircleMoveConnection = nil
         end
 
-        -- 🔹 Stop animasi push-up kalau masih berjalan
+        if vars.ModeBuayaChatConnection then
+            pcall(function() vars.ModeBuayaChatConnection:Disconnect() end)
+            vars.ModeBuayaChatConnection = nil
+        end
+
+        -- 🔹 Stop animasi push-up jika masih berjalan
         pcall(function()
             local args = { "stopAnimation", "Push Up" }
             local animationHandler = game:GetService("ReplicatedStorage")
@@ -81,10 +86,10 @@ return {
             end
 
             local Players = game:GetService("Players")
-            for _, player in ipairs(Players:GetPlayers()) do
-                if player.Chatted then
+            for _, playerObj in ipairs(Players:GetPlayers()) do
+                if playerObj.Chatted then
                     pcall(function()
-                        player.Chatted:Connect(function() end)
+                        playerObj.Chatted:Connect(function() end)
                     end)
                 end
             end
