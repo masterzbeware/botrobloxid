@@ -1,5 +1,5 @@
 -- Wedge.lua
--- Command !wedge: Bot membentuk formasi segitiga (Wedge) di belakang target VIP
+-- Command !wedge: Bot membentuk formasi segitiga (Wedge) mengelilingi target VIP
 -- Kompatibel dengan Stop.lua
 
 return {
@@ -80,10 +80,10 @@ return {
               local targetHRP = client.Character:FindFirstChild("HumanoidRootPart")
               if not targetHRP then return end
 
-              -- 🔹 Mapping bot (UserId)
+              -- 🔹 Mapping bot (sesuaikan dengan UserId)
               local orderedBots = {
-                  "8802945328", -- B1 kiri depan (baris dekat VIP)
-                  "8802939883", -- B2 kiri belakang (lebih jauh)
+                  "8802945328", -- B1 kiri depan
+                  "8802939883", -- B2 kiri belakang
                   "8802949363", -- B3 kanan depan
                   "8802998147", -- B4 kanan belakang
               }
@@ -102,12 +102,12 @@ return {
               local jarakBelakang = tonumber(vars.JarakBelakang) or 6
               local jarakSamping = tonumber(vars.SideSpacing) or 3
 
-              -- 🔹 Offset posisi per bot (Z negatif = di belakang VIP)
+              -- 🔹 Offset posisi per bot
               local offsetMap = {
-                  [1] = Vector3.new(-jarakSamping, 0, -jarakDepan),     -- B1 kiri depan
-                  [2] = Vector3.new(-jarakSamping*2, 0, -jarakBelakang),-- B2 kiri belakang
-                  [3] = Vector3.new(jarakSamping, 0, -jarakDepan),      -- B3 kanan depan
-                  [4] = Vector3.new(jarakSamping*2, 0, -jarakBelakang), -- B4 kanan belakang
+                  [1] = Vector3.new(-jarakSamping, 0, jarakDepan),     -- B1 kiri depan
+                  [2] = Vector3.new(-jarakSamping*2, 0, jarakBelakang),-- B2 kiri belakang
+                  [3] = Vector3.new(jarakSamping, 0, jarakDepan),      -- B3 kanan depan
+                  [4] = Vector3.new(jarakSamping*2, 0, jarakBelakang), -- B4 kanan belakang
               }
 
               local offset = offsetMap[index] or Vector3.zero
@@ -117,7 +117,7 @@ return {
                   + cframe.UpVector * offset.Y
                   + cframe.LookVector * offset.Z)
 
-              moveToPosition(targetPos, targetHRP.Position)
+              moveToPosition(targetPos, targetHRP.Position + targetHRP.CFrame.LookVector * 50)
           end)
       else
           warn("[Wedge] RunService.Heartbeat tidak tersedia!")
