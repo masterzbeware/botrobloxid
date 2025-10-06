@@ -1,6 +1,6 @@
--- Square.lua
--- Command !square: Bot membentuk formasi kotak di sekitar target (VIP di tengah)
--- Kompatibel penuh dengan Stop.lua, Bot1,2 di depan dan 3,4 di belakang
+-- Wedge.lua
+-- Command !wedge: Bot membentuk formasi segitiga (Wedge) mengelilingi target VIP
+-- Kompatibel dengan Stop.lua
 
 return {
   Execute = function(msg, client)
@@ -9,14 +9,15 @@ return {
       local player = vars.LocalPlayer
 
       if not RunService then
-          warn("[Square] RunService tidak tersedia!")
+          warn("[Wedge] RunService tidak tersedia!")
           return
       end
 
-      -- 🔹 Nonaktifkan mode lain sebelum mengaktifkan Square
-      vars.SquareActive = not vars.SquareActive
+      -- 🔹 Nonaktifkan mode lain sebelum mengaktifkan Wedge
+      vars.WedgeActive = not vars.WedgeActive
       vars.FollowAllowed = false
       vars.RowActive = false
+      vars.SquareActive = false
       vars.ShieldActive = false
       vars.FrontlineActive = false
       vars.CircleMoveActive = false
@@ -27,16 +28,16 @@ return {
       vars.CurrentFormasiTarget = client
 
       -- 🔹 Jika dinonaktifkan, hentikan koneksi & keluar
-      if not vars.SquareActive then
-          print("[SQUARE] Dinonaktifkan")
-          if vars.SquareConnection then
-              pcall(function() vars.SquareConnection:Disconnect() end)
-              vars.SquareConnection = nil
+      if not vars.WedgeActive then
+          print("[WEDGE] Dinonaktifkan")
+          if vars.WedgeConnection then
+              pcall(function() vars.WedgeConnection:Disconnect() end)
+              vars.WedgeConnection = nil
           end
           return
       end
 
-      print("[SQUARE] Formasi Square diaktifkan. Target:", client.Name)
+      print("[WEDGE] Formasi Wedge diaktifkan. Target:", client.Name)
 
       -- 🔹 Referensi karakter bot
       local humanoid, myRootPart, moving
@@ -66,25 +67,25 @@ return {
           end
       end
 
-      -- 🔹 Putuskan koneksi Square lama jika ada
-      if vars.SquareConnection then
-          pcall(function() vars.SquareConnection:Disconnect() end)
-          vars.SquareConnection = nil
+      -- 🔹 Putuskan koneksi Wedge lama jika ada
+      if vars.WedgeConnection then
+          pcall(function() vars.WedgeConnection:Disconnect() end)
+          vars.WedgeConnection = nil
       end
 
-      -- 🔹 Simpan koneksi baru ke vars.SquareConnection
+      -- 🔹 Simpan koneksi baru ke vars.WedgeConnection
       if RunService.Heartbeat then
-          vars.SquareConnection = RunService.Heartbeat:Connect(function()
-              if not vars.SquareActive or not client.Character then return end
+          vars.WedgeConnection = RunService.Heartbeat:Connect(function()
+              if not vars.WedgeActive or not client.Character then return end
               local targetHRP = client.Character:FindFirstChild("HumanoidRootPart")
               if not targetHRP then return end
 
-              -- 🔹 Mapping urutan bot (sesuaikan dengan UserId)
+              -- 🔹 Mapping bot (sesuaikan dengan UserId)
               local orderedBots = {
-                  "8802945328", -- B1 depan kiri
-                  "8802949363", -- B2 depan kanan
-                  "8802939883", -- B3 belakang kiri
-                  "8802998147", -- B4 belakang kanan
+                  "8802945328", -- B1 kiri depan
+                  "8802939883", -- B2 kiri belakang
+                  "8802949363", -- B3 kanan depan
+                  "8802998147", -- B4 kanan belakang
               }
 
               local myUserId = tostring(player.UserId)
@@ -98,15 +99,15 @@ return {
 
               -- 🔹 Konfigurasi jarak
               local jarakDepan = tonumber(vars.JarakDepan) or 4
-              local jarakBelakang = tonumber(vars.JarakBelakang) or 4
+              local jarakBelakang = tonumber(vars.JarakBelakang) or 6
               local jarakSamping = tonumber(vars.SideSpacing) or 3
 
               -- 🔹 Offset posisi per bot
               local offsetMap = {
-                  [1] = Vector3.new(-jarakSamping, 0, jarakDepan),    -- depan kiri (Z positif di depan)
-                  [2] = Vector3.new(jarakSamping, 0, jarakDepan),     -- depan kanan
-                  [3] = Vector3.new(-jarakSamping, 0, -jarakBelakang),-- belakang kiri (Z negatif di belakang)
-                  [4] = Vector3.new(jarakSamping, 0, -jarakBelakang), -- belakang kanan
+                  [1] = Vector3.new(-jarakSamping, 0, jarakDepan),     -- B1 kiri depan
+                  [2] = Vector3.new(-jarakSamping*2, 0, jarakBelakang),-- B2 kiri belakang
+                  [3] = Vector3.new(jarakSamping, 0, jarakDepan),      -- B3 kanan depan
+                  [4] = Vector3.new(jarakSamping*2, 0, jarakBelakang), -- B4 kanan belakang
               }
 
               local offset = offsetMap[index] or Vector3.zero
@@ -119,7 +120,7 @@ return {
               moveToPosition(targetPos, targetHRP.Position + targetHRP.CFrame.LookVector * 50)
           end)
       else
-          warn("[Square] RunService.Heartbeat tidak tersedia!")
+          warn("[Wedge] RunService.Heartbeat tidak tersedia!")
       end
   end
 }

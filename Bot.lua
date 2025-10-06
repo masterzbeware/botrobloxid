@@ -78,6 +78,7 @@ local commandFiles = {
     "Addtarget.lua",
     "ModeBuaya.lua",
     "Square.lua",
+    "Wedge.lua",
 }
 
 local gameFiles = {
