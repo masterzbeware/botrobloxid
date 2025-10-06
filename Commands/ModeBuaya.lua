@@ -52,7 +52,7 @@ return {
         }
 
         -- 🔹 Emoji baper
-        local emojiList = {"😘", "😍"}
+        local emojiList = {"😘"}
 
         -- 🔹 Copy list sementara untuk menghindari duplikasi
         local unusedChatList = {}
@@ -155,7 +155,7 @@ return {
                 pcall(function() channel:SendAsync(message) end)
 
                 -- Delay 3 detik
-                task.wait(1)
+                task.wait(2)
 
                 -- Kirim emoji
                 local emojiIndex = math.random(1, #emojiList)
@@ -163,7 +163,7 @@ return {
                 pcall(function() channel:SendAsync(emojiMessage) end)
 
                 -- Delay 15 detik sebelum ulang
-                task.wait(18)
+                task.wait(20)
             end
         end)
     end
