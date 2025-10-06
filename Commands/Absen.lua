@@ -96,16 +96,16 @@ return {
                 if bot.player.UserId == player.UserId then
                     task.spawn(function()
                         -- Delay kecil sesuai urutan (biar rapi, tapi nggak kelamaan)
-                        task.wait((bot.index - 1) * 3)
+                        task.wait((bot.index - 1) * 4)
 
                         -- Maju ke depan Client (+3 stud)
                         local forwardPos = targetHRP.Position + targetHRP.CFrame.LookVector * 3
                         moveTo(bot, forwardPos, targetHRP.Position)
-                        task.wait(1)
+                        task.wait(2)
 
                         -- Kirim chat hanya bot yang maju
                         sendChat("Laporan Komandan, Barisan " .. bot.index .. " hadir")
-                        task.wait(2)
+                        task.wait(3)
 
                         -- Kembali ke posisi barisan belakang VIP
                         local backOffset = jarakBaris + (bot.index - 1) * spacing
