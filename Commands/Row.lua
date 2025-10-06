@@ -19,11 +19,7 @@ return {
         vars.FrontlineActive = false
         vars.CurrentFormasiTarget = client
 
-        -- 🔹 Notifikasi status
-        game.StarterGui:SetCore("SendNotification", {
-            Title = "Formation Command",
-            Text = "Row " .. (vars.RowActive and "Activated" or "Deactivated")
-        })
+        -- 🔹 Hapus notifikasi (dihilangkan)
 
         if not vars.RowActive then
             print("[ROW] Dinonaktifkan")
@@ -32,13 +28,7 @@ return {
 
         print("[ROW] Formasi Row diaktifkan. Target:", client.Name)
 
-        -- Kirim pesan ke chat
-        local channel = vars.TextChatService and vars.TextChatService.TextChannels and vars.TextChatService.TextChannels.RBXGeneral
-        if channel then
-            pcall(function()
-                channel:SendAsync("Siap laksanakan, Komandan!")
-            end)
-        end
+        -- 🔹 Hapus pengiriman pesan chat (dihilangkan)
 
         -- Referensi bot
         local humanoid, myRootPart, moving

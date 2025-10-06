@@ -40,15 +40,12 @@ return {
         -- 🔹 Chat romantis
         local chatList = {
             "Aku janji, {name}, aku akan setia.",
-            "Kamu mau kemana sayang, {name}?",
             "Kiw Kiw {name}",
             "Sayang sini {name}",
             "Ih kamu {name} gemes banget",
             "Lucu banget kamu {name}",
             "Jangan pergi ya {name}",
-            "Aku rindu sama kamu {name}",
-            "Kamu AFK di hati aku aja {name}",
-            "Sayang peluk abang {name}"
+            "Aku rindu sama kamu {name}"
         }
 
         -- 🔹 Emoji baper

@@ -44,9 +44,9 @@ return {
             vars.ShieldConnection = nil
         end
 
-        local notifyLib = vars.Library or loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/Library.lua"))()
+        -- 🔹 Hapus notifyLib dan pemanggilan notifikasi
         if not vars.ShieldActive then
-            notifyLib:Notify("Shield formation Deactivated", 3)
+            print("[Shield] Shield formation dinonaktifkan.")
             return
         end
 
@@ -80,7 +80,7 @@ return {
 
         -- Timestamp terakhir chat
         local lastWarningTime = 0
-        local warningDelay = 22 -- 1 menit
+        local warningDelay = 22 -- 22 detik (delay peringatan)
 
         local function moveToPosition(targetPos, lookAtPos)
             if not humanoid or not myRootPart then return end
@@ -155,7 +155,6 @@ return {
             end
         end)
 
-        notifyLib:Notify("Shield formation Activated for " .. vars.CurrentFormasiTarget.Name, 3)
         print("[COMMAND] Shield activated by", client.Name, "targeting:", vars.CurrentFormasiTarget.Name, "distance:", shieldDistance, "spacing:", shieldSpacing)
     end
 }

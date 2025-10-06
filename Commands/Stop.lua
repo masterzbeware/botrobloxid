@@ -1,5 +1,5 @@
 -- Stop.lua
--- Command !stop: Menghentikan semua aksi bot (follow, shield, row, sync, pushup, frontline, circle, reporting, ModeBuaya, RoomVIP, logchat)
+-- Command !stop: Menghentikan semua aksi bot (follow, shield, row, sync, pushup, frontline, circle, square, reporting, ModeBuaya, RoomVIP, logchat)
 -- Termasuk mereset whitelist dan memutus semua koneksi aktif
 
 return {
@@ -10,14 +10,16 @@ return {
         vars.FollowAllowed = false
         vars.ShieldActive = false
         vars.RowActive = false
+        vars.SquareActive = false
         vars.SyncActive = false
         vars.PushupActive = false
         vars.FrontlineActive = false
         vars.CircleMoveActive = false
         vars.ReportingActive = false
+        vars.RoomVIPActive = false
         vars.CurrentFormasiTarget = nil
 
-        -- 🔹 Hentikan semua koneksi / loop utama
+        -- 🔹 Fungsi bantu untuk memutus koneksi aman
         local function safeDisconnect(connName)
             if vars[connName] then
                 pcall(function()
@@ -31,10 +33,12 @@ return {
             end
         end
 
+        -- 🔹 Daftar koneksi utama yang akan dihentikan
         local disconnectList = {
             "FollowConnection",
             "ShieldConnection",
             "RowConnection",
+            "SquareConnection", -- 🔸 Tambahan agar !stop juga hentikan Square.lua
             "PushupConnection",
             "SyncConnection",
             "CircleMoveConnection",
@@ -107,9 +111,6 @@ return {
             vars.WhitelistTargets = {}
             print("[Stop] Whitelist target telah di-reset.")
         end
-
-        -- 🔹 Reset flag RoomVIP
-        vars.RoomVIPActive = false
 
         -- 🔹 Log output
         print("[COMMAND] Semua aktivitas bot dihentikan oleh:", client and client.Name or "Unknown")
