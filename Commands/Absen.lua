@@ -90,24 +90,24 @@ return {
             end
         end
 
-        -- 🔹 Coroutine absen bergantian dengan delay tetap 3 detik setiap langkah
+        -- 🔹 Coroutine absen bergantian dengan delay tetap 3 detik per langkah
         task.spawn(function()
             for _, bot in ipairs(botRefs) do
-                if bot.player.UserId == player.UserId then
+                if tostring(bot.player.UserId) == myId then
                     -- 1️⃣ Maju ke depan Client (+3 stud)
                     local forwardPos = targetHRP.Position + targetHRP.CFrame.LookVector * 3
                     moveTo(bot, forwardPos, targetHRP.Position)
-                    task.wait(3) -- delay 3 detik sebelum chat
+                    task.wait(3) -- delay sebelum chat
 
                     -- 2️⃣ Kirim chat
                     sendChat("Laporan Komandan, Barisan " .. bot.index .. " hadir")
-                    task.wait(3) -- delay 3 detik sebelum kembali
+                    task.wait(3) -- delay sebelum kembali
 
                     -- 3️⃣ Kembali ke posisi barisan belakang VIP
                     local backOffset = jarakBaris + (bot.index - 1) * spacing
                     local behindPos = targetHRP.Position - targetHRP.CFrame.LookVector * backOffset
                     moveTo(bot, behindPos, targetHRP.Position + targetHRP.CFrame.LookVector * 50)
-                    task.wait(3) -- delay 3 detik sebelum bot berikutnya maju
+                    task.wait(3) -- delay sebelum bot berikutnya maju
                 else
                     -- Bot lain tetap di posisi default
                     moveTo(bot, defaultPositions[bot.index], targetHRP.Position + targetHRP.CFrame.LookVector * 50)
