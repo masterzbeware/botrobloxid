@@ -1,4 +1,4 @@
--- Shield.lua (Shield formation + warning dengan delay 1 menit + target pemain lain)
+-- Shield.lua (Shield formation + warning dengan delay + whitelist dari Addtarget.lua)
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars or {}
@@ -6,6 +6,8 @@ return {
         local Players = game:GetService("Players")
         local TextChatService = vars.TextChatService or game:GetService("TextChatService")
         local player = vars.LocalPlayer or Players.LocalPlayer
+
+        vars.WhitelistTargets = vars.WhitelistTargets or {} -- pastikan ada whitelist
 
         -- Ambil argumen dari perintah !shield
         local args = {}
@@ -76,7 +78,7 @@ return {
 
         -- Timestamp terakhir chat
         local lastWarningTime = 0
-        local warningDelay = 20 -- detik
+        local warningDelay = 60 -- 1 menit
 
         local function moveToPosition(targetPos, lookAtPos)
             if not humanoid or not myRootPart then return end
@@ -123,22 +125,22 @@ return {
 
             moveToPosition(targetPos, targetHRP.Position + targetHRP.CFrame.LookVector * 50)
 
-            -- 🔹 Deteksi pemain lain mendekati VIP (hanya non-bot)
+            -- 🔹 Deteksi pemain lain mendekati VIP (hanya non-bot & non-whitelist)
             local now = tick()
             if now - lastWarningTime >= warningDelay then
                 for _, plr in ipairs(Players:GetPlayers()) do
                     if plr ~= player and plr ~= vars.CurrentFormasiTarget then
                         local userIdStr = tostring(plr.UserId)
-                        if not botMapping[userIdStr] then  -- hanya pemain non-bot
+                        if not botMapping[userIdStr] and not vars.WhitelistTargets[userIdStr] then  -- hanya non-bot & non-whitelist
                             local char = plr.Character
                             if char and char:FindFirstChild("HumanoidRootPart") then
                                 local dist = (char.HumanoidRootPart.Position - targetHRP.Position).Magnitude
                                 if dist <= shieldDistance then
-                                    -- Kirim chat global peringatan dengan nama pemain
+                                    -- Kirim chat global peringatan
                                     local channel = TextChatService.TextChannels and TextChatService.TextChannels.RBXGeneral
                                     if channel then
                                         pcall(function()
-                                            channel:SendAsync(plr.Name .. " Harap menjauh ini Area Vip!")
+                                            channel:SendAsync(plr.Name .. " Harap menjauh dari area VIP!")
                                         end)
                                     end
                                     lastWarningTime = now -- update timestamp terakhir

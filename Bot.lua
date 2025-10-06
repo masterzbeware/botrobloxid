@@ -75,7 +75,7 @@ local commandFiles = {
     "Bubarbarisan.lua",
     "Location.lua",
     "LogChat.lua",
-    "Patroli.lua",
+    "Addtarget.lua",
 }
 
 local gameFiles = {
