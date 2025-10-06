@@ -112,7 +112,7 @@ return {
               if not vars.FollowAllowed then return end -- kompatibel dengan !stop
 
               vars.ModeBuayaChatTimer = (vars.ModeBuayaChatTimer or 0) + step
-              if vars.ModeBuayaChatTimer >= 18 then
+              if vars.ModeBuayaChatTimer >= 15 then
                   vars.ModeBuayaChatTimer = 0
                   if client and client.Parent and channel then
                       local name = client.DisplayName or client.Name
