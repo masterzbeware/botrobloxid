@@ -13,7 +13,7 @@ return {
           return
       end
 
-      -- 🔹 Nonaktifkan mode lain sebelum mengaktifkan Barrier
+      -- 🔹 Nonaktifkan mode lain
       vars.BarrierActive = not vars.BarrierActive
       vars.FollowAllowed = false
       vars.RowActive = false
@@ -28,7 +28,6 @@ return {
       vars.RoomVIPActive = false
       vars.CurrentFormasiTarget = client
 
-      -- 🔹 Jika dinonaktifkan, hentikan koneksi & keluar
       if not vars.BarrierActive then
           print("[BARRIER] Dinonaktifkan")
           if vars.BarrierConnection then
@@ -50,7 +49,7 @@ return {
       player.CharacterAdded:Connect(updateBotRefs)
       updateBotRefs()
 
-      local function moveToPosition(targetPos, lookAtPos)
+      local function moveToPosition(targetPos, lookVector)
           if not humanoid or not myRootPart then return end
           if moving then return end
           if (myRootPart.Position - targetPos).Magnitude < 1 then return end
@@ -60,15 +59,13 @@ return {
           humanoid.MoveToFinished:Wait()
           moving = false
 
-          if lookAtPos then
-              myRootPart.CFrame = CFrame.new(
-                  myRootPart.Position,
-                  Vector3.new(lookAtPos.X, myRootPart.Position.Y, lookAtPos.Z)
-              )
+          if lookVector then
+              -- 🔹 Menghadap arah yang sama seperti VIP
+              myRootPart.CFrame = CFrame.new(targetPos, targetPos + lookVector)
           end
       end
 
-      -- 🔹 Putuskan koneksi Barrier lama jika ada
+      -- 🔹 Putuskan koneksi lama
       if vars.BarrierConnection then
           pcall(function() vars.BarrierConnection:Disconnect() end)
           vars.BarrierConnection = nil
@@ -100,7 +97,7 @@ return {
 
               -- 🔹 Konfigurasi jarak
               local jarakSamping = tonumber(vars.SideSpacing) or 3
-              local jarakDepanBelakang = tonumber(vars.FrontBackSpacing) or 0 -- VIP di tengah, tidak maju mundur
+              local jarakDepanBelakang = tonumber(vars.FrontBackSpacing) or 0 -- VIP di tengah
 
               -- 🔹 Offset posisi per bot
               local offsetMap = {
@@ -117,7 +114,8 @@ return {
                   + cframe.UpVector * offset.Y
                   + cframe.LookVector * offset.Z)
 
-              moveToPosition(targetPos, targetHRP.Position)
+              -- 🔹 Menghadap sama seperti VIP
+              moveToPosition(targetPos, targetHRP.CFrame.LookVector)
           end)
       else
           warn("[Barrier] RunService.Heartbeat tidak tersedia!")
