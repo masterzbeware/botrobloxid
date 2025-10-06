@@ -29,6 +29,8 @@ return {
           "Aku janji, {name}, aku setia.",
           "Kau cantik hari ini, {name}, dan aku suka.",
           "Jika cinta adalah seni, {name}, kau adalah karyaku yang paling berharga.",
+          "Ngemil apa yang paling enak, {name}? Ngemilikin kamu sepenuhnya.",
+          "Sejak kenal kamu, {name}, aku jadi tau tujuan hidupku.",
           "Ngemil apa yang paling enak, {name}? Ngemilikin kamu sepenuhnya."
       }
 
