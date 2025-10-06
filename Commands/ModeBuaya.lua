@@ -43,17 +43,20 @@ return {
 
         -- 🔹 Chat romantis
         local chatList = {
-            "Sejak kenal kamu, {name}, aku jadi tau tujuan hidupku.",
-            "Aku janji, {name}, aku setia.",
-            "Kau cantik hari ini, {name}, dan aku suka.",
+            "Aku janji, {name}, aku akan setia.",
             "Kamu mau kemana sayang, {name}?",
             "Kiw Kiw {name}",
             "Sayang sini {name}",
+            "Ih kamu {name} gemes banget",
+            "Lucu banget kamu {name}",
+            "Jangan pergi ya {name}",
+            "Aku rindu sama kamu {name}",
+            "Kamu AFK di hati aku aja {name}",
             "Sayang peluk abang {name}"
         }
 
         -- 🔹 Emoji baper
-        local emojiList = {"😘"}
+        local emojiList = {"😘", "😍", "🥰", "😳", "💋"}
 
         -- 🔹 Copy list sementara untuk menghindari duplikasi
         local unusedChatList = {}
@@ -137,33 +140,34 @@ return {
             moveToPosition(targetPos, targetHRP.Position + targetHRP.CFrame.LookVector * 50)
         end)
 
-        -- 🔹 Heartbeat loop (chat + emoji)
-        vars.ModeBuayaChatTimer = 0
-        vars.ModeBuayaChatConnection = RunService.Heartbeat:Connect(function(step)
-            if not vars.FollowAllowed then return end
+        -- 🔹 Loop kirim chat > delay 3 > emoji > delay 15
+        task.spawn(function()
+            while vars.FollowAllowed and targetPlayer and targetPlayer.Parent and channel do
+                local name = targetPlayer.DisplayName or targetPlayer.Name
 
-            vars.ModeBuayaChatTimer = (vars.ModeBuayaChatTimer or 0) + step
-            if vars.ModeBuayaChatTimer >= 18 then
-                vars.ModeBuayaChatTimer = 0
-                if targetPlayer and targetPlayer.Parent and channel then
-                    local name = targetPlayer.DisplayName or targetPlayer.Name
-
-                    if #unusedChatList == 0 then
-                        for _, v in ipairs(chatList) do
-                            table.insert(unusedChatList, v)
-                        end
+                if #unusedChatList == 0 then
+                    for _, v in ipairs(chatList) do
+                        table.insert(unusedChatList, v)
                     end
-
-                    local idx = math.random(1, #unusedChatList)
-                    local message = unusedChatList[idx]:gsub("{name}", name)
-                    table.remove(unusedChatList, idx)
-
-                    pcall(function() channel:SendAsync(message) end)
-
-                    local emojiIndex = math.random(1, #emojiList)
-                    local emojiMessage = emojiList[emojiIndex]
-                    pcall(function() channel:SendAsync(emojiMessage) end)
                 end
+
+                local idx = math.random(1, #unusedChatList)
+                local message = unusedChatList[idx]:gsub("{name}", name)
+                table.remove(unusedChatList, idx)
+
+                -- Kirim chat
+                pcall(function() channel:SendAsync(message) end)
+
+                -- Delay 3 detik
+                task.wait(3)
+
+                -- Kirim emoji
+                local emojiIndex = math.random(1, #emojiList)
+                local emojiMessage = emojiList[emojiIndex]
+                pcall(function() channel:SendAsync(emojiMessage) end)
+
+                -- Delay 15 detik sebelum ulang
+                task.wait(15)
             end
         end)
     end
