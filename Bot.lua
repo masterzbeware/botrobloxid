@@ -62,6 +62,7 @@ local GameCommands = {}
 local commandFiles = {
     "Ikuti.lua",
     "Stop.lua",
+    "RoomVIP.lua",
     "Shield.lua",
     "Row.lua",
     "Sync.lua",

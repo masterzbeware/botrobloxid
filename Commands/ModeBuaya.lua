@@ -1,4 +1,4 @@
--- ModeBuaya.lua (Stop Compatible & Rapi Berbaris)
+-- ModeBuaya.lua (Tanpa Chat Format, Stop Compatible & Rapi)
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars
@@ -19,13 +19,11 @@ return {
         -- 🔹 Ambil target dari command chat
         local targetName = msg:match("!modebuaya%s+(.+)")
         if not targetName then
-            pcall(function()
-                channel:SendAsync("Gunakan format: !modebuaya {DisplayName/Username}")
-            end)
+            warn("[ModeBuaya] Gunakan format: !modebuaya {DisplayName/Username}")
             return
         end
 
-        -- Cari player berdasarkan DisplayName atau Name
+        -- 🔹 Cari player berdasarkan DisplayName atau Name
         local targetPlayer
         for _, p in ipairs(game.Players:GetPlayers()) do
             if p.DisplayName:lower() == targetName:lower() or p.Name:lower() == targetName:lower() then
@@ -35,9 +33,7 @@ return {
         end
 
         if not targetPlayer then
-            pcall(function()
-                channel:SendAsync("Player '" .. targetName .. "' tidak ditemukan!")
-            end)
+            warn("[ModeBuaya] Player '" .. targetName .. "' tidak ditemukan!")
             return
         end
 
@@ -56,7 +52,7 @@ return {
         }
 
         -- 🔹 Emoji baper
-        local emojiList = {"😘", "😍", "🥰", "😳", "💋"}
+        local emojiList = {"😘", "😍"}
 
         -- 🔹 Copy list sementara untuk menghindari duplikasi
         local unusedChatList = {}
@@ -100,7 +96,7 @@ return {
             end
         end
 
-        -- Hentikan koneksi lama jika ada
+        -- 🔹 Hentikan koneksi lama jika ada
         if vars.FollowConnection then pcall(function() vars.FollowConnection:Disconnect() end) vars.FollowConnection = nil end
         if vars.ModeBuayaChatConnection then pcall(function() vars.ModeBuayaChatConnection:Disconnect() end) vars.ModeBuayaChatConnection = nil end
 
@@ -159,7 +155,7 @@ return {
                 pcall(function() channel:SendAsync(message) end)
 
                 -- Delay 3 detik
-                task.wait(3)
+                task.wait(1)
 
                 -- Kirim emoji
                 local emojiIndex = math.random(1, #emojiList)
@@ -167,7 +163,7 @@ return {
                 pcall(function() channel:SendAsync(emojiMessage) end)
 
                 -- Delay 15 detik sebelum ulang
-                task.wait(15)
+                task.wait(18)
             end
         end)
     end
