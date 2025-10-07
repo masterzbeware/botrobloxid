@@ -37,12 +37,12 @@ _G.BotVars = {
     ToggleGames = false,   -- Game commands
 
     -- Spacing & distance
-    JarakIkut = 3,
-    FollowSpacing = 4,
-    ShieldDistance = 5,
-    ShieldSpacing = 4,
-    RowSpacing = 4,
-    SideSpacing = 5,
+    JarakIkut = 2,
+    FollowSpacing = 3,
+    ShieldDistance = 4,
+    ShieldSpacing = 3,
+    RowSpacing = 2,
+    SideSpacing = 4,
 }
 
 -- 🤖 Identity Detection
