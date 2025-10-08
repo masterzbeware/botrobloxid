@@ -24,8 +24,8 @@ return {
 
       -- 🔹 Daftar opsi chat pertama yang lebih menarik
       local firstMessages = {
-          "Halo! Lagi butuh bodyguard handal untuk clanmu? DM kami di Discord FiestaGuard!",
-          "Hai! Sedang mencari cara efektif untuk promosi clanmu? Kami siap membantu!"
+          "Halo! sedang mencari bodyguard untuk Konten/seru-seruan?",
+          "Hai! Sedang mencari cara efektif untuk promosi clanmu?"
       }
 
       -- 🔹 Chat kedua dan ketiga tetap persuasif
