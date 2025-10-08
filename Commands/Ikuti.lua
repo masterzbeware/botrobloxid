@@ -9,7 +9,6 @@ return {
         local vars = _G.BotVars
         local RunService = vars.RunService
         local player = vars.LocalPlayer
-        local PathfindingService = vars.PathfindingService or game:GetService("PathfindingService")
 
         if not RunService then
             warn("[Ikuti] RunService tidak tersedia!")
@@ -37,15 +36,15 @@ return {
                     break
                 end
             end
+            if not target then
+                print("[IKUTI] Target tidak ditemukan. Mengikuti client sebagai target.")
+                target = client
+            end
         end
 
         vars.CurrentFormasiTarget = target
 
-        local humanoid, myRootPart
-        local moving = false
-        local currentWaypointIndex = 1
-        local activePath = nil
-        local lastCompute = 0
+        local humanoid, myRootPart, moving
 
         -- 🔹 Referensi karakter bot
         local function updateBotRefs()
@@ -53,99 +52,97 @@ return {
             humanoid = character:WaitForChild("Humanoid")
             myRootPart = character:WaitForChild("HumanoidRootPart")
         end
+
         player.CharacterAdded:Connect(updateBotRefs)
         updateBotRefs()
 
-        -- 🔹 Buat path baru jika perlu
-        local function computePathTo(targetPos)
-            if tick() - lastCompute < 1.5 then return end -- hitung ulang tiap 1.5 detik saja
-            lastCompute = tick()
+        -- 🔹 Fungsi gerak bot dengan timeout (anti-nabrak)
+        local function moveToPosition(targetPos, lookAtPos)
+            if not humanoid or not myRootPart then return end
+            if moving then return end
+            if (myRootPart.Position - targetPos).Magnitude < 2 then return end
 
-            local path = PathfindingService:CreatePath({
-                AgentRadius = 2,
-                AgentHeight = 5,
-                AgentCanJump = true,
-                AgentJumpHeight = 5,
-                AgentMaxSlope = 45,
-            })
-
-            path:ComputeAsync(myRootPart.Position, targetPos)
-            if path.Status == Enum.PathStatus.Success then
-                activePath = path:GetWaypoints()
-                currentWaypointIndex = 1
-            else
-                activePath = { { Position = targetPos } } -- fallback
-            end
-        end
-
-        -- 🔹 Gerakkan ke waypoint berikutnya
-        local function followPath()
-            if not activePath or moving then return end
-            if currentWaypointIndex > #activePath then return end
-
-            local wp = activePath[currentWaypointIndex]
             moving = true
-            humanoid:MoveTo(wp.Position)
-            if wp.Action == Enum.PathWaypointAction.Jump then
-                humanoid.Jump = true
-            end
+            humanoid:MoveTo(targetPos)
 
-            humanoid.MoveToFinished:Once(function(reached)
-                moving = false
-                if reached then
-                    currentWaypointIndex += 1
-                else
-                    -- Kalau gagal sampai, coba ulang path
-                    lastCompute = 0
-                end
+            local reached = false
+            local startTime = tick()
+            local timeout = 2.5 -- detik batas waktu sebelum move dibatalkan
+
+            local connection
+            connection = humanoid.MoveToFinished:Connect(function(success)
+                reached = success
             end)
-        end
 
-        -- 🔹 Hapus koneksi lama
-        if vars.FollowConnection then
-            pcall(function() vars.FollowConnection:Disconnect() end)
-        end
-
-        -- 🔹 Heartbeat loop utama
-        vars.FollowConnection = RunService.Heartbeat:Connect(function(dt)
-            if not vars.FollowAllowed or not target.Character then return end
-            local targetHRP = target.Character:FindFirstChild("HumanoidRootPart")
-            if not targetHRP or not humanoid or not myRootPart then return end
-
-            local jarakIkut = tonumber(vars.JarakIkut) or 6
-            local followSpacing = tonumber(vars.FollowSpacing) or 4
-
-            local orderedBots = {
-                "8802945328", "8802949363", "8802939883", "8802998147", "8802991722"
-            }
-
-            local myUserId = tostring(player.UserId)
-            local index = 1
-            for i, uid in ipairs(orderedBots) do
-                if uid == myUserId then
-                    index = i
+            -- Tunggu sampai berhasil atau timeout
+            while not reached and tick() - startTime < timeout do
+                if (myRootPart.Position - targetPos).Magnitude < 2 then
+                    reached = true
                     break
                 end
+                task.wait(0.1)
             end
 
-            -- Posisi ideal di belakang target
-            local backOffset = jarakIkut + (index - 1) * followSpacing
-            local desiredPos = targetHRP.Position - targetHRP.CFrame.LookVector * backOffset
+            if connection then connection:Disconnect() end
+            moving = false
 
-            -- Jika target jauh dari posisi saat ini, hitung ulang path
-            if not activePath or (myRootPart.Position - desiredPos).Magnitude > 6 then
-                computePathTo(desiredPos)
+            -- Atur arah pandang
+            if lookAtPos then
+                myRootPart.CFrame = CFrame.new(
+                    myRootPart.Position,
+                    Vector3.new(lookAtPos.X, myRootPart.Position.Y, lookAtPos.Z)
+                )
             end
+        end
 
-            -- Jalankan langkah berikutnya
-            followPath()
+        -- 🔹 Putuskan koneksi lama
+        if vars.FollowConnection then
+            pcall(function() vars.FollowConnection:Disconnect() end)
+            vars.FollowConnection = nil
+        end
 
-            -- Hadap ke arah target
-            myRootPart.CFrame = CFrame.new(
-                myRootPart.Position,
-                Vector3.new(targetHRP.Position.X, myRootPart.Position.Y, targetHRP.Position.Z)
-            )
-        end)
+        -- 🔹 Heartbeat loop untuk mengikuti VIP
+        if RunService.Heartbeat then
+            vars.FollowConnection = RunService.Heartbeat:Connect(function()
+                -- ⚠️ Abaikan bot yang sedang absen
+                vars.AbsenActive = vars.AbsenActive or {}
+                local myId = tostring(player.UserId)
+                if vars.AbsenActive[myId] then return end
+
+                if not vars.FollowAllowed or not target.Character then return end
+                local targetHRP = target.Character:FindFirstChild("HumanoidRootPart")
+                if not targetHRP then return end
+
+                local jarakIkut = tonumber(vars.JarakIkut) or 6   -- jarak minimum belakang VIP
+                local followSpacing = tonumber(vars.FollowSpacing) or 4 -- jarak antar bot
+
+                -- 🔹 Urutan bot agar rapi
+                local orderedBots = {
+                    "8802945328", -- Bot1
+                    "8802949363", -- Bot2
+                    "8802939883", -- Bot3
+                    "8802998147", -- Bot4 ✅ Tambahan
+                    "8802991722", -- Bot5 ✅ Tambahan
+                }
+
+                local myUserId = tostring(player.UserId)
+                local index = 1
+                for i, uid in ipairs(orderedBots) do
+                    if uid == myUserId then
+                        index = i
+                        break
+                    end
+                end
+
+                -- 🔹 Posisi bot di belakang VIP
+                local backOffset = jarakIkut + (index - 1) * followSpacing
+                local targetPos = targetHRP.Position - targetHRP.CFrame.LookVector * backOffset
+
+                moveToPosition(targetPos, targetHRP.Position + targetHRP.CFrame.LookVector * 50)
+            end)
+        else
+            warn("[Ikuti] RunService.Heartbeat tidak tersedia!")
+        end
 
         print("[COMMAND] Formasi Ikuti aktif, target:", target.Name)
     end
