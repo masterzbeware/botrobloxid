@@ -1,9 +1,6 @@
--- Tambahan Bot ID
-Bot4 = "8802998147"
-Bot5 = "8802991722"
-
 -- Bot.lua
 -- MasterZ Beware Bot System (Dispatcher Only)
+-- ✅ Versi diperbarui: Tambahan PathfindingService & notifikasi error loader
 
 -- 📂 Repo Path
 local repoBase   = "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Commands/"
@@ -24,7 +21,7 @@ local Window = Library:CreateWindow({
 })
 local Tabs = { Main = Window:AddTab("Main", "user") }
 
--- Debug Printer
+-- 🧠 Debug Printer
 local function debugPrint(msg)
     print("[DEBUG] " .. tostring(msg))
 end
@@ -36,6 +33,7 @@ _G.BotVars = {
     LocalPlayer = game:GetService("Players").LocalPlayer,
     ClientName = "FiestaGuardVip",
     RunService = game:GetService("RunService"),
+    PathfindingService = game:GetService("PathfindingService"), -- ✅ Tambahan penting
 
     ToggleAktif = false,   -- VIP-only commands
     ToggleGames = false,   -- Game commands
@@ -55,7 +53,7 @@ local botMapping = {
     ["8802949363"] = "Bot2 - XBODYGUARDVIP02",
     ["8802939883"] = "Bot3 - XBODYGUARDVIP03",
     ["8802998147"] = "Bot4 - XBODYGUARDVIP04",
-    ["8802991722"] = "Bot5 - XBODYGUARDVIP05",  -- ✅ Tambahan Bot5
+    ["8802991722"] = "Bot5 - XBODYGUARDVIP05", -- ✅ Tambahan Bot5
 }
 
 _G.BotVars.BotIdentity = botMapping[tostring(_G.BotVars.LocalPlayer.UserId)] or "Unknown Bot"
@@ -95,7 +93,7 @@ local gameFiles = {
     "Slot.lua",
 }
 
--- Loader untuk Commands folder (VIP only)
+-- 🧩 Loader untuk Commands folder (VIP only)
 for _, fileName in ipairs(commandFiles) do
     local url = repoBase .. fileName
     local success, response = pcall(function() return game:HttpGet(url) end)
@@ -109,14 +107,16 @@ for _, fileName in ipairs(commandFiles) do
                 debugPrint("Loaded VIP command: " .. nameKey)
             else
                 debugPrint("Failed executing VIP: " .. fileName)
+                Library:Notify("⚠️ Gagal eksekusi " .. fileName, 3)
             end
         end
     else
         debugPrint("Failed HttpGet VIP: " .. fileName)
+        Library:Notify("⚠️ Gagal memuat " .. fileName, 3)
     end
 end
 
--- Loader untuk Games folder
+-- 🎮 Loader untuk Games folder
 for _, fileName in ipairs(gameFiles) do
     local url = gamesRepo .. fileName
     local success, response = pcall(function() return game:HttpGet(url) end)
@@ -130,10 +130,12 @@ for _, fileName in ipairs(gameFiles) do
                 debugPrint("Loaded Game command: " .. nameKey)
             else
                 debugPrint("Failed executing Game: " .. fileName)
+                Library:Notify("⚠️ Gagal eksekusi " .. fileName, 3)
             end
         end
     else
         debugPrint("Failed HttpGet Game: " .. fileName)
+        Library:Notify("⚠️ Gagal memuat " .. fileName, 3)
     end
 end
 
@@ -182,13 +184,13 @@ local function setupClient(player)
     end
 end
 
--- Apply listener ke semua pemain
+-- 🔁 Apply listener ke semua pemain
 for _, plr in ipairs(_G.BotVars.Players:GetPlayers()) do
     setupClient(plr)
 end
 _G.BotVars.Players.PlayerAdded:Connect(setupClient)
 
--- 🖥️ UI
+-- 🖥️ UI Setup
 local GroupBox1 = Tabs.Main:AddLeftGroupbox("Bot Options")
 
 GroupBox1:AddInput("BotIdentity", {
@@ -219,24 +221,42 @@ GroupBox1:AddToggle("AktifkanGames", {
     end,
 })
 
-GroupBox1:AddInput("JarakIkutInput", { Default = tostring(_G.BotVars.JarakIkut), Text = "Follow Distance (VIP)", Placeholder = "Example: 5",
+GroupBox1:AddInput("JarakIkutInput", {
+    Default = tostring(_G.BotVars.JarakIkut),
+    Text = "Follow Distance (VIP)",
+    Placeholder = "Example: 5",
     Callback = function(Value) _G.BotVars.JarakIkut = tonumber(Value) end
 })
-GroupBox1:AddInput("FollowSpacingInput", { Default = tostring(_G.BotVars.FollowSpacing), Text = "Follow Spacing (Antar Bot)", Placeholder = "Example: 2",
+GroupBox1:AddInput("FollowSpacingInput", {
+    Default = tostring(_G.BotVars.FollowSpacing),
+    Text = "Follow Spacing (Antar Bot)",
+    Placeholder = "Example: 2",
     Callback = function(Value) _G.BotVars.FollowSpacing = tonumber(Value) end
 })
-GroupBox1:AddInput("ShieldDistanceInput", { Default = tostring(_G.BotVars.ShieldDistance), Text = "Shield Distance (VIP)", Placeholder = "Example: 5",
+GroupBox1:AddInput("ShieldDistanceInput", {
+    Default = tostring(_G.BotVars.ShieldDistance),
+    Text = "Shield Distance (VIP)",
+    Placeholder = "Example: 5",
     Callback = function(Value) _G.BotVars.ShieldDistance = tonumber(Value) end
 })
-GroupBox1:AddInput("ShieldSpacingInput", { Default = tostring(_G.BotVars.ShieldSpacing), Text = "Shield Spacing (Rows)", Placeholder = "Example: 4",
+GroupBox1:AddInput("ShieldSpacingInput", {
+    Default = tostring(_G.BotVars.ShieldSpacing),
+    Text = "Shield Spacing (Rows)",
+    Placeholder = "Example: 4",
     Callback = function(Value) _G.BotVars.ShieldSpacing = tonumber(Value) end
 })
-GroupBox1:AddInput("RowSpacingInput", { Default = tostring(_G.BotVars.RowSpacing), Text = "Row Spacing (Baris)", Placeholder = "Example: 4",
+GroupBox1:AddInput("RowSpacingInput", {
+    Default = tostring(_G.BotVars.RowSpacing),
+    Text = "Row Spacing (Baris)",
+    Placeholder = "Example: 4",
     Callback = function(Value) _G.BotVars.RowSpacing = tonumber(Value) end
 })
-GroupBox1:AddInput("SideSpacingInput", { Default = tostring(_G.BotVars.SideSpacing), Text = "Side Spacing (Kiri-Kanan)", Placeholder = "Example: 4",
+GroupBox1:AddInput("SideSpacingInput", {
+    Default = tostring(_G.BotVars.SideSpacing),
+    Text = "Side Spacing (Kiri-Kanan)",
+    Placeholder = "Example: 4",
     Callback = function(Value) _G.BotVars.SideSpacing = tonumber(Value) end
 })
 
-Library:Notify("Bot System Loaded!", 3)
-debugPrint("Bot.lua finished loading")
+Library:Notify("✅ Bot System Loaded!", 3)
+debugPrint("Bot.lua finished loading successfully")
