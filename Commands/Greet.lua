@@ -39,12 +39,13 @@ return {
               -- Chat pertama: random dari firstMessages + langsung /e wave
               local msgIndex = math.random(1, #firstMessages)
               sendChat(firstMessages[msgIndex])
-              sendChat("/e wave")  -- bersamaan
+              task.wait(0.2)  -- beri sedikit jeda sebelum /e wave
+              sendChat("/e wave")
 
               -- Delay 15 detik sebelum chat kedua
               task.wait(10)
               sendChat(secondMessage)
-
+              
               -- Delay 15 detik sebelum chat ketiga
               task.wait(10)
               sendChat(thirdMessage)
