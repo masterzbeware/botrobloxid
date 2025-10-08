@@ -1,4 +1,4 @@
--- Greet.lua (looping chat promosi + /e wave bersamaan dengan chat pertama)
+-- Greet.lua (looping chat promosi otomatis saat !Greet)
 return {
   Execute = function(msg, client)
       local vars = _G.BotVars or {}
@@ -9,7 +9,8 @@ return {
       -- 🔹 Cek command !Greet
       if not msg:lower():match("^!greet") then return end
 
-      -- 🔹 Tandai greeting aktif
+      -- 🔹 Tandai greeting aktif agar looping otomatis
+      if vars.GreetActive then return end  -- cegah duplikat loop
       vars.GreetActive = true
 
       -- 🔹 Ambil channel chat umum
@@ -32,20 +33,20 @@ return {
       local secondMessage = "Kami menyediakan jasa tersebut."
       local thirdMessage = "Hubungi kami di Discord FiestaGuard sekarang untuk info lengkap!"
 
-      -- 🔹 Mulai looping chat
+      -- 🔹 Mulai looping chat otomatis
       vars.GreetConnection = task.spawn(function()
           while vars.GreetActive do
               -- Chat pertama: random dari firstMessages + langsung /e wave
               local msgIndex = math.random(1, #firstMessages)
               sendChat(firstMessages[msgIndex])
-              sendChat("/e wave")  -- emote bersamaan
+              sendChat("/e wave")  -- bersamaan
 
               -- Delay 15 detik sebelum chat kedua
-              task.wait(5)
+              task.wait(10)
               sendChat(secondMessage)
 
               -- Delay 15 detik sebelum chat ketiga
-              task.wait(5)
+              task.wait(10)
               sendChat(thirdMessage)
           end
       end)
