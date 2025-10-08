@@ -1,18 +1,20 @@
 -- Say.lua
--- Fitur: ketika client mengetik !say {teks}, bot akan mengirim pesan sesuai teks tersebut
--- Contoh: !say Halo semua -> bot akan kirim "Halo semua"
+-- Ketika client mengetik !say {teks}, bot akan kirim teks tersebut ke RBXGeneral
 
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars or {}
         local TextChatService = vars.TextChatService or game:GetService("TextChatService")
 
-        -- Ambil isi pesan dari client
-        local content = msg.Content or ""
-        local sayText = string.match(content, "^!say%s+(.+)$")
+        -- Ambil isi pesan dari berbagai kemungkinan properti
+        local content = msg.Content or msg.Text or msg.Message or ""
+        content = string.trim and string.trim(content) or content:match("^%s*(.-)%s*$") -- hapus spasi ekstra
+
+        -- Ambil teks setelah "!say "
+        local sayText = content:match("^!say%s+(.+)$")
 
         if not sayText or sayText == "" then
-            -- Jika client hanya mengetik "!say" tanpa teks tambahan
+            warn("Tidak ada teks yang dimasukkan untuk !say | content:", content)
             local channel = TextChatService.TextChannels and TextChatService.TextChannels:FindFirstChild("RBXGeneral")
             if channel then
                 pcall(function()
