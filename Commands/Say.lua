@@ -4,27 +4,34 @@ return {
         local vars = _G.BotVars or {}
         local TextChatService = vars.TextChatService or game:GetService("TextChatService")
 
-        -- Coba ambil teks dari beberapa kemungkinan properti
-        local content = msg.Text or msg.Message or msg.Body or ""
+        -- Coba ambil teks dari berbagai kemungkinan properti
+        local content = ""
+        if typeof(msg) == "table" then
+            content = msg.Text or msg.Message or msg.Body or msg.Content or ""
+        elseif typeof(msg) == "Instance" then
+            -- Kadang msg adalah instance TextChatMessage
+            content = msg.Text or msg:FindFirstChild("Text") or ""
+        end
+
         content = tostring(content)
 
-        -- Pastikan isi benar-benar mengandung perintah
-        if not string.find(content, "!say") then
+        print("DEBUG | Pesan diterima:", content)
+
+        -- Ambil teks setelah !say
+        local args = string.split(content, " ")
+        if args[1] ~= "!say" then
             warn("Pesan tidak mengandung perintah !say:", content)
             return
         end
 
-        -- Pisahkan teks setelah perintah !say
-        local args = string.split(content, " ")
-        table.remove(args, 1) -- hapus kata pertama "!say"
-        local textToSend = table.concat(args, " "):gsub("^%s+", "") -- hapus spasi di depan
+        table.remove(args, 1)
+        local textToSend = table.concat(args, " "):gsub("^%s+", "")
 
-        -- Jika tidak ada teks tambahan
         if textToSend == "" then
             textToSend = "Kamu harus menulis sesuatu setelah !say!"
         end
 
-        -- Kirim ke RBXGeneral (atau channel lain jika mau)
+        -- Kirim ke RBXGeneral
         local channel = TextChatService.TextChannels and TextChatService.TextChannels:FindFirstChild("RBXGeneral")
         if channel then
             pcall(function()
