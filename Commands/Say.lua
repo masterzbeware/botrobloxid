@@ -4,21 +4,22 @@ return {
         local vars = _G.BotVars or {}
         local TextChatService = vars.TextChatService or game:GetService("TextChatService")
 
-        -- Ambil channel RBXGeneral
-        local channel = TextChatService.TextChannels and TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+        -- Pastikan channel siap
+        local channels = TextChatService:WaitForChild("TextChannels")
+        local channel = channels:FindFirstChild("RBXGeneral") or channels:FindFirstChildOfClass("TextChannel")
+
         if not channel then
-            warn("Channel RBXGeneral tidak ditemukan!")
+            warn("Channel chat tidak ditemukan!")
             return
         end
 
-        -- Ambil teks setelah perintah !say
         local content = msg.Content or ""
         local sayText = content:match("^!say%s+(.+)$")
+        if not sayText or sayText == "" then return end
 
-        if sayText and sayText ~= "" then
-            pcall(function()
-                channel:SendAsync(sayText)
-            end)
-        end
+        -- Gunakan DisplaySystemMessage agar bisa dari server juga
+        pcall(function()
+            channel:DisplaySystemMessage(sayText)
+        end)
     end
 }
