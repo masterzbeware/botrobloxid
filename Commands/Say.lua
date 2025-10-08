@@ -1,29 +1,35 @@
 -- Say.lua
--- Penggunaan: !say {teks}
--- Contoh: !say Halo semuanya!
+-- Fitur: ketika client mengetik !say {teks}, bot akan mengirim pesan sesuai teks tersebut
+-- Contoh: !say Halo semua -> bot akan kirim "Halo semua"
 
 return {
-  Execute = function(msg, client)
-      local vars = _G.BotVars or {}
-      local TextChatService = vars.TextChatService or game:GetService("TextChatService")
+    Execute = function(msg, client)
+        local vars = _G.BotVars or {}
+        local TextChatService = vars.TextChatService or game:GetService("TextChatService")
 
-      -- Ambil teks setelah "!say "
-      local content = msg.Content or ""
-      local args = string.match(content, "^!say%s+(.+)$")
+        -- Ambil isi pesan dari client
+        local content = msg.Content or ""
+        local sayText = string.match(content, "^!say%s+(.+)$")
 
-      if not args or args == "" then
-          warn("Tidak ada teks yang dimasukkan untuk !say")
-          return
-      end
+        if not sayText or sayText == "" then
+            -- Jika client hanya mengetik "!say" tanpa teks tambahan
+            local channel = TextChatService.TextChannels and TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+            if channel then
+                pcall(function()
+                    channel:SendAsync("⚠️ Harap masukkan teks setelah perintah !say")
+                end)
+            end
+            return
+        end
 
-      -- Kirim chat ke RBXGeneral
-      local channel = TextChatService.TextChannels and TextChatService.TextChannels:FindFirstChild("RBXGeneral")
-      if channel then
-          pcall(function()
-              channel:SendAsync(args)
-          end)
-      else
-          warn("Channel RBXGeneral tidak ditemukan!")
-      end
-  end
+        -- Kirim teks ke RBXGeneral
+        local channel = TextChatService.TextChannels and TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+        if channel then
+            pcall(function()
+                channel:SendAsync(sayText)
+            end)
+        else
+            warn("Channel RBXGeneral tidak ditemukan!")
+        end
+    end
 }
