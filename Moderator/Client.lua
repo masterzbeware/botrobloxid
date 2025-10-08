@@ -19,11 +19,8 @@ return {
       end
 
       local function sendWhisper(targetPlayer, text)
-          local channel = TextChatService.TextChannels and TextChatService.TextChannels:FindFirstChild("RBXGeneral")
-          if channel and targetPlayer then
-              pcall(function()
-                  channel:SendAsync("/whisper " .. targetPlayer.Name .. " " .. text)
-              end)
+          if targetPlayer then
+              sendChat("/whisper " .. targetPlayer.Name .. " " .. text)
           end
       end
 
@@ -40,29 +37,29 @@ return {
 
               if targetPlayer then
                   _G.BotVars.ActiveClient = targetPlayer.Name
-                  sendWhisper(targetPlayer, targetPlayer.Name .. " sekarang menjadi Client aktif.") -- ke target
+                  sendWhisper(targetPlayer, targetPlayer.Name .. " sekarang menjadi Client aktif.")
                   local mainClient = Players:FindFirstChild(mainClientName)
                   if mainClient then
-                      sendWhisper(mainClient, targetPlayer.Name .. " sekarang menjadi Client aktif.") -- ke client utama
+                      sendWhisper(mainClient, targetPlayer.Name .. " sekarang menjadi Client aktif.")
                   end
                   local secondClient = Players:FindFirstChild(secondaryClientName)
                   if secondClient then
-                      sendWhisper(secondClient, targetPlayer.Name .. " sekarang menjadi Client aktif.") -- ke client kedua
+                      sendWhisper(secondClient, targetPlayer.Name .. " sekarang menjadi Client aktif.")
                   end
               else
                   local mainClient = Players:FindFirstChild(mainClientName)
                   if mainClient then
-                      sendWhisper(mainClient, "Player " .. targetName .. " tidak ditemukan.") -- ke client utama
+                      sendWhisper(mainClient, "Player " .. targetName .. " tidak ditemukan.")
                   end
               end
           else
               local mainClient = Players:FindFirstChild(mainClientName)
               if mainClient then
-                  sendWhisper(mainClient, "Hanya " .. mainClientName .. " yang dapat mengganti Client aktif.") -- ke client utama
+                  sendWhisper(mainClient, "Hanya " .. mainClientName .. " yang dapat mengganti Client aktif.")
               end
               local secondClient = Players:FindFirstChild(secondaryClientName)
               if secondClient then
-                  sendWhisper(secondClient, "Hanya " .. mainClientName .. " yang dapat mengganti Client aktif.") -- ke client kedua
+                  sendWhisper(secondClient, "Hanya " .. mainClientName .. " yang dapat mengganti Client aktif.")
               end
           end
           return
