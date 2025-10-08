@@ -5,13 +5,13 @@ return {
     Execute = function(msg, client)
         local vars = _G.BotVars or {}
 
-        -- Nonaktifkan semua mode utama
+        -- 🔹 Nonaktifkan semua mode utama
         vars.FollowAllowed = false
         vars.ShieldActive = false
         vars.RowActive = false
         vars.SquareActive = false
         vars.WedgeActive = false
-        vars.BarrierActive = false
+        vars.BarrierActive = false -- 🔸 Tambahan untuk Barrier
         vars.SyncActive = false
         vars.PushupActive = false
         vars.FrontlineActive = false
@@ -20,7 +20,7 @@ return {
         vars.RoomVIPActive = false
         vars.CurrentFormasiTarget = nil
 
-        -- Fungsi bantu untuk memutus koneksi aman
+        -- 🔹 Fungsi bantu untuk memutus koneksi aman
         local function safeDisconnect(connName)
             if vars[connName] then
                 pcall(function()
@@ -34,14 +34,14 @@ return {
             end
         end
 
-        -- Daftar koneksi utama yang akan dihentikan
+        -- 🔹 Daftar koneksi utama yang akan dihentikan
         local disconnectList = {
             "FollowConnection",
             "ShieldConnection",
             "RowConnection",
             "SquareConnection",
             "WedgeConnection",
-            "BarrierConnection",
+            "BarrierConnection", -- 🔸 Tambahan untuk Barrier
             "PushupConnection",
             "SyncConnection",
             "CircleMoveConnection",
@@ -53,8 +53,11 @@ return {
             safeDisconnect(name)
         end
 
-        -- Hentikan task async tambahan
-        local cancelList = { "RoomVIPTask" }
+        -- 🔹 Hentikan task async (spawn / loop) tambahan
+        local cancelList = {
+            "RoomVIPTask",
+        }
+
         for _, name in ipairs(cancelList) do
             if vars[name] then
                 pcall(function() task.cancel(vars[name]) end)
@@ -62,7 +65,7 @@ return {
             end
         end
 
-        -- Stop animasi Push Up jika masih berjalan
+        -- 🔹 Stop animasi Push Up jika masih berjalan
         pcall(function()
             local args = { "stopAnimation", "Push Up" }
             local animationHandler = game:GetService("ReplicatedStorage")
@@ -72,7 +75,7 @@ return {
             animationHandler:InvokeServer(unpack(args))
         end)
 
-        -- Leave Sync jika masih aktif
+        -- 🔹 Leave Sync jika masih aktif
         pcall(function()
             local args = { "leaveSync" }
             local animationHandler = game:GetService("ReplicatedStorage")
@@ -82,7 +85,7 @@ return {
             animationHandler:InvokeServer(unpack(args))
         end)
 
-        -- Matikan listener LogChat.lua jika aktif
+        -- 🔹 Matikan listener LogChat.lua jika aktif
         if _G.ChatLogListenerSet then
             _G.ChatLogListenerSet = false
 
@@ -102,17 +105,20 @@ return {
                     end)
                 end
             end
+
+            print("[LogChat] Semua listener chat dimatikan oleh !stop.")
         end
 
-        -- Reset whitelist target
+        -- 🔹 Reset whitelist target
         if vars.WhitelistTargets then
             vars.WhitelistTargets = {}
+            print("[Stop] Whitelist target telah di-reset.")
         end
 
-        -- Reset flag RoomVIP
+        -- 🔹 Reset flag RoomVIP
         vars.RoomVIPActive = false
 
-        -- Log output
+        -- 🔹 Log output
         print("[COMMAND] Semua aktivitas bot dihentikan oleh:", client and client.Name or "Unknown")
     end
 }
