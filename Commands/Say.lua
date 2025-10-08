@@ -1,26 +1,29 @@
--- Say.lua
+-- Pushup.lua
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars or {}
         local TextChatService = vars.TextChatService or game:GetService("TextChatService")
 
-        -- Ambil channel yang tersedia
-        local channels = TextChatService:WaitForChild("TextChannels")
-        local channel = channels:FindFirstChild("RBXGeneral") or channels:FindFirstChildOfClass("TextChannel")
+        -- Ambil teks dari pesan setelah perintah !pushup
+        -- Misalnya pesan: "!pushup ayo latihan" → hasil: "ayo latihan"
+        local content = msg.Text or ""
+        local args = string.split(content, " ")
+        table.remove(args, 1) -- hapus kata pertama "!pushup"
+        local textToSend = table.concat(args, " ")
 
-        if not channel then
-            warn("Channel chat tidak ditemukan!")
-            return
+        -- Jika tidak ada teks tambahan, pakai default
+        if textToSend == "" then
+            textToSend = "Siap laksanakan!"
         end
 
-        -- Ambil teks setelah perintah !say
-        local content = msg.Content or msg
-        local sayText = content:match("^!say%s+(.+)$")
-        if not sayText or sayText == "" then return end
-
-        -- ✅ Kirim pesan sebagai system message (aman dari server)
-        pcall(function()
-            channel:DisplaySystemMessage(sayText)
-        end)
+        -- Kirim chat ke RBXGeneral
+        local channel = TextChatService.TextChannels and TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+        if channel then
+            pcall(function()
+                channel:SendAsync(textToSend)
+            end)
+        else
+            warn("Channel RBXGeneral tidak ditemukan!")
+        end
     end
 }
