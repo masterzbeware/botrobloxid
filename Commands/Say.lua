@@ -4,7 +4,7 @@ return {
         local vars = _G.BotVars or {}
         local TextChatService = vars.TextChatService or game:GetService("TextChatService")
 
-        -- Pastikan channel siap
+        -- Ambil channel yang tersedia
         local channels = TextChatService:WaitForChild("TextChannels")
         local channel = channels:FindFirstChild("RBXGeneral") or channels:FindFirstChildOfClass("TextChannel")
 
@@ -13,11 +13,12 @@ return {
             return
         end
 
-        local content = msg.Content or ""
+        -- Ambil teks setelah perintah !say
+        local content = msg.Content or msg
         local sayText = content:match("^!say%s+(.+)$")
         if not sayText or sayText == "" then return end
 
-        -- Gunakan DisplaySystemMessage agar bisa dari server juga
+        -- ✅ Kirim pesan sebagai system message (aman dari server)
         pcall(function()
             channel:DisplaySystemMessage(sayText)
         end)
