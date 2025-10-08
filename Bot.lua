@@ -62,7 +62,7 @@ local commandFiles = {
     "Ikuti.lua","Stop.lua","RoomVIP.lua","Shield.lua","Row.lua","Sync.lua",
     "Pushup.lua","Frontline.lua","AmbilAlih.lua","Reset.lua","Salute.lua",
     "Absen.lua","Bubarbarisan.lua","Location.lua","LogChat.lua","Addtarget.lua",
-    "ModeBuaya.lua","Square.lua","Wedge.lua","Barrier.lua","Say.lua",
+    "ModeBuaya.lua","Square.lua","Wedge.lua","Barrier.lua","Say.lua","Greet.lua",
 }
 local gameFiles = { "Rockpaper.lua", "Coinflip.lua", "Slot.lua" }
 local moderatorFiles = { "Client.lua", "Remove.lua" }
