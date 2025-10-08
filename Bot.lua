@@ -33,12 +33,12 @@ _G.BotVars = {
     ToggleAktif = false,
     ToggleGames = false,
 
-    JarakIkut = 2,
+    JarakIkut = 3,
     FollowSpacing = 3,
     ShieldDistance = 4,
-    ShieldSpacing = 3,
-    RowSpacing = 2,
-    SideSpacing = 4,
+    ShieldSpacing = 4,
+    RowSpacing = 3,
+    SideSpacing = 5,
 
     ActiveClient = "FiestaGuardVip",
 }
