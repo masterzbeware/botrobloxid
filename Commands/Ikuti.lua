@@ -56,7 +56,7 @@ return {
         player.CharacterAdded:Connect(updateBotRefs)
         updateBotRefs()
 
-        -- 🔹 Fungsi gerak bot
+        -- 🔹 Fungsi gerak bot dengan timeout (anti-nabrak)
         local function moveToPosition(targetPos, lookAtPos)
             if not humanoid or not myRootPart then return end
             if moving then return end
@@ -64,9 +64,29 @@ return {
 
             moving = true
             humanoid:MoveTo(targetPos)
-            humanoid.MoveToFinished:Wait()
+
+            local reached = false
+            local startTime = tick()
+            local timeout = 2.5 -- detik batas waktu sebelum move dibatalkan
+
+            local connection
+            connection = humanoid.MoveToFinished:Connect(function(success)
+                reached = success
+            end)
+
+            -- Tunggu sampai berhasil atau timeout
+            while not reached and tick() - startTime < timeout do
+                if (myRootPart.Position - targetPos).Magnitude < 2 then
+                    reached = true
+                    break
+                end
+                task.wait(0.1)
+            end
+
+            if connection then connection:Disconnect() end
             moving = false
 
+            -- Atur arah pandang
             if lookAtPos then
                 myRootPart.CFrame = CFrame.new(
                     myRootPart.Position,
