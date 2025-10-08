@@ -41,11 +41,11 @@ return {
               sendChat("/e wave")  -- emote bersamaan
 
               -- Delay 15 detik sebelum chat kedua
-              task.wait(15)
+              task.wait(5)
               sendChat(secondMessage)
 
               -- Delay 15 detik sebelum chat ketiga
-              task.wait(15)
+              task.wait(5)
               sendChat(thirdMessage)
           end
       end)
