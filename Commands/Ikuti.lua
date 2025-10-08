@@ -9,6 +9,7 @@ return {
         local vars = _G.BotVars
         local RunService = vars.RunService
         local player = vars.LocalPlayer
+        local PathfindingService = game:GetService("PathfindingService")
 
         if not RunService then
             warn("[Ikuti] RunService tidak tersedia!")
@@ -56,37 +57,61 @@ return {
         player.CharacterAdded:Connect(updateBotRefs)
         updateBotRefs()
 
-        -- 🔹 Fungsi gerak bot dengan timeout (anti-nabrak)
+        -- 🔹 Fungsi gerak bot (dengan pathfinding ringan)
         local function moveToPosition(targetPos, lookAtPos)
             if not humanoid or not myRootPart then return end
             if moving then return end
             if (myRootPart.Position - targetPos).Magnitude < 2 then return end
 
             moving = true
-            humanoid:MoveTo(targetPos)
 
-            local reached = false
-            local startTime = tick()
-            local timeout = 2.5 -- detik batas waktu sebelum move dibatalkan
+            -- Buat path sederhana ke target
+            local path = PathfindingService:CreatePath({
+                AgentRadius = 2,
+                AgentHeight = 5,
+                AgentCanJump = true,
+                AgentJumpHeight = 5,
+                AgentMaxSlope = 45
+            })
 
-            local connection
-            connection = humanoid.MoveToFinished:Connect(function(success)
-                reached = success
-            end)
+            path:ComputeAsync(myRootPart.Position, targetPos)
+            local waypoints = path.Status == Enum.PathStatus.Success and path:GetWaypoints() or nil
 
-            -- Tunggu sampai berhasil atau timeout
-            while not reached and tick() - startTime < timeout do
-                if (myRootPart.Position - targetPos).Magnitude < 2 then
-                    reached = true
-                    break
+            -- Jika path gagal, fallback ke MoveTo langsung
+            if not waypoints then
+                humanoid:MoveTo(targetPos)
+                local startTime = tick()
+                local timeout = 2.5
+                while tick() - startTime < timeout do
+                    if (myRootPart.Position - targetPos).Magnitude < 2 then break end
+                    task.wait(0.1)
                 end
-                task.wait(0.1)
+                moving = false
+                return
             end
 
-            if connection then connection:Disconnect() end
+            -- Jalankan path step-by-step
+            for _, waypoint in ipairs(waypoints) do
+                if not humanoid or not vars.FollowAllowed then break end
+                local wpPos = waypoint.Position
+                humanoid:MoveTo(wpPos)
+
+                -- Lompat jika waypoint minta lompat
+                if waypoint.Action == Enum.PathWaypointAction.Jump then
+                    humanoid.Jump = true
+                end
+
+                local startTime = tick()
+                local timeout = 2 -- batasi tiap langkah agar tidak diam lama
+                while tick() - startTime < timeout do
+                    if (myRootPart.Position - wpPos).Magnitude < 2 then break end
+                    task.wait(0.1)
+                end
+            end
+
             moving = false
 
-            -- Atur arah pandang
+            -- Atur arah pandang ke target
             if lookAtPos then
                 myRootPart.CFrame = CFrame.new(
                     myRootPart.Position,
