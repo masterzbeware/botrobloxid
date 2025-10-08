@@ -1,5 +1,5 @@
 -- Row.lua
--- Command !row: Bot membentuk dua barisan (kiri & kanan) di belakang pemain target
+-- Command !row: Bot membentuk barisan kiri & kanan di belakang pemain target (5 bot dukungan)
 
 return {
     Execute = function(msg, client)
@@ -19,16 +19,16 @@ return {
         vars.FrontlineActive = false
         vars.CurrentFormasiTarget = client
 
-        -- 🔹 Hapus notifikasi (dihilangkan)
-
         if not vars.RowActive then
             print("[ROW] Dinonaktifkan")
+            if vars.RowConnection then
+                pcall(function() vars.RowConnection:Disconnect() end)
+                vars.RowConnection = nil
+            end
             return
         end
 
         print("[ROW] Formasi Row diaktifkan. Target:", client.Name)
-
-        -- 🔹 Hapus pengiriman pesan chat (dihilangkan)
 
         -- Referensi bot
         local humanoid, myRootPart, moving
@@ -59,22 +59,26 @@ return {
             end
         end
 
-        -- Putuskan koneksi lama
-        if vars.RowConnection then pcall(function() vars.RowConnection:Disconnect() end) vars.RowConnection = nil end
+        -- 🔹 Putuskan koneksi lama jika ada
+        if vars.RowConnection then
+            pcall(function() vars.RowConnection:Disconnect() end)
+            vars.RowConnection = nil
+        end
 
-        -- 🔹 Loop utama barisan 2 kiri-kanan
+        -- 🔹 Loop utama barisan (5 bot total)
         if RunService.Heartbeat then
             vars.RowConnection = RunService.Heartbeat:Connect(function()
                 if not vars.RowActive or not client.Character then return end
                 local targetHRP = client.Character:FindFirstChild("HumanoidRootPart")
                 if not targetHRP then return end
 
-                -- Mapping bot (sesuaikan dengan UserId masing-masing bot)
+                -- 🔹 Urutan Bot termasuk Bot5
                 local orderedBots = {
-                    "8802945328", -- Bot1
-                    "8802949363", -- Bot2
-                    "8802939883", -- Bot3
-                    "8802998147", -- Bot4
+                    "8802945328", -- Bot1 - kiri depan
+                    "8802949363", -- Bot2 - kanan depan
+                    "8802939883", -- Bot3 - kiri belakang
+                    "8802998147", -- Bot4 - kanan belakang
+                    "8802991722", -- ✅ Bot5 - tengah belakang
                 }
 
                 local myUserId = tostring(player.UserId)
@@ -86,23 +90,27 @@ return {
                     end
                 end
 
-                -- 🔹 Posisi dua barisan kiri & kanan
+                -- 🔹 Jarak formasi
                 local jarakBelakang = tonumber(vars.JarakIkut) or 4
                 local jarakAntarBaris = tonumber(vars.RowSpacing) or 3
-                local jarakSamping = tonumber(vars.SideSpacing) or 2
+                local jarakSamping = tonumber(vars.SideSpacing) or 3
 
-                -- Hitung baris & sisi
-                local rowIndex = math.floor((index - 1) / 2)
-                local isLeft = ((index - 1) % 2 == 0)
+                -- 🔹 Offset posisi per bot
+                local offsetMap = {
+                    [1] = Vector3.new(-jarakSamping, 0, -jarakBelakang),                          -- kiri depan
+                    [2] = Vector3.new(jarakSamping, 0, -jarakBelakang),                           -- kanan depan
+                    [3] = Vector3.new(-jarakSamping * 1.2, 0, -jarakBelakang - jarakAntarBaris),  -- kiri belakang
+                    [4] = Vector3.new(jarakSamping * 1.2, 0, -jarakBelakang - jarakAntarBaris),   -- kanan belakang
+                    [5] = Vector3.new(0, 0, -jarakBelakang - (jarakAntarBaris * 1.5)),            -- ✅ Bot5 di tengah belakang
+                }
 
-                local backOffset = jarakBelakang + (rowIndex * jarakAntarBaris)
-                local sideOffset = (isLeft and -1 or 1) * jarakSamping
-
-                -- Posisi akhir formasi
+                local offset = offsetMap[index] or Vector3.zero
+                local cframe = targetHRP.CFrame
                 local targetPos =
-                    targetHRP.Position
-                    - targetHRP.CFrame.LookVector * backOffset
-                    + targetHRP.CFrame.RightVector * sideOffset
+                    cframe.Position
+                    + cframe.RightVector * offset.X
+                    + cframe.UpVector * offset.Y
+                    + cframe.LookVector * offset.Z
 
                 moveToPosition(targetPos, targetHRP.Position + targetHRP.CFrame.LookVector * 50)
             end)

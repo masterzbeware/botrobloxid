@@ -116,8 +116,10 @@ return {
                 "8802945328", -- Bot1
                 "8802949363", -- Bot2
                 "8802939883", -- Bot3
-                "8802998147", -- Bot4
+                "8802998147", -- Bot4 ✅ Tambahan
+                "8802991722", -- Bot5 ✅ Tambahan
             }
+
             local myUserId = tostring(player.UserId)
             local index = 1
             for i, uid in ipairs(orderedBots) do

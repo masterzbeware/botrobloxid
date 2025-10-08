@@ -104,12 +104,13 @@ return {
                 local targetHRP = target.Character:FindFirstChild("HumanoidRootPart")
                 if not targetHRP then return end
 
-                -- 🔹 Mapping bot
+                -- 🔹 Mapping bot (5 bot total)
                 local orderedBots = {
-                    "8802945328", -- B1 kiri VIP
-                    "8802939883", -- B2 kiri VIP
-                    "8802949363", -- B3 kanan VIP
-                    "8802998147", -- B4 kanan VIP
+                    "8802945328", -- Bot1 (paling kiri VIP)
+                    "8802939883", -- Bot2 (kiri tengah)
+                    "8802949363", -- Bot3 (kanan tengah)
+                    "8802998147", -- Bot4 (kanan luar)
+                    "8802991722", -- Bot5 (paling depan VIP)
                 }
 
                 local myUserId = tostring(player.UserId)
@@ -124,13 +125,15 @@ return {
                 -- 🔹 Konfigurasi jarak
                 local jarakSamping = tonumber(vars.SideSpacing) or 3
                 local jarakDepanBelakang = tonumber(vars.FrontBackSpacing) or 0
+                local jarakDepanVIP = tonumber(vars.FrontSpacing) or 4
 
-                -- 🔹 Offset posisi per bot
+                -- 🔹 Offset posisi per bot (formasi setengah lingkaran)
                 local offsetMap = {
-                    [1] = Vector3.new(-2*jarakSamping, 0, jarakDepanBelakang),
-                    [2] = Vector3.new(-jarakSamping, 0, jarakDepanBelakang),
-                    [3] = Vector3.new(jarakSamping, 0, jarakDepanBelakang),
-                    [4] = Vector3.new(2*jarakSamping, 0, jarakDepanBelakang),
+                    [1] = Vector3.new(-2 * jarakSamping, 0, jarakDepanBelakang),  -- kiri luar
+                    [2] = Vector3.new(-jarakSamping, 0, jarakDepanBelakang),      -- kiri tengah
+                    [3] = Vector3.new(jarakSamping, 0, jarakDepanBelakang),       -- kanan tengah
+                    [4] = Vector3.new(2 * jarakSamping, 0, jarakDepanBelakang),   -- kanan luar
+                    [5] = Vector3.new(0, 0, -jarakDepanVIP),                      -- depan VIP
                 }
 
                 local offset = offsetMap[index] or Vector3.zero

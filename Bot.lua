@@ -1,3 +1,7 @@
+-- Tambahan Bot ID
+Bot4 = "8802998147"
+Bot5 = "8802991722"
+
 -- Bot.lua
 -- MasterZ Beware Bot System (Dispatcher Only)
 
@@ -51,7 +55,9 @@ local botMapping = {
     ["8802949363"] = "Bot2 - XBODYGUARDVIP02",
     ["8802939883"] = "Bot3 - XBODYGUARDVIP03",
     ["8802998147"] = "Bot4 - XBODYGUARDVIP04",
+    ["8802991722"] = "Bot5 - XBODYGUARDVIP05",  -- ✅ Tambahan Bot5
 }
+
 _G.BotVars.BotIdentity = botMapping[tostring(_G.BotVars.LocalPlayer.UserId)] or "Unknown Bot"
 debugPrint("Detected identity: " .. _G.BotVars.BotIdentity)
 
@@ -83,9 +89,9 @@ local commandFiles = {
 }
 
 local gameFiles = {
-    "Rockpaper.lua", -- contoh game
-    "Coinflip.lua", -- contoh game
-    "Slot.lua", -- contoh game
+    "Rockpaper.lua",
+    "Coinflip.lua",
+    "Slot.lua",
 }
 
 -- Loader untuk Commands folder (VIP only)
@@ -146,18 +152,17 @@ local function setupClient(player)
     local function processMessage(msg, sender)
         msg = msg:lower()
 
-        -- VIP-only commands (hanya jalan kalau ToggleAktif aktif)
+        -- VIP-only commands
         if sender.Name == _G.BotVars.ClientName and _G.BotVars.ToggleAktif then
             handleCommand(msg, sender, VIPCommands)
         end
 
-        -- Games-only commands (semua player bisa pakai)
+        -- Games-only commands
         if _G.BotVars.ToggleGames then
             handleCommand(msg, sender, GameCommands)
         end
     end
 
-    -- Listener pakai TextChatService
     if _G.BotVars.TextChatService and _G.BotVars.TextChatService.TextChannels then
         local generalChannel = _G.BotVars.TextChatService.TextChannels:FindFirstChild("RBXGeneral")
         if generalChannel then
@@ -191,7 +196,6 @@ GroupBox1:AddInput("BotIdentity", {
     Placeholder = "Auto-detected bot info",
 })
 
--- VIP toggle
 GroupBox1:AddToggle("AktifkanBot", {
     Text = "Enable Bot System (VIP only)",
     Default = false,
@@ -203,7 +207,6 @@ GroupBox1:AddToggle("AktifkanBot", {
     end,
 })
 
--- Games toggle
 GroupBox1:AddToggle("AktifkanGames", {
     Text = "Enable Game Commands",
     Default = false,
@@ -215,7 +218,6 @@ GroupBox1:AddToggle("AktifkanGames", {
     end,
 })
 
--- Input spacing & distance
 GroupBox1:AddInput("JarakIkutInput", { Default = tostring(_G.BotVars.JarakIkut), Text = "Follow Distance (VIP)", Placeholder = "Example: 5",
     Callback = function(Value) _G.BotVars.JarakIkut = tonumber(Value) end
 })

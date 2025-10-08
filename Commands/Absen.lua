@@ -20,12 +20,13 @@ return {
         if vars.AbsenActive[myId] then return end -- skip jika bot ini sudah menjalankan absen
         vars.AbsenActive[myId] = true
 
-        -- Bot Mapping (urutan absen)
+        -- 🔹 Bot Mapping (urutan absen)
         local orderedBots = {
             "8802945328", -- Bot1
             "8802949363", -- Bot2
             "8802939883", -- Bot3
             "8802998147", -- Bot4
+            "8802991722", -- Bot5 (baru ditambahkan)
         }
 
         local function getBotByUserId(userId)
@@ -37,7 +38,7 @@ return {
             return nil
         end
 
-        -- Ambil channel chat
+        -- 🔹 Ambil channel chat
         local channel = TextChatService.TextChannels and TextChatService.TextChannels:FindFirstChild("RBXGeneral")
         local function sendChat(text)
             if channel then
@@ -45,7 +46,7 @@ return {
             end
         end
 
-        -- Ambil semua bot references
+        -- 🔹 Ambil semua bot references
         local botRefs = {}
         for i, uid in ipairs(orderedBots) do
             local botPlayer = getBotByUserId(uid)
@@ -72,15 +73,15 @@ return {
             return
         end
 
-        -- Posisi default di belakang VIP (barisan)
+        -- 🔹 Posisi default di belakang VIP (barisan)
         local defaultPositions = {}
         for i, bot in ipairs(botRefs) do
-            defaultPositions[i] = targetHRP.Position 
-                - targetHRP.CFrame.LookVector * jarakBaris 
-                - targetHRP.CFrame.RightVector * ((i-1) * spacing)
+            defaultPositions[i] = targetHRP.Position
+                - targetHRP.CFrame.LookVector * jarakBaris
+                - targetHRP.CFrame.RightVector * ((i - 3) * spacing) -- posisi tengah seimbang (Bot3 di tengah)
         end
 
-        -- Fungsi gerak bot ke posisi dan menghadap target
+        -- 🔹 Fungsi gerak bot ke posisi dan menghadap target
         local function moveTo(bot, targetPos, lookAtPos)
             if not bot.humanoid or not bot.hrp then return end
             bot.humanoid:MoveTo(targetPos)
@@ -95,7 +96,7 @@ return {
             for _, bot in ipairs(botRefs) do
                 if bot.player.UserId == player.UserId then
                     task.spawn(function()
-                        -- Delay kecil sesuai urutan (biar rapi, tapi nggak kelamaan)
+                        -- Delay sesuai urutan (rapi dan bergantian)
                         task.wait((bot.index - 1) * 4)
 
                         -- Maju ke depan Client (+3 stud)
@@ -103,14 +104,12 @@ return {
                         moveTo(bot, forwardPos, targetHRP.Position)
                         task.wait(2)
 
-                        -- Kirim chat hanya bot yang maju
+                        -- Chat laporan
                         sendChat("Laporan Komandan, Barisan " .. bot.index .. " hadir")
                         task.wait(3)
 
-                        -- Kembali ke posisi barisan belakang VIP
-                        local backOffset = jarakBaris + (bot.index - 1) * spacing
-                        local behindPos = targetHRP.Position - targetHRP.CFrame.LookVector * backOffset
-                        moveTo(bot, behindPos, targetHRP.Position + targetHRP.CFrame.LookVector * 50)
+                        -- Kembali ke posisi default belakang VIP
+                        moveTo(bot, defaultPositions[bot.index], targetHRP.Position + targetHRP.CFrame.LookVector * 50)
                     end)
                 else
                     -- Bot lain tetap di posisi default

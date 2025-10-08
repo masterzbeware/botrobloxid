@@ -12,7 +12,7 @@ return {
             return
         end
 
-        -- 🔹 Nonaktifkan mode lain sebelum mengaktifkan Square
+        -- 🔹 Toggle mode Square
         vars.SquareActive = not vars.SquareActive
         vars.FollowAllowed = false
         vars.RowActive = false
@@ -33,8 +33,7 @@ return {
         end
 
         if #args > 1 then
-            local searchName = table.concat(args, " ", 2) -- gabungkan argumen setelah !square
-            -- Cari pemain dengan displayname atau username sesuai input
+            local searchName = table.concat(args, " ", 2)
             for _, plr in ipairs(game.Players:GetPlayers()) do
                 if plr.DisplayName:lower():find(searchName:lower()) or plr.Name:lower():find(searchName:lower()) then
                     target = plr
@@ -91,7 +90,7 @@ return {
             end
         end
 
-        -- 🔹 Putuskan koneksi Square lama jika ada
+        -- 🔹 Putuskan koneksi lama jika ada
         if vars.SquareConnection then
             pcall(function() vars.SquareConnection:Disconnect() end)
             vars.SquareConnection = nil
@@ -104,12 +103,13 @@ return {
                 local targetHRP = target.Character:FindFirstChild("HumanoidRootPart")
                 if not targetHRP then return end
 
-                -- 🔹 Mapping urutan bot (sesuaikan dengan UserId)
+                -- 🔹 Mapping urutan bot (termasuk Bot5)
                 local orderedBots = {
                     "8802945328", -- B1 depan kiri
                     "8802949363", -- B2 depan kanan
                     "8802939883", -- B3 belakang kiri
                     "8802998147", -- B4 belakang kanan
+                    "8802991722", -- B5 tengah belakang (baru ditambahkan)
                 }
 
                 local myUserId = tostring(player.UserId)
@@ -128,10 +128,11 @@ return {
 
                 -- 🔹 Offset posisi per bot
                 local offsetMap = {
-                    [1] = Vector3.new(-jarakSamping, 0, jarakDepan),    -- depan kiri (Z positif di depan)
-                    [2] = Vector3.new(jarakSamping, 0, jarakDepan),     -- depan kanan
-                    [3] = Vector3.new(-jarakSamping, 0, -jarakBelakang),-- belakang kiri (Z negatif di belakang)
-                    [4] = Vector3.new(jarakSamping, 0, -jarakBelakang), -- belakang kanan
+                    [1] = Vector3.new(-jarakSamping, 0, jarakDepan),     -- depan kiri
+                    [2] = Vector3.new(jarakSamping, 0, jarakDepan),      -- depan kanan
+                    [3] = Vector3.new(-jarakSamping, 0, -jarakBelakang), -- belakang kiri
+                    [4] = Vector3.new(jarakSamping, 0, -jarakBelakang),  -- belakang kanan
+                    [5] = Vector3.new(0, 0, -jarakBelakang * 1.5),       -- tengah belakang (Bot5)
                 }
 
                 local offset = offsetMap[index] or Vector3.zero

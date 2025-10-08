@@ -52,11 +52,13 @@ return {
         local shieldDistance = tonumber(vars.ShieldDistance) or 5
         local shieldSpacing  = tonumber(vars.ShieldSpacing) or 4
 
+        -- 🔹 Bot list diperbarui (5 bot total)
         local botMapping = vars.BotMapping or {
             ["8802945328"] = "Bot1 - XBODYGUARDVIP01",
             ["8802949363"] = "Bot2 - XBODYGUARDVIP02",
             ["8802939883"] = "Bot3 - XBODYGUARDVIP03",
             ["8802998147"] = "Bot4 - XBODYGUARDVIP04",
+            ["8802991722"] = "Bot5 - XBODYGUARDVIP05", -- ✅ Tambahan
         }
 
         local botIds = {}
@@ -87,11 +89,14 @@ return {
             moving = false
 
             if lookAtPos then
-                myRootPart.CFrame = CFrame.new(myRootPart.Position, Vector3.new(lookAtPos.X, myRootPart.Position.Y, lookAtPos.Z))
+                myRootPart.CFrame = CFrame.new(
+                    myRootPart.Position,
+                    Vector3.new(lookAtPos.X, myRootPart.Position.Y, lookAtPos.Z)
+                )
             end
         end
 
-        -- Frontline loop (barisan lurus di depan target)
+        -- 🔹 Frontline loop (barisan lurus di depan target)
         vars.FrontlineConnection = RunService.Heartbeat:Connect(function()
             if not vars.ToggleAktif or not vars.FrontlineActive then return end
             if not vars.CurrentFormasiTarget or not vars.CurrentFormasiTarget.Character then return end
@@ -100,13 +105,16 @@ return {
             local targetHRP = vars.CurrentFormasiTarget.Character:FindFirstChild("HumanoidRootPart")
             if not targetHRP then return end
 
-            -- Tentukan posisi frontline (garis lurus di depan VIP)
+            -- 🔹 Tentukan posisi frontline (garis lurus di depan VIP)
             local index = 1
             for i, id in ipairs(botIds) do
-                if id == player.UserId then index = i break end
+                if id == player.UserId then
+                    index = i
+                    break
+                end
             end
 
-            -- Bot diposisikan sejajar (kiri kanan) di depan VIP
+            -- 🔹 Bot diposisikan sejajar (kiri kanan) di depan VIP
             local offset = (index - ((#botIds + 1) / 2)) * shieldSpacing
             local forward = targetHRP.CFrame.LookVector
             local right   = targetHRP.CFrame.RightVector
@@ -116,6 +124,7 @@ return {
         end)
 
         notifyLib:Notify("Frontline formation Activated for " .. vars.CurrentFormasiTarget.Name, 3)
-        print("[COMMAND] Frontline activated by", client.Name, "targeting:", vars.CurrentFormasiTarget.Name, "distance:", shieldDistance, "spacing:", shieldSpacing)
+        print("[COMMAND] Frontline activated by", client.Name, "targeting:", vars.CurrentFormasiTarget.Name, 
+              "distance:", shieldDistance, "spacing:", shieldSpacing)
     end
 }

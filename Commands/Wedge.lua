@@ -1,5 +1,6 @@
 -- Wedge.lua
 -- Command !wedge: Bot membentuk formasi segitiga (Wedge) di belakang target atau client jika tidak ada target
+-- Sekarang mendukung 5 bot (Bot5 = posisi tengah belakang)
 
 return {
     Execute = function(msg, client)
@@ -33,8 +34,7 @@ return {
         end
 
         if #args > 1 then
-            local searchName = table.concat(args, " ", 2) -- gabungkan argumen setelah !wedge
-            -- Cari pemain dengan displayname atau username sesuai input
+            local searchName = table.concat(args, " ", 2)
             for _, plr in ipairs(game.Players:GetPlayers()) do
                 if plr.DisplayName:lower():find(searchName:lower()) or plr.Name:lower():find(searchName:lower()) then
                     target = plr
@@ -103,12 +103,13 @@ return {
                 local targetHRP = target.Character:FindFirstChild("HumanoidRootPart")
                 if not targetHRP then return end
 
-                -- 🔹 Urutan bot
+                -- 🔹 Urutan bot (termasuk Bot5)
                 local orderedBots = {
                     "8802945328", -- B1 kiri dekat VIP
                     "8802939883", -- B2 kiri jauh
                     "8802949363", -- B3 kanan dekat VIP
                     "8802998147", -- B4 kanan jauh
+                    "8802991722", -- ✅ B5 tengah belakang
                 }
 
                 local myUserId = tostring(player.UserId)
@@ -121,16 +122,17 @@ return {
                 end
 
                 -- 🔹 Konfigurasi jarak
-                local jarakDepan = tonumber(vars.JarakDepan) or 4   -- dekat VIP
-                local jarakBelakang = tonumber(vars.JarakBelakang) or 6 -- jauh VIP
+                local jarakDepan = tonumber(vars.JarakDepan) or 4
+                local jarakBelakang = tonumber(vars.JarakBelakang) or 7
                 local jarakSamping = tonumber(vars.SideSpacing) or 3
 
-                -- 🔹 Offset bot (Z negatif = di belakang VIP)
+                -- 🔹 Offset posisi tiap bot
                 local offsetMap = {
-                    [1] = Vector3.new(-jarakSamping, 0, -jarakDepan),      -- B1 kiri dekat VIP
-                    [2] = Vector3.new(-jarakSamping*2, 0, -jarakBelakang), -- B2 kiri jauh
-                    [3] = Vector3.new(jarakSamping, 0, -jarakDepan),       -- B3 kanan dekat VIP
-                    [4] = Vector3.new(jarakSamping*2, 0, -jarakBelakang),  -- B4 kanan jauh
+                    [1] = Vector3.new(-jarakSamping, 0, -jarakDepan),       -- kiri dekat VIP
+                    [2] = Vector3.new(-jarakSamping * 2, 0, -jarakBelakang), -- kiri jauh
+                    [3] = Vector3.new(jarakSamping, 0, -jarakDepan),        -- kanan dekat VIP
+                    [4] = Vector3.new(jarakSamping * 2, 0, -jarakBelakang), -- kanan jauh
+                    [5] = Vector3.new(0, 0, -jarakBelakang - 2),            -- ✅ tengah belakang
                 }
 
                 local offset = offsetMap[index] or Vector3.zero
