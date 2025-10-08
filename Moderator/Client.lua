@@ -6,6 +6,7 @@ return {
       local mainClientName = "FiestaGuardVip"
       local activeClient = vars.ActiveClient or mainClientName
 
+      -- Command untuk ganti client langsung
       if msg:lower():match("^!client%s+") then
           local targetName = msg:match("^!client%s+(.+)")
           if client.Name == mainClientName and targetName then
@@ -18,13 +19,18 @@ return {
               end
 
               if targetPlayer then
+                  -- langsung ganti ActiveClient ke targetPlayer
                   _G.BotVars.ActiveClient = targetPlayer.Name
+                  print("Client aktif sekarang: " .. targetPlayer.Name)
+              else
+                  print("Player '" .. targetName .. "' tidak ditemukan.")
               end
           end
           return
       end
 
-      if client.Name == activeClient then
+      -- Jalankan command lain hanya jika client aktif cocok
+      if client.Name == _G.BotVars.ActiveClient then
           local lowerMsg = msg:lower()
           for name, cmd in pairs(commandFiles) do
               if lowerMsg:match("^!" .. name) and cmd.Execute then
