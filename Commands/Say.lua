@@ -1,19 +1,18 @@
--- Pushup.lua
+-- Say.lua
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars or {}
         local TextChatService = vars.TextChatService or game:GetService("TextChatService")
 
-        -- Ambil teks dari pesan setelah perintah !pushup
-        -- Misalnya pesan: "!pushup ayo latihan" → hasil: "ayo latihan"
+        -- Ambil teks dari pesan setelah perintah !say
         local content = msg.Text or ""
         local args = string.split(content, " ")
-        table.remove(args, 1) -- hapus kata pertama "!pushup"
+        table.remove(args, 1) -- hapus kata pertama "!say"
         local textToSend = table.concat(args, " ")
 
-        -- Jika tidak ada teks tambahan, pakai default
+        -- Jika tidak ada teks tambahan, kirim peringatan
         if textToSend == "" then
-            textToSend = "Siap laksanakan!"
+            textToSend = "Kamu harus menulis sesuatu setelah !say!"
         end
 
         -- Kirim chat ke RBXGeneral
