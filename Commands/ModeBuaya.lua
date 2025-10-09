@@ -154,7 +154,7 @@ return {
                 pcall(function() channel:SendAsync(message) end)
 
                 -- Delay 3 detik
-                task.wait(2)
+                task.wait(4)
 
                 -- Kirim emoji
                 local emojiIndex = math.random(1, #emojiList)
