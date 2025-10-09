@@ -1,4 +1,3 @@
-berikan saya Shield.lua yang telah di perbaiki 
 -- Shield.lua
 -- Command !shield: Bot membentuk formasi perisai di sekitar VIP dengan sistem warning & whitelist
 
