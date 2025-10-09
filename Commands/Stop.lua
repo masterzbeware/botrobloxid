@@ -1,23 +1,25 @@
 -- Stop.lua
--- Command !stop: Menghentikan semua aksi bot, termasuk Barrier, Wedge, Square, dsb.
+-- Command !stop: Menghentikan semua aksi bot, termasuk Barrier, Wedge, Square, Box, FrontCover, dsb.
 
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars or {}
 
-        -- 🔹 Nonaktifkan semua mode utama
+        -- 🔹 Nonaktifkan semua mode utama (termasuk Box & FrontCover)
         vars.FollowAllowed = false
         vars.ShieldActive = false
         vars.RowActive = false
         vars.SquareActive = false
         vars.WedgeActive = false
-        vars.BarrierActive = false -- 🔸 Tambahan untuk Barrier
+        vars.BarrierActive = false
         vars.SyncActive = false
         vars.PushupActive = false
         vars.FrontlineActive = false
         vars.CircleMoveActive = false
         vars.ReportingActive = false
         vars.RoomVIPActive = false
+        vars.BoxActive = false
+        vars.FrontCoverActive = false -- 🔸 Tambahan: Matikan FrontCover
         vars.CurrentFormasiTarget = nil
 
         -- 🔹 Fungsi bantu untuk memutus koneksi aman
@@ -41,7 +43,9 @@ return {
             "RowConnection",
             "SquareConnection",
             "WedgeConnection",
-            "BarrierConnection", -- 🔸 Tambahan untuk Barrier
+            "BarrierConnection",
+            "BoxConnection",         -- 🔸 Tambahan: hentikan koneksi Box
+            "FrontCoverConnection",  -- 🔸 Tambahan: hentikan koneksi FrontCover
             "PushupConnection",
             "SyncConnection",
             "CircleMoveConnection",
@@ -53,7 +57,7 @@ return {
             safeDisconnect(name)
         end
 
-        -- 🔹 Hentikan task async (spawn / loop) tambahan
+        -- 🔹 Hentikan task async tambahan
         local cancelList = {
             "RoomVIPTask",
         }
