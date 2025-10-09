@@ -1,47 +1,58 @@
 return {
-  Execute = function(msg, client)
-      local vars = _G.BotVars or {}
-      local Players = vars.Players or game:GetService("Players")
-      local commandFiles = vars.CommandFiles or {}
-      local mainClientName = "FiestaGuardVip"
-      local activeClient = vars.ActiveClient or mainClientName
+    Execute = function(msg, client)
+        _G.BotVars = _G.BotVars or {
+            Players = game:GetService("Players"),
+            CommandFiles = {},
+            ActiveClient = "FiestaGuardVip"
+        }
 
-      -- Command untuk ganti client langsung
-      if msg:lower():match("^!client%s+") then
-          local targetName = msg:match("^!client%s+(.+)")
-          if client.Name == mainClientName and targetName then
-              local targetPlayer = nil
-              for _, plr in ipairs(Players:GetPlayers()) do
-                  if plr.DisplayName:lower() == targetName:lower() or plr.Name:lower() == targetName:lower() then
-                      targetPlayer = plr
-                      break
-                  end
-              end
+        local vars = _G.BotVars
+        local Players = vars.Players
+        local commandFiles = vars.CommandFiles
+        local mainClientName = "FiestaGuardVip"
+        local activeClient = vars.ActiveClient or mainClientName
 
-              if targetPlayer then
-                  -- langsung ganti ActiveClient ke targetPlayer
-                  _G.BotVars.ActiveClient = targetPlayer.Name
-                  print("Client aktif sekarang: " .. targetPlayer.Name)
-              else
-                  print("Player '" .. targetName .. "' tidak ditemukan.")
-              end
-          end
-          return
-      end
+        local clientCommand = msg:lower():match("^!client%s+")
+        if clientCommand then
+            local targetName = msg:match("^!client%s+(.+)%s*$")
 
-      -- Jalankan command lain hanya jika client aktif cocok
-      if client.Name == _G.BotVars.ActiveClient then
-          local lowerMsg = msg:lower()
-          for name, cmd in pairs(commandFiles) do
-              if lowerMsg:match("^!" .. name) and cmd.Execute then
-                  local success, err = pcall(function()
-                      cmd.Execute(msg, client)
-                  end)
-                  if not success then
-                      warn("Gagal menjalankan command " .. name .. ": " .. tostring(err))
-                  end
-              end
-          end
-      end
-  end
+            if client.Name:lower() == mainClientName:lower() and targetName then
+                local targetPlayer = nil
+                local lowerTarget = targetName:lower()
+
+                for _, plr in ipairs(Players:GetPlayers()) do
+                    if plr.DisplayName:lower() == lowerTarget or plr.Name:lower() == lowerTarget then
+                        targetPlayer = plr
+                        break
+                    end
+                end
+
+                if targetPlayer then
+                    vars.ActiveClient = targetPlayer.Name
+                    print("Client aktif sekarang: " .. targetPlayer.Name)
+                else
+                    print("Player '" .. targetName .. "' tidak ditemukan.")
+                end
+            else
+                if client.Name:lower() ~= mainClientName:lower() then
+                    print("Hanya main client (" .. mainClientName .. ") yang bisa mengganti client aktif.")
+                end
+            end
+            return
+        end
+
+        if client.Name:lower() == (vars.ActiveClient or ""):lower() then
+            local lowerMsg = msg:lower()
+            for name, cmd in pairs(commandFiles) do
+                if lowerMsg:match("^!" .. name) and cmd.Execute then
+                    local success, err = pcall(function()
+                        cmd.Execute(msg, client)
+                    end)
+                    if not success then
+                        warn("Gagal menjalankan command '" .. name .. "': " .. tostring(err))
+                    end
+                end
+            end
+        end
+    end
 }
