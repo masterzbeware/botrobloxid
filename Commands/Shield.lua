@@ -1,3 +1,4 @@
+berikan saya Shield.lua yang telah di perbaiki 
 -- Shield.lua
 -- Command !shield: Bot membentuk formasi perisai di sekitar VIP dengan sistem warning & whitelist
 
@@ -6,16 +7,11 @@ return {
         local vars = _G.BotVars or {}
         local RunService = vars.RunService or game:GetService("RunService")
         local Players = game:GetService("Players")
-        local ReplicatedStorage = game:GetService("ReplicatedStorage")
         local TextChatService = vars.TextChatService or game:GetService("TextChatService")
         local player = vars.LocalPlayer or Players.LocalPlayer
 
         vars.WhitelistTargets = vars.WhitelistTargets or {}
         vars.ShieldActive = vars.ShieldActive or false
-
-        -- Ambil event chat normal Roblox
-        local sayEvent = ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents")
-            and ReplicatedStorage.DefaultChatSystemChatEvents:FindFirstChild("SayMessageRequest")
 
         -- Ambil argumen dari perintah !shield
         local args = {}
@@ -148,12 +144,11 @@ return {
                             if char and char:FindFirstChild("HumanoidRootPart") then
                                 local dist = (char.HumanoidRootPart.Position - targetHRP.Position).Magnitude
                                 if dist <= shieldDistance then
-                                    if sayEvent then
+                                    local channel = TextChatService.TextChannels and TextChatService.TextChannels.RBXGeneral
+                                    if channel then
                                         pcall(function()
-                                            sayEvent:FireServer(plr.Name .. " harap menjauh dari area VIP!", "All")
+                                            channel:SendAsync(plr.Name .. " Harap menjauh dari area VIP!")
                                         end)
-                                    else
-                                        print(plr.Name .. " harap menjauh dari area VIP!")
                                     end
                                     lastWarningTime = now
                                     break
