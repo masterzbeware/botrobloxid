@@ -19,12 +19,12 @@ return {
       -- Pasangan teks (setiap set = 2 pesan)
       local textSets = {
           {
-              "Kamu butuh jasa promosi? kami siap membantu!",
+              "Kamu butuh jasa promosi untuk clan/group? kami siap membantu!",
               "Silakan dm kami di dc 'FiestaGuard'"
           },
           {
-              "Ingin server kamu makin ramai?",
-              "Hubungi FiestaGuard sekarang juga!"
+              "Kamu butuh jasa bodyguard? kami siap membantu!",
+              "Silakan dm kami di dc 'FiestaGuard'"
           }
       }
 
@@ -40,11 +40,11 @@ return {
                   pcall(function()
                       channel:SendAsync(text)
                   end)
-                  task.wait(4) -- delay antar pesan
+                  task.wait(8) -- delay antar pesan
               end
 
               -- Tunggu sebelum mulai set baru
-              task.wait(15)
+              task.wait(20)
           end
       end)
   end
