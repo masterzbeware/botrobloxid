@@ -40,11 +40,11 @@ return {
                   pcall(function()
                       channel:SendAsync(text)
                   end)
-                  task.wait(8) -- delay antar pesan
+                  task.wait(10) -- delay antar pesan
               end
 
               -- Tunggu sebelum mulai set baru
-              task.wait(20)
+              task.wait(23)
           end
       end)
   end
