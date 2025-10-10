@@ -1,14 +1,14 @@
--- Pushup.lua (animasi push-up sesuai jumlah, default 3x)
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars or {}
-        local TextChatService = vars.TextChatService or game:GetService("TextChatService")
+        local TextChatService = game:GetService("TextChatService")
+        local channel
 
-        -- tandai pushup aktif
+        if TextChatService.TextChannels then
+            channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+        end
+
         vars.PushupActive = true
-
-        -- Ambil channel chat
-        local channel = TextChatService.TextChannels and TextChatService.TextChannels:FindFirstChild("RBXGeneral")
 
         local function sendChat(text)
             if channel then
@@ -18,17 +18,13 @@ return {
             end
         end
 
-        -- ambil angka dari command (!pushup 5 -> 5)
         local jumlah = tonumber(msg:match("!pushup%s+(%d+)")) or 3
 
-        -- Simpan connection biar bisa dihentikan dari Stop.lua
         vars.PushupConnection = task.spawn(function()
-            -- Chat awal
             sendChat("Siap laksanakan!")
             task.wait(2)
             if not vars.PushupActive then return end
 
-            -- 🔹 Mulai animasi push-up
             pcall(function()
                 local args = { "playAnimation", "Push Up" }
                 game:GetService("ReplicatedStorage")
@@ -38,7 +34,6 @@ return {
                     :InvokeServer(unpack(args))
             end)
 
-            -- Loop push-up sesuai jumlah
             for i = 1, jumlah do
                 task.wait(5)
                 if not vars.PushupActive then break end
@@ -50,7 +45,6 @@ return {
                 end
             end
 
-            -- 🔹 Stop animasi setelah selesai
             pcall(function()
                 local args = { "stopAnimation", "Push Up" }
                 game:GetService("ReplicatedStorage")

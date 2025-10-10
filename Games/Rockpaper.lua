@@ -4,34 +4,41 @@
 -- Delay global 6 detik (untuk semua pemain)
 -- Bisa !rockpaper [batu/kertas/gunting] atau !rockpaper
 
-local lastPlayed = 0 -- global timestamp (bukan per pemain)
+local lastPlayed = 0 -- Global timestamp (bukan per pemain)
 
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars or {}
-        local TextChatService = vars.TextChatService or game:GetService("TextChatService")
 
-        -- ✅ Cek ToggleGames (harus true)
+        local TextChatService = game:GetService("TextChatService")
+        local channel
+
+        if TextChatService.TextChannels then
+            channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+        end
+
+        -- Pastikan mini-game aktif
         if vars.ToggleGames ~= true then
             return
         end
 
-        -- ⏳ Cek cooldown global 6 detik
+        -- Cek cooldown global (6 detik)
         local now = os.time()
         if now - lastPlayed < 6 then
-            -- opsional: kirim pesan "Tunggu sebentar" ke pemain
             return
         end
         lastPlayed = now
 
+        -- Pilihan tersedia
         local options = { "Batu", "Kertas", "Gunting" }
 
-        -- 🔡 Ambil argumen dari command
+        -- Ambil argumen dari command
         local args = {}
         for word in msg:gmatch("%S+") do
             table.insert(args, word)
         end
 
+        -- Tentukan pilihan pemain
         local playerChoice
         if #args >= 2 then
             local input = args[2]:lower()
@@ -48,9 +55,10 @@ return {
             playerChoice = options[math.random(1, #options)]
         end
 
+        -- Pilihan bot acak
         local botChoice = options[math.random(1, #options)]
 
-        -- 🏆 Tentukan hasil
+        -- Tentukan hasil
         local outcome
         if playerChoice == botChoice then
             outcome = "Seri!"
@@ -62,8 +70,7 @@ return {
             outcome = "Bot menang!"
         end
 
-        -- 💬 Kirim pesan ke RBXGeneral
-        local channel = TextChatService.TextChannels and TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+        -- Kirim pesan hasil
         if channel then
             pcall(function()
                 channel:SendAsync(client.Name .. " memilih: " .. playerChoice .. " ... Saya memilih: " .. botChoice .. "!")

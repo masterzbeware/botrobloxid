@@ -4,46 +4,50 @@
 -- Delay global 6 detik (untuk semua pemain)
 -- Mesin slot sederhana dengan emoji
 
-local lastSlot = 0 -- global timestamp
+local lastSlot = 0 -- Global timestamp
 
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars or {}
-        local TextChatService = vars.TextChatService or game:GetService("TextChatService")
 
-        -- ✅ Cek ToggleGames (harus true)
+        local TextChatService = game:GetService("TextChatService")
+        local channel
+
+        if TextChatService.TextChannels then
+            channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+        end
+
+        -- Pastikan fitur mini-game aktif
         if vars.ToggleGames ~= true then
             return
         end
 
-        -- ⏳ Cek cooldown global 6 detik
+        -- Cek cooldown global (6 detik)
         local now = os.time()
         if now - lastSlot < 6 then
-            -- opsional: kirim pesan "Tunggu sebentar" ke pemain
             return
         end
         lastSlot = now
 
-        -- 🎰 Daftar simbol slot
+        -- Daftar simbol slot
         local symbols = { "🍒", "🍋", "⭐", "🍀", "🔔", "💎" }
 
-        -- Ambil 3 simbol random
+        -- Ambil 3 simbol acak
         local s1 = symbols[math.random(1, #symbols)]
         local s2 = symbols[math.random(1, #symbols)]
         local s3 = symbols[math.random(1, #symbols)]
 
-        -- 🏆 Tentukan hasil
+        -- Tentukan hasil
         local hasil
         if s1 == s2 and s2 == s3 then
-            hasil = "JACKPOT! 🎉 Semua sama!"
+            hasil = "JACKPOT! Semua simbol sama!"
         elseif s1 == s2 or s2 == s3 or s1 == s3 then
             hasil = "Lumayan! Dua simbol sama!"
         else
             hasil = "Kalah! Coba lagi!"
         end
 
-        -- 💬 Kirim hasil ke RBXGeneral
-        local channel = TextChatService.TextChannels and TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+        -- Kirim hasil ke RBXGeneral
         if channel then
             pcall(function()
                 channel:SendAsync(client.Name .. " memutar mesin slot...")

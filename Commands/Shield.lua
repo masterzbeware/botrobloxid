@@ -6,8 +6,14 @@ return {
         local vars = _G.BotVars or {}
         local RunService = vars.RunService or game:GetService("RunService")
         local Players = game:GetService("Players")
-        local TextChatService = vars.TextChatService or game:GetService("TextChatService")
         local player = vars.LocalPlayer or Players.LocalPlayer
+
+        -- Sistem chat (disamakan dengan Say.lua)
+        local TextChatService = game:GetService("TextChatService")
+        local channel
+        if TextChatService.TextChannels then
+            channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+        end
 
         vars.WhitelistTargets = vars.WhitelistTargets or {}
         vars.ShieldActive = vars.ShieldActive or false
@@ -56,7 +62,7 @@ return {
         local shieldDistance = tonumber(vars.ShieldDistance) or 5
         local shieldSpacing  = tonumber(vars.ShieldSpacing) or 4
 
-        -- 🔹 Tambahkan Bot5 ke daftar mapping
+        -- Bot Mapping (dengan Bot5)
         local botMapping = vars.BotMapping or {
             ["8802945328"] = "Bot1 - XBODYGUARDVIP01",
             ["8802949363"] = "Bot2 - XBODYGUARDVIP02",
@@ -119,7 +125,7 @@ return {
                 if id == player.UserId then index = i break end
             end
 
-            -- 🔹 Posisi relatif tiap bot
+            -- Posisi relatif tiap bot
             local cframe = targetHRP.CFrame
             local posMap = {
                 [1] = cframe.Position + cframe.LookVector * shieldDistance,              -- depan VIP
@@ -132,7 +138,7 @@ return {
             local targetPos = posMap[index] or cframe.Position
             moveToPosition(targetPos, cframe.Position + cframe.LookVector * 50)
 
-            -- 🔹 Deteksi pemain lain terlalu dekat
+            -- Deteksi pemain lain terlalu dekat
             local now = tick()
             if now - lastWarningTime >= warningDelay then
                 for _, plr in ipairs(Players:GetPlayers()) do
@@ -143,11 +149,12 @@ return {
                             if char and char:FindFirstChild("HumanoidRootPart") then
                                 local dist = (char.HumanoidRootPart.Position - targetHRP.Position).Magnitude
                                 if dist <= shieldDistance then
-                                    local channel = TextChatService.TextChannels and TextChatService.TextChannels.RBXGeneral
                                     if channel then
                                         pcall(function()
-                                            channel:SendAsync(plr.Name .. " Harap menjauh dari area VIP!")
+                                            channel:SendAsync(plr.Name .. " harap menjauh dari area VIP!")
                                         end)
+                                    else
+                                        warn("Channel RBXGeneral tidak ditemukan!")
                                     end
                                     lastWarningTime = now
                                     break

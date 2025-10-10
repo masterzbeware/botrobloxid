@@ -1,43 +1,51 @@
 -- Location.lua
 -- Command: !location {displayname/username}
+-- Menampilkan apakah pemain ada di server yang sama
 
 return {
-  Execute = function(msg, client)
-      local vars = _G.BotVars or {}
-      local TextChatService = vars.TextChatService or game:GetService("TextChatService")
-      local Players = game:GetService("Players")
+    Execute = function(msg, client)
+        local vars = _G.BotVars or {}
+        local Players = game:GetService("Players")
 
-      -- Ambil argumen setelah !location
-      local args = string.split(msg, " ")
-      local targetName = args[2]
+        -- Sistem chat seragam
+        local TextChatService = game:GetService("TextChatService")
+        local channel
+        if TextChatService.TextChannels then
+            channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+        end
 
-      if not targetName then
-          warn("Nama target tidak diberikan!")
-          return
-      end
+        -- Ambil argumen setelah !location
+        local args = string.split(msg, " ")
+        local targetName = args[2]
 
-      -- Cek player di server
-      local foundPlayer = nil
-      for _, player in ipairs(Players:GetPlayers()) do
-          if string.lower(player.Name) == string.lower(targetName) 
-          or string.lower(player.DisplayName) == string.lower(targetName) then
-              foundPlayer = player
-              break
-          end
-      end
+        -- Cek player di server
+        local foundPlayer = nil
+        if targetName then
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player.Name:lower() == targetName:lower()
+                or (player.DisplayName and player.DisplayName:lower() == targetName:lower()) then
+                    foundPlayer = player
+                    break
+                end
+            end
+        end
 
-      -- Kirim ke RBXGeneral
-      local channel = TextChatService.TextChannels and TextChatService.TextChannels:FindFirstChild("RBXGeneral")
-      if channel then
-          pcall(function()
-              if foundPlayer then
-                  channel:SendAsync("Player " .. foundPlayer.DisplayName .. " (@" .. foundPlayer.Name .. ") ada di server yang sama.")
-              else
-                  channel:SendAsync("Player " .. targetName .. " tidak ada di server ini.")
-              end
-          end)
-      else
-          warn("Channel RBXGeneral tidak ditemukan!")
-      end
-  end
+        -- Fungsi kirim chat
+        local function sendChat(text)
+            if channel then
+                pcall(function()
+                    channel:SendAsync(text)
+                end)
+            else
+                warn("Channel RBXGeneral tidak ditemukan!")
+            end
+        end
+
+        -- Kirim hasil lokasi
+        if foundPlayer then
+            sendChat("Player " .. foundPlayer.DisplayName .. " (@" .. foundPlayer.Name .. ") ada di server yang sama.")
+        else
+            sendChat("Player " .. tostring(targetName) .. " tidak ada di server ini.")
+        end
+    end
 }
