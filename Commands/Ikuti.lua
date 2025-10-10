@@ -1,8 +1,9 @@
 -- Ikuti.lua
--- Command !ikuti: Bot mengikuti pemain VIP secara rapi berbaris ke belakang
--- Kompatibel dengan Barrier.lua dan formasi lain
--- Bisa menarget pemain tertentu dengan !ikuti {displayname/username}
--- Jika tidak ada argumen, default ke client
+-- Command !ikuti:
+--   Bot mengikuti pemain VIP secara rapi berbaris ke belakang
+--   Kompatibel dengan Barrier.lua dan formasi lain
+--   Bisa menarget pemain tertentu dengan !ikuti {displayname/username}
+--   Jika tidak ada argumen, default ke client
 
 return {
     Execute = function(msg, client)
@@ -24,6 +25,7 @@ return {
         -- 🔹 Tentukan target
         local target = client
         local args = {}
+
         for word in msg:gmatch("%S+") do
             table.insert(args, word)
         end
@@ -31,11 +33,13 @@ return {
         if #args > 1 then
             local searchName = table.concat(args, " ", 2)
             for _, plr in ipairs(game.Players:GetPlayers()) do
-                if plr.DisplayName:lower():find(searchName:lower()) or plr.Name:lower():find(searchName:lower()) then
+                if plr.DisplayName:lower():find(searchName:lower())
+                    or plr.Name:lower():find(searchName:lower()) then
                     target = plr
                     break
                 end
             end
+
             if not target then
                 print("[IKUTI] Target tidak ditemukan. Mengikuti client sebagai target.")
                 target = client
@@ -44,9 +48,9 @@ return {
 
         vars.CurrentFormasiTarget = target
 
+        -- 🔹 Referensi karakter bot
         local humanoid, myRootPart, moving
 
-        -- 🔹 Referensi karakter bot
         local function updateBotRefs()
             local character = player.Character or player.CharacterAdded:Wait()
             humanoid = character:WaitForChild("Humanoid")
@@ -58,8 +62,7 @@ return {
 
         -- 🔹 Fungsi gerak bot dengan timeout (anti-nabrak)
         local function moveToPosition(targetPos, lookAtPos)
-            if not humanoid or not myRootPart then return end
-            if moving then return end
+            if not humanoid or not myRootPart or moving then return end
             if (myRootPart.Position - targetPos).Magnitude < 2 then return end
 
             moving = true
@@ -95,9 +98,11 @@ return {
             end
         end
 
-        -- 🔹 Putuskan koneksi lama
+        -- 🔹 Putuskan koneksi lama jika ada
         if vars.FollowConnection then
-            pcall(function() vars.FollowConnection:Disconnect() end)
+            pcall(function()
+                vars.FollowConnection:Disconnect()
+            end)
             vars.FollowConnection = nil
         end
 
@@ -110,11 +115,12 @@ return {
                 if vars.AbsenActive[myId] then return end
 
                 if not vars.FollowAllowed or not target.Character then return end
+
                 local targetHRP = target.Character:FindFirstChild("HumanoidRootPart")
                 if not targetHRP then return end
 
-                local jarakIkut = tonumber(vars.JarakIkut) or 6   -- jarak minimum belakang VIP
-                local followSpacing = tonumber(vars.FollowSpacing) or 4 -- jarak antar bot
+                local jarakIkut = tonumber(vars.JarakIkut) or 3   -- jarak minimum belakang VIP
+                local followSpacing = tonumber(vars.FollowSpacing) or 3 -- jarak antar bot
 
                 -- 🔹 Urutan bot agar rapi
                 local orderedBots = {
@@ -137,8 +143,9 @@ return {
                 -- 🔹 Posisi bot di belakang VIP
                 local backOffset = jarakIkut + (index - 1) * followSpacing
                 local targetPos = targetHRP.Position - targetHRP.CFrame.LookVector * backOffset
+                local lookPos = targetHRP.Position + targetHRP.CFrame.LookVector * 50
 
-                moveToPosition(targetPos, targetHRP.Position + targetHRP.CFrame.LookVector * 50)
+                moveToPosition(targetPos, lookPos)
             end)
         else
             warn("[Ikuti] RunService.Heartbeat tidak tersedia!")

@@ -1,9 +1,3 @@
--- Barrier.lua
--- Command !barrier: Bot membentuk formasi penghalang di sekitar VIP
--- Kompatibel dengan Stop.lua & Ikuti.lua
--- Bisa menarget pemain tertentu dengan !barrier {displayname/username}
--- Jika tidak ada argumen, default ke client
-
 return {
     Execute = function(msg, client)
         local vars = _G.BotVars
@@ -15,10 +9,7 @@ return {
             return
         end
 
-        -- 🔹 Toggle Barrier
         vars.BarrierActive = not vars.BarrierActive
-
-        -- 🔹 Nonaktifkan mode formasi lain tapi jangan matikan FollowAllowed agar Ikuti tetap jalan
         vars.RowActive = false
         vars.SquareActive = false
         vars.WedgeActive = false
@@ -30,7 +21,6 @@ return {
         vars.ReportingActive = false
         vars.RoomVIPActive = false
 
-        -- 🔹 Tentukan target
         local target = client
         local args = {}
         for word in msg:gmatch("%S+") do
@@ -53,7 +43,6 @@ return {
 
         vars.CurrentFormasiTarget = target
 
-        -- 🔹 Jika dinonaktifkan, hentikan koneksi & keluar
         if not vars.BarrierActive then
             print("[BARRIER] Dinonaktifkan")
             if vars.BarrierConnection then
@@ -65,8 +54,7 @@ return {
 
         print("[BARRIER] Formasi Barrier diaktifkan. Target:", target.Name)
 
-        -- 🔹 Referensi karakter bot
-        local humanoid, myRootPart, moving
+        local humanoid, myRootPart
         local function updateBotRefs()
             local character = player.Character or player.CharacterAdded:Wait()
             humanoid = character:WaitForChild("Humanoid")
@@ -75,42 +63,49 @@ return {
         player.CharacterAdded:Connect(updateBotRefs)
         updateBotRefs()
 
+        local moving = false
         local function moveToPosition(targetPos, lookVector)
             if not humanoid or not myRootPart then return end
             if moving then return end
-            if (myRootPart.Position - targetPos).Magnitude < 1 then return end
+
+            local distance = (myRootPart.Position - targetPos).Magnitude
+            if distance < 2.5 then return end
 
             moving = true
+            local hipOffset = humanoid.HipHeight / 2
+            targetPos = targetPos + Vector3.new(0, hipOffset, 0)
             humanoid:MoveTo(targetPos)
+
+            if humanoid:GetState() == Enum.HumanoidStateType.Jumping then
+                humanoid:ChangeState(Enum.HumanoidStateType.Running)
+            end
+
             humanoid.MoveToFinished:Wait()
             moving = false
 
             if lookVector then
-                -- 🔹 Menghadap arah yang sama seperti VIP
                 myRootPart.CFrame = CFrame.new(targetPos, targetPos + lookVector)
             end
         end
 
-        -- 🔹 Putuskan koneksi lama
         if vars.BarrierConnection then
             pcall(function() vars.BarrierConnection:Disconnect() end)
             vars.BarrierConnection = nil
         end
 
-        -- 🔹 Heartbeat loop
         if RunService.Heartbeat then
             vars.BarrierConnection = RunService.Heartbeat:Connect(function()
                 if not vars.BarrierActive or not target.Character then return end
+
                 local targetHRP = target.Character:FindFirstChild("HumanoidRootPart")
                 if not targetHRP then return end
 
-                -- 🔹 Mapping bot (5 bot total)
                 local orderedBots = {
-                    "8802945328", -- Bot1 (paling kiri VIP)
-                    "8802939883", -- Bot2 (kiri tengah)
-                    "8802949363", -- Bot3 (kanan tengah)
-                    "8802998147", -- Bot4 (kanan luar)
-                    "8802991722", -- Bot5 (paling depan VIP)
+                    "8802945328",
+                    "8802939883",
+                    "8802949363",
+                    "8802998147",
+                    "8802991722",
                 }
 
                 local myUserId = tostring(player.UserId)
@@ -122,29 +117,31 @@ return {
                     end
                 end
 
-                -- 🔹 Konfigurasi jarak
                 local jarakSamping = tonumber(vars.SideSpacing) or 3
                 local jarakDepanBelakang = tonumber(vars.FrontBackSpacing) or 0
                 local jarakDepanVIP = tonumber(vars.FrontSpacing) or 4
 
-                -- 🔹 Offset posisi per bot (formasi setengah lingkaran)
                 local offsetMap = {
-                    [1] = Vector3.new(-2 * jarakSamping, 0, jarakDepanBelakang),  -- kiri luar
-                    [2] = Vector3.new(-jarakSamping, 0, jarakDepanBelakang),      -- kiri tengah
-                    [3] = Vector3.new(jarakSamping, 0, jarakDepanBelakang),       -- kanan tengah
-                    [4] = Vector3.new(2 * jarakSamping, 0, jarakDepanBelakang),   -- kanan luar
-                    [5] = Vector3.new(0, 0, -jarakDepanVIP),                      -- depan VIP
+                    [1] = Vector3.new(-2 * jarakSamping, 0, jarakDepanBelakang),
+                    [2] = Vector3.new(-jarakSamping, 0, jarakDepanBelakang),
+                    [3] = Vector3.new(jarakSamping, 0, jarakDepanBelakang),
+                    [4] = Vector3.new(2 * jarakSamping, 0, jarakDepanBelakang),
+                    [5] = Vector3.new(0, 0, -jarakDepanVIP),
                 }
 
                 local offset = offsetMap[index] or Vector3.zero
                 local cframe = targetHRP.CFrame
-                local targetPos = (cframe.Position
+                local targetPos = (
+                    cframe.Position
                     + cframe.RightVector * offset.X
                     + cframe.UpVector * offset.Y
-                    + cframe.LookVector * offset.Z)
+                    + cframe.LookVector * offset.Z
+                )
 
-                -- 🔹 Tetap menghadap sama seperti VIP
-                moveToPosition(targetPos, targetHRP.CFrame.LookVector)
+                local distance = (myRootPart.Position - targetPos).Magnitude
+                if distance > 2 then
+                    moveToPosition(targetPos, targetHRP.CFrame.LookVector)
+                end
             end)
         else
             warn("[Barrier] RunService.Heartbeat tidak tersedia!")
