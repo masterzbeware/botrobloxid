@@ -50,9 +50,9 @@ return {
         vars.SaluteConnection = task.spawn(function()
             -- Chat pertama: hormat ke target atau umum
             if targetPlayerName then
-                sendChat("Siap laksanakan, Komandan " .. targetPlayerName .. "!")
+                sendChat("Siap Hormat, Komandan " .. targetPlayerName .. "!")
             else
-                sendChat("Siap laksanakan, Komandan!")
+                sendChat("Siap Hormat, Komandan!")
             end
 
             -- Tunggu sebentar sebelum emote

@@ -9,6 +9,7 @@ return {
             return
         end
 
+        -- Toggle Barrier
         vars.BarrierActive = not vars.BarrierActive
         vars.RowActive = false
         vars.SquareActive = false
@@ -21,27 +22,8 @@ return {
         vars.ReportingActive = false
         vars.RoomVIPActive = false
 
-        local target = client
-        local args = {}
-        for word in msg:gmatch("%S+") do
-            table.insert(args, word)
-        end
-
-        if #args > 1 then
-            local searchName = table.concat(args, " ", 2)
-            for _, plr in ipairs(game.Players:GetPlayers()) do
-                if plr.DisplayName:lower():find(searchName:lower()) or plr.Name:lower():find(searchName:lower()) then
-                    target = plr
-                    break
-                end
-            end
-            if not target then
-                print("[BARRIER] Target tidak ditemukan. Menggunakan client sebagai target.")
-                target = client
-            end
-        end
-
-        vars.CurrentFormasiTarget = target
+        -- Target selalu client
+        vars.CurrentFormasiTarget = client
 
         if not vars.BarrierActive then
             print("[BARRIER] Dinonaktifkan")
@@ -52,7 +34,7 @@ return {
             return
         end
 
-        print("[BARRIER] Formasi Barrier diaktifkan. Target:", target.Name)
+        print("[BARRIER] Formasi Barrier diaktifkan. Target:", client.Name)
 
         local humanoid, myRootPart
         local function updateBotRefs()
@@ -88,6 +70,7 @@ return {
             end
         end
 
+        -- Hapus koneksi lama jika ada
         if vars.BarrierConnection then
             pcall(function() vars.BarrierConnection:Disconnect() end)
             vars.BarrierConnection = nil
@@ -95,9 +78,9 @@ return {
 
         if RunService.Heartbeat then
             vars.BarrierConnection = RunService.Heartbeat:Connect(function()
-                if not vars.BarrierActive or not target.Character then return end
+                if not vars.BarrierActive or not client.Character then return end
 
-                local targetHRP = target.Character:FindFirstChild("HumanoidRootPart")
+                local targetHRP = client.Character:FindFirstChild("HumanoidRootPart")
                 if not targetHRP then return end
 
                 local orderedBots = {

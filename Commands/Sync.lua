@@ -5,19 +5,23 @@ return {
         Vars.SyncActive = true
 
         local targetName = msg:match("^!sync%s+(.+)")
-        if not targetName then return end
+        local target = client -- default target = client
 
-        local found
-        for _, plr in ipairs(Vars.Players:GetPlayers()) do
-            if plr.DisplayName:lower() == targetName:lower() or plr.Name:lower() == targetName:lower() then
-                found = plr
-                break
+        if targetName then
+            local found
+            for _, plr in ipairs(Vars.Players:GetPlayers()) do
+                if plr.DisplayName:lower() == targetName:lower() or plr.Name:lower() == targetName:lower() then
+                    found = plr
+                    break
+                end
             end
-        end
 
-        if not found then
-            warn("Target tidak ditemukan:", targetName)
-            return
+            if not found then
+                warn("Target tidak ditemukan:", targetName)
+                return
+            end
+
+            target = found
         end
 
         -- hentikan sync lama
@@ -33,9 +37,9 @@ return {
             :WaitForChild("commandHandler")
 
         Vars.SyncConnection = task.spawn(function()
-            while Vars.SyncActive and found and found.Parent do
+            while Vars.SyncActive and target and target.Parent do
                 local success, err = pcall(function()
-                    commandHandler:InvokeServer("sync", found.UserId)
+                    commandHandler:InvokeServer("sync", target.UserId)
                 end)
 
                 if not success then
@@ -43,7 +47,7 @@ return {
                 end
 
                 -- gunakan interval lebih aman (1 detik) biar tidak spam
-                task.wait(1)
+                task.wait(1.5)
             end
         end)
     end
