@@ -1,5 +1,6 @@
 -- JoinServer.lua
--- Command: !joinserver → Bot teleport ke server pemain yang sama
+-- Command: !joinserver <displayname/username>
+-- Bot akan teleport ke server yang sama dengan pemain target
 
 return {
   Execute = function(msg, client)
@@ -14,18 +15,30 @@ return {
           return
       end
 
-      -- Hanya tangani !joinserver
-      if msg:lower() ~= "!joinserver" then return end
+      -- Parsing command: !joinserver <name>
+      local targetName = msg:match("^!joinserver%s+(.+)")
+      if not targetName then
+          warn("[JoinServer] Harap masukkan displayname atau username target.")
+          return
+      end
 
-      -- Pastikan client valid
-      if not client or not client.Character then
-          warn("[JoinServer] Client/pemain tidak ditemukan!")
+      -- Cari pemain berdasarkan DisplayName atau Name
+      local targetPlayer
+      for _, plr in ipairs(Players:GetPlayers()) do
+          if plr.DisplayName:lower() == targetName:lower() or plr.Name:lower() == targetName:lower() then
+              targetPlayer = plr
+              break
+          end
+      end
+
+      if not targetPlayer then
+          warn("[JoinServer] Pemain '"..targetName.."' tidak ditemukan di server ini.")
           return
       end
 
       -- Cek apakah sudah di server yang sama
-      if game.JobId == client.JobId then
-          print("[JoinServer] Sudah berada di server yang sama dengan pemain.")
+      if game.JobId == targetPlayer.JobId then
+          print("[JoinServer] Sudah berada di server yang sama dengan "..targetPlayer.Name)
           return
       end
 
@@ -46,10 +59,10 @@ return {
           return
       end
 
-      -- Cari server yang sama dengan client
+      -- Cari server yang sama dengan targetPlayer
       local targetJobId
       for _, s in ipairs(response.data) do
-          if s.id == client.JobId then
+          if s.id == targetPlayer.JobId then
               targetJobId = s.id
               break
           end
@@ -61,7 +74,7 @@ return {
       end
 
       -- Teleport bot ke server pemain
-      print("[JoinServer] Teleportasi ke server pemain...")
+      print("[JoinServer] Teleportasi ke server "..targetPlayer.Name.." ...")
       TeleportService:TeleportToPlaceInstance(placeId, targetJobId, player)
   end
 }

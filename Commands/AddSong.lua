@@ -22,28 +22,28 @@ return {
       local botName = orderedBots[myUserId]
       if not botName then return end
 
-      -- Daftar lagu: {ID, Nama}
+      -- Daftar lagu: {ID, Judul tanpa emoji}
       local songsList = {
-          {112560602503664, "DJ RAUL - Trumpets Indo❤️🤍"},
-          {89769266566391, "DJ RAUL - American Dream❤️🤍"},
-          {137091068460714, "DJ RAUL - An Angel's lv Breakbeat❤️🤍"},
-          {132204088943259, "DJ RAUL - Brondong Tua❤️🤍"},
-          {115721431142872, "DJ RAUL - Barudak Phonk x Hislerim❤️🤍"},
-          {72843718540231, "DJ Raul - Disini Ku Menunggu❤️🤍"},
-          {97215362773831, "DJ RAUL - Danza Kuduro Indo❤️🤍"},
-          {110528276472565, "DJ RAUL - DJ BreakBeat`1❤️🤍"},
-          {127501544144452, "DJ RAUL - Drop Enakeun vol 1❤️🤍"},
-          {76598718306969, "DJ RAUL - Gateng Gateng Swag❤️🤍"},
-          {116233228464487, "DJ RAUL - Drop Enakeun vol 2❤️🤍"},
-          {139911880542681, "DJ RAUL - Gala Gala Cocok Buat Di Mobil❤️🤍"},
-          {100095371428503, "DJ RAUL - Mengkane Full Bass Terbaru❤️🤍"},
-          {87169339469707, "DJ RAUL - Mengkane Terbaru Yan❤️🤍"},
-          {108157298681685, "DJ RAUL - Su Jauh Sa Tanam Tapi❤️🤍"},
-          {118542510245362, "DJ RAUL - Timur Ke Barat Selatan Ke Utara❤️🤍"},
-          {129315246645478, "DJ RAUL - Goyang Goyang❤️🤍"},
-          {86754477838853, "DJ RAUL - Rules BreakBeat x Where Hve You Been❤️🤍"},
-          {133979918440315, "DJ RAUL - Jedag Jedug Viral❤️🤍"},
-          {114548763254115, "DJ RAUL - Trumpet Vacation Old Remix Mengkane❤️🤍"},
+          {112560602503664, "DJ RAUL - Trumpets Indo"},
+          {89769266566391, "DJ RAUL - American Dream"},
+          {137091068460714, "DJ RAUL - An Angel's lv Breakbeat"},
+          {132204088943259, "DJ RAUL - Brondong Tua"},
+          {115721431142872, "DJ RAUL - Barudak Phonk x Hislerim"},
+          {72843718540231, "DJ Raul - Disini Ku Menunggu"},
+          {97215362773831, "DJ RAUL - Danza Kuduro Indo"},
+          {110528276472565, "DJ RAUL - DJ BreakBeat`1"},
+          {127501544144452, "DJ RAUL - Drop Enakeun vol 1"},
+          {76598718306969, "DJ RAUL - Gateng Gateng Swag"},
+          {116233228464487, "DJ RAUL - Drop Enakeun vol 2"},
+          {139911880542681, "DJ RAUL - Gala Gala Cocok Buat Di Mobil"},
+          {100095371428503, "DJ RAUL - Mengkane Full Bass Terbaru"},
+          {87169339469707, "DJ RAUL - Mengkane Terbaru Yan"},
+          {108157298681685, "DJ RAUL - Su Jauh Sa Tanam Tapi"},
+          {118542510245362, "DJ RAUL - Timur Ke Barat Selatan Ke Utara"},
+          {129315246645478, "DJ RAUL - Goyang Goyang"},
+          {86754477838853, "DJ RAUL - Rules BreakBeat x Where Hve You Been"},
+          {133979918440315, "DJ RAUL - Jedag Jedug Viral"},
+          {114548763254115, "DJ RAUL - Trumpet Vacation Old Remix Mengkane"},
       }
 
       -- Parsing command: !addsongX Y
@@ -76,9 +76,7 @@ return {
           -- Kirim pesan chat simple
           local channel = TextChatService.TextChannels and TextChatService.TextChannels:FindFirstChild("RBXGeneral")
           if channel then
-              channel:SendAsync(string.format("✅ Lagu ke-%d ditambahkan!", songIndex))
-              -- Atau pakai judul lagu:
-              -- channel:SendAsync(string.format("✅ %s ditambahkan!", name))
+              channel:SendAsync(string.format("Lagu %s telah ditambahkan", name))
           end
       end)
 
