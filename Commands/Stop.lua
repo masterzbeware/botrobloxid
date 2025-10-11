@@ -1,5 +1,6 @@
 -- Stop.lua
 -- Command !stop: Menghentikan semua aksi bot, termasuk Barrier, Wedge, Square, Box, FrontCover, dsb.
+-- Sekarang juga menghentikan loop dari Text.lua
 
 return {
     Execute = function(msg, client)
@@ -19,8 +20,14 @@ return {
         vars.ReportingActive = false
         vars.RoomVIPActive = false
         vars.BoxActive = false
-        vars.FrontCoverActive = false -- 🔸 Tambahan: Matikan FrontCover
+        vars.FrontCoverActive = false
         vars.CurrentFormasiTarget = nil
+
+        -- 🔹 Hentikan loop dari Text.lua
+        if vars.TextLoopActive then
+            vars.TextLoopActive = false
+            print("[Stop] Loop text dari Text.lua berhasil dihentikan.")
+        end
 
         -- 🔹 Fungsi bantu untuk memutus koneksi aman
         local function safeDisconnect(connName)
@@ -44,8 +51,8 @@ return {
             "SquareConnection",
             "WedgeConnection",
             "BarrierConnection",
-            "BoxConnection",         -- 🔸 Tambahan: hentikan koneksi Box
-            "FrontCoverConnection",  -- 🔸 Tambahan: hentikan koneksi FrontCover
+            "BoxConnection",
+            "FrontCoverConnection",
             "PushupConnection",
             "SyncConnection",
             "CircleMoveConnection",
