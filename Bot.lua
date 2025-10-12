@@ -40,7 +40,7 @@ _G.BotVars = {
     RowSpacing = 3,
     SideSpacing = 5,
 
-    ActiveClient = "FiestaGuardVip",
+    ActiveClient = "GuardFiesta",
 }
 
 -- Identity Detection
