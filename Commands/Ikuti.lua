@@ -16,11 +16,24 @@ return {
             return
         end
 
-        -- 🔹 Aktifkan mode Ikuti
-        vars.FollowAllowed = true
+        -- 🔹 Nonaktifkan formasi lain agar tidak bentrok
+        vars.BarrierActive = false
+        if vars.BarrierConnection then
+            pcall(function() vars.BarrierConnection:Disconnect() end)
+            vars.BarrierConnection = nil
+        end
+
         vars.ShieldActive = false
         vars.RowActive = false
         vars.FrontlineActive = false
+        vars.CircleMoveActive = false
+        vars.PushupActive = false
+        vars.SyncActive = false
+        vars.ReportingActive = false
+        vars.RoomVIPActive = false
+
+        -- 🔹 Aktifkan mode Ikuti
+        vars.FollowAllowed = true
 
         -- 🔹 Tentukan target
         local target = client
@@ -127,8 +140,8 @@ return {
                     "8802945328", -- Bot1
                     "8802949363", -- Bot2
                     "8802939883", -- Bot3
-                    "8802998147", -- Bot4 ✅ Tambahan
-                    "8802991722", -- Bot5 ✅ Tambahan
+                    "8802998147", -- Bot4
+                    "8802991722", -- Bot5
                 }
 
                 local myUserId = tostring(player.UserId)

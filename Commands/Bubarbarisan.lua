@@ -19,7 +19,7 @@ return {
                 task.wait(1) -- jeda kecil agar tidak tabrakan
 
                 -- 2️⃣ Kirim /e wave
-                channel:SendAsync("/e wave")
+                channel:SendAsync("/e salute")
             end)
         else
             warn("Channel RBXGeneral tidak ditemukan!")

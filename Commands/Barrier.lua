@@ -9,8 +9,13 @@ return {
             return
         end
 
-        -- Toggle Barrier
-        vars.BarrierActive = not vars.BarrierActive
+        -- 🔹 Nonaktifkan formasi lain agar tidak bentrok
+        vars.FollowAllowed = false
+        if vars.FollowConnection then
+            pcall(function() vars.FollowConnection:Disconnect() end)
+            vars.FollowConnection = nil
+        end
+
         vars.RowActive = false
         vars.SquareActive = false
         vars.WedgeActive = false
@@ -22,7 +27,8 @@ return {
         vars.ReportingActive = false
         vars.RoomVIPActive = false
 
-        -- Target selalu client
+        -- 🔹 Toggle Barrier
+        vars.BarrierActive = not vars.BarrierActive
         vars.CurrentFormasiTarget = client
 
         if not vars.BarrierActive then
@@ -36,6 +42,7 @@ return {
 
         print("[BARRIER] Formasi Barrier diaktifkan. Target:", client.Name)
 
+        -- 🔹 Referensi karakter
         local humanoid, myRootPart
         local function updateBotRefs()
             local character = player.Character or player.CharacterAdded:Wait()
@@ -70,12 +77,13 @@ return {
             end
         end
 
-        -- Hapus koneksi lama jika ada
+        -- 🔹 Hapus koneksi lama jika ada
         if vars.BarrierConnection then
             pcall(function() vars.BarrierConnection:Disconnect() end)
             vars.BarrierConnection = nil
         end
 
+        -- 🔹 Heartbeat loop
         if RunService.Heartbeat then
             vars.BarrierConnection = RunService.Heartbeat:Connect(function()
                 if not vars.BarrierActive or not client.Character then return end
@@ -83,6 +91,7 @@ return {
                 local targetHRP = client.Character:FindFirstChild("HumanoidRootPart")
                 if not targetHRP then return end
 
+                -- 🔹 Urutan bot
                 local orderedBots = {
                     "8802945328",
                     "8802939883",
@@ -100,6 +109,7 @@ return {
                     end
                 end
 
+                -- 🔹 Jarak dan posisi offset
                 local jarakSamping = tonumber(vars.SideSpacing) or 3
                 local jarakDepanBelakang = tonumber(vars.FrontBackSpacing) or 0
                 local jarakDepanVIP = tonumber(vars.FrontSpacing) or 4
