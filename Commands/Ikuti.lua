@@ -1,9 +1,8 @@
 -- Ikuti.lua
 -- Command !ikuti:
 --   Bot mengikuti pemain VIP secara rapi berbaris ke belakang
---   Kompatibel dengan Barrier.lua dan formasi lain
---   Bisa menarget pemain tertentu dengan !ikuti {displayname/username}
---   Jika tidak ada argumen, default ke client
+--   Bisa menarget pemain tertentu dengan !ikuti {displayname/username/UserId}
+--   Jika tidak ada argumen, default ke client (_G.BotVars.ClientRef)
 
 return {
     Execute = function(msg, client)
@@ -36,7 +35,7 @@ return {
         vars.FollowAllowed = true
 
         -- 🔹 Tentukan target
-        local target = client
+        local target = client or vars.ClientRef
         local args = {}
 
         for word in msg:gmatch("%S+") do
@@ -44,18 +43,24 @@ return {
         end
 
         if #args > 1 then
-            local searchName = table.concat(args, " ", 2)
-            for _, plr in ipairs(game.Players:GetPlayers()) do
-                if plr.DisplayName:lower():find(searchName:lower())
-                    or plr.Name:lower():find(searchName:lower()) then
-                    target = plr
-                    break
+            local searchNameOrId = table.concat(args, " ", 2)
+            local id = tonumber(searchNameOrId)
+            if id then
+                local plr = game.Players:GetPlayerByUserId(id)
+                if plr then target = plr end
+            else
+                for _, plr in ipairs(game.Players:GetPlayers()) do
+                    if plr.Name:lower():find(searchNameOrId:lower())
+                    or plr.DisplayName:lower():find(searchNameOrId:lower()) then
+                        target = plr
+                        break
+                    end
                 end
             end
 
             if not target then
-                print("[IKUTI] Target tidak ditemukan. Mengikuti client sebagai target.")
-                target = client
+                print("[Ikuti] Target tidak ditemukan. Mengikuti client default.")
+                target = vars.ClientRef
             end
         end
 
@@ -122,18 +127,12 @@ return {
         -- 🔹 Heartbeat loop untuk mengikuti VIP
         if RunService.Heartbeat then
             vars.FollowConnection = RunService.Heartbeat:Connect(function()
-                -- ⚠️ Abaikan bot yang sedang absen
-                vars.AbsenActive = vars.AbsenActive or {}
-                local myId = tostring(player.UserId)
-                if vars.AbsenActive[myId] then return end
-
-                if not vars.FollowAllowed or not target.Character then return end
-
+                if not vars.FollowAllowed or not target or not target.Character then return end
                 local targetHRP = target.Character:FindFirstChild("HumanoidRootPart")
                 if not targetHRP then return end
 
-                local jarakIkut = tonumber(vars.JarakIkut) or 3   -- jarak minimum belakang VIP
-                local followSpacing = tonumber(vars.FollowSpacing) or 3 -- jarak antar bot
+                local jarakIkut = tonumber(vars.JarakIkut) or 3
+                local followSpacing = tonumber(vars.FollowSpacing) or 3
 
                 -- 🔹 Urutan bot agar rapi
                 local orderedBots = {

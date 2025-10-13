@@ -1,9 +1,7 @@
--- Bot.lua (Fixed Version with Username + UserId UI)
+-- Bot.lua (Fixed Version tanpa Moderator & GameCommands)
 -- MasterZ Beware Bot System (Dispatcher Only)
 
 local repoBase       = "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Commands/"
-local gamesRepo      = "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Games/"
-local moderatorRepo  = "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Moderator/"
 local obsidianRepo   = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
 
 -- Load Obsidian Library
@@ -13,7 +11,7 @@ local Options = Library.Options
 -- UI Window
 local Window = Library:CreateWindow({
     Title = "Made by MasterZ",
-    Footer = "v2.0.2",
+    Footer = "v2.0.4",
     Icon = 0,
     NotifySide = "Right",
     ShowCustomCursor = true,
@@ -33,7 +31,6 @@ _G.BotVars = {
     LocalPlayer = game:GetService("Players").LocalPlayer,
 
     ToggleAktif = false,
-    ToggleGames = false,
 
     JarakIkut = 3,
     FollowSpacing = 3,
@@ -42,8 +39,8 @@ _G.BotVars = {
     RowSpacing = 3,
     SideSpacing = 5,
 
-    ActiveClient = "Rgoblog1", -- DisplayName / username
-    ActiveClientId = 8890453275,  -- UserId client
+    ActiveClient = "guardfiesta", -- DisplayName / username
+    ActiveClientId = 8802945328,  -- UserId client
     ClientRef = nil,
 }
 
@@ -58,8 +55,8 @@ local botMapping = {
 _G.BotVars.BotIdentity = botMapping[tostring(_G.BotVars.LocalPlayer.UserId)] or "Unknown Bot"
 debugPrint("Detected identity: " .. _G.BotVars.BotIdentity)
 
--- Load Commands
-local VIPCommands, GameCommands = {}, {}
+-- Load VIP Commands
+local VIPCommands = {}
 local commandFiles = {
     "Ikuti.lua","Stop.lua","RoomVIP.lua","Shield.lua","Row.lua","Sync.lua",
     "Pushup.lua","Frontline.lua","AmbilAlih.lua","Reset.lua","Salute.lua",
@@ -67,8 +64,6 @@ local commandFiles = {
     "ModeBuaya.lua","Square.lua","Wedge.lua","Barrier.lua","Say.lua","Box.lua",
     "FrontCover.lua","Text.lua","AddSong.lua","Vote.lua","Color.lua"
 }
-local gameFiles = {"Rockpaper.lua","Coinflip.lua","Slot.lua"}
-local moderatorFiles = {"Client.lua","Remove.lua"}
 
 local function loadScripts(files, repo, targetTable)
     for _, fileName in ipairs(files) do
@@ -89,16 +84,12 @@ local function loadScripts(files, repo, targetTable)
 end
 
 loadScripts(commandFiles, repoBase, VIPCommands)
-loadScripts(gameFiles, gamesRepo, GameCommands)
-loadScripts(moderatorFiles, moderatorRepo, VIPCommands)
-
--- Save commands for Client.lua
 _G.BotVars.CommandFiles = VIPCommands
 
 -- Handle Commands
-local function handleCommand(msg, sender, cmdTable)
+local function handleCommand(msg, sender)
     msg = msg:lower()
-    for name, cmd in pairs(cmdTable) do
+    for name, cmd in pairs(VIPCommands) do
         if msg:match("^!" .. name) and cmd.Execute then
             debugPrint("Executing command: " .. name .. " by " .. sender.Name)
             cmd.Execute(msg, sender)
@@ -120,20 +111,14 @@ local function setupClient(player)
                     local senderUserId = message.TextSource and message.TextSource.UserId
                     local sender = senderUserId and _G.BotVars.Players:GetPlayerByUserId(senderUserId)
                     if sender and sender == _G.BotVars.ClientRef then
-                        handleCommand(message.Text, sender, VIPCommands)
-                        if _G.BotVars.ToggleGames then
-                            handleCommand(message.Text, sender, GameCommands)
-                        end
+                        handleCommand(message.Text, sender)
                     end
                 end
             end
         else
             -- Fallback: Player.Chatted
             player.Chatted:Connect(function(msg)
-                handleCommand(msg, player, VIPCommands)
-                if _G.BotVars.ToggleGames then
-                    handleCommand(msg, player, GameCommands)
-                end
+                handleCommand(msg, player)
             end)
         end
     end
@@ -165,13 +150,12 @@ GroupBox1:AddInput("ActiveClientName", {
         _G.BotVars.ActiveClient = Value
         debugPrint("ActiveClient name updated: "..tostring(Value))
 
-        -- Optional: update UserId otomatis jika player online
         local plr = _G.BotVars.Players:FindFirstChild(Value)
         if plr then
             _G.BotVars.ActiveClientId = plr.UserId
             Options.ActiveClientId:SetValue(tostring(plr.UserId))
             debugPrint("ActiveClientId auto updated: "..plr.UserId)
-            setupClient(plr) -- re-setup listener
+            setupClient(plr)
         end
     end
 })
@@ -186,7 +170,6 @@ GroupBox1:AddInput("ActiveClientId", {
         if id then
             _G.BotVars.ActiveClientId = id
             debugPrint("ActiveClientId updated manually: "..id)
-            -- Re-setup listener jika player sudah online
             local plr = nil
             for _, p in ipairs(_G.BotVars.Players:GetPlayers()) do
                 if p.UserId == id then
@@ -210,12 +193,6 @@ GroupBox1:AddToggle("AktifkanBot", {
     Callback=function(Value) _G.BotVars.ToggleAktif=Value end
 })
 
-GroupBox1:AddToggle("AktifkanGames", {
-    Text="Enable Game Commands",
-    Default=false,
-    Callback=function(Value) _G.BotVars.ToggleGames=Value end
-})
-
 -- Spacing / Distance Inputs
 GroupBox1:AddInput("JarakIkutInput", { Default=tostring(_G.BotVars.JarakIkut), Text="Follow Distance (VIP)", Callback=function(Value) _G.BotVars.JarakIkut=tonumber(Value) end })
 GroupBox1:AddInput("FollowSpacingInput", { Default=tostring(_G.BotVars.FollowSpacing), Text="Follow Spacing (Antar Bot)", Callback=function(Value) _G.BotVars.FollowSpacing=tonumber(Value) end })
@@ -224,4 +201,4 @@ GroupBox1:AddInput("ShieldSpacingInput", { Default=tostring(_G.BotVars.ShieldSpa
 GroupBox1:AddInput("RowSpacingInput", { Default=tostring(_G.BotVars.RowSpacing), Text="Row Spacing (Baris)", Callback=function(Value) _G.BotVars.RowSpacing=tonumber(Value) end })
 GroupBox1:AddInput("SideSpacingInput", { Default=tostring(_G.BotVars.SideSpacing), Text="Side Spacing (Kiri-Kanan)", Callback=function(Value) _G.BotVars.SideSpacing=tonumber(Value) end })
 
-debugPrint("Bot.lua finished loading (Fixed Version with Username + UserId)")
+debugPrint("Bot.lua finished loading (Fixed Version tanpa Moderator & GameCommands)")
