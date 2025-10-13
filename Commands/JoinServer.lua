@@ -1,4 +1,4 @@
--- JoinServer.lua (Auto-detect & fix for Roblox environments)
+-- JoinServer.lua
 -- Command: !joinserver <displayname/username>
 -- Bot akan mencari server tempat pemain target berada dan teleport ke sana.
 
@@ -6,9 +6,10 @@ return {
     Execute = function(msg, client)
         local TeleportService = game:GetService("TeleportService")
         local Players = game:GetService("Players")
+        local HttpService = game:GetService("HttpService")
+
         local vars = _G.BotVars or {}
         local player = vars.LocalPlayer
-
         if not player then
             warn("[JoinServer] LocalPlayer tidak ditemukan!")
             return
@@ -22,64 +23,84 @@ return {
 
         print("[JoinServer] Mencari pemain '" .. targetName .. "' ...")
 
-        -- Coba cari di server saat ini
+        -- Cari di server saat ini dulu
         for _, plr in ipairs(Players:GetPlayers()) do
             if plr.Name:lower() == targetName:lower() or plr.DisplayName:lower() == targetName:lower() then
                 if game.JobId == plr.JobId then
                     print("[JoinServer] Sudah di server yang sama dengan " .. plr.Name)
                     return
                 else
-                    print("[JoinServer] Target ditemukan di server berbeda, teleport...")
+                    print("[JoinServer] Target ditemukan di server berbeda. Teleporting...")
                     TeleportService:TeleportToPlaceInstance(game.PlaceId, plr.JobId, player)
                     return
                 end
             end
         end
 
-        -- Jika target tidak ditemukan di server ini, kita cari di daftar server publik Roblox
-        local function makeRequest(url)
-            local requestFunc = syn and syn.request or http_request or request
-            if requestFunc then
-                return requestFunc({
-                    Url = url,
-                    Method = "GET"
-                })
+        -- Fungsi request universal (termasuk Delta)
+        local function universalRequest(url)
+            local req = nil
+
+            if typeof(request) == "function" then
+                req = request -- ✅ Delta mendukung fungsi 'request'
+            elseif syn and syn.request then
+                req = syn.request
+            elseif http_request then
+                req = http_request
+            elseif fluxus and fluxus.request then
+                req = fluxus.request
+            end
+
+            if req then
+                local success, response = pcall(function()
+                    return req({
+                        Url = url,
+                        Method = "GET"
+                    })
+                end)
+                if success and response and response.Body then
+                    return response.Body
+                end
+            end
+
+            -- Fallback (tidak direkomendasikan untuk Delta)
+            local success, body = pcall(function()
+                return HttpService:GetAsync(url)
+            end)
+            if success then
+                return body
             else
-                local HttpService = game:GetService("HttpService")
-                return { Body = HttpService:GetAsync(url) }
+                warn("[JoinServer] Request gagal: " .. tostring(body))
+                return nil
             end
         end
 
-        local placeId = game.PlaceId
-        local url = "https://games.roblox.com/v1/games/"..placeId.."/servers/Public?sortOrder=Asc&limit=100"
-        local response
+        -- Ambil daftar server publik Roblox
+        local url = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
+        local rawData = universalRequest(url)
 
-        local success, err = pcall(function()
-            response = makeRequest(url)
+        if not rawData then
+            warn("[JoinServer] Tidak bisa mengambil daftar server publik.")
+            return
+        end
+
+        local success, data = pcall(function()
+            return HttpService:JSONDecode(rawData)
         end)
-
-        if not success or not response or not response.Body then
-            warn("[JoinServer] Gagal mengambil daftar server Roblox: " .. tostring(err))
+        if not success or not data or not data.data then
+            warn("[JoinServer] Gagal decode response.")
             return
         end
 
-        local HttpService = game:GetService("HttpService")
-        local data = HttpService:JSONDecode(response.Body)
-
-        if not data or not data.data then
-            warn("[JoinServer] Response server kosong.")
-            return
-        end
-
-        -- Cari server yang berisi nama target
-        local targetJobId
+        -- Cari server yang mengandung player target
+        local targetJobId = nil
         for _, server in ipairs(data.data) do
             if server.playing > 0 and server.playerIds then
                 for _, id in ipairs(server.playerIds) do
-                    local success2, username = pcall(function()
+                    local ok, name = pcall(function()
                         return Players:GetNameFromUserIdAsync(id)
                     end)
-                    if success2 and username and username:lower() == targetName:lower() then
+                    if ok and name:lower() == targetName:lower() then
                         targetJobId = server.id
                         break
                     end
@@ -93,12 +114,7 @@ return {
             return
         end
 
-        print("[JoinServer] Server ditemukan! Teleporting ke JobId: " .. targetJobId)
-        local ok, err2 = pcall(function()
-            TeleportService:TeleportToPlaceInstance(placeId, targetJobId, player)
-        end)
-        if not ok then
-            warn("[JoinServer] Gagal teleport: " .. tostring(err2))
-        end
+        print("[JoinServer] Server ditemukan! Teleporting ke JobId:", targetJobId)
+        TeleportService:TeleportToPlaceInstance(game.PlaceId, targetJobId, player)
     end
 }
