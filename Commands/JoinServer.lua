@@ -1,80 +1,68 @@
--- JoinServer.lua
+-- JoinServer.lua (Fixed)
 -- Command: !joinserver <displayname/username>
 -- Bot akan teleport ke server yang sama dengan pemain target
 
 return {
-  Execute = function(msg, client)
-      local Players = game:GetService("Players")
-      local TeleportService = game:GetService("TeleportService")
-      local HttpService = game:GetService("HttpService")
+    Execute = function(msg, client)
+        local TeleportService = game:GetService("TeleportService")
+        local Players = game:GetService("Players")
+        local vars = _G.BotVars or {}
+        local player = vars.LocalPlayer
 
-      local vars = _G.BotVars or {}
-      local player = vars.LocalPlayer
-      if not player then
-          warn("[JoinServer] LocalPlayer tidak ditemukan!")
-          return
-      end
+        if not player then
+            warn("[JoinServer] LocalPlayer tidak ditemukan!")
+            return
+        end
 
-      -- Parsing command: !joinserver <name>
-      local targetName = msg:match("^!joinserver%s+(.+)")
-      if not targetName then
-          warn("[JoinServer] Harap masukkan displayname atau username target.")
-          return
-      end
+        -- Ambil nama target dari command
+        local targetName = msg:match("^!joinserver%s+(.+)")
+        if not targetName then
+            warn("[JoinServer] Format salah. Gunakan: !joinserver <nama>")
+            return
+        end
 
-      -- Cari pemain berdasarkan DisplayName atau Name
-      local targetPlayer
-      for _, plr in ipairs(Players:GetPlayers()) do
-          if plr.DisplayName:lower() == targetName:lower() or plr.Name:lower() == targetName:lower() then
-              targetPlayer = plr
-              break
-          end
-      end
+        print("[JoinServer] Mencoba teleport ke server target: " .. targetName)
 
-      if not targetPlayer then
-          warn("[JoinServer] Pemain '"..targetName.."' tidak ditemukan di server ini.")
-          return
-      end
+        -- Cek apakah target adalah client (VIP) yang sudah ada di daftar bot
+        local targetPlayer
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p.Name:lower() == targetName:lower() or p.DisplayName:lower() == targetName:lower() then
+                targetPlayer = p
+                break
+            end
+        end
 
-      -- Cek apakah sudah di server yang sama
-      if game.JobId == targetPlayer.JobId then
-          print("[JoinServer] Sudah berada di server yang sama dengan "..targetPlayer.Name)
-          return
-      end
+        -- Jika target tidak ditemukan di server saat ini
+        if not targetPlayer then
+            -- Gunakan Global Table jika tersedia (bot mapping antar server)
+            local knownJobIds = vars.KnownJobIds or {}
+            local knownPlaceId = vars.KnownPlaceId or game.PlaceId
+            local targetJobId = knownJobIds[targetName:lower()]
 
-      -- Ambil PlaceId
-      local placeId = game.PlaceId
+            if targetJobId then
+                print("[JoinServer] Ditemukan JobId target di cache: " .. targetJobId)
+                TeleportService:TeleportToPlaceInstance(knownPlaceId, targetJobId, player)
+                return
+            else
+                warn("[JoinServer] Tidak dapat menemukan pemain atau JobId target.")
+                return
+            end
+        end
 
-      -- Ambil daftar server publik
-      local success, response = pcall(function()
-          return HttpService:JSONDecode(
-              HttpService:GetAsync(
-                  "https://games.roblox.com/v1/games/"..placeId.."/servers/Public?sortOrder=Asc&limit=100"
-              )
-          )
-      end)
+        -- Jika target ada di server yang sama
+        if game.JobId == targetPlayer.JobId then
+            print("[JoinServer] Sudah berada di server yang sama dengan " .. targetPlayer.Name)
+            return
+        end
 
-      if not success or not response or not response.data then
-          warn("[JoinServer] Gagal mendapatkan daftar server.")
-          return
-      end
+        -- Teleport langsung ke server target
+        print("[JoinServer] Teleport ke server target " .. targetPlayer.Name .. " ...")
+        local success, err = pcall(function()
+            TeleportService:TeleportToPlaceInstance(game.PlaceId, targetPlayer.JobId, player)
+        end)
 
-      -- Cari server yang sama dengan targetPlayer
-      local targetJobId
-      for _, s in ipairs(response.data) do
-          if s.id == targetPlayer.JobId then
-              targetJobId = s.id
-              break
-          end
-      end
-
-      if not targetJobId then
-          warn("[JoinServer] Server pemain tidak ditemukan.")
-          return
-      end
-
-      -- Teleport bot ke server pemain
-      print("[JoinServer] Teleportasi ke server "..targetPlayer.Name.." ...")
-      TeleportService:TeleportToPlaceInstance(placeId, targetJobId, player)
-  end
+        if not success then
+            warn("[JoinServer] Gagal teleport: " .. tostring(err))
+        end
+    end
 }
