@@ -42,8 +42,8 @@ _G.BotVars = {
     RowSpacing = 3,
     SideSpacing = 5,
 
-    ActiveClient = "guardfiesta", -- DisplayName / username
-    ActiveClientId = 8802945328,  -- UserId client
+    ActiveClient = "Rgoblog1", -- DisplayName / username
+    ActiveClientId = 8890453275,  -- UserId client
     ClientRef = nil,
 }
 
