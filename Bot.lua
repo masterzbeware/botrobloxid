@@ -176,8 +176,21 @@ _G.BotVars.Players.PlayerAdded:Connect(setupClient)
 -- UI Setup
 local GroupBox1 = Tabs.Main:AddLeftGroupbox("Bot Options")
 
+-- Bot Identity Display
 GroupBox1:AddInput("BotIdentity", { Default=_G.BotVars.BotIdentity, Text="Bot Identity", Placeholder="Auto-detected bot info" })
 
+-- Active Client Manual Input
+GroupBox1:AddInput("ActiveClientInput", {
+    Default = _G.BotVars.ActiveClient,
+    Text = "Active Client (Manual)",
+    Placeholder = "Masukkan username client",
+    Callback = function(Value)
+        _G.BotVars.ActiveClient = Value
+        debugPrint("ActiveClient updated to: " .. tostring(Value))
+    end
+})
+
+-- Toggles
 GroupBox1:AddToggle("AktifkanBot", {
     Text="Enable Bot System (VIP only)",
     Default=false,
@@ -190,6 +203,7 @@ GroupBox1:AddToggle("AktifkanGames", {
     Callback=function(Value) _G.BotVars.ToggleGames=Value end
 })
 
+-- Spacing / Distance Inputs
 GroupBox1:AddInput("JarakIkutInput", { Default=tostring(_G.BotVars.JarakIkut), Text="Follow Distance (VIP)", Callback=function(Value) _G.BotVars.JarakIkut=tonumber(Value) end })
 GroupBox1:AddInput("FollowSpacingInput", { Default=tostring(_G.BotVars.FollowSpacing), Text="Follow Spacing (Antar Bot)", Callback=function(Value) _G.BotVars.FollowSpacing=tonumber(Value) end })
 GroupBox1:AddInput("ShieldDistanceInput", { Default=tostring(_G.BotVars.ShieldDistance), Text="Shield Distance (VIP)", Callback=function(Value) _G.BotVars.ShieldDistance=tonumber(Value) end })
