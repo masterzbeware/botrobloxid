@@ -1,6 +1,7 @@
 -- Wedge.lua
--- Command !wedge: Bot membentuk formasi segitiga (Wedge) di belakang target atau client jika tidak ada target
+-- Command !wedge: Bot membentuk formasi segitiga (Wedge) di belakang target atau client default
 -- Sekarang mendukung 5 bot (Bot5 = posisi tengah belakang)
+-- Bisa target pemain dengan DisplayName, Username, atau UserId
 
 return {
     Execute = function(msg, client)
@@ -13,8 +14,10 @@ return {
             return
         end
 
-        -- 🔹 Nonaktifkan mode lain
+        -- 🔹 Toggle Wedge
         vars.WedgeActive = not vars.WedgeActive
+
+        -- 🔹 Nonaktifkan mode lain agar tidak bentrok
         vars.FollowAllowed = false
         vars.RowActive = false
         vars.SquareActive = false
@@ -27,26 +30,29 @@ return {
         vars.RoomVIPActive = false
 
         -- 🔹 Tentukan target
-        local target
+        local target = client or vars.ClientRef
         local args = {}
-        for word in msg:gmatch("%S+") do
-            table.insert(args, word)
-        end
+        for word in msg:gmatch("%S+") do table.insert(args, word) end
 
         if #args > 1 then
-            local searchName = table.concat(args, " ", 2)
-            for _, plr in ipairs(game.Players:GetPlayers()) do
-                if plr.DisplayName:lower():find(searchName:lower()) or plr.Name:lower():find(searchName:lower()) then
-                    target = plr
-                    break
+            local searchNameOrId = table.concat(args, " ", 2)
+            local id = tonumber(searchNameOrId)
+            if id then
+                local plr = game.Players:GetPlayerByUserId(id)
+                if plr then target = plr end
+            else
+                for _, plr in ipairs(game.Players:GetPlayers()) do
+                    if plr.Name:lower():find(searchNameOrId:lower())
+                    or plr.DisplayName:lower():find(searchNameOrId:lower()) then
+                        target = plr
+                        break
+                    end
                 end
             end
             if not target then
-                print("[WEDGE] Target tidak ditemukan. Menggunakan client sebagai target.")
-                target = client
+                print("[WEDGE] Target tidak ditemukan. Menggunakan client default.")
+                target = vars.ClientRef
             end
-        else
-            target = client
         end
 
         vars.CurrentFormasiTarget = target
@@ -90,7 +96,7 @@ return {
             end
         end
 
-        -- 🔹 Putuskan koneksi lama
+        -- 🔹 Putuskan koneksi lama jika ada
         if vars.WedgeConnection then
             pcall(function() vars.WedgeConnection:Disconnect() end)
             vars.WedgeConnection = nil
@@ -99,7 +105,7 @@ return {
         -- 🔹 Loop Heartbeat
         if RunService.Heartbeat then
             vars.WedgeConnection = RunService.Heartbeat:Connect(function()
-                if not vars.WedgeActive or not target.Character then return end
+                if not vars.WedgeActive or not target or not target.Character then return end
                 local targetHRP = target.Character:FindFirstChild("HumanoidRootPart")
                 if not targetHRP then return end
 
@@ -121,18 +127,18 @@ return {
                     end
                 end
 
-                -- 🔹 Konfigurasi jarak
+                -- 🔹 Konfigurasi jarak dari _G.BotVars
                 local jarakDepan = tonumber(vars.JarakDepan) or 4
                 local jarakBelakang = tonumber(vars.JarakBelakang) or 7
                 local jarakSamping = tonumber(vars.SideSpacing) or 3
 
                 -- 🔹 Offset posisi tiap bot
                 local offsetMap = {
-                    [1] = Vector3.new(-jarakSamping, 0, -jarakDepan),       -- kiri dekat VIP
+                    [1] = Vector3.new(-jarakSamping, 0, -jarakDepan),        -- kiri dekat VIP
                     [2] = Vector3.new(-jarakSamping * 2, 0, -jarakBelakang), -- kiri jauh
-                    [3] = Vector3.new(jarakSamping, 0, -jarakDepan),        -- kanan dekat VIP
-                    [4] = Vector3.new(jarakSamping * 2, 0, -jarakBelakang), -- kanan jauh
-                    [5] = Vector3.new(0, 0, -jarakBelakang - 2),            -- ✅ tengah belakang
+                    [3] = Vector3.new(jarakSamping, 0, -jarakDepan),         -- kanan dekat VIP
+                    [4] = Vector3.new(jarakSamping * 2, 0, -jarakBelakang),  -- kanan jauh
+                    [5] = Vector3.new(0, 0, -jarakBelakang - 2),             -- tengah belakang
                 }
 
                 local offset = offsetMap[index] or Vector3.zero
@@ -145,7 +151,7 @@ return {
                 moveToPosition(targetPos, targetHRP.Position)
             end)
         else
-            warn("[Wedge] RunService.Heartbeat tidak tersedia!")
+            warn("[WEDGE] RunService.Heartbeat tidak tersedia!")
         end
     end
 }

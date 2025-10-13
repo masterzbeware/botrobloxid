@@ -1,11 +1,15 @@
--- Sync.lua (Optimized & Anti-Lag)
+-- Sync.lua
+-- Command !sync: Bot melakukan sinkronisasi posisi/aksi ke target
+-- Optimized & Anti-Lag, menggunakan task.spawn dan interval aman
+
 return {
     Execute = function(msg, client)
         local Vars = _G.BotVars
         Vars.SyncActive = true
 
+        -- 🔹 Tentukan target (default = client)
         local targetName = msg:match("^!sync%s+(.+)")
-        local target = client -- default target = client
+        local target = client
 
         if targetName then
             local found
@@ -17,25 +21,28 @@ return {
             end
 
             if not found then
-                warn("Target tidak ditemukan:", targetName)
+                warn("[Sync] Target tidak ditemukan:", targetName)
                 return
             end
 
             target = found
         end
 
-        -- hentikan sync lama
+        -- 🔹 Hentikan koneksi Sync lama jika ada
         if Vars.SyncConnection then
-            task.cancel(Vars.SyncConnection)
+            pcall(function()
+                task.cancel(Vars.SyncConnection)
+            end)
             Vars.SyncConnection = nil
         end
 
-        -- caching references biar gak ulang2 WaitForChild
+        -- 🔹 Cache references untuk efisiensi
         local ReplicatedStorage = game:GetService("ReplicatedStorage")
         local commandHandler = ReplicatedStorage:WaitForChild("Connections")
             :WaitForChild("dataProviders")
             :WaitForChild("commandHandler")
 
+        -- 🔹 Heartbeat sync loop
         Vars.SyncConnection = task.spawn(function()
             while Vars.SyncActive and target and target.Parent do
                 local success, err = pcall(function()
@@ -46,9 +53,11 @@ return {
                     warn("[Sync] Error:", err)
                 end
 
-                -- gunakan interval lebih aman (1 detik) biar tidak spam
+                -- interval aman 1.5 detik untuk anti-lag
                 task.wait(1.5)
             end
         end)
+
+        print("[Sync] Sinkronisasi aktif ke target:", target.Name)
     end
 }
