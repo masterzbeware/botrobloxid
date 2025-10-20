@@ -6,7 +6,6 @@ return {
       local vars = _G.BotVars
       local Window = vars.MainWindow
       local Camera = workspace.CurrentCamera
-      local Players = game:GetService("Players")
       local RunService = game:GetService("RunService")
       local ReplicatedFirst = game:GetService("ReplicatedFirst")
 
@@ -32,28 +31,6 @@ return {
           end
       })
 
-      Group:AddSlider("AimSmoothness", {
-          Text = "Kelembutan Aim",
-          Default = 0.2,
-          Min = 0.05,
-          Max = 1,
-          Rounding = 2,
-          Callback = function(Value)
-              vars.AimSmoothness = Value
-          end
-      })
-
-      Group:AddSlider("FireRate", {
-          Text = "Kecepatan Tembak (detik)",
-          Default = 0.1,
-          Min = 0.05,
-          Max = 0.5,
-          Rounding = 2,
-          Callback = function(Value)
-              vars.FireRate = Value
-          end
-      })
-
       -- 🔍 Cari kepala NPC terdekat
       local function getNearestHead()
           local nearest, dist = nil, math.huge
@@ -76,20 +53,18 @@ return {
           return nearest
       end
 
-      -- 🎥 Smooth Aim dan auto tembak
+      -- 🎯 Auto headshot loop
       task.spawn(function()
-          while task.wait(vars.FireRate or 0.1) do
+          while true do
+              task.wait(0.05) -- delay kecil, auto fire cepat
               if not vars.ToggleAutoHeadshot then continue end
               local head = getNearestHead()
               if not head then continue end
 
-              -- Kamera smooth ke kepala
-              local currentCF = Camera.CFrame
-              local targetCF = CFrame.lookAt(currentCF.Position, head.Position)
-              local smoothness = vars.AimSmoothness or 0.2
-              Camera.CFrame = currentCF:Lerp(targetCF, smoothness)
+              -- Kamera langsung ke kepala
+              Camera.CFrame = CFrame.lookAt(Camera.CFrame.Position, head.Position)
 
-              -- Tembak otomatis ke kepala
+              -- Tembak otomatis
               local origin = Camera.CFrame.Position
               local targetPos = head.Position
               local direction = (targetPos - origin).Unit
