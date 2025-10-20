@@ -1,5 +1,5 @@
 -- ESP.lua
--- ESP khusus untuk NPC dengan bagian AI_ (skeleton + tracer + jarak meter putih)
+-- ESP khusus untuk NPC dengan bagian AI_ (skeleton + tracer + jarak meter + darah)
 
 return {
     Execute = function()
@@ -21,6 +21,7 @@ return {
 
         -- Konfigurasi Warna
         local ESPColor = Color3.fromRGB(255, 255, 255)
+        local HPColor = Color3.fromRGB(255, 50, 50) -- warna teks darah merah
 
         -- Variabel
         local ActiveESP = {}
@@ -66,10 +67,10 @@ return {
             return line
         end
 
-        -- 🏷️ Distance text
-        local function newText()
+        -- 🏷️ Text helper
+        local function newText(color)
             local text = Drawing.new("Text")
-            text.Color = ESPColor
+            text.Color = color or ESPColor
             text.Size = 14
             text.Center = true
             text.Outline = true
@@ -87,12 +88,14 @@ return {
                 table.insert(lines, newLine())
             end
             local tracer = newLine()
-            local distanceText = newText()
+            local distanceText = newText(ESPColor)
+            local hpText = newText(HPColor) -- teks darah merah
 
             ActiveESP[model] = {
                 Lines = lines,
                 Tracer = tracer,
                 Text = distanceText,
+                HP = hpText,
                 Parts = parts,
             }
 
@@ -102,6 +105,7 @@ return {
                         for _, obj in pairs(ActiveESP[model].Lines) do obj:Remove() end
                         ActiveESP[model].Tracer:Remove()
                         ActiveESP[model].Text:Remove()
+                        ActiveESP[model].HP:Remove()
                         ActiveESP[model] = nil
                     end
                 end
@@ -114,13 +118,14 @@ return {
                 for _, obj in pairs(data.Lines) do obj:Remove() end
                 data.Tracer:Remove()
                 data.Text:Remove()
+                data.HP:Remove()
             end
             ActiveESP = {}
         end
 
         -- 🚀 Jalankan ESP
         local function startESP()
-            print("[ESP] Sistem ESP Skeleton aktif ✅")
+            print("[ESP] Sistem ESP Skeleton + HP aktif ✅")
 
             for _, obj in ipairs(workspace:GetDescendants()) do
                 if isValidNPC(obj) then
@@ -132,9 +137,12 @@ return {
             ESPConnection = RunService.RenderStepped:Connect(function()
                 for model, data in pairs(ActiveESP) do
                     if not (model and model.Parent) then continue end
+
+                    local humanoid = model:FindFirstChildOfClass("Humanoid")
                     local parts = data.Parts
                     local tracer = data.Tracer
                     local text = data.Text
+                    local hp = data.HP
 
                     -- 📏 Hitung jarak dan posisi
                     local torso = parts.UpperTorso or parts.LowerTorso
@@ -146,12 +154,21 @@ return {
                             text.Text = string.format("%.1fm", distance)
                             text.Visible = true
 
+                            if humanoid then
+                                hp.Position = Vector2.new(pos.X, pos.Y - 40)
+                                hp.Text = string.format("HP: %.0f", humanoid.Health)
+                                hp.Visible = humanoid.Health > 0
+                            else
+                                hp.Visible = false
+                            end
+
                             tracer.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
                             tracer.To = Vector2.new(pos.X, pos.Y)
                             tracer.Visible = true
                         else
                             text.Visible = false
                             tracer.Visible = false
+                            hp.Visible = false
                         end
                     end
 
@@ -215,6 +232,6 @@ return {
             end
         })
 
-        print("✅ ESP.lua loaded — hanya untuk NPC dengan AI_, warna putih & tampil jarak")
+        print("✅ ESP.lua loaded — tampil skeleton, jarak, dan darah NPC (AI_)")
     end
 }
