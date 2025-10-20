@@ -1,5 +1,5 @@
 -- ESP.lua
--- ESP khusus untuk NPC dengan bagian AI_ (skeleton + tracer + jarak meter + darah)
+-- ESP khusus untuk NPC dengan bagian AI_ (skeleton + tracer + jarak meter + darah real-time)
 
 return {
     Execute = function()
@@ -21,7 +21,7 @@ return {
 
         -- Konfigurasi Warna
         local ESPColor = Color3.fromRGB(255, 255, 255)
-        local HPColor = Color3.fromRGB(255, 50, 50) -- warna teks darah merah
+        local HPColor = Color3.fromRGB(255, 60, 60) -- warna merah untuk HP
 
         -- Variabel
         local ActiveESP = {}
@@ -57,7 +57,7 @@ return {
             return parts
         end
 
-        -- 🔗 Skeleton line helper
+        -- Drawing helper
         local function newLine()
             local line = Drawing.new("Line")
             line.Color = ESPColor
@@ -67,7 +67,6 @@ return {
             return line
         end
 
-        -- 🏷️ Text helper
         local function newText(color)
             local text = Drawing.new("Text")
             text.Color = color or ESPColor
@@ -82,14 +81,17 @@ return {
         local function createESP(model)
             if ActiveESP[model] or not isValidNPC(model) then return end
 
+            local humanoid = model:FindFirstChildOfClass("Humanoid")
             local parts = getBodyParts(model)
+
             local lines = {}
             for _, _ in pairs(parts) do
                 table.insert(lines, newLine())
             end
+
             local tracer = newLine()
             local distanceText = newText(ESPColor)
-            local hpText = newText(HPColor) -- teks darah merah
+            local hpText = newText(HPColor)
 
             ActiveESP[model] = {
                 Lines = lines,
@@ -97,8 +99,20 @@ return {
                 Text = distanceText,
                 HP = hpText,
                 Parts = parts,
+                Humanoid = humanoid,
             }
 
+            -- 🩸 Update darah saat berubah
+            if humanoid then
+                humanoid.HealthChanged:Connect(function(newHP)
+                    if ActiveESP[model] and ActiveESP[model].HP then
+                        ActiveESP[model].HP.Text = string.format("HP: %.0f", newHP)
+                        ActiveESP[model].HP.Visible = newHP > 0
+                    end
+                end)
+            end
+
+            -- Hapus otomatis saat NPC hilang
             model.AncestryChanged:Connect(function(_, parent)
                 if not parent then
                     if ActiveESP[model] then
@@ -133,23 +147,22 @@ return {
                 end
             end
 
-            -- Update terus menerus
+            -- Update posisi dan jarak setiap frame
             ESPConnection = RunService.RenderStepped:Connect(function()
                 for model, data in pairs(ActiveESP) do
                     if not (model and model.Parent) then continue end
-
-                    local humanoid = model:FindFirstChildOfClass("Humanoid")
                     local parts = data.Parts
+                    local humanoid = data.Humanoid
                     local tracer = data.Tracer
                     local text = data.Text
                     local hp = data.HP
 
-                    -- 📏 Hitung jarak dan posisi
                     local torso = parts.UpperTorso or parts.LowerTorso
                     if torso then
                         local pos, onScreen = Camera:WorldToViewportPoint(torso.Position)
                         if onScreen then
                             local distance = (Camera.CFrame.Position - torso.Position).Magnitude
+
                             text.Position = Vector2.new(pos.X, pos.Y - 25)
                             text.Text = string.format("%.1fm", distance)
                             text.Visible = true
@@ -158,8 +171,6 @@ return {
                                 hp.Position = Vector2.new(pos.X, pos.Y - 40)
                                 hp.Text = string.format("HP: %.0f", humanoid.Health)
                                 hp.Visible = humanoid.Health > 0
-                            else
-                                hp.Visible = false
                             end
 
                             tracer.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
@@ -167,12 +178,12 @@ return {
                             tracer.Visible = true
                         else
                             text.Visible = false
-                            tracer.Visible = false
                             hp.Visible = false
+                            tracer.Visible = false
                         end
                     end
 
-                    -- 🔩 Update skeleton line (contoh: kepala ke torso, tangan, kaki)
+                    -- 🔩 Gambar skeleton antar-bagian tubuh
                     local function drawLine(part1, part2, line)
                         if part1 and part2 then
                             local p1, on1 = Camera:WorldToViewportPoint(part1.Position)
@@ -232,6 +243,6 @@ return {
             end
         })
 
-        print("✅ ESP.lua loaded — tampil skeleton, jarak, dan darah NPC (AI_)")
+        print("✅ ESP.lua loaded — tampil skeleton, jarak, dan darah real-time NPC (AI_)")
     end
 }

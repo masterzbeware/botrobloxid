@@ -12,7 +12,7 @@ local function debugPrint(msg)
     print("[DEBUG] " .. tostring(msg))
 end
 
--- 🌐 Global Variables
+-- 🌐 Global Variables (tanpa jarak/spasi)
 _G.BotVars = {
     Players = game:GetService("Players"),
     TextChatService = game:GetService("TextChatService"),
@@ -20,39 +20,23 @@ _G.BotVars = {
     LocalPlayer = game:GetService("Players").LocalPlayer,
 
     ToggleAktif = false,
-
-    JarakIkut = 3,
-    FollowSpacing = 3,
-    ShieldDistance = 4,
-    ShieldSpacing = 4,
-    RowSpacing = 3,
-    SideSpacing = 5,
 }
 
--- 🎨 Buat satu Window utama (tanpa custom cursor)
+-- 🎨 Buat satu Window utama (gunakan cursor default Roblox)
 local MainWindow = Library:CreateWindow({
     Title = "MasterZ HUB",
-    Footer = "2.0.0",
+    Footer = "1.0.0",
     Icon = 0,
-    ShowCustomCursor = false, -- ⚠️ Nonaktifkan dari config
+    ShowCustomCursor = false, -- langsung pakai cursor bawaan Roblox
 })
 
--- 🔒 Tambahan patch: pastikan benar-benar hilang
-pcall(function()
-    if Library and Library.UI and Library.UI.Cursor then
-        Library.UI.Cursor.Visible = false
-        Library.UI.Cursor:Destroy()
-        Library.UI.Cursor = nil
-    end
-end)
-
--- Simpan ke variabel global biar module lain bisa pakai
+-- Simpan ke variabel global
 _G.BotVars.Library = Library
 _G.BotVars.MainWindow = MainWindow
 
 -- 📦 Daftar module yang akan dimuat
 local VIPCommands = {}
-local commandFiles = { "ESP.lua", "AIM.lua", "Hide.lua", "Bullet.lua" }
+local commandFiles = { "ESP.lua", "AIM.lua", "Hide.lua", "Bullet.lua", "Headshot.lua" }
 
 -- 🔹 Fungsi untuk load semua module
 local function loadScripts(files, repo, targetTable)
@@ -86,4 +70,4 @@ for name, module in pairs(VIPCommands) do
     end
 end
 
-debugPrint("✅ Bot.lua loaded — semua UI module aktif tanpa cursor custom")
+debugPrint("✅ Bot.lua loaded — semua UI module aktif dengan cursor default Roblox")
