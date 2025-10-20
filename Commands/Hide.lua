@@ -1,5 +1,5 @@
 -- Hide.lua
--- 👻 Sistem "Hide dari NPC" (mencegah deteksi / BeingSpotted)
+-- 👻 Sistem "Hide dari NPC" — memblokir sinyal BeingSpotted agar tidak terdeteksi
 
 return {
   Execute = function()
@@ -10,60 +10,52 @@ return {
       local ReplicatedStorage = game:GetService("ReplicatedStorage")
       local RemoteEvent = ReplicatedStorage:WaitForChild("Events"):WaitForChild("RemoteEvent")
 
-      -- Tab & UI
+      -- UI
       local Tabs = {
           Hide = Window:AddTab("HIDE", "eye-off"),
       }
-
       local Group = Tabs.Hide:AddLeftGroupbox("Hide Control")
 
-      -- Variabel internal
       local HideConnection = nil
-      local RunService = game:GetService("RunService")
 
-      -- 🧠 Fungsi memicu "BeingSpotted" palsu (buat nge-reset status deteksi)
-      local function spoofUnspotted()
-          firesignal(RemoteEvent.OnClientEvent,
-              "BeingSpotted",
-              "67420b07-edf1-40be-b859-01b42ea479a2",
-              workspace:GetServerTimeNow(),
-              tick()
-          )
-      end
+      -- 🚫 Fungsi untuk blokir sinyal BeingSpotted
+      local function blockDetection()
+          if HideConnection then return end
 
-      -- 🕵️ Aktifkan sistem Hide
-      local function startHide()
-          print("[HIDE] Mode bersembunyi aktif 👻")
+          print("[HIDE] Sistem Hide aktif 👻 — NPC tidak akan mendeteksi kamu")
 
-          -- Kirim sinyal spoof secara berkala agar NPC tidak melihat kita
-          HideConnection = RunService.Heartbeat:Connect(function()
-              spoofUnspotted()
+          HideConnection = RemoteEvent.OnClientEvent:Connect(function(eventName, ...)
+              if eventName == "BeingSpotted" then
+                  -- Batalkan event agar tidak diproses
+                  -- (tidak menjalankan apapun)
+                  return
+              end
           end)
       end
 
-      -- 🚫 Nonaktifkan sistem Hide
+      -- ❌ Nonaktifkan sistem Hide
       local function stopHide()
-          print("[HIDE] Mode bersembunyi dimatikan ❌")
+          print("[HIDE] Sistem Hide dimatikan ❌")
           if HideConnection then
               HideConnection:Disconnect()
               HideConnection = nil
           end
       end
 
-      -- Toggle di UI
+      -- 🎚️ Toggle
       Group:AddToggle("EnableHideSystem", {
           Text = "Aktifkan Hide dari NPC",
           Default = false,
           Callback = function(Value)
               vars.ToggleHide = Value
               if Value then
-                  startHide()
+                  blockDetection()
               else
                   stopHide()
               end
           end
       })
 
-      print("✅ Hide.lua loaded — siap sembunyi dari NPC")
+      print("✅ Hide.lua loaded — sistem blokir BeingSpotted siap digunakan")
   end
 }

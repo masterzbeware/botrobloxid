@@ -34,7 +34,7 @@ local MainWindow = Library:CreateWindow({
     Title = "MasterZ HUB",
     Footer = "1.0.0", -- ⚠️ tidak lagi menggunakan identitas
     Icon = 0,
-    ShowCustomCursor = true,
+    ShowCustomCursor = false,
 })
 
 -- Simpan ke variabel global biar module lain bisa pakai
