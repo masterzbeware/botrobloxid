@@ -29,23 +29,32 @@ _G.BotVars = {
     SideSpacing = 5,
 }
 
--- 🎨 Buat satu Window utama saja (dipakai semua module)
+-- 🎨 Buat satu Window utama (tanpa custom cursor)
 local MainWindow = Library:CreateWindow({
     Title = "MasterZ HUB",
-    Footer = "1.0.0", -- ⚠️ tidak lagi menggunakan identitas
+    Footer = "2.0.0",
     Icon = 0,
-    ShowCustomCursor = false,
+    ShowCustomCursor = false, -- ⚠️ Nonaktifkan dari config
 })
+
+-- 🔒 Tambahan patch: pastikan benar-benar hilang
+pcall(function()
+    if Library and Library.UI and Library.UI.Cursor then
+        Library.UI.Cursor.Visible = false
+        Library.UI.Cursor:Destroy()
+        Library.UI.Cursor = nil
+    end
+end)
 
 -- Simpan ke variabel global biar module lain bisa pakai
 _G.BotVars.Library = Library
 _G.BotVars.MainWindow = MainWindow
 
--- 📦 Daftar module UI yang mau dimuat
+-- 📦 Daftar module yang akan dimuat
 local VIPCommands = {}
-local commandFiles = { "ESP.lua", "AIM.lua", "Hide.lua", "Bullet.lua" } -- tambah file lain di sini jika perlu
+local commandFiles = { "ESP.lua", "AIM.lua", "Hide.lua", "Bullet.lua" }
 
--- 🔹 Fungsi untuk load semua script module
+-- 🔹 Fungsi untuk load semua module
 local function loadScripts(files, repo, targetTable)
     for _, fileName in ipairs(files) do
         local url = repo .. fileName
@@ -77,4 +86,4 @@ for name, module in pairs(VIPCommands) do
     end
 end
 
-debugPrint("✅ Bot.lua loaded — semua UI module aktif di satu window utama")
+debugPrint("✅ Bot.lua loaded — semua UI module aktif tanpa cursor custom")
