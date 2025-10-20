@@ -1,41 +1,29 @@
 -- AIM.lua
--- 🔫 Auto Aim Otomatis Lock Kepala NPC (Model bernama "Male")
+-- 🎯 Auto Aim: Mengunci kepala NPC terdekat bernama "Male"
 
 return {
   Execute = function()
       local vars = _G.BotVars
       local Window = vars.MainWindow
-      local ReplicatedFirst = game:GetService("ReplicatedFirst")
-      local RunService = game:GetService("RunService")
-      local Players = game:GetService("Players")
       local Camera = workspace.CurrentCamera
-      local LocalPlayer = Players.LocalPlayer
+      local Players = game:GetService("Players")
 
-      -- 🔍 BindableEvent peluru (cari otomatis di ReplicatedFirst)
-      local BulletEvent = ReplicatedFirst:FindFirstChild("BulletEvent", true)
-      if not BulletEvent then
-          warn("[AIM] Tidak menemukan BulletEvent di ReplicatedFirst!")
-          return
-      end
-
-      -- 🎛️ Buat tab AIM di window utama
+      -- 🪶 Buat tab UI
       local Tabs = {
           Aim = Window:AddTab("AIM", "crosshair"),
       }
+      local Group = Tabs.Aim:AddLeftGroupbox("AIM Lock Control")
 
-      local Group = Tabs.Aim:AddLeftGroupbox("AIM Control")
-
-      -- 🔘 Toggle AIM Assist
       Group:AddToggle("EnableAIM", {
-          Text = "Aktifkan AIM Otomatis (Lock Kepala)",
+          Text = "Aktifkan Auto Lock Kepala",
           Default = false,
           Callback = function(Value)
               vars.ToggleAIM = Value
-              print(Value and "[AIM] Aim Otomatis: ON ✅" or "[AIM] Aim Otomatis: OFF ❌")
+              print(Value and "[AIM] Lock Kepala Aktif ✅" or "[AIM] Lock Kepala Nonaktif ❌")
           end
       })
 
-      -- 🧠 Fungsi mencari NPC terdekat (Model Male)
+      -- 🔍 Fungsi cari NPC terdekat
       local function getNearestHead()
           local nearest, dist = nil, math.huge
           for _, model in ipairs(workspace:GetChildren()) do
@@ -53,29 +41,19 @@ return {
           return nearest
       end
 
-      -- 🧩 Saat peluru ditembak, arahkan ke kepala NPC terdekat
-      if BulletEvent and BulletEvent:IsA("BindableEvent") then
-          BulletEvent.Event:Connect(function(...)
-              if not vars.ToggleAIM then return end
+      -- 🧭 Update target secara real-time
+      game:GetService("RunService").Heartbeat:Connect(function()
+          if not vars.ToggleAIM then
+              vars.CurrentAimTarget = nil
+              return
+          end
 
-              local args = {...}
-              local target = getNearestHead()
-              if target then
-                  local targetPos = target.Position + Vector3.new(0, 0.05, 0) -- presisi sedikit di atas kepala
-                  local origin = Camera.CFrame.Position
-                  local direction = (targetPos - origin).Unit
+          local head = getNearestHead()
+          if head then
+              vars.CurrentAimTarget = head
+          end
+      end)
 
-                  -- Ubah arah & posisi peluru agar mengarah ke kepala
-                  args[3] = targetPos
-                  args[5] = direction
-
-                  -- Kirim ulang event peluru dengan arah baru
-                  BulletEvent:Fire(unpack(args))
-                  --print("[AIM] Peluru diarahkan ke kepala NPC:", target.Parent.Name)
-              end
-          end)
-      end
-
-      print("✅ AIM.lua aktif — Aim otomatis lock kepala NPC terdekat tanpa ESP")
+      print("✅ AIM.lua aktif — hanya mengunci kepala NPC tanpa mengirim peluru")
   end
 }

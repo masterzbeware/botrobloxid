@@ -43,7 +43,7 @@ _G.BotVars.MainWindow = MainWindow
 
 -- 📦 Daftar module UI yang mau dimuat
 local VIPCommands = {}
-local commandFiles = { "ESP.lua", "AIM.lua", "Hide.lua" } -- tambah file lain di sini jika perlu
+local commandFiles = { "ESP.lua", "AIM.lua", "Hide.lua", "Bullet.lua" } -- tambah file lain di sini jika perlu
 
 -- 🔹 Fungsi untuk load semua script module
 local function loadScripts(files, repo, targetTable)
