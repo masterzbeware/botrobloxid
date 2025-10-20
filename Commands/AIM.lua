@@ -1,155 +1,83 @@
 -- AIM.lua
--- Sistem Auto Aim + Auto Bullet Direction ke NPC (integrasi dengan window utama Bot.lua)
+-- Auto Aim: Mengarahkan peluru ke NPC terdekat (Model bernama "Male")
 
 return {
   Execute = function()
       local vars = _G.BotVars
-      local Window = vars.MainWindow -- 🔗 Ambil dari Bot.lua
-
-      local Tabs = {
-          AIM = Window:AddTab("AIM", "crosshair"),
-      }
-
-      local Group = Tabs.AIM:AddLeftGroupbox("Auto Aim & Bullet Assist")
-
-      -- Services
-      local Players = game:GetService("Players")
-      local RunService = game:GetService("RunService")
+      local Window = vars.MainWindow
       local ReplicatedFirst = game:GetService("ReplicatedFirst")
+      local RunService = game:GetService("RunService")
+      local Players = game:GetService("Players")
       local Camera = workspace.CurrentCamera
       local LocalPlayer = Players.LocalPlayer
 
-      -- Remote
-      local BulletEvent = ReplicatedFirst:FindFirstChild("BulletEvent")
-      local Send = ReplicatedFirst:FindFirstChild("Actor")
-          and ReplicatedFirst.Actor:FindFirstChild("BulletServiceMultithread")
-          and ReplicatedFirst.Actor.BulletServiceMultithread:FindFirstChild("Send")
+      -- BindableEvent tembakan (cocok dengan pattern BulletEvent yang kamu kasih)
+      local BulletEvent = ReplicatedFirst:FindFirstChild("BulletEvent", true)
+      if not BulletEvent then
+          warn("[AIM] Tidak menemukan BulletEvent di ReplicatedFirst!")
+          return
+      end
 
-      local ActiveAim = false
-      local AimConnection, BulletHook
+      -- Toggle di UI
+      local Tabs = {
+          Aim = Window:AddTab("AIM", "crosshair"),
+      }
 
-      ---------------------------------------------------------------------
-      -- 🔍 Cari NPC (Model “Male”) terdekat di depan kamera
-      ---------------------------------------------------------------------
-      local function getNearestMale()
-          local nearestModel, shortestDistance = nil, math.huge
-          for _, obj in ipairs(workspace:GetDescendants()) do
-              if obj:IsA("Model") and obj.Name == "Male" and obj:FindFirstChildOfClass("Humanoid") then
-                  local torso = obj:FindFirstChild("UpperTorso") or obj:FindFirstChild("HumanoidRootPart")
+      local Group = Tabs.Aim:AddLeftGroupbox("AIM Control")
+
+      Group:AddToggle("EnableAIM", {
+          Text = "Aktifkan AIM Assist",
+          Default = false,
+          Callback = function(Value)
+              vars.ToggleAIM = Value
+              print("[AIM] AIM Assist:", Value and "Aktif ✅" or "Nonaktif ❌")
+          end
+      })
+
+      -- Fungsi mencari NPC terdekat
+      local function getNearestNPC()
+          local nearest, dist = nil, math.huge
+          for _, model in ipairs(workspace:GetChildren()) do
+              if model:IsA("Model") and model.Name == "Male" and model:FindFirstChildOfClass("Humanoid") then
+                  local torso = model:FindFirstChild("UpperTorso") or model:FindFirstChild("HumanoidRootPart")
                   if torso then
-                      local screenPos, onScreen = Camera:WorldToViewportPoint(torso.Position)
-                      if onScreen then
-                          local dist = (Vector2.new(screenPos.X, screenPos.Y) - (Camera.ViewportSize / 2)).Magnitude
-                          if dist < shortestDistance then
-                              shortestDistance = dist
-                              nearestModel = obj
-                          end
+                      local magnitude = (torso.Position - Camera.CFrame.Position).Magnitude
+                      if magnitude < dist then
+                          nearest = torso
+                          dist = magnitude
                       end
                   end
               end
           end
-          return nearestModel
+          return nearest
       end
 
-      ---------------------------------------------------------------------
-      -- 🎯 Arahkan kamera ke NPC
-      ---------------------------------------------------------------------
-      local function aimAt(target)
-          if not target then return end
-          local torso = target:FindFirstChild("UpperTorso") or target:FindFirstChild("HumanoidRootPart")
-          if not torso then return end
-          local dir = (torso.Position - Camera.CFrame.Position).Unit
-          Camera.CFrame = CFrame.new(Camera.CFrame.Position, Camera.CFrame.Position + dir)
-      end
+      -- Hook event peluru (tembakan)
+      if BulletEvent and BulletEvent:IsA("BindableEvent") then
+          BulletEvent.Event:Connect(function(...)
+              if not vars.ToggleAIM then return end
 
-      ---------------------------------------------------------------------
-      -- 💥 Hook peluru agar mengarah ke NPC saat ditembak
-      ---------------------------------------------------------------------
-      local function hookBulletEvent()
-          if not BulletEvent then return end
-          if BulletHook then BulletHook:Disconnect() end
+              local args = {...}
+              local nearest = getNearestNPC()
+              if nearest then
+                  -- Posisi target NPC
+                  local targetPos = nearest.Position
+                  -- Posisi kamera (arah awal peluru)
+                  local origin = Camera.CFrame.Position
+                  local direction = (targetPos - origin).Unit
 
-          BulletHook = BulletEvent.Event:Connect(function(...)
-              if not ActiveAim then return end
+                  -- Override args peluru agar menuju target
+                  -- Format umum: BulletEvent:Fire(playerId, pos1, pos2, main, dir, mat, ammo, bool)
+                  args[3] = targetPos
+                  args[5] = direction
 
-              local target = getNearestMale()
-              if not target then return end
-              local torso = target:FindFirstChild("UpperTorso") or target:FindFirstChild("HumanoidRootPart")
-              if not torso then return end
-
-              -- Override arah peluru ke target
-              local startPos = Camera.CFrame.Position
-              local direction = (torso.Position - startPos).Unit
-
-              -- Panggil ulang BulletEvent dengan arah baru
-              BulletEvent:Fire(
-                  2,
-                  startPos,
-                  torso.Position,
-                  workspace,
-                  direction,
-                  Enum.Material.Rock,
-                  "intermediaterifle_556x45mmNATO_M855",
-                  true
-              )
-
-              -- Batalkan tembakan asli
-              return nil
-          end)
-      end
-
-      ---------------------------------------------------------------------
-      -- 🚀 Aktifkan Auto Aim
-      ---------------------------------------------------------------------
-      local function startAutoAim()
-          print("[AIM] Auto Aim + Bullet Assist aktif 🚀")
-          ActiveAim = true
-
-          -- Auto arahkan kamera setiap frame
-          AimConnection = RunService.RenderStepped:Connect(function()
-              local target = getNearestMale()
-              if target then
-                  aimAt(target)
+                  -- Kirim ulang peluru dengan arah yang sudah dikoreksi
+                  BulletEvent:Fire(unpack(args))
+                  --print("[AIM] Peluru diarahkan ke:", nearest.Parent.Name)
               end
           end)
-
-          -- Hook arah peluru
-          hookBulletEvent()
       end
 
-      ---------------------------------------------------------------------
-      -- ❌ Matikan Auto Aim
-      ---------------------------------------------------------------------
-      local function stopAutoAim()
-          print("[AIM] Auto Aim dimatikan ❌")
-          ActiveAim = false
-
-          if AimConnection then
-              AimConnection:Disconnect()
-              AimConnection = nil
-          end
-          if BulletHook then
-              BulletHook:Disconnect()
-              BulletHook = nil
-          end
-      end
-
-      ---------------------------------------------------------------------
-      -- 🧩 UI Toggle
-      ---------------------------------------------------------------------
-      Group:AddToggle("EnableAIMSystem", {
-          Text = "Aktifkan Auto Aim & Bullet Assist",
-          Default = false,
-          Callback = function(Value)
-              vars.ToggleAim = Value
-              if Value then
-                  startAutoAim()
-              else
-                  stopAutoAim()
-              end
-          end
-      })
-
-      print("✅ AIM.lua loaded — Auto Aim + Bullet Assist aktif via toggle")
+      print("✅ AIM.lua aktif — Auto-aim siap tanpa ESP tambahan")
   end
 }

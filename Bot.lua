@@ -29,22 +29,10 @@ _G.BotVars = {
     SideSpacing = 5,
 }
 
--- 🧍 Identitas bot
-local botMapping = {
-    ["8802945328"] = "Bot1 - XBODYGUARDVIP01",
-    ["8802949363"] = "Bot2 - XBODYGUARDVIP02",
-    ["8802939883"] = "Bot3 - XBODYGUARDVIP03",
-    ["8802998147"] = "Bot4 - XBODYGUARDVIP04",
-    ["8802991722"] = "Bot5 - XBODYGUARDVIP05",
-}
-_G.BotVars.BotIdentity = botMapping[tostring(_G.BotVars.LocalPlayer.UserId)] or "Unknown Bot"
-
-debugPrint("Detected identity: " .. _G.BotVars.BotIdentity)
-
 -- 🎨 Buat satu Window utama saja (dipakai semua module)
 local MainWindow = Library:CreateWindow({
-    Title = "MasterZ Bot Control",
-    Footer = _G.BotVars.BotIdentity,
+    Title = "MasterZ HUB",
+    Footer = "1.0.0", -- ⚠️ tidak lagi menggunakan identitas
     Icon = 0,
     ShowCustomCursor = true,
 })
@@ -78,10 +66,10 @@ local function loadScripts(files, repo, targetTable)
     end
 end
 
+-- 🚀 Load dan jalankan semua module
 loadScripts(commandFiles, repoBase, VIPCommands)
 _G.BotVars.CommandFiles = VIPCommands
 
--- 🚀 Jalankan semua module yang punya Execute()
 for name, module in pairs(VIPCommands) do
     if module.Execute then
         debugPrint("Running UI module: " .. name)
