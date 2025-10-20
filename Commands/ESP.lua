@@ -1,12 +1,12 @@
 -- ESP.lua
--- ESP Otomatis + Skeleton (manusia lidi) untuk Model bernama "Male"
+-- ESP khusus untuk NPC dengan bagian AI_ (skeleton + tracer + jarak meter putih)
 
 return {
     Execute = function()
         local vars = _G.BotVars
         local Window = vars.MainWindow
 
-        -- Tab ESP
+        -- UI Tab
         local Tabs = {
             ESP = Window:AddTab("ESP", "eye"),
         }
@@ -18,181 +18,196 @@ return {
         local RunService = game:GetService("RunService")
         local Camera = workspace.CurrentCamera
         local LocalPlayer = Players.LocalPlayer
-        local ESPColor = Color3.fromRGB(0, 255, 0)
+
+        -- Konfigurasi Warna
+        local ESPColor = Color3.fromRGB(255, 255, 255)
+
+        -- Variabel
         local ActiveESP = {}
-        local ESPConnection = nil
-        local DescendantConnection = nil
+        local ESPConnection, DescendantConnection
 
-        -- Validasi model
-        local function isValidMale(model)
-            if not model:IsA("Model") then return false end
-            if model.Name ~= "Male" then return false end
+        -- 🔎 Validasi NPC “Male” dengan komponen “AI_”
+        local function isValidNPC(model)
+            if not model:IsA("Model") or model.Name ~= "Male" then return false end
             if not model:FindFirstChildOfClass("Humanoid") then return false end
-            return true
-        end
-
-        -- Posisi tengah tubuh
-        local function getBodyCenter(model)
-            local torso = model:FindFirstChild("UpperTorso") or model:FindFirstChild("HumanoidRootPart")
-            if torso and torso:IsA("BasePart") then
-                return torso.Position
+            for _, c in ipairs(model:GetChildren()) do
+                if string.sub(c.Name, 1, 3) == "AI_" then
+                    return true
+                end
             end
-            return nil
+            return false
         end
 
-        -- 🔹 Membuat skeleton (garis manusia lidi)
-        local function createSkeleton(model)
-            local parts = {
-                Head = model:FindFirstChild("Head"),
-                UpperTorso = model:FindFirstChild("UpperTorso"),
-                LowerTorso = model:FindFirstChild("LowerTorso"),
-                LeftUpperArm = model:FindFirstChild("LeftUpperArm"),
-                LeftLowerArm = model:FindFirstChild("LeftLowerArm"),
-                RightUpperArm = model:FindFirstChild("RightUpperArm"),
-                RightLowerArm = model:FindFirstChild("RightLowerArm"),
-                LeftUpperLeg = model:FindFirstChild("LeftUpperLeg"),
-                LeftLowerLeg = model:FindFirstChild("LeftLowerLeg"),
-                RightUpperLeg = model:FindFirstChild("RightUpperLeg"),
-                RightLowerLeg = model:FindFirstChild("RightLowerLeg"),
-            }
-
-            local bones = {
-                {"Head", "UpperTorso"},
-                {"UpperTorso", "LowerTorso"},
-                {"UpperTorso", "LeftUpperArm"},
-                {"LeftUpperArm", "LeftLowerArm"},
-                {"UpperTorso", "RightUpperArm"},
-                {"RightUpperArm", "RightLowerArm"},
-                {"LowerTorso", "LeftUpperLeg"},
-                {"LeftUpperLeg", "LeftLowerLeg"},
-                {"LowerTorso", "RightUpperLeg"},
-                {"RightUpperLeg", "RightLowerLeg"},
-            }
-
-            local lines = {}
-            for _, bone in ipairs(bones) do
-                local line = Drawing.new("Line")
-                line.Color = ESPColor
-                line.Thickness = 1
-                line.Transparency = 1
-                line.Visible = true
-                table.insert(lines, {line = line, from = bone[1], to = bone[2]})
+        -- 🧍 Ambil posisi semua bagian tubuh untuk skeleton
+        local function getBodyParts(model)
+            local parts = {}
+            for _, partName in ipairs({
+                "Head", "UpperTorso", "LowerTorso",
+                "LeftUpperArm", "LeftLowerArm", "LeftHand",
+                "RightUpperArm", "RightLowerArm", "RightHand",
+                "LeftUpperLeg", "LeftLowerLeg", "LeftFoot",
+                "RightUpperLeg", "RightLowerLeg", "RightFoot"
+            }) do
+                local part = model:FindFirstChild(partName)
+                if part and part:IsA("BasePart") then
+                    parts[partName] = part
+                end
             end
-
-            return {parts = parts, lines = lines}
+            return parts
         end
 
-        -- 🔹 Buat ESP (tracer + skeleton)
+        -- 🔗 Skeleton line helper
+        local function newLine()
+            local line = Drawing.new("Line")
+            line.Color = ESPColor
+            line.Thickness = 1.2
+            line.Transparency = 1
+            line.Visible = false
+            return line
+        end
+
+        -- 🏷️ Distance text
+        local function newText()
+            local text = Drawing.new("Text")
+            text.Color = ESPColor
+            text.Size = 14
+            text.Center = true
+            text.Outline = true
+            text.Visible = false
+            return text
+        end
+
+        -- 🧩 Buat struktur ESP untuk NPC
         local function createESP(model)
-            if ActiveESP[model] then return end
-            if not isValidMale(model) then return end
+            if ActiveESP[model] or not isValidNPC(model) then return end
 
-            local tracer = Drawing.new("Line")
-            tracer.Color = ESPColor
-            tracer.Thickness = 1.5
-            tracer.Transparency = 1
-            tracer.Visible = true
+            local parts = getBodyParts(model)
+            local lines = {}
+            for _, _ in pairs(parts) do
+                table.insert(lines, newLine())
+            end
+            local tracer = newLine()
+            local distanceText = newText()
 
-            local skeleton = createSkeleton(model)
-            ActiveESP[model] = {tracer = tracer, skeleton = skeleton}
+            ActiveESP[model] = {
+                Lines = lines,
+                Tracer = tracer,
+                Text = distanceText,
+                Parts = parts,
+            }
 
             model.AncestryChanged:Connect(function(_, parent)
                 if not parent then
-                    for _, bone in ipairs(skeleton.lines) do
-                        bone.line.Visible = false
-                        bone.line:Remove()
+                    if ActiveESP[model] then
+                        for _, obj in pairs(ActiveESP[model].Lines) do obj:Remove() end
+                        ActiveESP[model].Tracer:Remove()
+                        ActiveESP[model].Text:Remove()
+                        ActiveESP[model] = nil
                     end
-                    tracer.Visible = false
-                    tracer:Remove()
-                    ActiveESP[model] = nil
                 end
             end)
         end
 
-        -- 🔹 Bersihkan semua ESP
+        -- 🧹 Bersihkan semua ESP
         local function clearAllESP()
-            for _, esp in pairs(ActiveESP) do
-                if esp.tracer then
-                    esp.tracer.Visible = false
-                    esp.tracer:Remove()
-                end
-                if esp.skeleton and esp.skeleton.lines then
-                    for _, bone in ipairs(esp.skeleton.lines) do
-                        bone.line.Visible = false
-                        bone.line:Remove()
-                    end
-                end
+            for _, data in pairs(ActiveESP) do
+                for _, obj in pairs(data.Lines) do obj:Remove() end
+                data.Tracer:Remove()
+                data.Text:Remove()
             end
             ActiveESP = {}
         end
 
-        -- 🔹 Jalankan ESP
+        -- 🚀 Jalankan ESP
         local function startESP()
-            print("[ESP] ESP + Skeleton aktif ✅")
+            print("[ESP] Sistem ESP Skeleton aktif ✅")
 
-            for _, obj in ipairs(workspace:GetChildren()) do
-                if isValidMale(obj) then
+            for _, obj in ipairs(workspace:GetDescendants()) do
+                if isValidNPC(obj) then
                     createESP(obj)
                 end
             end
 
+            -- Update terus menerus
             ESPConnection = RunService.RenderStepped:Connect(function()
-                for model, esp in pairs(ActiveESP) do
-                    if model and model.Parent then
-                        local bodyCenter = getBodyCenter(model)
-                        if bodyCenter then
-                            local pos, onScreen = Camera:WorldToViewportPoint(bodyCenter)
-                            if onScreen then
-                                -- tracer
-                                esp.tracer.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
-                                esp.tracer.To = Vector2.new(pos.X, pos.Y)
-                                esp.tracer.Visible = true
-                            else
-                                esp.tracer.Visible = false
-                            end
-                        end
+                for model, data in pairs(ActiveESP) do
+                    if not (model and model.Parent) then continue end
+                    local parts = data.Parts
+                    local tracer = data.Tracer
+                    local text = data.Text
 
-                        -- skeleton
-                        if esp.skeleton then
-                            for _, bone in ipairs(esp.skeleton.lines) do
-                                local part1 = esp.skeleton.parts[bone.from]
-                                local part2 = esp.skeleton.parts[bone.to]
-                                if part1 and part2 and part1:IsA("BasePart") and part2:IsA("BasePart") then
-                                    local p1, on1 = Camera:WorldToViewportPoint(part1.Position)
-                                    local p2, on2 = Camera:WorldToViewportPoint(part2.Position)
-                                    if on1 and on2 then
-                                        bone.line.From = Vector2.new(p1.X, p1.Y)
-                                        bone.line.To = Vector2.new(p2.X, p2.Y)
-                                        bone.line.Visible = true
-                                    else
-                                        bone.line.Visible = false
-                                    end
-                                else
-                                    bone.line.Visible = false
-                                end
-                            end
+                    -- 📏 Hitung jarak dan posisi
+                    local torso = parts.UpperTorso or parts.LowerTorso
+                    if torso then
+                        local pos, onScreen = Camera:WorldToViewportPoint(torso.Position)
+                        if onScreen then
+                            local distance = (Camera.CFrame.Position - torso.Position).Magnitude
+                            text.Position = Vector2.new(pos.X, pos.Y - 25)
+                            text.Text = string.format("%.1fm", distance)
+                            text.Visible = true
+
+                            tracer.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
+                            tracer.To = Vector2.new(pos.X, pos.Y)
+                            tracer.Visible = true
+                        else
+                            text.Visible = false
+                            tracer.Visible = false
                         end
                     end
+
+                    -- 🔩 Update skeleton line (contoh: kepala ke torso, tangan, kaki)
+                    local function drawLine(part1, part2, line)
+                        if part1 and part2 then
+                            local p1, on1 = Camera:WorldToViewportPoint(part1.Position)
+                            local p2, on2 = Camera:WorldToViewportPoint(part2.Position)
+                            if on1 or on2 then
+                                line.From = Vector2.new(p1.X, p1.Y)
+                                line.To = Vector2.new(p2.X, p2.Y)
+                                line.Visible = true
+                            else
+                                line.Visible = false
+                            end
+                        else
+                            line.Visible = false
+                        end
+                    end
+
+                    local i = 1
+                    drawLine(parts.Head, parts.UpperTorso, data.Lines[i]); i += 1
+                    drawLine(parts.UpperTorso, parts.LowerTorso, data.Lines[i]); i += 1
+                    drawLine(parts.UpperTorso, parts.LeftUpperArm, data.Lines[i]); i += 1
+                    drawLine(parts.LeftUpperArm, parts.LeftLowerArm, data.Lines[i]); i += 1
+                    drawLine(parts.LeftLowerArm, parts.LeftHand, data.Lines[i]); i += 1
+                    drawLine(parts.UpperTorso, parts.RightUpperArm, data.Lines[i]); i += 1
+                    drawLine(parts.RightUpperArm, parts.RightLowerArm, data.Lines[i]); i += 1
+                    drawLine(parts.RightLowerArm, parts.RightHand, data.Lines[i]); i += 1
+                    drawLine(parts.LowerTorso, parts.LeftUpperLeg, data.Lines[i]); i += 1
+                    drawLine(parts.LeftUpperLeg, parts.LeftLowerLeg, data.Lines[i]); i += 1
+                    drawLine(parts.LeftLowerLeg, parts.LeftFoot, data.Lines[i]); i += 1
+                    drawLine(parts.LowerTorso, parts.RightUpperLeg, data.Lines[i]); i += 1
+                    drawLine(parts.RightUpperLeg, parts.RightLowerLeg, data.Lines[i]); i += 1
+                    drawLine(parts.RightLowerLeg, parts.RightFoot, data.Lines[i])
                 end
             end)
 
             DescendantConnection = workspace.DescendantAdded:Connect(function(obj)
-                if isValidMale(obj) then
+                if isValidNPC(obj) then
                     createESP(obj)
                 end
             end)
         end
 
+        -- 🚫 Matikan ESP
         local function stopESP()
-            print("[ESP] ESP dimatikan ❌")
+            print("[ESP] Sistem ESP dimatikan ❌")
             if ESPConnection then ESPConnection:Disconnect() ESPConnection = nil end
             if DescendantConnection then DescendantConnection:Disconnect() DescendantConnection = nil end
             clearAllESP()
         end
 
-        -- Toggle ESP di UI
+        -- UI Toggle
         Group:AddToggle("EnableESPSystem", {
-            Text = "Aktifkan ESP + Skeleton",
+            Text = "Aktifkan ESP Skeleton (AI_)",
             Default = false,
             Callback = function(Value)
                 vars.ToggleESP = Value
@@ -200,6 +215,6 @@ return {
             end
         })
 
-        print("✅ ESP.lua loaded — tracer + skeleton aktif untuk semua Model 'Male'")
+        print("✅ ESP.lua loaded — hanya untuk NPC dengan AI_, warna putih & tampil jarak")
     end
 }
