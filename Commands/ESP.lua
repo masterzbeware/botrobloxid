@@ -3,9 +3,7 @@ return {
         local vars = _G.BotVars
         local Window = vars.MainWindow
 
-        local Tabs = {
-            ESP = Window:AddTab("ESP", "eye"),
-        }
+        local Tabs = { ESP = Window:AddTab("ESP", "eye") }
         local Group = Tabs.ESP:AddLeftGroupbox("ESP Control")
 
         local Players = game:GetService("Players")
@@ -13,7 +11,6 @@ return {
         local Camera = workspace.CurrentCamera
 
         local ESPColor = Color3.fromRGB(255, 255, 255)
-
         local ActiveESP = {}
         local ESPConnection, DescendantConnection
 
@@ -21,9 +18,7 @@ return {
             if not model:IsA("Model") or model.Name ~= "Male" then return false end
             if not model:FindFirstChildOfClass("Humanoid") then return false end
             for _, c in ipairs(model:GetChildren()) do
-                if string.sub(c.Name,1,3) == "AI_" then
-                    return true
-                end
+                if string.sub(c.Name,1,3) == "AI_" then return true end
             end
             return false
         end
@@ -50,7 +45,7 @@ return {
             line.Color = ESPColor
             line.Thickness = 1.2
             line.Transparency = 1
-            line.Visible = false
+            line.Visible = false -- jangan langsung visible
             return line
         end
 
@@ -60,7 +55,7 @@ return {
             text.Size = 14
             text.Center = true
             text.Outline = true
-            text.Visible = false
+            text.Visible = false -- jangan langsung visible
             return text
         end
 
@@ -78,6 +73,7 @@ return {
                 Tracer = tracer,
                 Text = distanceText,
                 Parts = parts,
+                Initialized = false -- track frame pertama
             }
 
             model.AncestryChanged:Connect(function(_, parent)
@@ -115,14 +111,20 @@ return {
                     local torso = parts.UpperTorso or parts.LowerTorso
                     if torso then
                         local pos, onScreen = Camera:WorldToViewportPoint(torso.Position)
-                        local visible = onScreen
-                        data.Text.Position = Vector2.new(pos.X,pos.Y-25)
-                        data.Text.Text = string.format("%.1fm",(Camera.CFrame.Position - torso.Position).Magnitude)
-                        if data.Text.Visible ~= visible then data.Text.Visible = visible end
 
-                        data.Tracer.From = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y)
-                        data.Tracer.To = Vector2.new(pos.X,pos.Y)
-                        if data.Tracer.Visible ~= visible then data.Tracer.Visible = visible end
+                        -- pastikan frame pertama selesai sebelum visible
+                        if not data.Initialized then
+                            data.Initialized = true
+                        else
+                            local visible = onScreen
+                            data.Text.Position = Vector2.new(pos.X,pos.Y-25)
+                            data.Text.Text = string.format("%.1fm",(Camera.CFrame.Position - torso.Position).Magnitude)
+                            if data.Text.Visible ~= visible then data.Text.Visible = visible end
+
+                            data.Tracer.From = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y)
+                            data.Tracer.To = Vector2.new(pos.X,pos.Y)
+                            if data.Tracer.Visible ~= visible then data.Tracer.Visible = visible end
+                        end
                     end
 
                     local function drawLine(p1,p2,line)
@@ -177,6 +179,6 @@ return {
             end
         })
 
-        print("✅ ESP.lua loaded — ESP tanpa blink, hanya skeleton NPC (AI_)")
+        print("✅ ESP.lua loaded — spawn NPC baru tidak blink lagi")
     end
 }
