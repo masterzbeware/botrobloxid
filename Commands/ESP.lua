@@ -1,22 +1,17 @@
 -- ESP.lua
--- ESP Otomatis untuk Model bernama "Male"
+-- ESP Otomatis untuk Model bernama "Male" (integrasi penuh dengan window utama dari Bot.lua)
 
 return {
     Execute = function()
         local vars = _G.BotVars
-        local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/Library.lua"))()
-        local Window = Library:CreateWindow({
-            Title = "MasterZ ESP Control",
-            Footer = "ESP Panel",
-            Icon = 0,
-            ShowCustomCursor = true,
-        })
+        local Window = vars.MainWindow  -- ✅ ambil window utama dari Bot.lua
 
+        -- Tambahkan tab baru di window utama
         local Tabs = {
-            Control = Window:AddTab("Control", "eye"),
+            ESP = Window:AddTab("ESP", "eye"),
         }
 
-        local Group = Tabs.Control:AddLeftGroupbox("ESP Control")
+        local Group = Tabs.ESP:AddLeftGroupbox("ESP Control")
 
         -- Variabel internal ESP
         local Players = game:GetService("Players")
@@ -93,15 +88,14 @@ return {
         end
 
         local function startESP()
-            print("[ESP] Sistem ESP diaktifkan")
-            -- Buat semua ESP yang sudah ada
+            print("[ESP] Sistem ESP diaktifkan ✅")
             for _, obj in ipairs(workspace:GetDescendants()) do
                 if isValidMale(obj) then
                     createTracer(obj)
                 end
             end
 
-            -- Update posisi setiap frame
+            -- Update setiap frame
             ESPConnection = RunService.RenderStepped:Connect(function()
                 for model, line in pairs(ActiveESP) do
                     if model and model.Parent then
@@ -131,7 +125,7 @@ return {
                 end
             end)
 
-            -- Tambah ESP jika ada model baru
+            -- Tambahkan ESP otomatis saat ada model baru
             DescendantConnection = workspace.DescendantAdded:Connect(function(obj)
                 if isValidMale(obj) then
                     createTracer(obj)
@@ -140,7 +134,7 @@ return {
         end
 
         local function stopESP()
-            print("[ESP] Sistem ESP dimatikan")
+            print("[ESP] Sistem ESP dimatikan ❌")
             if ESPConnection then
                 ESPConnection:Disconnect()
                 ESPConnection = nil
@@ -157,7 +151,7 @@ return {
             Text = "Aktifkan ESP System",
             Default = false,
             Callback = function(Value)
-                vars.ToggleAktif = Value
+                vars.ToggleESP = Value
                 if Value then
                     startESP()
                 else
@@ -166,6 +160,6 @@ return {
             end
         })
 
-        print("✅ ESP.lua loaded — toggle akan hidupkan ESP otomatis")
+        print("✅ ESP.lua loaded — terhubung ke window utama dari Bot.lua")
     end
 }
