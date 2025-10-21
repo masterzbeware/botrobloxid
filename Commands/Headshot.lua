@@ -1,6 +1,3 @@
--- Headshot.lua
--- 💀 Auto Headshot halus, kompatibel ESP
-
 return {
     Execute = function()
         local vars = _G.BotVars
@@ -10,32 +7,18 @@ return {
 
         local BulletEvent = ReplicatedFirst:FindFirstChild("BulletEvent", true)
         if not BulletEvent then
-            warn("[Headshot] BulletEvent tidak ditemukan!")
+            warn("[Headshot] Tidak menemukan BulletEvent!")
             return
         end
 
         local Tabs = { Headshot = Window:AddTab("HEADSHOT", "target") }
         local Group = Tabs.Headshot:AddLeftGroupbox("Headshot Control")
 
-        -- Toggle auto headshot
         Group:AddToggle("EnableAutoHeadshot", {
             Text = "Aktifkan Auto Headshot",
             Default = false,
             Callback = function(Value)
                 vars.ToggleAutoHeadshot = Value
-                print(Value and "[Headshot] Aktif ✅" or "[Headshot] Nonaktif ❌")
-            end
-        })
-
-        -- Slider kelembutan aim
-        Group:AddSlider("AimSmoothness", {
-            Text = "Kelembutan Aim",
-            Default = 0.2,
-            Min = 0.05,
-            Max = 1,
-            Rounding = 2,
-            Callback = function(Value)
-                vars.AimSmoothness = Value
             end
         })
 
@@ -43,12 +26,10 @@ return {
         local function getNearestHead()
             local nearest, dist = nil, math.huge
             for _, model in ipairs(workspace:GetChildren()) do
-                if model:IsA("Model") and model.Name == "Male" and model:FindFirstChildOfClass("Humanoid") then
+                if model:IsA("Model") and model.Name=="Male" and model:FindFirstChildOfClass("Humanoid") then
                     for _, c in ipairs(model:GetChildren()) do
-                        if string.sub(c.Name,1,3) == "AI_" then
-                            local head = model:FindFirstChild("Head") 
-                                      or model:FindFirstChild("UpperTorso") 
-                                      or model:FindFirstChild("HumanoidRootPart")
+                        if string.sub(c.Name,1,3)=="AI_" then
+                            local head = model:FindFirstChild("Head") or model:FindFirstChild("UpperTorso") or model:FindFirstChild("HumanoidRootPart")
                             if head then
                                 local magnitude = (head.Position - Camera.CFrame.Position).Magnitude
                                 if magnitude < dist then
@@ -63,18 +44,17 @@ return {
             return nearest
         end
 
-        -- Loop auto headshot
+        -- Smooth headshot loop
         task.spawn(function()
-            while task.wait(0.05) do
+            while true do
+                task.wait(0.05)
                 if not vars.ToggleAutoHeadshot then continue end
                 local head = getNearestHead()
                 if not head then continue end
 
-                -- Smooth kamera ke kepala (compatible ESP)
-                local currentCF = Camera.CFrame
-                local targetCF = CFrame.lookAt(currentCF.Position, head.Position)
-                local smoothness = vars.AimSmoothness or 0.2
-                Camera.CFrame = currentCF:Lerp(targetCF, smoothness)
+                -- Smooth camera aim agar ESP tidak blink
+                local targetCF = CFrame.lookAt(Camera.CFrame.Position, head.Position)
+                Camera.CFrame = Camera.CFrame:Lerp(targetCF, 0.3)
 
                 -- Tembak otomatis
                 local origin = Camera.CFrame.Position
@@ -83,7 +63,5 @@ return {
                 BulletEvent:Fire(unpack(args))
             end
         end)
-
-        print("✅ Headshot.lua aktif — Auto headshot halus, ESP stabil 🎯")
     end
 }

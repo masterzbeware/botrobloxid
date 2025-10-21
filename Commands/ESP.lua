@@ -6,7 +6,6 @@ return {
         local Tabs = { ESP = Window:AddTab("ESP", "eye") }
         local Group = Tabs.ESP:AddLeftGroupbox("ESP Control")
 
-        local Players = game:GetService("Players")
         local RunService = game:GetService("RunService")
         local Camera = workspace.CurrentCamera
 
@@ -73,7 +72,7 @@ return {
                 Tracer = tracer,
                 Text = distanceText,
                 Parts = parts,
-                Initialized = false -- agar frame pertama stabil
+                Initialized = false
             }
 
             model.AncestryChanged:Connect(function(_, parent)
@@ -98,8 +97,6 @@ return {
         end
 
         local function startESP()
-            print("[ESP] Sistem ESP Skeleton aktif ✅")
-
             for _, obj in ipairs(workspace:GetDescendants()) do
                 if isValidNPC(obj) then createESP(obj) end
             end
@@ -112,7 +109,7 @@ return {
                     if torso then
                         local pos, onScreen = Camera:WorldToViewportPoint(torso.Position)
 
-                        -- Frame pertama tidak langsung visible, agar Headshot compatible
+                        -- pastikan frame pertama selesai sebelum visible
                         if not data.Initialized then
                             data.Initialized = true
                         else
@@ -164,7 +161,6 @@ return {
         end
 
         local function stopESP()
-            print("[ESP] Sistem ESP dimatikan ❌")
             if ESPConnection then ESPConnection:Disconnect(); ESPConnection=nil end
             if DescendantConnection then DescendantConnection:Disconnect(); DescendantConnection=nil end
             clearAllESP()
@@ -178,7 +174,5 @@ return {
                 if Value then startESP() else stopESP() end
             end
         })
-
-        print("✅ ESP.lua loaded — kompatibel Headshot, spawn NPC baru tanpa blink")
     end
 }
