@@ -8,15 +8,26 @@ return {
       local ReplicatedFirst = game:GetService("ReplicatedFirst")
       local Send = ReplicatedFirst.Actor.BulletServiceMultithread.Send
 
-      vars.BurstCount = vars.BurstCount or 3
-      vars.BurstDelay = vars.BurstDelay or 0.1
+      vars.BurstEnabled = vars.BurstEnabled or false
+      vars.BurstCount   = vars.BurstCount or 3
+      vars.BurstDelay   = vars.BurstDelay or 0.1
 
       local Group = tab:AddLeftGroupbox("Burst Damage")
+
+      Group:AddToggle("BurstToggle", {
+          Text = "Aktifkan Burst",
+          Default = vars.BurstEnabled,
+          Callback = function(v)
+              vars.BurstEnabled = v
+              print("[BurstDamage] Burst", v and "Aktif ✅" or "Nonaktif ❌")
+          end
+      })
+
       Group:AddSlider("BurstCountSlider", {
           Text = "Jumlah Peluru per Burst",
           Default = vars.BurstCount,
           Min = 1,
-          Max = 100,
+          Max = 10,
           Rounding = 0,
           Callback = function(v) vars.BurstCount = v end
       })
@@ -30,8 +41,8 @@ return {
           Callback = function(v) vars.BurstDelay = v end
       })
 
-      -- Fungsi untuk memicu burst secara manual
       function vars.FireBurst(originCFrame)
+          if not vars.BurstEnabled then return end
           originCFrame = originCFrame or workspace.CurrentCamera.CFrame
           for i = 1, vars.BurstCount do
               local bulletData = {
@@ -50,6 +61,6 @@ return {
           end
       end
 
-      print("✅ [BurstDamage] Siap — gunakan vars.FireBurst() untuk menembak manual.")
+      print("✅ [BurstDamage] Siap — gunakan vars.FireBurst() untuk menembak manual jika toggle aktif.")
   end
 }
