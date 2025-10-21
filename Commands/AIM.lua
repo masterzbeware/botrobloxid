@@ -1,6 +1,6 @@
 -- AIM.lua
--- Aimbot halus dan ringan, lock ke kepala semua Male AI_
--- Harus menerima tab dari WindowTab.lua: Execute(tab)
+-- Aimbot sederhana + Circle Aim (POV)
+-- Toggle aktif/nonaktif dan pengaturan ukuran circle
 
 return {
     Execute = function(tab)
@@ -8,190 +8,114 @@ return {
         _G.BotVars = vars
         local Tabs = vars.Tabs or {}
 
-        -- fallback otomatis ke tab Combat
         tab = tab or Tabs.Combat
         if not tab then
             warn("[AIM] Tab Combat tidak ditemukan! Pastikan WindowTab.lua sudah dimuat.")
             return
         end
 
-        -- Inisialisasi variabel global
-        vars.ToggleAIM = vars.ToggleAIM or false
-        vars.AimSmoothness = vars.AimSmoothness or 0.03
-        vars.AimRange = vars.AimRange or 600
+        -- ⚙️ Default values
+        vars.AimbotEnabled = vars.AimbotEnabled or false
+        vars.ShowCircle = vars.ShowCircle or false
+        vars.CircleSize = vars.CircleSize or 150
 
-        -- Pastikan tab valid
-        if type(tab) ~= "table" or not tab.AddLeftGroupbox then
-            warn("[AIM] Objek tab tidak valid.")
-            return
-        end
+        -- 🧩 UI
+        local Group = tab:AddLeftGroupbox("Aimbot")
 
-        -- UI
-        local Group = tab:AddLeftGroupbox("AIMBOT Control")
-        Group:AddToggle("EnableAIM", {
+        Group:AddToggle("AimbotEnabled", {
             Text = "Aktifkan Aimbot",
-            Default = vars.ToggleAIM,
+            Default = vars.AimbotEnabled,
             Callback = function(v)
-                vars.ToggleAIM = v
+                vars.AimbotEnabled = v
                 print(v and "[AIMBOT] Aktif ✅" or "[AIMBOT] Nonaktif ❌")
             end
         })
 
-        Group:AddSlider("AimSmoothness", {
-            Text = "Kelembutan Aim (0 = snap instan)",
-            Default = vars.AimSmoothness,
-            Min = 0,
-            Max = 0.2,
-            Rounding = 3,
+        Group:AddToggle("ShowAimCircle", {
+            Text = "Tampilkan Circle Aim",
+            Default = vars.ShowCircle,
             Callback = function(v)
-                vars.AimSmoothness = v
+                vars.ShowCircle = v
+                print(v and "[AIM] Circle Aim tampil 🟢" or "[AIM] Circle Aim disembunyikan 🔴")
             end
         })
 
-        Group:AddSlider("AimRange", {
-            Text = "Jarak Maksimal Target (studs)",
-            Default = vars.AimRange,
+        Group:AddSlider("CircleSize", {
+            Text = "Ukuran Circle Aim",
+            Default = vars.CircleSize,
             Min = 50,
-            Max = 2000,
+            Max = 400,
             Rounding = 0,
             Callback = function(v)
-                vars.AimRange = v
+                vars.CircleSize = v
             end
         })
 
-        -- Services
+        -- 🔧 Service
         local RunService = game:GetService("RunService")
         local Camera = workspace.CurrentCamera
 
-        -- Cache target NPC
-        local CachedNPCs, ValidModelsSet = {}, {}
-        local descConn, hbConn
-        local renderBind = "AIMBOT_RenderLock"
+        -- 🎯 Circle Drawing
+        local aimCircle = Drawing.new("Circle")
+        aimCircle.Color = Color3.fromRGB(0, 255, 255)
+        aimCircle.Thickness = 1.5
+        aimCircle.Transparency = 0.8
+        aimCircle.Filled = false
 
-        -- Helpers
-        local function modelHasAINode(mdl)
-            for _, child in ipairs(mdl:GetChildren()) do
-                if type(child.Name) == "string" and child.Name:find("AI_") then
-                    return true
-                end
+        -- 🧠 Cek target valid (AI_ Male)
+        local function isValidNPC(model)
+            if not model:IsA("Model") or model.Name ~= "Male" then return false end
+            local humanoid = model:FindFirstChildOfClass("Humanoid")
+            if not humanoid or humanoid.Health <= 0 then return false end
+            for _, c in ipairs(model:GetChildren()) do
+                if string.sub(c.Name, 1, 3) == "AI_" then return true end
             end
             return false
         end
 
-        local function addModel(mdl)
-            if not mdl or not mdl:IsA("Model") or mdl.Name ~= "Male" then return end
-            if ValidModelsSet[mdl] then return end
-            if not modelHasAINode(mdl) then return end
-            local hum = mdl:FindFirstChildOfClass("Humanoid")
-            local head = mdl:FindFirstChild("Head")
-            if not hum or hum.Health <= 0 or not head then return end
-
-            CachedNPCs[mdl] = head
-            ValidModelsSet[mdl] = true
-
-            mdl.AncestryChanged:Connect(function(_, parent)
-                if not parent then
-                    CachedNPCs[mdl] = nil
-                    ValidModelsSet[mdl] = nil
-                end
-            end)
-            hum.Died:Connect(function()
-                CachedNPCs[mdl] = nil
-                ValidModelsSet[mdl] = nil
-            end)
-        end
-
-        -- Scan awal workspace
-        for _, obj in ipairs(workspace:GetChildren()) do
-            addModel(obj)
-        end
-
-        -- Tambah otomatis kalau ada model baru
-        descConn = workspace.DescendantAdded:Connect(function(inst)
-            local root = inst
-            for _ = 1, 5 do
-                if not root then break end
-                if root:IsA("Model") then
-                    addModel(root)
-                    break
-                end
-                root = root.Parent
-            end
-        end)
-
-        -- Targeting
-        local currentTarget
-        local targetUpdateInterval = 0.12
-        local accumulator = 0
-
-        local function findNearestTarget()
+        local function getClosestTarget()
             local camPos = Camera.CFrame.Position
-            local nearest, bestDist = nil, math.huge
-            local range = vars.AimRange or 600
+            local mousePos = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+            local closest, closestDist = nil, vars.CircleSize
 
-            for mdl, head in pairs(CachedNPCs) do
-                if head and head.Parent then
-                    local hum = mdl:FindFirstChildOfClass("Humanoid")
-                    if hum and hum.Health > 0 then
-                        local dist = (head.Position - camPos).Magnitude
-                        if dist < range and dist < bestDist then
-                            bestDist = dist
-                            nearest = head
+            for _, model in ipairs(workspace:GetChildren()) do
+                if isValidNPC(model) then
+                    local head = model:FindFirstChild("Head")
+                    if head then
+                        local pos, visible = Camera:WorldToViewportPoint(head.Position)
+                        if visible then
+                            local screenPos = Vector2.new(pos.X, pos.Y)
+                            local dist = (screenPos - mousePos).Magnitude
+                            if dist < closestDist then
+                                closest = head
+                                closestDist = dist
+                            end
                         end
-                    else
-                        CachedNPCs[mdl] = nil
-                        ValidModelsSet[mdl] = nil
                     end
-                else
-                    CachedNPCs[mdl] = nil
-                    ValidModelsSet[mdl] = nil
                 end
             end
-
-            currentTarget = nearest
+            return closest
         end
 
-        -- Bersihkan binding lama
-        pcall(function()
-            RunService:UnbindFromRenderStep(renderBind)
-        end)
+        -- 🎯 RenderStep: Aimbot + Circle
+        RunService.RenderStepped:Connect(function()
+            -- Update Circle
+            aimCircle.Visible = vars.ShowCircle
+            if vars.ShowCircle then
+                local center = Camera.ViewportSize / 2
+                aimCircle.Position = Vector2.new(center.X, center.Y)
+                aimCircle.Radius = vars.CircleSize
+            end
 
-        -- Lock kamera ke target
-        RunService:BindToRenderStep(renderBind, Enum.RenderPriority.Camera.Value + 1, function()
-            if not vars.ToggleAIM then return end
-            local target = currentTarget
-            if not target or not target.Parent then return end
-
-            local curCF = Camera.CFrame
-            local targetCF = CFrame.lookAt(curCF.Position, target.Position)
-            local smooth = vars.AimSmoothness or 0
-
-            if smooth <= 0 then
-                Camera.CFrame = targetCF
-            else
-                Camera.CFrame = curCF:Lerp(targetCF, math.clamp(smooth, 0, 1))
+            if not vars.AimbotEnabled then return end
+            local target = getClosestTarget()
+            if target then
+                local curCF = Camera.CFrame
+                local targetCF = CFrame.lookAt(curCF.Position, target.Position)
+                Camera.CFrame = curCF:Lerp(targetCF, 0.15)
             end
         end)
 
-        -- Update target tiap interval
-        hbConn = RunService.Heartbeat:Connect(function(dt)
-            if not vars.ToggleAIM then return end
-            accumulator += dt
-            if accumulator >= targetUpdateInterval then
-                accumulator = 0
-                task.spawn(findNearestTarget)
-            end
-        end)
-
-        -- Cleanup callable
-        vars._AIM_Cleanup = function()
-            if descConn then descConn:Disconnect(); descConn = nil end
-            if hbConn then hbConn:Disconnect(); hbConn = nil end
-            pcall(function() RunService:UnbindFromRenderStep(renderBind) end)
-            CachedNPCs = {}
-            ValidModelsSet = {}
-        end
-
-        print("✅ [AIM] Aimbot aktif — halus, ringan, otomatis lock ke kepala Male AI_.")
+        print("✅ [AIM] Aimbot + Circle Aim siap digunakan!")
     end
 }
