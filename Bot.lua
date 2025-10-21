@@ -1,18 +1,15 @@
 -- Bot.lua
--- MasterZ Beware Bot System (UI Loader tanpa Client, tanpa Command Handler, dan tanpa Cursor)
+-- MasterZ Beware Bot System (tanpa cursor, crosshair, atau ikon mouse apapun)
 
 local repoBase     = "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Commands/"
 local obsidianRepo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
 
--- 🧩 Load Obsidian Library
 local Library = loadstring(game:HttpGet(obsidianRepo .. "Library.lua"))()
 
--- 🧠 Debug print helper
 local function debugPrint(msg)
     print("[DEBUG] " .. tostring(msg))
 end
 
--- 🌐 Global Variables
 _G.BotVars = {
     Players = game:GetService("Players"),
     TextChatService = game:GetService("TextChatService"),
@@ -21,38 +18,58 @@ _G.BotVars = {
     ToggleAktif = false,
 }
 
--- 🖱️ Hapus semua bentuk cursor
+local player = _G.BotVars.LocalPlayer
+local Mouse = player:GetMouse()
+local UserInputService = game:GetService("UserInputService")
+
 pcall(function()
-    local UserInputService = game:GetService("UserInputService")
-    local player = _G.BotVars.LocalPlayer
+    UserInputService.MouseIconEnabled = false
     if player and player:FindFirstChild("PlayerGui") then
         for _, gui in ipairs(player.PlayerGui:GetDescendants()) do
             if gui:IsA("ImageLabel") or gui:IsA("ImageButton") then
-                if gui.Name:lower():find("cursor") then
+                if gui.Name:lower():find("cursor") or gui.Name:lower():find("cross") then
                     gui:Destroy()
                 end
             end
         end
     end
-    UserInputService.MouseIconEnabled = false
+    Mouse.Icon = ""
+    player.CharacterAdded:Connect(function(char)
+        task.wait(1)
+        for _, tool in ipairs(player.Backpack:GetChildren()) do
+            if tool:IsA("Tool") then
+                tool.Equipped:Connect(function()
+                    Mouse.Icon = ""
+                    UserInputService.MouseIconEnabled = false
+                end)
+                tool.Unequipped:Connect(function()
+                    Mouse.Icon = ""
+                end)
+            end
+        end
+    end)
+    player.Backpack.ChildAdded:Connect(function(tool)
+        if tool:IsA("Tool") then
+            tool.Equipped:Connect(function()
+                Mouse.Icon = ""
+                UserInputService.MouseIconEnabled = false
+            end)
+        end
+    end)
 end)
 
--- 🎨 Buat Window utama
 local MainWindow = Library:CreateWindow({
     Title = "MasterZ HUB",
     Footer = "1.0.0",
     Icon = 0,
 })
 
--- Simpan ke global
 _G.BotVars.Library = Library
 _G.BotVars.MainWindow = MainWindow
 
--- 📦 Daftar module
 local VIPCommands = {}
-local commandFiles = { "Headshot.lua", "ESP.lua", "AIM.lua", "Hide.lua", "WindowTab.lua"}
+local commandFiles = { "Headshot.lua","ESP.lua","AIM.lua","Hide.lua","WindowTab.lua","NoRecoil.lua" }
 
--- 🔹 Fungsi load semua module
 local function loadScripts(files, repo, targetTable)
     for _, fileName in ipairs(files) do
         local url = repo .. fileName
@@ -73,11 +90,9 @@ local function loadScripts(files, repo, targetTable)
     end
 end
 
--- 🚀 Load semua module
 loadScripts(commandFiles, repoBase, VIPCommands)
 _G.BotVars.CommandFiles = VIPCommands
 
--- 🔹 Jalankan semua module
 for name, module in pairs(VIPCommands) do
     if module.Execute then
         debugPrint("Running UI module: " .. name)
@@ -85,4 +100,4 @@ for name, module in pairs(VIPCommands) do
     end
 end
 
-debugPrint("✅ Bot.lua loaded — semua UI module aktif (tanpa cursor apa pun)")
+debugPrint("✅ Bot.lua loaded — semua UI aktif tanpa kursor atau crosshair.")
