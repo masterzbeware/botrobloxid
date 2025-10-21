@@ -1,11 +1,10 @@
 -- OptimizedESP.lua
 return {
-    Execute = function()
+    Execute = function(tab)  -- terima tab dari WindowTab.lua
         local vars = _G.BotVars
-        local Window = vars.MainWindow
+        local WindowTab = tab
 
-        local Tabs = { ESP = Window:AddTab("ESP", "eye") }
-        local Group = Tabs.ESP:AddLeftGroupbox("ESP Control")
+        local Group = WindowTab:AddLeftGroupbox("ESP Control")
 
         local RunService = game:GetService("RunService")
         local Camera = workspace.CurrentCamera
@@ -18,7 +17,7 @@ return {
 
         local ESPRange = 300 -- max range ESP, NPC di luar ini tidak diupdate
 
-        -- Check valid NPC
+        -- Cek valid NPC
         local function isValidNPC(model)
             if not model:IsA("Model") or model.Name ~= "Male" then return false end
             local humanoid = model:FindFirstChildOfClass("Humanoid")

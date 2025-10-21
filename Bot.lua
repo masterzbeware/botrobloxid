@@ -12,7 +12,7 @@ local function debugPrint(msg)
     print("[DEBUG] " .. tostring(msg))
 end
 
--- 🌐 Global Variables (tanpa jarak/spasi)
+-- 🌐 Global Variables
 _G.BotVars = {
     Players = game:GetService("Players"),
     TextChatService = game:GetService("TextChatService"),
@@ -21,23 +21,22 @@ _G.BotVars = {
     ToggleAktif = false,
 }
 
--- 🎨 Buat satu Window utama (pakai cursor default Roblox)
+-- 🎨 Buat satu Window utama
 local MainWindow = Library:CreateWindow({
     Title = "MasterZ HUB",
     Footer = "1.5.0",
     Icon = 0,
-    -- ShowCustomCursor dihapus, pakai default Roblox
 })
 
 -- Simpan ke variabel global
 _G.BotVars.Library = Library
 _G.BotVars.MainWindow = MainWindow
 
--- 📦 Daftar module yang akan dimuat
+-- 📦 Daftar module
 local VIPCommands = {}
 local commandFiles = { "Headshot.lua","ESP.lua", "AIM.lua", "Hide.lua","Refill.lua" }
 
--- 🔹 Fungsi untuk load semua module
+-- 🔹 Fungsi load semua module
 local function loadScripts(files, repo, targetTable)
     for _, fileName in ipairs(files) do
         local url = repo .. fileName
@@ -58,10 +57,12 @@ local function loadScripts(files, repo, targetTable)
     end
 end
 
--- 🚀 Load dan jalankan semua module
+-- 🚀 Load semua module
 loadScripts(commandFiles, repoBase, VIPCommands)
 _G.BotVars.CommandFiles = VIPCommands
 
+-- 🔹 Jalankan semua module
+-- Module sendiri yang akan menentukan tab UI melalui WindowTab.lua
 for name, module in pairs(VIPCommands) do
     if module.Execute then
         debugPrint("Running UI module: " .. name)
