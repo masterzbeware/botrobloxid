@@ -1,7 +1,4 @@
--- Headshot.lua
--- Auto Aim otomatis ke bagian tubuh NPC "Male" dengan child "AI_"
--- Tambahan Dropdown Pilihan Target Body (Head / Torso / HumanoidRootPart)
-
+-- Auto Headshot dengan Toggle & Dropdown
 return {
     Execute = function(tab)
         local vars = _G.BotVars or {}
@@ -17,12 +14,24 @@ return {
         local Camera = workspace.CurrentCamera
         local RunService = game:GetService("RunService")
 
-        vars.AutoHeadshot = true
+        -- Variabel default
+        vars.AutoHeadshot = false       -- Toggle default mati
         vars.HeadshotRange = vars.HeadshotRange or 1000
         vars.TargetPart = vars.TargetPart or "Head"
 
         local Group = tab:AddLeftGroupbox("Auto Headshot")
 
+        -- Toggle untuk aktif/nonaktif
+        Group:AddToggle("AutoHeadshot", {
+            Text = "Aktifkan Auto Headshot",
+            Default = vars.AutoHeadshot,
+            Callback = function(value)
+                vars.AutoHeadshot = value
+                print("[Headshot] Auto Headshot", value and "Aktif" or "Nonaktif")
+            end
+        })
+
+        -- Dropdown untuk pilih target part
         Group:AddDropdown("TargetPart", {
             Text = "Pilih Target",
             Default = vars.TargetPart,
@@ -33,6 +42,7 @@ return {
             end
         })
 
+        -- Fungsi validasi NPC
         local function isValidNPC(model)
             if not model:IsA("Model") or model.Name ~= "Male" then return false end
             local humanoid = model:FindFirstChildOfClass("Humanoid")
@@ -45,6 +55,7 @@ return {
             return false
         end
 
+        -- Cari target terdekat sesuai kamera
         local function getClosestTarget()
             local camPos = Camera.CFrame.Position
             local camLook = Camera.CFrame.LookVector
@@ -66,6 +77,7 @@ return {
             return bestTarget
         end
 
+        -- RenderStepped loop untuk lock kamera
         RunService.RenderStepped:Connect(function()
             if not vars.AutoHeadshot then return end
             local target = getClosestTarget()
@@ -76,6 +88,6 @@ return {
             end
         end)
 
-        print("✅ [Headshot] Auto Aim aktif — mengunci ke '" .. vars.TargetPart .. "' NPC Male dengan AI_.")
+        print("✅ [Headshot] Siap! Gunakan Toggle untuk mengaktifkan Auto Headshot.")
     end
 }

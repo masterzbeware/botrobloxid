@@ -1,7 +1,3 @@
--- AIM.lua
--- Aimbot presisi tinggi ke Model "Male" dengan child "AI_"
--- Ditingkatkan: Respons lebih cepat, smooth adaptif, dan penguncian kuat
-
 return {
     Execute = function(tab)
         local vars = _G.BotVars or {}
@@ -13,25 +9,15 @@ return {
             return
         end
 
-        -- Default vars
         vars.AimbotEnabled = vars.AimbotEnabled or false
         vars.ShowCircle    = vars.ShowCircle or false
         vars.CircleSize    = vars.CircleSize or 150
         vars.Wallcheck     = vars.Wallcheck or false
-        vars.AimStrength   = vars.AimStrength or 0.45  -- 🔥 lebih tinggi = lebih kuat
-        vars.AimSmoothness = vars.AimSmoothness or 0.15 -- 🔧 adaptif smoothing
+        vars.AimStrength   = vars.AimStrength or 0.45
+        vars.AimSmoothness = vars.AimSmoothness or 0.15
+        vars.ADSActive     = vars.ADSActive or false
 
-        -- UI
         local Group = tab:AddLeftGroupbox("Aimbot")
-
-        Group:AddToggle("AimbotEnabled", {
-            Text = "Aktifkan Aimbot",
-            Default = vars.AimbotEnabled,
-            Callback = function(v)
-                vars.AimbotEnabled = v
-                print(v and "[AIMBOT] Aktif ✅" or "[AIMBOT] Nonaktif ❌")
-            end
-        })
 
         Group:AddToggle("ShowAimCircle", {
             Text = "Tampilkan Circle Aim",
@@ -83,18 +69,18 @@ return {
             end
         })
 
-        -- Services
         local RunService = game:GetService("RunService")
+        local ReplicatedStorage = game:GetService("ReplicatedStorage")
         local Camera = workspace.CurrentCamera
 
-        -- Circle Aim Visual
+        local RemoteEvent = ReplicatedStorage:FindFirstChild("Events") and ReplicatedStorage.Events:FindFirstChild("RemoteEvent")
+
         local aimCircle = Drawing.new("Circle")
         aimCircle.Color = Color3.fromRGB(0, 255, 255)
         aimCircle.Thickness = 1.5
         aimCircle.Transparency = 0.8
         aimCircle.Filled = false
 
-        -- Validasi NPC
         local function isValidNPC(model)
             if not model:IsA("Model") or model.Name ~= "Male" then return false end
             local humanoid = model:FindFirstChildOfClass("Humanoid")
@@ -107,7 +93,6 @@ return {
             return false
         end
 
-        -- Wallcheck
         local function isVisible(part)
             if not vars.Wallcheck then return true end
             local origin = Camera.CFrame.Position
@@ -115,13 +100,11 @@ return {
             local params = RaycastParams.new()
             params.FilterType = Enum.RaycastFilterType.Blacklist
             params.FilterDescendantsInstances = {Camera, game.Players.LocalPlayer.Character}
-
             local result = workspace:Raycast(origin, direction, params)
             if not result then return true end
             return result.Instance:IsDescendantOf(part.Parent)
         end
 
-        -- Cache NPC setiap 1 detik
         local validNPCs = {}
         task.spawn(function()
             while true do
@@ -136,7 +119,6 @@ return {
             end
         end)
 
-        -- Cari target terdekat di tengah layar
         local function getClosestTarget()
             local center = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
             local closest, bestDist = nil, vars.CircleSize
@@ -153,9 +135,19 @@ return {
             return closest
         end
 
-        -- Aimbot loop
+        if RemoteEvent then
+            RemoteEvent.OnClientEvent:Connect(function(action, id, _, actionType, state)
+                if action == "ActionActor" and actionType == "ADS" then
+                    vars.ADSActive = state
+                    vars.AimbotEnabled = state
+                    print(state and "[ADS] Aim aktif otomatis 🎯" or "[ADS] Aim nonaktif ❌")
+                end
+            end)
+        else
+            warn("[AIM] RemoteEvent tidak ditemukan di ReplicatedStorage.Events.RemoteEvent")
+        end
+
         RunService.RenderStepped:Connect(function(dt)
-            -- Circle
             aimCircle.Visible = vars.ShowCircle
             if vars.ShowCircle then
                 local center = Camera.ViewportSize / 2
@@ -164,21 +156,17 @@ return {
             end
 
             if not vars.AimbotEnabled then return end
-
             local target = getClosestTarget()
             if target then
                 local curCF = Camera.CFrame
                 local targetCF = CFrame.lookAt(curCF.Position, target.Position)
-
-                -- adaptif lerp (kuat tapi smooth)
                 local strength = math.clamp(vars.AimStrength, 0.1, 1)
                 local smooth = math.clamp(vars.AimSmoothness, 0.05, 0.5)
                 local delta = dt * (strength / smooth) * 5
-
                 Camera.CFrame = curCF:Lerp(targetCF, math.clamp(delta, 0.15, 0.8))
             end
         end)
 
-        print("✅ [AIM] Aimbot diperkuat — respons lebih cepat & stabil. Fokus ke Model 'Male' dengan AI_.")
+        print("✅ [AIM] Aimbot siap, aktif otomatis saat ADS ditekan.")
     end
 }
