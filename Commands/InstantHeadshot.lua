@@ -48,18 +48,18 @@ return {
           return heads
       end
 
-      -- Fungsi tembak manual headshot
+      -- Fungsi tembak manual headshot dengan instant kill
       local function FireManualHeadshot()
           if not vars.ManualHeadshotEnabled then return end
           local origin = Camera.CFrame.Position
           local heads = getNPCHeads()
           for _, head in ipairs(heads) do
-              -- Kirim data ke server, langsung headshot
-              BulletEvent:Fire(
-                  2,          -- contoh parameter, sesuaikan dengan game
-                  head.Position,
-                  origin
-              )
+            -- Mengirim damage sangat besar agar langsung membunuh
+            BulletEvent:Fire(
+                999999, -- damage besar untuk instant kill
+                head.Position,
+                origin
+            )
           end
       end
 
