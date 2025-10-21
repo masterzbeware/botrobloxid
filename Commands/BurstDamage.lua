@@ -1,4 +1,4 @@
--- FastFire_Instant.lua
+-- FastFire_Manual.lua
 return {
   Execute = function(tab)
       local vars = _G.BotVars or {}
@@ -13,9 +13,9 @@ return {
 
       vars.FastFireEnabled = vars.FastFireEnabled or false
       local BULLET_COUNT = 5      -- jumlah peluru per klik
-      local BULLET_DELAY = 0.02   -- delay antar peluru
+      local BULLET_DELAY = 0.01   -- delay antar peluru
 
-      local Group = tab:AddLeftGroupbox("Fast Fire Instant")
+      local Group = tab:AddLeftGroupbox("Fast Fire Manual")
 
       Group:AddToggle("FastFireToggle", {
           Text = "Aktifkan Fast Fire",
@@ -51,7 +51,7 @@ return {
           return heads
       end
 
-      -- Fungsi tembak burst cepat
+      -- Fungsi tembak manual fast fire
       local function FireFast()
           if not vars.FastFireEnabled then return end
           local originCFrame = Camera.CFrame
@@ -76,7 +76,7 @@ return {
           end
       end
 
-      -- Klik mouse kiri untuk tembak
+      -- Manual fire → klik mouse kiri
       UserInputService.InputBegan:Connect(function(input, gpe)
           if gpe then return end
           if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -84,6 +84,6 @@ return {
           end
       end)
 
-      print("✅ [FastFire] Siap. Klik mouse untuk menembak burst cepat dengan velocity & range tinggi.")
+      print("✅ [FastFire] Siap. Klik mouse untuk menembak burst cepat ke kepala NPC dengan wallbang.")
   end
 }
