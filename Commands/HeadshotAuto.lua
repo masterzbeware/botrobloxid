@@ -1,17 +1,14 @@
--- HeadshotAuto.lua
--- 🎯 Auto Headshot ke NPC Male AI_ menggunakan BulletServiceMultithread.Send (ringan + draggable range, tanpa burst)
-
 return {
   Execute = function()
       local vars = _G.BotVars
+      vars.ToggleAutoHeadshot = vars.ToggleAutoHeadshot or false
       local Window = vars.MainWindow
       local Camera = workspace.CurrentCamera
       local ReplicatedFirst = game:GetService("ReplicatedFirst")
       local UserInputService = game:GetService("UserInputService")
       local HttpService = game:GetService("HttpService")
-      local RunService = game:GetService("RunService")
 
-      -- Cari Send remote
+      -- Remote
       local Actor = ReplicatedFirst:WaitForChild("Actor", 2)
       local BulletSvc = Actor:WaitForChild("BulletServiceMultithread", 2)
       local Send = BulletSvc:WaitForChild("Send", 2)
@@ -20,20 +17,18 @@ return {
       local Tabs = { Headshot = Window:AddTab("HEADSHOT", "target") }
       local Group = Tabs.Headshot:AddLeftGroupbox("Headshot Control")
 
-      -- Toggle headshot
       Group:AddToggle("EnableAutoHeadshot", {
           Text = "Aktifkan Headshot",
-          Default = false,
+          Default = vars.ToggleAutoHeadshot,
           Callback = function(Value)
               vars.ToggleAutoHeadshot = Value
               print(Value and "[Headshot] Aktif ✅" or "[Headshot] Nonaktif ❌")
           end
       })
 
-      -- Draggable slider untuk jarak tembak
       Group:AddSlider("HeadshotRange", {
           Text = "Jarak Headshot",
-          Default = 500, -- default 500 studs
+          Default = 500,
           Min = 50,
           Max = 2000,
           Rounding = 0,
@@ -42,7 +37,6 @@ return {
           end
       })
 
-      -- Cari semua kepala NPC Male AI_ dalam range
       local function getHeadsInRange()
           local heads = {}
           local range = vars.HeadshotRange or 500
@@ -62,7 +56,6 @@ return {
           return heads
       end
 
-      -- Payload Sigma Spy style
       local function makePayload(originCFrame, uid)
           return {
               Velocity = 3110.666858146635,
@@ -77,24 +70,18 @@ return {
           }
       end
 
-      -- Fungsi tembak kepala NPC (hapus burst, hanya tembak 1 kepala terdekat)
       local function shootHeads()
           if not vars.ToggleAutoHeadshot then return end
           local heads = getHeadsInRange()
           if #heads == 0 then return end
 
           local originCFrame = Camera.CFrame
-
-          -- Ambil kepala pertama saja
           local head = heads[1]
           local uid = HttpService:GenerateGUID(false)
           local payload = makePayload(originCFrame, uid)
-          pcall(function()
-              Send:Fire(1, uid, payload)
-          end)
+          pcall(function() Send:Fire(1, uid, payload) end)
       end
 
-      -- Klik kiri untuk menembak kepala NPC
       UserInputService.InputBegan:Connect(function(input, gpe)
           if gpe then return end
           if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -102,6 +89,6 @@ return {
           end
       end)
 
-      print("✅ HeadshotAuto.lua aktif — Klik untuk tembak kepala NPC, jarak bisa diatur, tanpa burst")
+      print("✅ HeadshotAuto.lua kompatibel aktif")
   end
 }

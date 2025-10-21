@@ -1,27 +1,24 @@
--- AIM_LockHead.lua
--- 🎯 Aim Assist Lengket ke Kepala NPC "Male" (Instan Lock)
-
 return {
     Execute = function()
         local vars = _G.BotVars
+        vars.ToggleAIM = vars.ToggleAIM or false
         local Window = vars.MainWindow
         local Camera = workspace.CurrentCamera
         local RunService = game:GetService("RunService")
 
-        -- UI Tab
+        -- UI
         local Tabs = { Aim = Window:AddTab("AIM", "crosshair") }
         local Group = Tabs.Aim:AddLeftGroupbox("AIM Assist Control")
 
         Group:AddToggle("EnableAIM", {
             Text = "Aktifkan Aim Assist Lengket (Lock Kepala)",
-            Default = false,
+            Default = vars.ToggleAIM,
             Callback = function(Value)
                 vars.ToggleAIM = Value
-                print(Value and "[AIM] Lengket Aim Assist Aktif ✅" or "[AIM] Nonaktif ❌")
+                print(Value and "[AIM] Lengket Aim Aktif ✅" or "[AIM] Nonaktif ❌")
             end
         })
 
-        -- Slider Smoothness (opsional)
         Group:AddSlider("AimSmoothness", {
             Text = "Kelembutan Aim (0 = instan)",
             Default = 0,
@@ -33,7 +30,6 @@ return {
             end
         })
 
-        -- Cari kepala NPC terdekat
         local function getNearestHead()
             local nearest, dist = nil, math.huge
             for _, model in ipairs(workspace:GetChildren()) do
@@ -56,10 +52,8 @@ return {
             return nearest
         end
 
-        -- Lock kamera ke kepala target
         RunService.RenderStepped:Connect(function()
             if not vars.ToggleAIM then return end
-
             local head = getNearestHead()
             if not head then return end
 
@@ -69,6 +63,6 @@ return {
             Camera.CFrame = currentCF:Lerp(targetCF, smooth)
         end)
 
-        print("✅ AIM_LockHead.lua aktif — kamera otomatis lock kepala NPC")
+        print("✅ AIM_LockHead.lua kompatibel aktif")
     end
 }
