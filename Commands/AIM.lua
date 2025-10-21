@@ -1,7 +1,13 @@
+-- AIM_OnlyAimbot.lua
+-- AIM only: lock kamera ke kepala NPC "Male" (AI_) — tanpa auto-fire
+
 return {
     Execute = function()
         local vars = _G.BotVars
         vars.ToggleAIM = vars.ToggleAIM or false
+        vars.AimSmoothness = vars.AimSmoothness or 0
+        vars.AimRange = vars.AimRange or 500
+
         local Window = vars.MainWindow
         local Camera = workspace.CurrentCamera
         local RunService = game:GetService("RunService")
@@ -11,17 +17,17 @@ return {
         local Group = Tabs.Aim:AddLeftGroupbox("AIM Assist Control")
 
         Group:AddToggle("EnableAIM", {
-            Text = "Aktifkan Aim Assist Lengket (Lock Kepala)",
+            Text = "Aktifkan AIM (Lock Kepala)",
             Default = vars.ToggleAIM,
             Callback = function(Value)
                 vars.ToggleAIM = Value
-                print(Value and "[AIM] Lengket Aim Aktif ✅" or "[AIM] Nonaktif ❌")
+                print(Value and "[AIM] Aktif ✅" or "[AIM] Nonaktif ❌")
             end
         })
 
         Group:AddSlider("AimSmoothness", {
             Text = "Kelembutan Aim (0 = instan)",
-            Default = 0,
+            Default = vars.AimSmoothness,
             Min = 0,
             Max = 0.1,
             Rounding = 3,
@@ -30,29 +36,52 @@ return {
             end
         })
 
+        Group:AddSlider("AimRange", {
+            Text = "Max Range Target (studs)",
+            Default = vars.AimRange,
+            Min = 50,
+            Max = 2000,
+            Rounding = 0,
+            Callback = function(Value)
+                vars.AimRange = Value
+            end
+        })
+
+        -- helper: valid NPC detection (Male + AI_ child + alive)
+        local function isValidNPC(model)
+            if not model or not model:IsA("Model") or model.Name ~= "Male" then return false end
+            local humanoid = model:FindFirstChildOfClass("Humanoid")
+            if not humanoid or humanoid.Health <= 0 then return false end
+            for _, c in ipairs(model:GetChildren()) do
+                if string.sub(c.Name,1,3) == "AI_" then return true end
+            end
+            return false
+        end
+
+        -- cari kepala terdekat dalam range
         local function getNearestHead()
             local nearest, dist = nil, math.huge
-            for _, model in ipairs(workspace:GetChildren()) do
-                if model:IsA("Model") and model.Name == "Male" and model:FindFirstChildOfClass("Humanoid") then
-                    for _, child in ipairs(model:GetChildren()) do
-                        if string.sub(child.Name,1,3) == "AI_" then
-                            local head = model:FindFirstChild("Head")
-                            if head then
-                                local magnitude = (head.Position - Camera.CFrame.Position).Magnitude
-                                if magnitude < dist then
-                                    nearest = head
-                                    dist = magnitude
-                                end
-                            end
-                            break
+            local camPos = Camera.CFrame.Position
+            local maxRange = vars.AimRange or 500
+
+            for _, model in ipairs(workspace:GetDescendants()) do
+                if model:IsA("Model") and isValidNPC(model) then
+                    local head = model:FindFirstChild("Head")
+                    if head and head:IsA("BasePart") then
+                        local d = (head.Position - camPos).Magnitude
+                        if d <= maxRange and d < dist then
+                            nearest = head
+                            dist = d
                         end
                     end
                 end
             end
+
             return nearest
         end
 
-        RunService.RenderStepped:Connect(function()
+        -- RenderStepped: aim lock kamera ke kepala target (smoothing optional)
+        RunService:BindToRenderStep("AIM_LockHead", Enum.RenderPriority.Camera.Value + 1, function()
             if not vars.ToggleAIM then return end
             local head = getNearestHead()
             if not head then return end
@@ -63,6 +92,6 @@ return {
             Camera.CFrame = currentCF:Lerp(targetCF, smooth)
         end)
 
-        print("✅ AIM_LockHead.lua kompatibel aktif")
+        print("✅ AIM_OnlyAimbot.lua aktif — hanya lock kepala, tanpa auto-fire")
     end
 }
