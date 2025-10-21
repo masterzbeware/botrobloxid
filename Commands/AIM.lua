@@ -1,5 +1,5 @@
 -- AIM.lua
--- 🎯 Smooth Aim Assist: Kamera otomatis mengikuti kepala NPC "Male" (headshot only)
+-- 🎯 Auto Aim Lengket ke Kepala NPC "Male"
 
 return {
     Execute = function()
@@ -8,31 +8,20 @@ return {
         local Camera = workspace.CurrentCamera
         local RunService = game:GetService("RunService")
 
-        -- 🪶 UI Tab
+        -- UI Tab
         local Tabs = { Aim = Window:AddTab("AIM", "crosshair") }
         local Group = Tabs.Aim:AddLeftGroupbox("AIM Assist Control")
 
         Group:AddToggle("EnableAIM", {
-            Text = "Aktifkan Aim Assist (Lock Kepala)",
+            Text = "Aktifkan Aim Assist Lengket (Lock Kepala)",
             Default = false,
             Callback = function(Value)
                 vars.ToggleAIM = Value
-                print(Value and "[AIM] Smooth Aim Assist Aktif ✅" or "[AIM] Nonaktif ❌")
+                print(Value and "[AIM] Lengket Aim Assist Aktif ✅" or "[AIM] Nonaktif ❌")
             end
         })
 
-        Group:AddSlider("AimSmoothness", {
-            Text = "Kelembutan Aim",
-            Default = 0.2, -- Semakin kecil lebih halus, semakin besar lebih cepat
-            Min = 0.05,
-            Max = 1,
-            Rounding = 2,
-            Callback = function(Value)
-                vars.AimSmoothness = Value
-            end
-        })
-
-        -- 🔍 Cari kepala NPC terdekat (head only)
+        -- Cari kepala NPC terdekat (head only)
         local function getNearestHead()
             local nearest, dist = nil, math.huge
             for _, model in ipairs(workspace:GetChildren()) do
@@ -55,28 +44,19 @@ return {
             return nearest
         end
 
-        -- 🎯 Smooth Aim Assist
+        -- Auto Aim Lock Kepala
         RunService.RenderStepped:Connect(function()
-            if not vars.ToggleAIM then
-                vars.CurrentAimTarget = nil
-                return
-            end
+            if not vars.ToggleAIM then return end
 
             local head = getNearestHead()
-            if not head then
-                vars.CurrentAimTarget = nil
-                return
-            end
+            if not head then return end
 
-            vars.CurrentAimTarget = head
-
-            -- 🎥 Smooth rotate kamera menuju kepala target
+            -- Kamera langsung lock ke kepala target
             local currentCF = Camera.CFrame
             local targetCF = CFrame.lookAt(currentCF.Position, head.Position)
-            local smoothness = vars.AimSmoothness or 0.2
-            Camera.CFrame = currentCF:Lerp(targetCF, smoothness)
+            Camera.CFrame = currentCF:Lerp(targetCF, 0.01) -- 0.01 = super lengket
         end)
 
-        print("✅ AIM.lua aktif — Smooth Aim Assist hanya ke kepala NPC (Head Only)")
+        print("✅ AIM.lua aktif — kamera otomatis lengket ke kepala NPC")
     end
 }
