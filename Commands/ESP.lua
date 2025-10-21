@@ -1,3 +1,4 @@
+-- OptimizedESP.lua
 return {
     Execute = function()
         local vars = _G.BotVars
@@ -9,12 +10,15 @@ return {
         local RunService = game:GetService("RunService")
         local Camera = workspace.CurrentCamera
 
-        local SkeletonColor = Color3.fromRGB(255, 255, 255) -- garis skeleton putih
-        local TracerColor = Color3.fromRGB(255, 0, 0)       -- tracer merah
-        local DistanceColor = Color3.fromRGB(255, 255, 255) -- jarak putih
+        local SkeletonColor = Color3.fromRGB(255, 255, 255)
+        local TracerColor = Color3.fromRGB(255, 0, 0)
+        local DistanceColor = Color3.fromRGB(255, 255, 255)
         local ActiveESP = {}
         local ESPConnection, DescendantConnection
 
+        local ESPRange = 300 -- max range ESP, NPC di luar ini tidak diupdate
+
+        -- Check valid NPC
         local function isValidNPC(model)
             if not model:IsA("Model") or model.Name ~= "Male" then return false end
             local humanoid = model:FindFirstChildOfClass("Humanoid")
@@ -25,15 +29,17 @@ return {
             return false
         end
 
+        local partNames = {
+            "Head","UpperTorso","LowerTorso",
+            "LeftUpperArm","LeftLowerArm","LeftHand",
+            "RightUpperArm","RightLowerArm","RightHand",
+            "LeftUpperLeg","LeftLowerLeg","LeftFoot",
+            "RightUpperLeg","RightLowerLeg","RightFoot"
+        }
+
         local function getBodyParts(model)
             local parts = {}
-            for _, name in ipairs({
-                "Head","UpperTorso","LowerTorso",
-                "LeftUpperArm","LeftLowerArm","LeftHand",
-                "RightUpperArm","RightLowerArm","RightHand",
-                "LeftUpperLeg","LeftLowerLeg","LeftFoot",
-                "RightUpperLeg","RightLowerLeg","RightFoot"
-            }) do
+            for _, name in ipairs(partNames) do
                 local p = model:FindFirstChild(name)
                 if p and p:IsA("BasePart") then
                     parts[name] = p
@@ -63,7 +69,6 @@ return {
 
         local function createESP(model)
             if ActiveESP[model] or not isValidNPC(model) then return end
-
             local parts = getBodyParts(model)
             local lines = {}
             for _ in pairs(parts) do table.insert(lines, newLine(false)) end
@@ -71,17 +76,15 @@ return {
             local distanceText = newText()
 
             ActiveESP[model] = {
+                Parts = parts,
                 Lines = lines,
                 Tracer = tracer,
-                Text = distanceText,
-                Parts = parts,
-                Initialized = false
+                Text = distanceText
             }
 
-            -- Remove ESP jika model hilang
             local function removeESP()
                 if ActiveESP[model] then
-                    for _, obj in pairs(ActiveESP[model].Lines) do obj:Remove() end
+                    for _, l in pairs(ActiveESP[model].Lines) do l:Remove() end
                     ActiveESP[model].Tracer:Remove()
                     ActiveESP[model].Text:Remove()
                     ActiveESP[model] = nil
@@ -91,16 +94,13 @@ return {
             model.AncestryChanged:Connect(function(_, parent)
                 if not parent then removeESP() end
             end)
-
             local humanoid = model:FindFirstChildOfClass("Humanoid")
-            if humanoid then
-                humanoid.Died:Connect(removeESP)
-            end
+            if humanoid then humanoid.Died:Connect(removeESP) end
         end
 
         local function clearAllESP()
             for _, data in pairs(ActiveESP) do
-                for _, obj in pairs(data.Lines) do obj:Remove() end
+                for _, l in pairs(data.Lines) do l:Remove() end
                 data.Tracer:Remove()
                 data.Text:Remove()
             end
@@ -112,64 +112,70 @@ return {
                 if isValidNPC(obj) then createESP(obj) end
             end
 
-            -- RenderStepped update ESP
             ESPConnection = RunService.RenderStepped:Connect(function()
+                local camPos = Camera.CFrame.Position
+                local halfX, halfY = Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2
+
                 for model, data in pairs(ActiveESP) do
                     if not isValidNPC(model) then
-                        -- Remove ESP jika NPC mati atau hilang
-                        for _, obj in pairs(data.Lines) do obj:Remove() end
-                        data.Tracer:Remove()
-                        data.Text:Remove()
+                        for _, l in pairs(data.Lines) do l.Visible = false end
+                        data.Tracer.Visible = false
+                        data.Text.Visible = false
                         ActiveESP[model] = nil
                         continue
                     end
 
-                    local parts = data.Parts
-                    local torso = parts.UpperTorso or parts.LowerTorso
-                    if torso then
-                        local pos, onScreen = Camera:WorldToViewportPoint(torso.Position)
-                        local visible = onScreen
-                        data.Text.Position = Vector2.new(pos.X,pos.Y-25)
-                        data.Text.Text = string.format("%.1fm",(Camera.CFrame.Position - torso.Position).Magnitude)
-                        data.Text.Visible = visible
+                    local torso = data.Parts.UpperTorso or data.Parts.LowerTorso
+                    if not torso then continue end
+                    local dist = (torso.Position - camPos).Magnitude
+                    if dist > ESPRange then
+                        for _, l in pairs(data.Lines) do l.Visible = false end
+                        data.Tracer.Visible = false
+                        data.Text.Visible = false
+                        continue
+                    end
 
-                        data.Tracer.From = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y)
+                    local pos, onScreen = Camera:WorldToViewportPoint(torso.Position)
+                    if not onScreen then
+                        data.Text.Visible = false
+                        data.Tracer.Visible = false
+                    else
+                        data.Text.Position = Vector2.new(pos.X,pos.Y-25)
+                        data.Text.Text = string.format("%.1fm", dist)
+                        data.Text.Visible = true
+
+                        data.Tracer.From = Vector2.new(halfX, Camera.ViewportSize.Y)
                         data.Tracer.To = Vector2.new(pos.X,pos.Y)
-                        data.Tracer.Visible = visible
+                        data.Tracer.Visible = true
                     end
 
                     local function drawLine(p1,p2,line)
-                        if p1 and p2 then
-                            local p1v,on1 = Camera:WorldToViewportPoint(p1.Position)
-                            local p2v,on2 = Camera:WorldToViewportPoint(p2.Position)
-                            local vis = on1 or on2
-                            line.From = Vector2.new(p1v.X,p1v.Y)
-                            line.To = Vector2.new(p2v.X,p2v.Y)
-                            line.Visible = vis
-                        else
-                            line.Visible = false
-                        end
+                        if not p1 or not p2 then line.Visible=false return end
+                        local p1v, on1 = Camera:WorldToViewportPoint(p1.Position)
+                        local p2v, on2 = Camera:WorldToViewportPoint(p2.Position)
+                        line.From = Vector2.new(p1v.X,p1v.Y)
+                        line.To = Vector2.new(p2v.X,p2v.Y)
+                        line.Visible = on1 or on2
                     end
 
                     local i=1
-                    drawLine(parts.Head, parts.UpperTorso, data.Lines[i]); i+=1
-                    drawLine(parts.UpperTorso, parts.LowerTorso, data.Lines[i]); i+=1
-                    drawLine(parts.UpperTorso, parts.LeftUpperArm, data.Lines[i]); i+=1
-                    drawLine(parts.LeftUpperArm, parts.LeftLowerArm, data.Lines[i]); i+=1
-                    drawLine(parts.LeftLowerArm, parts.LeftHand, data.Lines[i]); i+=1
-                    drawLine(parts.UpperTorso, parts.RightUpperArm, data.Lines[i]); i+=1
-                    drawLine(parts.RightUpperArm, parts.RightLowerArm, data.Lines[i]); i+=1
-                    drawLine(parts.RightLowerArm, parts.RightHand, data.Lines[i]); i+=1
-                    drawLine(parts.LowerTorso, parts.LeftUpperLeg, data.Lines[i]); i+=1
-                    drawLine(parts.LeftUpperLeg, parts.LeftLowerLeg, data.Lines[i]); i+=1
-                    drawLine(parts.LeftLowerLeg, parts.LeftFoot, data.Lines[i]); i+=1
-                    drawLine(parts.LowerTorso, parts.RightUpperLeg, data.Lines[i]); i+=1
-                    drawLine(parts.RightUpperLeg, parts.RightLowerLeg, data.Lines[i]); i+=1
-                    drawLine(parts.RightLowerLeg, parts.RightFoot, data.Lines[i])
+                    drawLine(data.Parts.Head, data.Parts.UpperTorso, data.Lines[i]); i+=1
+                    drawLine(data.Parts.UpperTorso, data.Parts.LowerTorso, data.Lines[i]); i+=1
+                    drawLine(data.Parts.UpperTorso, data.Parts.LeftUpperArm, data.Lines[i]); i+=1
+                    drawLine(data.Parts.LeftUpperArm, data.Parts.LeftLowerArm, data.Lines[i]); i+=1
+                    drawLine(data.Parts.LeftLowerArm, data.Parts.LeftHand, data.Lines[i]); i+=1
+                    drawLine(data.Parts.UpperTorso, data.Parts.RightUpperArm, data.Lines[i]); i+=1
+                    drawLine(data.Parts.RightUpperArm, data.Parts.RightLowerArm, data.Lines[i]); i+=1
+                    drawLine(data.Parts.RightLowerArm, data.Parts.RightHand, data.Lines[i]); i+=1
+                    drawLine(data.Parts.LowerTorso, data.Parts.LeftUpperLeg, data.Lines[i]); i+=1
+                    drawLine(data.Parts.LeftUpperLeg, data.Parts.LeftLowerLeg, data.Lines[i]); i+=1
+                    drawLine(data.Parts.LeftLowerLeg, data.Parts.LeftFoot, data.Lines[i]); i+=1
+                    drawLine(data.Parts.LowerTorso, data.Parts.RightUpperLeg, data.Lines[i]); i+=1
+                    drawLine(data.Parts.RightUpperLeg, data.Parts.RightLowerLeg, data.Lines[i]); i+=1
+                    drawLine(data.Parts.RightLowerLeg, data.Parts.RightFoot, data.Lines[i])
                 end
             end)
 
-            -- NPC baru spawn
             DescendantConnection = workspace.DescendantAdded:Connect(function(obj)
                 if isValidNPC(obj) then createESP(obj) end
             end)

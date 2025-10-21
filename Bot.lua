@@ -24,7 +24,7 @@ _G.BotVars = {
 -- 🎨 Buat satu Window utama (pakai cursor default Roblox)
 local MainWindow = Library:CreateWindow({
     Title = "MasterZ HUB",
-    Footer = "1.0.0",
+    Footer = "1.1.0",
     Icon = 0,
     -- ShowCustomCursor dihapus, pakai default Roblox
 })

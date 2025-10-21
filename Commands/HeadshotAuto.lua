@@ -1,148 +1,140 @@
--- HeadshotAuto.lua
--- Hanya Auto-Headshot ke semua Male AI_ (tanpa AIM / camera lock)
+-- HeadshotManual_ThroughWalls.lua
+-- Manual multi-headshot: menembak semua Male AI_ di dalam range saat klik kiri, menembus tembok
 return {
-  Execute = function()
-      local vars = _G.BotVars or {}
-      _G.BotVars = vars
+    Execute = function()
+        local vars = _G.BotVars or {}
+        _G.BotVars = vars
 
-      vars.ToggleAutoHeadshot = vars.ToggleAutoHeadshot or false
-      vars.HeadshotRange = vars.HeadshotRange or 500
-      vars.AutoFireInterval = vars.AutoFireInterval or 0.12 -- detik antara tembakan otomatis
-      local Window = vars.MainWindow
-      local Camera = workspace.CurrentCamera
+        vars.EnableManualHeadshot = vars.EnableManualHeadshot or false
+        vars.HeadshotRange = vars.HeadshotRange or 500
+        vars.MaxTargetsPerShot = vars.MaxTargetsPerShot or 100
 
-      local ReplicatedFirst = game:GetService("ReplicatedFirst")
-      local HttpService = game:GetService("HttpService")
-      local RunService = game:GetService("RunService")
+        local Camera = workspace.CurrentCamera
+        local ReplicatedFirst = game:GetService("ReplicatedFirst")
+        local HttpService = game:GetService("HttpService")
+        local UserInputService = game:GetService("UserInputService")
 
-      -- Remote
-      local Actor = ReplicatedFirst:WaitForChild("Actor", 2)
-      local BulletSvc = Actor and Actor:FindFirstChild("BulletServiceMultithread")
-      local Send = BulletSvc and BulletSvc:FindFirstChild("Send")
+        -- UI (jika tersedia)
+        local Window = vars.MainWindow
+        if Window then
+            local Tabs = { Headshot = Window:AddTab("HEADSHOT", "target") }
+            local Group = Tabs.Headshot:AddLeftGroupbox("Headshot Control")
 
-      if not Send then
-          warn("[HeadshotAuto] Bullet Send remote tidak ditemukan. Script dihentikan.")
-          return
-      end
+            Group:AddToggle("EnableManualHeadshot", {
+                Text = "Aktifkan Manual Headshot (Klik kiri untuk tembak semua)",
+                Default = vars.EnableManualHeadshot,
+                Callback = function(Value) vars.EnableManualHeadshot = Value end
+            })
 
-      -- UI (hanya HEADSHOT tab)
-      local Tabs = { Headshot = Window:AddTab("HEADSHOT", "target") }
-      local GroupHeadshot = Tabs.Headshot:AddLeftGroupbox("Headshot Control")
+            Group:AddSlider("HeadshotRange", {
+                Text = "Range Tembak (studs)",
+                Default = vars.HeadshotRange,
+                Min = 50,
+                Max = 2000,
+                Rounding = 0,
+                Callback = function(Value) vars.HeadshotRange = Value end
+            })
 
-      GroupHeadshot:AddToggle("EnableAutoHeadshot", {
-          Text = "Aktifkan Auto Headshot (ke semua AI Male)",
-          Default = vars.ToggleAutoHeadshot,
-          Callback = function(Value)
-              vars.ToggleAutoHeadshot = Value
-              print(Value and "[Headshot] Aktif ✅" or "[Headshot] Nonaktif ❌")
-          end
-      })
+            Group:AddSlider("MaxTargetsPerShot", {
+                Text = "Max Targets Per Click",
+                Default = vars.MaxTargetsPerShot,
+                Min = 1,
+                Max = 200,
+                Rounding = 0,
+                Callback = function(Value) vars.MaxTargetsPerShot = Value end
+            })
+        end
 
-      GroupHeadshot:AddSlider("HeadshotRange", {
-          Text = "Jarak Headshot (studs)",
-          Default = vars.HeadshotRange,
-          Min = 50,
-          Max = 2000,
-          Rounding = 0,
-          Callback = function(Value)
-              vars.HeadshotRange = Value
-          end
-      })
+        -- Remote setup
+        local Actor = ReplicatedFirst:WaitForChild("Actor", 2)
+        local BulletSvc = Actor and Actor:FindFirstChild("BulletServiceMultithread")
+        local Send = BulletSvc and BulletSvc:FindFirstChild("Send")
+        if not Send then
+            warn("[HeadshotManual] Bullet Send remote tidak ditemukan.")
+            return
+        end
 
-      GroupHeadshot:AddSlider("AutoFireInterval", {
-          Text = "Interval Tembak (detik)",
-          Default = vars.AutoFireInterval,
-          Min = 0.01,
-          Max = 1,
-          Rounding = 3,
-          Callback = function(Value)
-              vars.AutoFireInterval = Value
-          end
-      })
+        -- Helper: cek Male AI_ valid & hidup
+        local function isValidNPC(model)
+            if not model or not model:IsA("Model") or model.Name ~= "Male" then return false end
+            local humanoid = model:FindFirstChildOfClass("Humanoid")
+            if not humanoid or humanoid.Health <= 0 then return false end
+            for _, c in ipairs(model:GetChildren()) do
+                if type(c.Name) == "string" and c.Name:find("AI_") then return true end
+            end
+            return false
+        end
 
-      -- Helper: apakah model Male memiliki anak yang namanya mengandung "AI_"
-      local function modelHasAINode(mdl)
-          for _, child in ipairs(mdl:GetChildren()) do
-              if type(child.Name) == "string" and child.Name:find("AI_") then
-                  return true
-              end
-          end
-          return false
-      end
+        -- Ambil semua target dalam range (melewati tembok)
+        local function getTargetsInRange()
+            local camPos = Camera and Camera.CFrame.Position or workspace.CurrentCamera.CFrame.Position
+            local range = vars.HeadshotRange or 500
+            local targets = {}
 
-      -- Cari semua kepala (Head / HumanoidRootPart / BasePart) dari Male AI_ dalam range
-      local function getAIHeadsInRange()
-          local heads = {}
-          local range = vars.HeadshotRange or 500
-          local camPos = (Camera and Camera.CFrame and Camera.CFrame.Position) or workspace.CurrentCamera.CFrame.Position
-          for _, obj in ipairs(workspace:GetChildren()) do
-              if obj:IsA("Model") and obj.Name == "Male" and modelHasAINode(obj) then
-                  local targetPart = obj:FindFirstChild("Head") or obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChildWhichIsA("BasePart")
-                  if targetPart then
-                      local mag = (targetPart.Position - camPos).Magnitude
-                      if mag <= range then
-                          table.insert(heads, {part = targetPart, dist = mag})
-                      end
-                  end
-              end
-          end
-          return heads
-      end
+            for _, model in ipairs(workspace:GetChildren()) do
+                if model:IsA("Model") and isValidNPC(model) then
+                    local head = model:FindFirstChild("Head") or model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildWhichIsA("BasePart")
+                    if head then
+                        local d = (head.Position - camPos).Magnitude
+                        if d <= range then
+                            table.insert(targets, {model = model, part = head, dist = d})
+                        end
+                    end
+                end
+            end
 
-      -- Payload builder (mengikuti pola Send:Fire(1, UIDString, payload))
-      local function makePayload(originCFrame, uid)
-          return {
-              Velocity = 3110.666858146635,
-              Caliber = "intermediaterifle_556x45mmNATO_M855",
-              UID = uid,
-              Ignore = workspace.Male,
-              OriginCFrame = originCFrame,
-              Tracer = "Default",
-              Replicate = true,
-              Local = true,
-              Range = 2104.8866884716813,
-          }
-      end
+            -- urutkan jarak terdekat dulu
+            table.sort(targets, function(a,b) return a.dist < b.dist end)
+            return targets
+        end
 
-      -- Fungsi tembak ke part (mengatur OriginCFrame agar menghadap target)
-      local function fireAtPart(part)
-          if not part or not Camera then return end
-          local originPos = Camera.CFrame.Position
-          local originCFrame = CFrame.lookAt(originPos, part.Position)
-          local uid = HttpService:GenerateGUID(false)
-          local payload = makePayload(originCFrame, uid)
+        -- Payload builder
+        local function buildPayload(originCFrame, uid)
+            return {
+                Velocity = 3110.666858146635,
+                Caliber = "intermediaterifle_556x45mmNATO_M855",
+                UID = uid,
+                Ignore = workspace.Male,
+                OriginCFrame = originCFrame,
+                Tracer = "Default",
+                Replicate = true,
+                Local = true,
+                Range = vars.HeadshotRange or 2104.88,
+            }
+        end
 
-          pcall(function()
-              Send:Fire(1, uid, payload)
-          end)
+        -- Fungsi tembak semua target
+        local function fireAllTargets()
+            if not vars.EnableManualHeadshot then return end
+            if not Camera then return end
 
-          -- Kirim juga BulletEvent lokal jika tersedia (opsional)
-          local BulletEvent = ReplicatedFirst:FindFirstChild("BulletEvent")
-          if BulletEvent then
-              pcall(function()
-                  BulletEvent:Fire(1, uid, true, part.Position, part, (part.Position - originPos).Unit, Enum.Material.Wood, 0.018505063986543308)
-              end)
-          end
-      end
+            local camPos = Camera.CFrame.Position
+            local targets = getTargetsInRange()
+            if #targets == 0 then return end
 
-      -- Loop auto-fire (throttle menggunakan AutoFireInterval)
-      local lastFire = 0
-      RunService.Heartbeat:Connect(function(dt)
-          if not vars.ToggleAutoHeadshot then return end
-          lastFire = lastFire + dt
-          if lastFire < (vars.AutoFireInterval or 0.12) then return end
-          lastFire = 0
+            local maxTargets = math.max(1, math.floor(vars.MaxTargetsPerShot or 100))
+            local uidBase = HttpService:GenerateGUID(false)
+            local fired = 0
 
-          local heads = getAIHeadsInRange()
-          if #heads == 0 then return end
+            for i, info in ipairs(targets) do
+                if fired >= maxTargets then break end
+                local targetPart = info.part
+                local originCFrame = CFrame.lookAt(camPos, targetPart.Position)
+                local uid = uidBase .. "-" .. tostring(i)
+                local payload = buildPayload(originCFrame, uid)
+                pcall(Send.Fire, Send, 1, uid, payload)
+                fired = fired + 1
+            end
+        end
 
-          for _, info in ipairs(heads) do
-              pcall(function()
-                  fireAtPart(info.part)
-              end)
-          end
-      end)
+        -- Bind klik kiri
+        UserInputService.InputBegan:Connect(function(input, gameProcessed)
+            if gameProcessed then return end
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                task.spawn(fireAllTargets)
+            end
+        end)
 
-      print("✅ HeadshotAuto.lua aktif — auto-fire ke semua Male AI_ (tanpa AIM)")
-  end
+        print("✅ HeadshotManual_ThroughWalls.lua aktif — klik kiri untuk menembak semua Male AI_ dalam range, menembus tembok")
+    end
 }
