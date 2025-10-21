@@ -9,7 +9,8 @@ return {
         local RunService = game:GetService("RunService")
         local Camera = workspace.CurrentCamera
 
-        local SkeletonColor = Color3.fromRGB(255, 0, 0) -- garis skeleton merah
+        local SkeletonColor = Color3.fromRGB(255, 255, 255) -- garis skeleton putih
+        local TracerColor = Color3.fromRGB(255, 0, 0)       -- tracer merah
         local DistanceColor = Color3.fromRGB(255, 255, 255) -- jarak putih
         local ActiveESP = {}
         local ESPConnection, DescendantConnection
@@ -40,9 +41,9 @@ return {
             return parts
         end
 
-        local function newLine()
+        local function newLine(isTracer)
             local line = Drawing.new("Line")
-            line.Color = SkeletonColor
+            line.Color = isTracer and TracerColor or SkeletonColor
             line.Thickness = 1.2
             line.Transparency = 1
             line.Visible = false
@@ -64,8 +65,8 @@ return {
 
             local parts = getBodyParts(model)
             local lines = {}
-            for _ in pairs(parts) do table.insert(lines, newLine()) end
-            local tracer = newLine()
+            for _ in pairs(parts) do table.insert(lines, newLine(false)) end
+            local tracer = newLine(true)
             local distanceText = newText()
 
             ActiveESP[model] = {
