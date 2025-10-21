@@ -9,7 +9,8 @@ return {
         local RunService = game:GetService("RunService")
         local Camera = workspace.CurrentCamera
 
-        local ESPColor = Color3.fromRGB(255, 255, 255)
+        local SkeletonColor = Color3.fromRGB(255, 0, 0) -- garis skeleton merah
+        local DistanceColor = Color3.fromRGB(255, 255, 255) -- jarak putih
         local ActiveESP = {}
         local ESPConnection, DescendantConnection
 
@@ -41,7 +42,7 @@ return {
 
         local function newLine()
             local line = Drawing.new("Line")
-            line.Color = ESPColor
+            line.Color = SkeletonColor
             line.Thickness = 1.2
             line.Transparency = 1
             line.Visible = false
@@ -50,7 +51,7 @@ return {
 
         local function newText()
             local text = Drawing.new("Text")
-            text.Color = ESPColor
+            text.Color = DistanceColor
             text.Size = 14
             text.Center = true
             text.Outline = true
@@ -109,7 +110,6 @@ return {
                     if torso then
                         local pos, onScreen = Camera:WorldToViewportPoint(torso.Position)
 
-                        -- pastikan frame pertama selesai sebelum visible
                         if not data.Initialized then
                             data.Initialized = true
                         else
