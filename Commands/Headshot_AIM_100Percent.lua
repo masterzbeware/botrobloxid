@@ -1,13 +1,14 @@
--- HeadshotAuto_AIMSync.lua
+-- Headshot_AIM_100Percent.lua
 return {
   Execute = function()
       local vars = _G.BotVars
       vars.ToggleAutoHeadshot = vars.ToggleAutoHeadshot or false
       vars.ToggleAIM = vars.ToggleAIM or false
       vars.AimSmoothness = vars.AimSmoothness or 0
+      vars.HeadshotRange = vars.HeadshotRange or 500
+
       local Window = vars.MainWindow
       local Camera = workspace.CurrentCamera
-
       local ReplicatedFirst = game:GetService("ReplicatedFirst")
       local UserInputService = game:GetService("UserInputService")
       local HttpService = game:GetService("HttpService")
@@ -36,7 +37,7 @@ return {
 
       GroupHeadshot:AddSlider("HeadshotRange", {
           Text = "Jarak Headshot",
-          Default = 500,
+          Default = vars.HeadshotRange,
           Min = 50,
           Max = 2000,
           Rounding = 0,
@@ -66,47 +67,38 @@ return {
           end
       })
 
-      -- Cari semua kepala NPC Male AI_ dalam range
-      local function getHeadsInRange()
-          local heads = {}
-          local range = vars.HeadshotRange or 500
+      -- Ambil kepala NPC terdekat dalam range
+      local function getNearestHead()
+          local nearest, dist = nil, math.huge
           for _, model in ipairs(workspace:GetDescendants()) do
-              if model:IsA("Model") and model.Name == "Male" then
+              if model:IsA("Model") and model.Name == "Male" and model:FindFirstChildOfClass("Humanoid") then
                   for _, c in ipairs(model:GetChildren()) do
                       if string.sub(c.Name,1,3) == "AI_" then
                           local head = model:FindFirstChild("Head")
-                          if head and (head.Position - Camera.CFrame.Position).Magnitude <= range then
-                              table.insert(heads, head)
+                          if head then
+                              local magnitude = (head.Position - Camera.CFrame.Position).Magnitude
+                              if magnitude <= vars.HeadshotRange and magnitude < dist then
+                                  nearest = head
+                                  dist = magnitude
+                              end
                           end
                           break
                       end
                   end
               end
           end
-          return heads
-      end
-
-      -- Ambil kepala NPC terdekat
-      local function getNearestHead()
-          local nearest, dist = nil, math.huge
-          for _, head in ipairs(getHeadsInRange()) do
-              local magnitude = (head.Position - Camera.CFrame.Position).Magnitude
-              if magnitude < dist then
-                  nearest = head
-                  dist = magnitude
-              end
-          end
           return nearest
       end
 
-      -- Payload
-      local function makePayload(originCFrame, uid)
-          return {
-              Velocity = 3110.666858146635,
+      -- Payload 100% akurat → arahkan origin ke kepala target
+      local function makePayloadToHead(head)
+          local uid = HttpService:GenerateGUID(false)
+          return uid, {
+              Velocity = 1e9, -- super cepat supaya tidak meleset
               Caliber = "intermediaterifle_556x45mmNATO_M855",
               UID = uid,
               Ignore = workspace.Male,
-              OriginCFrame = originCFrame,
+              OriginCFrame = CFrame.new(Camera.CFrame.Position, head.Position),
               Tracer = "Default",
               Replicate = true,
               Local = true,
@@ -114,18 +106,16 @@ return {
           }
       end
 
-      -- Tembak kepala target AIM
+      -- Tembak kepala target (100% kena)
       local function shootHead(targetHead)
           if not vars.ToggleAutoHeadshot or not targetHead then return end
-          local originCFrame = Camera.CFrame
-          local uid = HttpService:GenerateGUID(false)
-          local payload = makePayload(originCFrame, uid)
+          local uid, payload = makePayloadToHead(targetHead)
           pcall(function()
               Send:Fire(1, uid, payload)
           end)
       end
 
-      -- Lock kamera ke kepala target AIM
+      -- AIM lock ke kepala target
       local currentTarget = nil
       RunService.RenderStepped:Connect(function()
           if vars.ToggleAIM then
@@ -139,7 +129,7 @@ return {
           end
       end)
 
-      -- Klik kiri untuk menembak kepala target AIM
+      -- Klik kiri → tembak kepala target AIM (100% kena)
       UserInputService.InputBegan:Connect(function(input, gpe)
           if gpe then return end
           if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -147,6 +137,6 @@ return {
           end
       end)
 
-      print("✅ Headshot + AIM sinkron aktif")
+      print("✅ Headshot + AIM sinkron 100% kena kepala aktif")
   end
 }

@@ -17,7 +17,8 @@ return {
 
         local function isValidNPC(model)
             if not model:IsA("Model") or model.Name ~= "Male" then return false end
-            if not model:FindFirstChildOfClass("Humanoid") then return false end
+            local humanoid = model:FindFirstChildOfClass("Humanoid")
+            if not humanoid or humanoid.Health <= 0 then return false end
             for _, c in ipairs(model:GetChildren()) do
                 if string.sub(c.Name,1,3) == "AI_" then return true end
             end
@@ -77,16 +78,24 @@ return {
                 Initialized = false
             }
 
-            model.AncestryChanged:Connect(function(_, parent)
-                if not parent then
-                    if ActiveESP[model] then
-                        for _, obj in pairs(ActiveESP[model].Lines) do obj:Remove() end
-                        ActiveESP[model].Tracer:Remove()
-                        ActiveESP[model].Text:Remove()
-                        ActiveESP[model] = nil
-                    end
+            -- Remove ESP jika model hilang
+            local function removeESP()
+                if ActiveESP[model] then
+                    for _, obj in pairs(ActiveESP[model].Lines) do obj:Remove() end
+                    ActiveESP[model].Tracer:Remove()
+                    ActiveESP[model].Text:Remove()
+                    ActiveESP[model] = nil
                 end
+            end
+
+            model.AncestryChanged:Connect(function(_, parent)
+                if not parent then removeESP() end
             end)
+
+            local humanoid = model:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                humanoid.Died:Connect(removeESP)
+            end
         end
 
         local function clearAllESP()
@@ -103,26 +112,30 @@ return {
                 if isValidNPC(obj) then createESP(obj) end
             end
 
+            -- RenderStepped update ESP
             ESPConnection = RunService.RenderStepped:Connect(function()
                 for model, data in pairs(ActiveESP) do
-                    if not (model and model.Parent) then continue end
+                    if not isValidNPC(model) then
+                        -- Remove ESP jika NPC mati atau hilang
+                        for _, obj in pairs(data.Lines) do obj:Remove() end
+                        data.Tracer:Remove()
+                        data.Text:Remove()
+                        ActiveESP[model] = nil
+                        continue
+                    end
+
                     local parts = data.Parts
                     local torso = parts.UpperTorso or parts.LowerTorso
                     if torso then
                         local pos, onScreen = Camera:WorldToViewportPoint(torso.Position)
+                        local visible = onScreen
+                        data.Text.Position = Vector2.new(pos.X,pos.Y-25)
+                        data.Text.Text = string.format("%.1fm",(Camera.CFrame.Position - torso.Position).Magnitude)
+                        data.Text.Visible = visible
 
-                        if not data.Initialized then
-                            data.Initialized = true
-                        else
-                            local visible = onScreen
-                            data.Text.Position = Vector2.new(pos.X,pos.Y-25)
-                            data.Text.Text = string.format("%.1fm",(Camera.CFrame.Position - torso.Position).Magnitude)
-                            if data.Text.Visible ~= visible then data.Text.Visible = visible end
-
-                            data.Tracer.From = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y)
-                            data.Tracer.To = Vector2.new(pos.X,pos.Y)
-                            if data.Tracer.Visible ~= visible then data.Tracer.Visible = visible end
-                        end
+                        data.Tracer.From = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y)
+                        data.Tracer.To = Vector2.new(pos.X,pos.Y)
+                        data.Tracer.Visible = visible
                     end
 
                     local function drawLine(p1,p2,line)
@@ -132,9 +145,9 @@ return {
                             local vis = on1 or on2
                             line.From = Vector2.new(p1v.X,p1v.Y)
                             line.To = Vector2.new(p2v.X,p2v.Y)
-                            if line.Visible ~= vis then line.Visible = vis end
+                            line.Visible = vis
                         else
-                            if line.Visible ~= false then line.Visible = false end
+                            line.Visible = false
                         end
                     end
 
@@ -156,6 +169,7 @@ return {
                 end
             end)
 
+            -- NPC baru spawn
             DescendantConnection = workspace.DescendantAdded:Connect(function(obj)
                 if isValidNPC(obj) then createESP(obj) end
             end)
