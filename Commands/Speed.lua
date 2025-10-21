@@ -3,33 +3,26 @@ return {
       local vars = _G.BotVars or {}
       local Tabs = vars.Tabs or {}
       local VisualTab = tab or Tabs.Visual
+      if not VisualTab then warn("[Speed] Tab Visual tidak ditemukan!") return end
 
-      if not VisualTab then
-          warn("[Speed] Tab Visual tidak ditemukan!")
-          return
-      end
-
-      local Group = VisualTab:AddLeftGroupbox("Speed Control")
-
-      vars.SpeedEnabled = vars.SpeedEnabled or false
-      vars.SpeedValue = vars.SpeedValue or 16
-
-      local Players = game:GetService("Players")
       local RunService = game:GetService("RunService")
+      local Players = game:GetService("Players")
       local LocalPlayer = Players.LocalPlayer
       local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
       local Humanoid = Character:WaitForChild("Humanoid")
 
+      vars.SpeedEnabled = vars.SpeedEnabled or false
+      vars.SpeedValue = vars.SpeedValue or 16
+
+      local Group = VisualTab:AddLeftGroupbox("Speed Control")
       Group:AddToggle("ToggleSpeed", {
           Text = "Aktifkan Speed",
           Default = vars.SpeedEnabled,
           Callback = function(v)
               vars.SpeedEnabled = v
               if not v and Humanoid then Humanoid.WalkSpeed = 16 end
-              print("[Speed] Speed", v and "Aktif ✅" or "Nonaktif ❌")
           end
       })
-
       Group:AddSlider("SpeedSlider", {
           Text = "Atur Kecepatan",
           Default = vars.SpeedValue,
@@ -39,7 +32,6 @@ return {
           Callback = function(v)
               vars.SpeedValue = v
               if vars.SpeedEnabled and Humanoid then Humanoid.WalkSpeed = v end
-              print("[Speed] WalkSpeed diatur ke", v)
           end
       })
 
@@ -52,7 +44,5 @@ return {
               Humanoid.WalkSpeed = vars.SpeedValue
           end
       end)
-
-      print("✅ [Speed] Siap — gunakan toggle untuk aktifkan Speed.")
   end
 }
