@@ -1,6 +1,3 @@
--- Bot.lua
--- MasterZ Beware Bot System (tanpa cursor, crosshair, atau ikon mouse apapun)
-
 local repoBase     = "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Commands/"
 local obsidianRepo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
 
@@ -19,44 +16,6 @@ _G.BotVars = {
 }
 
 local player = _G.BotVars.LocalPlayer
-local Mouse = player:GetMouse()
-local UserInputService = game:GetService("UserInputService")
-
-pcall(function()
-    UserInputService.MouseIconEnabled = false
-    if player and player:FindFirstChild("PlayerGui") then
-        for _, gui in ipairs(player.PlayerGui:GetDescendants()) do
-            if gui:IsA("ImageLabel") or gui:IsA("ImageButton") then
-                if gui.Name:lower():find("cursor") or gui.Name:lower():find("cross") then
-                    gui:Destroy()
-                end
-            end
-        end
-    end
-    Mouse.Icon = ""
-    player.CharacterAdded:Connect(function(char)
-        task.wait(1)
-        for _, tool in ipairs(player.Backpack:GetChildren()) do
-            if tool:IsA("Tool") then
-                tool.Equipped:Connect(function()
-                    Mouse.Icon = ""
-                    UserInputService.MouseIconEnabled = false
-                end)
-                tool.Unequipped:Connect(function()
-                    Mouse.Icon = ""
-                end)
-            end
-        end
-    end)
-    player.Backpack.ChildAdded:Connect(function(tool)
-        if tool:IsA("Tool") then
-            tool.Equipped:Connect(function()
-                Mouse.Icon = ""
-                UserInputService.MouseIconEnabled = false
-            end)
-        end
-    end)
-end)
 
 local MainWindow = Library:CreateWindow({
     Title = "MasterZ HUB",
