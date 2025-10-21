@@ -45,7 +45,7 @@ return {
             line.Color = ESPColor
             line.Thickness = 1.2
             line.Transparency = 1
-            line.Visible = false -- jangan langsung visible
+            line.Visible = false
             return line
         end
 
@@ -55,7 +55,7 @@ return {
             text.Size = 14
             text.Center = true
             text.Outline = true
-            text.Visible = false -- jangan langsung visible
+            text.Visible = false
             return text
         end
 
@@ -73,7 +73,7 @@ return {
                 Tracer = tracer,
                 Text = distanceText,
                 Parts = parts,
-                Initialized = false -- track frame pertama
+                Initialized = false -- agar frame pertama stabil
             }
 
             model.AncestryChanged:Connect(function(_, parent)
@@ -112,7 +112,7 @@ return {
                     if torso then
                         local pos, onScreen = Camera:WorldToViewportPoint(torso.Position)
 
-                        -- pastikan frame pertama selesai sebelum visible
+                        -- Frame pertama tidak langsung visible, agar Headshot compatible
                         if not data.Initialized then
                             data.Initialized = true
                         else
@@ -179,6 +179,6 @@ return {
             end
         })
 
-        print("✅ ESP.lua loaded — spawn NPC baru tidak blink lagi")
+        print("✅ ESP.lua loaded — kompatibel Headshot, spawn NPC baru tanpa blink")
     end
 }
