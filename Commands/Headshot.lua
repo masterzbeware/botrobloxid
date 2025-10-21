@@ -1,5 +1,6 @@
 -- Headshot.lua
--- Auto Headshot otomatis ke target terdekat (AI_Male)
+-- Auto Aim ke kepala target terdekat (AI_Male)
+-- Tanpa auto fire, hanya mengarahkan kamera
 -- Toggle di tab Combat dari WindowTab.lua
 
 return {
@@ -15,17 +16,7 @@ return {
         end
 
         local Camera = workspace.CurrentCamera
-        local ReplicatedFirst = game:GetService("ReplicatedFirst")
         local RunService = game:GetService("RunService")
-        local HttpService = game:GetService("HttpService")
-
-        local Actor = ReplicatedFirst:FindFirstChild("Actor")
-        local BulletSvc = Actor and Actor:FindFirstChild("BulletServiceMultithread")
-        local Send = BulletSvc and BulletSvc:FindFirstChild("Send")
-        if not Send then
-            warn("[Headshot] Bullet Send remote tidak ditemukan di Actor.")
-            return
-        end
 
         -- Default state
         vars.AutoHeadshot = vars.AutoHeadshot or false
@@ -34,11 +25,11 @@ return {
         -- 🧩 UI Toggle
         local Group = tab:AddLeftGroupbox("Auto Headshot")
         Group:AddToggle("AutoHeadshot", {
-            Text = "Aktifkan Auto Headshot",
+            Text = "Aktifkan Auto Headshot (Aim Only)",
             Default = vars.AutoHeadshot,
             Callback = function(Value)
                 vars.AutoHeadshot = Value
-                print(Value and "[Headshot] Auto Headshot Aktif ✅" or "[Headshot] Nonaktif ❌")
+                print(Value and "[Headshot] Auto Aim ke kepala Aktif ✅" or "[Headshot] Nonaktif ❌")
             end
         })
 
@@ -75,34 +66,17 @@ return {
             return bestTarget
         end
 
-        -- Kirim tembakan
-        local function buildPayload(originCFrame, uid)
-            return {
-                Velocity = 3110.666858146635,
-                Caliber = "intermediaterifle_556x45mmNATO_M855",
-                UID = uid,
-                OriginCFrame = originCFrame,
-                Tracer = "Default",
-                Replicate = true,
-                Local = true,
-                Range = math.huge,
-            }
-        end
-
-        -- Auto headshot setiap frame
-        local connection
-        connection = RunService.RenderStepped:Connect(function()
+        -- Arahkan kamera ke kepala target
+        RunService.RenderStepped:Connect(function()
             if not vars.AutoHeadshot then return end
             local target = getClosestTarget()
             if not target then return end
 
-            local camPos = Camera.CFrame.Position
-            local originCFrame = CFrame.lookAt(camPos, target.Position)
-            local uid = HttpService:GenerateGUID(false)
-            local payload = buildPayload(originCFrame, uid)
-            pcall(Send.Fire, Send, 1, uid, payload)
+            local curCF = Camera.CFrame
+            local targetCF = CFrame.lookAt(curCF.Position, target.Position)
+            Camera.CFrame = curCF:Lerp(targetCF, 0.15)
         end)
 
-        print("✅ [Headshot] Auto Headshot siap — aktifkan toggle di tab Combat.")
+        print("✅ [Headshot] Auto Aim ke kepala siap digunakan (tanpa auto fire).")
     end
 }

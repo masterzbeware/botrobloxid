@@ -1,26 +1,25 @@
 -- AIM.lua
--- Aimbot sederhana + Circle Aim (POV) + Wallcheck
--- Toggle aktif/nonaktif dan pengaturan ukuran circle
+-- Aimbot kuat & presisi hanya untuk Model "Male" yang punya child AI_
+-- Dengan Circle Aim, Wallcheck, dan Toggle kontrol
 
 return {
     Execute = function(tab)
         local vars = _G.BotVars or {}
         _G.BotVars = vars
         local Tabs = vars.Tabs or {}
-
         tab = tab or Tabs.Combat
         if not tab then
             warn("[AIM] Tab Combat tidak ditemukan! Pastikan WindowTab.lua sudah dimuat.")
             return
         end
 
-        -- ⚙️ Default values
+        -- Default
         vars.AimbotEnabled = vars.AimbotEnabled or false
         vars.ShowCircle    = vars.ShowCircle or false
         vars.CircleSize    = vars.CircleSize or 150
         vars.Wallcheck     = vars.Wallcheck or true
 
-        -- 🧩 UI
+        -- UI
         local Group = tab:AddLeftGroupbox("Aimbot")
 
         Group:AddToggle("AimbotEnabled", {
@@ -37,7 +36,6 @@ return {
             Default = vars.ShowCircle,
             Callback = function(v)
                 vars.ShowCircle = v
-                print(v and "[AIM] Circle Aim tampil 🟢" or "[AIM] Circle Aim disembunyikan 🔴")
             end
         })
 
@@ -57,73 +55,92 @@ return {
             Default = vars.Wallcheck,
             Callback = function(v)
                 vars.Wallcheck = v
-                print(v and "[AIM] Wallcheck aktif (tidak tembus tembok) 🧱" or "[AIM] Wallcheck dimatikan 🚫")
+                print(v and "[AIM] Wallcheck aktif 🧱" or "[AIM] Wallcheck dimatikan 🚫")
             end
         })
 
-        -- 🔧 Services
+        -- Services
         local RunService = game:GetService("RunService")
         local Camera = workspace.CurrentCamera
 
-        -- 🎯 Circle Drawing
+        -- Circle
         local aimCircle = Drawing.new("Circle")
         aimCircle.Color = Color3.fromRGB(0, 255, 255)
         aimCircle.Thickness = 1.5
         aimCircle.Transparency = 0.8
         aimCircle.Filled = false
 
-        -- 🧠 Validasi target (AI_ Male)
+        -------------------------------------------------
+        -- NPC Detection: Male model + child "AI_"
+        -------------------------------------------------
         local function isValidNPC(model)
             if not model:IsA("Model") or model.Name ~= "Male" then return false end
             local humanoid = model:FindFirstChildOfClass("Humanoid")
             if not humanoid or humanoid.Health <= 0 then return false end
             for _, c in ipairs(model:GetChildren()) do
-                if string.sub(c.Name, 1, 3) == "AI_" then return true end
+                if typeof(c.Name) == "string" and string.sub(c.Name, 1, 3) == "AI_" then
+                    return true
+                end
             end
             return false
         end
 
-        -- 🔦 Wallcheck Raycast
+        -------------------------------------------------
+        -- Wallcheck: Raycast dari kamera ke target
+        -------------------------------------------------
         local function isVisible(part)
             if not vars.Wallcheck then return true end
             local origin = Camera.CFrame.Position
             local direction = (part.Position - origin)
             local params = RaycastParams.new()
             params.FilterType = Enum.RaycastFilterType.Blacklist
-            params.FilterDescendantsInstances = {workspace.CurrentCamera}
+            params.FilterDescendantsInstances = {Camera}
 
             local result = workspace:Raycast(origin, direction, params)
             if not result then return true end
             return result.Instance:IsDescendantOf(part.Parent)
         end
 
-        local function getClosestTarget()
-            local camPos = Camera.CFrame.Position
-            local mousePos = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-            local closest, closestDist = nil, vars.CircleSize
+        -------------------------------------------------
+        -- Cari target terdekat di layar (head)
+        -------------------------------------------------
+        local validNPCs = {}
 
-            for _, model in ipairs(workspace:GetChildren()) do
-                if isValidNPC(model) then
-                    local head = model:FindFirstChild("Head")
-                    if head then
-                        local pos, visible = Camera:WorldToViewportPoint(head.Position)
-                        if visible then
-                            local screenPos = Vector2.new(pos.X, pos.Y)
-                            local dist = (screenPos - mousePos).Magnitude
-                            if dist < closestDist and isVisible(head) then
-                                closest = head
-                                closestDist = dist
-                            end
-                        end
+        -- cache NPC tiap 1.5 detik agar ringan
+        task.spawn(function()
+            while true do
+                validNPCs = {}
+                for _, model in ipairs(workspace:GetChildren()) do
+                    if isValidNPC(model) then
+                        local head = model:FindFirstChild("Head")
+                        if head then table.insert(validNPCs, head) end
+                    end
+                end
+                task.wait(1.5)
+            end
+        end)
+
+        local function getClosestTarget()
+            local mousePos = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+            local closest, bestDist = nil, vars.CircleSize
+            for _, head in ipairs(validNPCs) do
+                local pos, onScreen = Camera:WorldToViewportPoint(head.Position)
+                if onScreen then
+                    local dist = (Vector2.new(pos.X, pos.Y) - mousePos).Magnitude
+                    if dist < bestDist and isVisible(head) then
+                        closest = head
+                        bestDist = dist
                     end
                 end
             end
             return closest
         end
 
-        -- 🎯 RenderStep: Aimbot + Circle
+        -------------------------------------------------
+        -- Render Loop: Circle + Aim lock
+        -------------------------------------------------
         RunService.RenderStepped:Connect(function()
-            -- Update Circle
+            -- update circle
             aimCircle.Visible = vars.ShowCircle
             if vars.ShowCircle then
                 local center = Camera.ViewportSize / 2
@@ -131,16 +148,16 @@ return {
                 aimCircle.Radius = vars.CircleSize
             end
 
-            -- Aimbot
+            -- Aimbot aktif
             if not vars.AimbotEnabled then return end
             local target = getClosestTarget()
             if target then
                 local curCF = Camera.CFrame
                 local targetCF = CFrame.lookAt(curCF.Position, target.Position)
-                Camera.CFrame = curCF:Lerp(targetCF, 0.15)
+                Camera.CFrame = curCF:Lerp(targetCF, 0.2) -- lebih kuat lock
             end
         end)
 
-        print("✅ [AIM] Aimbot + Circle Aim + Wallcheck siap digunakan!")
+        print("✅ [AIM] Aimbot siap — fokus ke Model 'Male' yang punya AI_.")
     end
 }
