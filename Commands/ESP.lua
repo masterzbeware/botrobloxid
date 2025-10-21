@@ -1,12 +1,21 @@
 -- OptimizedESP.lua
 return {
-    Execute = function(tab)  -- sekarang menerima tab dari WindowTab.lua
+    Execute = function(tab)  -- menerima tab opsional dari WindowTab.lua
+        local vars = _G.BotVars
+
+        -- fallback: buat tab Visual jika tidak diberikan
         if not tab then
-            warn("[ESP] Tab tidak diberikan! Pastikan memanggil Execute(Tabs.Visual)")
-            return
+            if vars.MainWindow and vars.MainWindow.AddTab then
+                tab = vars.MainWindow:AddTab("Visual", "eye")
+                vars.Tabs = vars.Tabs or {}
+                vars.Tabs.Visual = tab
+                print("[ESP] Tab Visual dibuat otomatis karena tidak diberikan")
+            else
+                warn("[ESP] Tab tidak diberikan dan MainWindow tidak tersedia")
+                return
+            end
         end
 
-        local vars = _G.BotVars
         local Group = tab:AddLeftGroupbox("ESP Control")
 
         local RunService = game:GetService("RunService")

@@ -2,14 +2,22 @@
 -- Klik kiri untuk menembak semua Male AI_, menembus tembok, 100% headshot, dengan toggle
 
 return {
-    Execute = function(tab)  -- menerima tab dari WindowTab.lua
-        if not tab then
-            warn("[Headshot] Tab tidak diberikan! Pastikan memanggil Execute(Tabs.Combat)")
-            return
-        end
-
+    Execute = function(tab)  -- menerima tab opsional dari WindowTab.lua
         local vars = _G.BotVars or {}
         _G.BotVars = vars
+
+        -- fallback: buat tab Combat jika tidak diberikan
+        if not tab then
+            if vars.MainWindow and vars.MainWindow.AddTab then
+                tab = vars.MainWindow:AddTab("Combat", "crosshair")
+                vars.Tabs = vars.Tabs or {}
+                vars.Tabs.Combat = tab
+                print("[Headshot] Tab Combat dibuat otomatis karena tidak diberikan")
+            else
+                warn("[Headshot] Tab tidak diberikan dan MainWindow tidak tersedia")
+                return
+            end
+        end
 
         vars.EnableManualHeadshot = vars.EnableManualHeadshot or false
         vars.HeadshotRange = math.huge -- Range tak terbatas
