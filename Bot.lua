@@ -60,7 +60,7 @@ end)
 
 local MainWindow = Library:CreateWindow({
     Title = "MasterZ HUB",
-    Footer = "1.0.0",
+    Footer = "1.1.0",
     Icon = 0,
 })
 
