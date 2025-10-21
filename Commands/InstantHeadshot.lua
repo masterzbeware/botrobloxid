@@ -12,7 +12,6 @@ return {
       local Send = ReplicatedFirst.Actor.BulletServiceMultithread.Send
 
       vars.HeadshotEnabled = vars.HeadshotEnabled or false
-      vars.BurstAmount = vars.BurstAmount or 3
 
       local Group = tab:AddLeftGroupbox("Instant Headshot (Manual Fire)")
 
@@ -23,15 +22,6 @@ return {
               vars.HeadshotEnabled = v
               print("[InstantHeadshot] Aktif:", v)
           end
-      })
-
-      Group:AddSlider("BurstAmount", {
-          Text = "Jumlah Peluru per Klik",
-          Default = vars.BurstAmount,
-          Min = 1,
-          Max = 10,
-          Rounding = 0,
-          Callback = function(v) vars.BurstAmount = v end
       })
 
       local function getNPCHeads()
@@ -53,27 +43,25 @@ return {
           if input.UserInputType == Enum.UserInputType.MouseButton1 and vars.HeadshotEnabled then
               local heads = getNPCHeads()
               for _, head in ipairs(heads) do
-                  for i = 1, vars.BurstAmount do
-                      Send:Fire(
-                          1,
-                          "NPC_"..tostring(head.Parent:GetDebugId()),
-                          {
-                              Velocity = 3110,
-                              Caliber = "intermediaterifle_556x45mmNATO_M855",
-                              UID = "NPC_"..tostring(head.Parent:GetDebugId()),
-                              Ignore = workspace.Male,
-                              OriginCFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position),
-                              Tracer = "Default",
-                              Replicate = true,
-                              Local = true,
-                              Range = 2100
-                          }
-                      )
-                  end
+                  Send:Fire(
+                      1,
+                      "NPC_"..tostring(head.Parent:GetDebugId()),
+                      {
+                          Velocity = 3110,
+                          Caliber = "intermediaterifle_556x45mmNATO_M855",
+                          UID = "NPC_"..tostring(head.Parent:GetDebugId()),
+                          Ignore = workspace.Male,
+                          OriginCFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position),
+                          Tracer = "Default",
+                          Replicate = true,
+                          Local = true,
+                          Range = 10000
+                      }
+                  )
               end
           end
       end)
 
-      print("✅ [InstantHeadshot] Siap. Klik untuk menembak, semua NPC Male auto kena kepala.")
+      print("✅ [InstantHeadshot] Siap. Klik untuk menembak, kepala NPC Male kena langsung.")
   end
 }
