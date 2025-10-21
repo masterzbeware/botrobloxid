@@ -1,8 +1,9 @@
 -- Headshot.lua
 -- Klik kiri untuk menembak semua Male AI_, menembus tembok, 100% headshot, dengan toggle
+-- Harus menerima tab dari WindowTab.lua: Execute(tab)
 
 return {
-    Execute = function(tab)  -- harus menerima tab dari WindowTab.lua
+    Execute = function(tab)
         if not tab then
             warn("[Headshot] Tab tidak diberikan! Pastikan memanggil Execute(Tabs.Combat)")
             return
@@ -19,7 +20,7 @@ return {
         local HttpService = game:GetService("HttpService")
         local UserInputService = game:GetService("UserInputService")
 
-        -- UI
+        -- UI: Groupbox di tab Combat
         local Group = tab:AddLeftGroupbox("Headshot Control")
 
         Group:AddToggle("EnableManualHeadshot", {

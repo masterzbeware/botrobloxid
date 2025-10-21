@@ -1,7 +1,12 @@
 -- AIM_OnlyAimbot.lua (Optimized, low-lag aimbot)
--- Terima tab dari WindowTab.lua: Execute(tab)
+-- Harus menerima tab dari WindowTab.lua: Execute(tab)
 return {
     Execute = function(tab)
+        if not tab then
+            warn("[AIM] Tab tidak diberikan! Panggil Execute(Tabs.Combat) agar AIM muncul di tab Combat.")
+            return
+        end
+
         -- Vars global
         local vars = _G.BotVars or {}
         _G.BotVars = vars
@@ -10,82 +15,55 @@ return {
         vars.AimSmoothness = vars.AimSmoothness or 0
         vars.AimRange = vars.AimRange or 500
 
-        -- Pastikan ada MainWindow
-        local MainWindow = vars.MainWindow
-        if not MainWindow then
-            warn("[AIM] MainWindow tidak ditemukan di _G.BotVars.MainWindow")
+        -- Pastikan tab valid (objek tab Obsidian)
+        if type(tab) ~= "table" or not tab.AddLeftGroupbox then
+            warn("[AIM] Objek tab tidak valid. Pastikan melewatkan Tabs.Combat dari WindowTab.lua.")
             return
         end
 
-        -- Pastikan kita punya objek tab Obsidian
-        local WindowTab = tab
-        if not WindowTab then
-            -- coba ambil dari _G.BotVars.Tabs (jika WindowTab.lua menyimpan di situ)
-            if vars.Tabs and vars.Tabs.Combat then
-                WindowTab = vars.Tabs.Combat
-            else
-                -- fallback: buat tab Combat baru
-                if MainWindow.AddTab then
-                    WindowTab = MainWindow:AddTab("Combat", "crosshair")
-                    -- simpan supaya module lain bisa pakai (opsional)
-                    vars.Tabs = vars.Tabs or {}
-                    vars.Tabs.Combat = WindowTab
-                else
-                    warn("[AIM] Tidak bisa membuat tab (MainWindow:AddTab tidak tersedia). UI tidak akan tampil.")
-                    WindowTab = nil
-                end
+        -- UI (di tab yang diberikan)
+        local Group = tab:AddLeftGroupbox("AIMBOT Control")
+        Group:AddToggle("EnableAIM", {
+            Text = "Aktifkan Aimbot",
+            Default = vars.ToggleAIM,
+            Callback = function(Value)
+                vars.ToggleAIM = Value
+                print(Value and "[AIMBOT] Aktif ✅" or "[AIMBOT] Nonaktif ❌")
             end
-        end
+        })
 
-        -- Jika WindowTab valid, buat UI; kalau tidak, tetap jalankan logic tanpa UI
-        local hasUI = (WindowTab ~= nil and WindowTab.AddLeftGroupbox ~= nil)
-        local Group
-        if hasUI then
-            Group = WindowTab:AddLeftGroupbox("AIMBOT Control")
-            Group:AddToggle("EnableAIM", {
-                Text = "Aktifkan Aimbot",
-                Default = vars.ToggleAIM,
-                Callback = function(Value)
-                    vars.ToggleAIM = Value
-                    print(Value and "[AIMBOT] Aktif ✅" or "[AIMBOT] Nonaktif ❌")
-                end
-            })
+        Group:AddSlider("AimSmoothness", {
+            Text = "Kelembutan Aim (0 = snap instan)",
+            Default = vars.AimSmoothness,
+            Min = 0,
+            Max = 0.1,
+            Rounding = 3,
+            Callback = function(Value)
+                vars.AimSmoothness = Value
+            end
+        })
 
-            Group:AddSlider("AimSmoothness", {
-                Text = "Kelembutan Aim (0 = snap instan)",
-                Default = vars.AimSmoothness,
-                Min = 0,
-                Max = 0.1,
-                Rounding = 3,
-                Callback = function(Value)
-                    vars.AimSmoothness = Value
-                end
-            })
-
-            Group:AddSlider("AimRange", {
-                Text = "Max Range Target (studs)",
-                Default = vars.AimRange,
-                Min = 50,
-                Max = 2000,
-                Rounding = 0,
-                Callback = function(Value)
-                    vars.AimRange = Value
-                end
-            })
-        end
+        Group:AddSlider("AimRange", {
+            Text = "Max Range Target (studs)",
+            Default = vars.AimRange,
+            Min = 50,
+            Max = 2000,
+            Rounding = 0,
+            Callback = function(Value)
+                vars.AimRange = Value
+            end
+        })
 
         -- Services
         local RunService = game:GetService("RunService")
         local Players = game:GetService("Players")
         local Camera = workspace.CurrentCamera
-        local LocalPlayer = Players.LocalPlayer
 
         -- State / cache
         local CachedNPCs = {}        -- [model] = headPart
         local ValidModelsSet = {}
-        local descConn, renderBoundName, hbConn
-
-        renderBoundName = "AIMBOT_LockHead_Optimized"
+        local descConn, hbConn
+        local renderBoundName = "AIMBOT_LockHead_Optimized"
 
         -- Helpers
         local function modelHasAINode(mdl)
@@ -110,16 +88,19 @@ return {
             CachedNPCs[mdl] = head
             ValidModelsSet[mdl] = true
 
+            -- cleanup when model removed or dead
             mdl.AncestryChanged:Connect(function(_, parent)
                 if not parent then
                     CachedNPCs[mdl] = nil
                     ValidModelsSet[mdl] = nil
                 end
             end)
-            humanoid.Died:Connect(function()
-                CachedNPCs[mdl] = nil
-                ValidModelsSet[mdl] = nil
-            end)
+            if humanoid then
+                humanoid.Died:Connect(function()
+                    CachedNPCs[mdl] = nil
+                    ValidModelsSet[mdl] = nil
+                end)
+            end
         end
 
         -- initial scan (top-level children)
