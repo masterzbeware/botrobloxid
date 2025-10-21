@@ -1,6 +1,6 @@
 -- AIM.lua
 -- Aimbot kuat & presisi hanya untuk Model "Male" yang punya child AI_
--- Dengan Circle Aim, Wallcheck, dan Toggle kontrol
+-- Dengan Circle Aim, Wallcheck (default off), dan Toggle kontrol
 
 return {
     Execute = function(tab)
@@ -17,7 +17,7 @@ return {
         vars.AimbotEnabled = vars.AimbotEnabled or false
         vars.ShowCircle    = vars.ShowCircle or false
         vars.CircleSize    = vars.CircleSize or 150
-        vars.Wallcheck     = vars.Wallcheck or true
+        vars.Wallcheck     = vars.Wallcheck or false -- 🔧 sekarang wallcheck default nonaktif
 
         -- UI
         local Group = tab:AddLeftGroupbox("Aimbot")
@@ -52,7 +52,7 @@ return {
 
         Group:AddToggle("WallcheckToggle", {
             Text = "Aktifkan Wallcheck",
-            Default = vars.Wallcheck,
+            Default = vars.Wallcheck, -- default: false
             Callback = function(v)
                 vars.Wallcheck = v
                 print(v and "[AIM] Wallcheck aktif 🧱" or "[AIM] Wallcheck dimatikan 🚫")
@@ -154,10 +154,10 @@ return {
             if target then
                 local curCF = Camera.CFrame
                 local targetCF = CFrame.lookAt(curCF.Position, target.Position)
-                Camera.CFrame = curCF:Lerp(targetCF, 0.2) -- lebih kuat lock
+                Camera.CFrame = curCF:Lerp(targetCF, 0.2) -- kuat dan halus
             end
         end)
 
-        print("✅ [AIM] Aimbot siap — fokus ke Model 'Male' yang punya AI_.")
+        print("✅ [AIM] Aimbot siap — fokus ke Model 'Male' yang punya AI_. Wallcheck default: OFF")
     end
 }
