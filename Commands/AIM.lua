@@ -1,18 +1,15 @@
 -- AIM.lua
--- 🎯 Smooth Aim Assist: Kamera otomatis mengikuti kepala NPC bernama "Male" secara halus
+-- 🎯 Smooth Aim Assist: Kamera otomatis mengikuti kepala NPC "Male" (headshot only)
 
 return {
     Execute = function()
         local vars = _G.BotVars
         local Window = vars.MainWindow
         local Camera = workspace.CurrentCamera
-        local Players = game:GetService("Players")
         local RunService = game:GetService("RunService")
 
         -- 🪶 UI Tab
-        local Tabs = {
-            Aim = Window:AddTab("AIM", "crosshair"),
-        }
+        local Tabs = { Aim = Window:AddTab("AIM", "crosshair") }
         local Group = Tabs.Aim:AddLeftGroupbox("AIM Assist Control")
 
         Group:AddToggle("EnableAIM", {
@@ -26,7 +23,7 @@ return {
 
         Group:AddSlider("AimSmoothness", {
             Text = "Kelembutan Aim",
-            Default = 0.2, -- Semakin kecil semakin halus, semakin besar semakin cepat
+            Default = 0.2, -- Semakin kecil lebih halus, semakin besar lebih cepat
             Min = 0.05,
             Max = 1,
             Rounding = 2,
@@ -35,17 +32,22 @@ return {
             end
         })
 
-        -- 🔍 Cari NPC terdekat
+        -- 🔍 Cari kepala NPC terdekat (head only)
         local function getNearestHead()
             local nearest, dist = nil, math.huge
             for _, model in ipairs(workspace:GetChildren()) do
                 if model:IsA("Model") and model.Name == "Male" and model:FindFirstChildOfClass("Humanoid") then
-                    local head = model:FindFirstChild("Head") or model:FindFirstChild("UpperTorso") or model:FindFirstChild("HumanoidRootPart")
-                    if head then
-                        local magnitude = (head.Position - Camera.CFrame.Position).Magnitude
-                        if magnitude < dist then
-                            nearest = head
-                            dist = magnitude
+                    for _, child in ipairs(model:GetChildren()) do
+                        if string.sub(child.Name,1,3) == "AI_" then
+                            local head = model:FindFirstChild("Head")
+                            if head then
+                                local magnitude = (head.Position - Camera.CFrame.Position).Magnitude
+                                if magnitude < dist then
+                                    nearest = head
+                                    dist = magnitude
+                                end
+                            end
+                            break
                         end
                     end
                 end
@@ -53,7 +55,7 @@ return {
             return nearest
         end
 
-        -- 🎯 Smooth Aim Assist Logic
+        -- 🎯 Smooth Aim Assist
         RunService.RenderStepped:Connect(function()
             if not vars.ToggleAIM then
                 vars.CurrentAimTarget = nil
@@ -75,6 +77,6 @@ return {
             Camera.CFrame = currentCF:Lerp(targetCF, smoothness)
         end)
 
-        print("✅ AIM.lua aktif — Smooth Aim Assist siap digunakan")
+        print("✅ AIM.lua aktif — Smooth Aim Assist hanya ke kepala NPC (Head Only)")
     end
 }
