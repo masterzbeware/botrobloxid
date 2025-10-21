@@ -2,7 +2,12 @@
 -- Klik kiri untuk menembak semua Male AI_, menembus tembok, 100% headshot, dengan toggle
 
 return {
-    Execute = function()
+    Execute = function(tab)  -- menerima tab dari WindowTab.lua
+        if not tab then
+            warn("[Headshot] Tab tidak diberikan! Pastikan memanggil Execute(Tabs.Combat)")
+            return
+        end
+
         local vars = _G.BotVars or {}
         _G.BotVars = vars
 
@@ -14,21 +19,17 @@ return {
         local HttpService = game:GetService("HttpService")
         local UserInputService = game:GetService("UserInputService")
 
-        -- UI (jika tersedia)
-        local Window = vars.MainWindow
-        if Window then
-            local Tabs = { Headshot = Window:AddTab("HEADSHOT", "target") }
-            local Group = Tabs.Headshot:AddLeftGroupbox("Headshot Control")
+        -- UI
+        local Group = tab:AddLeftGroupbox("Headshot Control")
 
-            Group:AddToggle("EnableManualHeadshot", {
-                Text = "Aktifkan Manual Headshot",
-                Default = vars.EnableManualHeadshot,
-                Callback = function(Value)
-                    vars.EnableManualHeadshot = Value
-                    print(Value and "[Headshot] Aktif ✅" or "[Headshot] Nonaktif ❌")
-                end
-            })
-        end
+        Group:AddToggle("EnableManualHeadshot", {
+            Text = "Aktifkan Manual Headshot",
+            Default = vars.EnableManualHeadshot,
+            Callback = function(Value)
+                vars.EnableManualHeadshot = Value
+                print(Value and "[Headshot] Aktif ✅" or "[Headshot] Nonaktif ❌")
+            end
+        })
 
         -- Remote setup
         local Actor = ReplicatedFirst:WaitForChild("Actor", 2)

@@ -1,10 +1,13 @@
 -- OptimizedESP.lua
 return {
-    Execute = function(tab)  -- terima tab dari WindowTab.lua
-        local vars = _G.BotVars
-        local WindowTab = tab
+    Execute = function(tab)  -- sekarang menerima tab dari WindowTab.lua
+        if not tab then
+            warn("[ESP] Tab tidak diberikan! Pastikan memanggil Execute(Tabs.Visual)")
+            return
+        end
 
-        local Group = WindowTab:AddLeftGroupbox("ESP Control")
+        local vars = _G.BotVars
+        local Group = tab:AddLeftGroupbox("ESP Control")
 
         local RunService = game:GetService("RunService")
         local Camera = workspace.CurrentCamera
@@ -15,9 +18,9 @@ return {
         local ActiveESP = {}
         local ESPConnection, DescendantConnection
 
-        local ESPRange = 300 -- max range ESP, NPC di luar ini tidak diupdate
+        local ESPRange = 500 -- max range ESP, NPC di luar ini tidak diupdate
 
-        -- Cek valid NPC
+        -- Check valid NPC
         local function isValidNPC(model)
             if not model:IsA("Model") or model.Name ~= "Male" then return false end
             local humanoid = model:FindFirstChildOfClass("Humanoid")
