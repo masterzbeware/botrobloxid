@@ -1,25 +1,26 @@
--- InstantWallbang.lua
+-- ManualWallbang.lua
 return {
   Execute = function(tab)
       local vars = _G.BotVars or {}
       local Tabs = vars.Tabs or {}
       tab = tab or Tabs.Combat
-      if not tab then return warn("[InstantWallbang] Tab Combat tidak ditemukan!") end
+      if not tab then return warn("[ManualWallbang] Tab Combat tidak ditemukan!") end
 
       local ReplicatedFirst = game:GetService("ReplicatedFirst")
       local Send = ReplicatedFirst.Actor.BulletServiceMultithread.Send
+      local UserInputService = game:GetService("UserInputService")
       local Camera = workspace.CurrentCamera
 
-      vars.InstantWallbangEnabled = vars.InstantWallbangEnabled or false
+      vars.ManualWallbangEnabled = vars.ManualWallbangEnabled or false
 
-      local Group = tab:AddLeftGroupbox("Instant Wallbang")
+      local Group = tab:AddLeftGroupbox("Manual Wallbang")
 
-      Group:AddToggle("InstantWallbangToggle", {
-          Text = "Aktifkan Instant Wallbang",
-          Default = vars.InstantWallbangEnabled,
+      Group:AddToggle("ManualWallbangToggle", {
+          Text = "Aktifkan Manual Wallbang",
+          Default = vars.ManualWallbangEnabled,
           Callback = function(v)
-              vars.InstantWallbangEnabled = v
-              print("[InstantWallbang] Aktif:", v)
+              vars.ManualWallbangEnabled = v
+              print("[ManualWallbang] Aktif:", v)
           end
       })
 
@@ -48,9 +49,9 @@ return {
           return heads
       end
 
-      -- Fungsi instant wallbang
-      local function FireInstantWallbang()
-          if not vars.InstantWallbangEnabled then return end
+      -- Fungsi tembak manual wallbang
+      local function FireManualWallbang()
+          if not vars.ManualWallbangEnabled then return end
           local originCFrame = Camera.CFrame
           local heads = getNPCHeads()
           for _, head in ipairs(heads) do
@@ -70,13 +71,14 @@ return {
           end
       end
 
-      -- Loop RenderStepped otomatis tembak semua kepala NPC valid
-      game:GetService("RunService").RenderStepped:Connect(function()
-          if vars.InstantWallbangEnabled then
-              FireInstantWallbang()
+      -- Klik mouse kiri untuk tembak
+      UserInputService.InputBegan:Connect(function(input, gpe)
+          if gpe then return end
+          if input.UserInputType == Enum.UserInputType.MouseButton1 then
+              FireManualWallbang()
           end
       end)
 
-      print("✅ [InstantWallbang] Siap. Semua kepala NPC valid akan terkena peluru tembus tembok secara otomatis.")
+      print("✅ [ManualWallbang] Siap. Klik mouse untuk menembak kepala NPC dengan wallbang.")
   end
 }
