@@ -1,34 +1,39 @@
--- AIM_OnlyAimbot.lua (Optimized, low-lag aimbot)
+-- AIM.lua
+-- Aimbot halus dan ringan, lock ke kepala semua Male AI_
 -- Harus menerima tab dari WindowTab.lua: Execute(tab)
+
 return {
     Execute = function(tab)
-        if not tab then
-            warn("[AIM] Tab tidak diberikan! Panggil Execute(Tabs.Combat) agar AIM muncul di tab Combat.")
-            return
-        end
-
-        -- Vars global
         local vars = _G.BotVars or {}
         _G.BotVars = vars
+        local Tabs = vars.Tabs or {}
 
-        vars.ToggleAIM = vars.ToggleAIM or false
-        vars.AimSmoothness = vars.AimSmoothness or 0
-        vars.AimRange = vars.AimRange or 500
-
-        -- Pastikan tab valid (objek tab Obsidian)
-        if type(tab) ~= "table" or not tab.AddLeftGroupbox then
-            warn("[AIM] Objek tab tidak valid. Pastikan melewatkan Tabs.Combat dari WindowTab.lua.")
+        -- fallback otomatis ke tab Combat
+        tab = tab or Tabs.Combat
+        if not tab then
+            warn("[AIM] Tab Combat tidak ditemukan! Pastikan WindowTab.lua sudah dimuat.")
             return
         end
 
-        -- UI (di tab yang diberikan)
+        -- Inisialisasi variabel global
+        vars.ToggleAIM = vars.ToggleAIM or false
+        vars.AimSmoothness = vars.AimSmoothness or 0.03
+        vars.AimRange = vars.AimRange or 600
+
+        -- Pastikan tab valid
+        if type(tab) ~= "table" or not tab.AddLeftGroupbox then
+            warn("[AIM] Objek tab tidak valid.")
+            return
+        end
+
+        -- UI
         local Group = tab:AddLeftGroupbox("AIMBOT Control")
         Group:AddToggle("EnableAIM", {
             Text = "Aktifkan Aimbot",
             Default = vars.ToggleAIM,
-            Callback = function(Value)
-                vars.ToggleAIM = Value
-                print(Value and "[AIMBOT] Aktif ✅" or "[AIMBOT] Nonaktif ❌")
+            Callback = function(v)
+                vars.ToggleAIM = v
+                print(v and "[AIMBOT] Aktif ✅" or "[AIMBOT] Nonaktif ❌")
             end
         })
 
@@ -36,34 +41,32 @@ return {
             Text = "Kelembutan Aim (0 = snap instan)",
             Default = vars.AimSmoothness,
             Min = 0,
-            Max = 0.1,
+            Max = 0.2,
             Rounding = 3,
-            Callback = function(Value)
-                vars.AimSmoothness = Value
+            Callback = function(v)
+                vars.AimSmoothness = v
             end
         })
 
         Group:AddSlider("AimRange", {
-            Text = "Max Range Target (studs)",
+            Text = "Jarak Maksimal Target (studs)",
             Default = vars.AimRange,
             Min = 50,
             Max = 2000,
             Rounding = 0,
-            Callback = function(Value)
-                vars.AimRange = Value
+            Callback = function(v)
+                vars.AimRange = v
             end
         })
 
         -- Services
         local RunService = game:GetService("RunService")
-        local Players = game:GetService("Players")
         local Camera = workspace.CurrentCamera
 
-        -- State / cache
-        local CachedNPCs = {}        -- [model] = headPart
-        local ValidModelsSet = {}
+        -- Cache target NPC
+        local CachedNPCs, ValidModelsSet = {}, {}
         local descConn, hbConn
-        local renderBoundName = "AIMBOT_LockHead_Optimized"
+        local renderBind = "AIMBOT_RenderLock"
 
         -- Helpers
         local function modelHasAINode(mdl)
@@ -75,72 +78,65 @@ return {
             return false
         end
 
-        local function addModelToCache(mdl)
-            if not mdl or not mdl:IsA("Model") then return end
+        local function addModel(mdl)
+            if not mdl or not mdl:IsA("Model") or mdl.Name ~= "Male" then return end
             if ValidModelsSet[mdl] then return end
-            if mdl.Name ~= "Male" then return end
             if not modelHasAINode(mdl) then return end
-            local humanoid = mdl:FindFirstChildOfClass("Humanoid")
-            if not humanoid or humanoid.Health <= 0 then return end
+            local hum = mdl:FindFirstChildOfClass("Humanoid")
             local head = mdl:FindFirstChild("Head")
-            if not head or not head:IsA("BasePart") then return end
+            if not hum or hum.Health <= 0 or not head then return end
 
             CachedNPCs[mdl] = head
             ValidModelsSet[mdl] = true
 
-            -- cleanup when model removed or dead
             mdl.AncestryChanged:Connect(function(_, parent)
                 if not parent then
                     CachedNPCs[mdl] = nil
                     ValidModelsSet[mdl] = nil
                 end
             end)
-            if humanoid then
-                humanoid.Died:Connect(function()
-                    CachedNPCs[mdl] = nil
-                    ValidModelsSet[mdl] = nil
-                end)
-            end
+            hum.Died:Connect(function()
+                CachedNPCs[mdl] = nil
+                ValidModelsSet[mdl] = nil
+            end)
         end
 
-        -- initial scan (top-level children)
+        -- Scan awal workspace
         for _, obj in ipairs(workspace:GetChildren()) do
-            if obj:IsA("Model") then
-                addModelToCache(obj)
-            end
+            addModel(obj)
         end
 
-        -- DescendantAdded listener (cheap climb)
+        -- Tambah otomatis kalau ada model baru
         descConn = workspace.DescendantAdded:Connect(function(inst)
             local root = inst
-            for i = 1, 5 do
+            for _ = 1, 5 do
                 if not root then break end
                 if root:IsA("Model") then
-                    addModelToCache(root)
+                    addModel(root)
                     break
                 end
                 root = root.Parent
             end
         end)
 
-        -- Target selection
-        local currentTarget = nil
+        -- Targeting
+        local currentTarget
         local targetUpdateInterval = 0.12
         local accumulator = 0
 
         local function findNearestTarget()
             local camPos = Camera.CFrame.Position
-            local best, bestDist = nil, math.huge
-            local maxRange = vars.AimRange or 500
+            local nearest, bestDist = nil, math.huge
+            local range = vars.AimRange or 600
 
             for mdl, head in pairs(CachedNPCs) do
                 if head and head.Parent then
                     local hum = mdl:FindFirstChildOfClass("Humanoid")
                     if hum and hum.Health > 0 then
-                        local d = (head.Position - camPos).Magnitude
-                        if d <= maxRange and d < bestDist then
-                            best = head
-                            bestDist = d
+                        local dist = (head.Position - camPos).Magnitude
+                        if dist < range and dist < bestDist then
+                            bestDist = dist
+                            nearest = head
                         end
                     else
                         CachedNPCs[mdl] = nil
@@ -152,47 +148,50 @@ return {
                 end
             end
 
-            currentTarget = best
+            currentTarget = nearest
         end
 
-        -- Cleanup any previous bindings (berguna saat reload)
-        pcall(function() RunService:UnbindFromRenderStep(renderBoundName) end)
+        -- Bersihkan binding lama
+        pcall(function()
+            RunService:UnbindFromRenderStep(renderBind)
+        end)
 
-        -- Bind to render step for camera snapping
-        RunService:BindToRenderStep(renderBoundName, Enum.RenderPriority.Camera.Value + 1, function()
+        -- Lock kamera ke target
+        RunService:BindToRenderStep(renderBind, Enum.RenderPriority.Camera.Value + 1, function()
             if not vars.ToggleAIM then return end
             local target = currentTarget
             if not target or not target.Parent then return end
 
-            local currentCF = Camera.CFrame
-            local targetCF = CFrame.lookAt(currentCF.Position, target.Position)
+            local curCF = Camera.CFrame
+            local targetCF = CFrame.lookAt(curCF.Position, target.Position)
             local smooth = vars.AimSmoothness or 0
+
             if smooth <= 0 then
                 Camera.CFrame = targetCF
             else
-                Camera.CFrame = currentCF:Lerp(targetCF, math.clamp(smooth, 0, 1))
+                Camera.CFrame = curCF:Lerp(targetCF, math.clamp(smooth, 0, 1))
             end
         end)
 
-        -- Heartbeat loop (throttled target updates)
+        -- Update target tiap interval
         hbConn = RunService.Heartbeat:Connect(function(dt)
             if not vars.ToggleAIM then return end
-            accumulator = accumulator + dt
+            accumulator += dt
             if accumulator >= targetUpdateInterval then
                 accumulator = 0
                 task.spawn(findNearestTarget)
             end
         end)
 
-        -- Expose cleanup in vars in case caller wants to stop
+        -- Cleanup callable
         vars._AIM_Cleanup = function()
             if descConn then descConn:Disconnect(); descConn = nil end
             if hbConn then hbConn:Disconnect(); hbConn = nil end
-            pcall(function() RunService:UnbindFromRenderStep(renderBoundName) end)
+            pcall(function() RunService:UnbindFromRenderStep(renderBind) end)
             CachedNPCs = {}
             ValidModelsSet = {}
         end
 
-        print("✅ AIM_OnlyAimbot.lua aktif — rendah lag, aimbot ke kepala (snap/lerp)")
+        print("✅ [AIM] Aimbot aktif — halus, ringan, otomatis lock ke kepala Male AI_.")
     end
 }
