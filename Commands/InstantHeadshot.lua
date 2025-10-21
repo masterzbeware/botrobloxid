@@ -1,4 +1,4 @@
--- AutoHeadshotAI.lua
+-- ManualHeadshot.lua
 return {
   Execute = function(tab)
       local vars = _G.BotVars or {}
@@ -9,19 +9,31 @@ return {
 
       local ReplicatedFirst = game:GetService("ReplicatedFirst")
       local Send = ReplicatedFirst.Actor.BulletServiceMultithread.Send
-      local RunService = game:GetService("RunService")
+      local UserInputService = game:GetService("UserInputService")
       local Camera = workspace.CurrentCamera
 
       vars.HeadshotEnabled = vars.HeadshotEnabled or false
+      vars.HeadshotRange = vars.HeadshotRange or 5000
 
-      local Group = tab:AddLeftGroupbox("Auto Headshot (AI_Male Only)")
+      local Group = tab:AddLeftGroupbox("Manual Headshot (AI_Male)")
 
       Group:AddToggle("HeadshotToggle", {
-          Text = "Aktifkan Auto Headshot",
+          Text = "Aktifkan Manual Headshot",
           Default = vars.HeadshotEnabled,
           Callback = function(v)
               vars.HeadshotEnabled = v
-              print("[AutoHeadshot] Aktif:", v)
+              print("[ManualHeadshot] Aktif:", v)
+          end
+      })
+
+      Group:AddSlider("HeadshotRangeSlider", {
+          Text = "Range Headshot",
+          Default = vars.HeadshotRange,
+          Min = 100,
+          Max = 10000,
+          Rounding = 0,
+          Callback = function(v)
+              vars.HeadshotRange = v
           end
       })
 
@@ -38,13 +50,16 @@ return {
           return false
       end
 
-      -- Ambil kepala NPC valid
+      -- Ambil kepala NPC valid dalam range
       local function getNPCHeads()
           local heads = {}
+          local camPos = Camera.CFrame.Position
           for _, model in ipairs(workspace:GetChildren()) do
               if isValidNPC(model) then
                   local head = model:FindFirstChild("Head")
-                  if head then table.insert(heads, head) end
+                  if head and (head.Position - camPos).Magnitude <= vars.HeadshotRange then
+                      table.insert(heads, head)
+                  end
               end
           end
           return heads
@@ -59,20 +74,21 @@ return {
                   Velocity = 3110,
                   Caliber = "intermediaterifle_556x45mmNATO_M855",
                   UID = "NPC_"..tostring(head.Parent:GetDebugId()),
-                  Ignore = {}, -- kosong agar tembus semua
+                  Ignore = {}, -- kosong agar menembus semua
                   OriginCFrame = CFrame.new(Camera.CFrame.Position),
                   Tracer = "Default",
                   Replicate = true,
                   Local = true,
-                  Range = 99999999,
+                  Range = vars.HeadshotRange,
                   Penetration = true
               }
           )
       end
 
-      -- Auto headshot setiap frame
-      RunService.RenderStepped:Connect(function()
-          if vars.HeadshotEnabled then
+      -- Manual fire: tembak saat klik mouse kiri
+      UserInputService.InputBegan:Connect(function(input, gpe)
+          if gpe then return end
+          if input.UserInputType == Enum.UserInputType.MouseButton1 and vars.HeadshotEnabled then
               local heads = getNPCHeads()
               for _, head in ipairs(heads) do
                   FireHeadshot(head)
@@ -80,6 +96,6 @@ return {
           end
       end)
 
-      print("✅ [AutoHeadshot AI_Male] Siap. Menembak kepala NPC Male dengan child 'AI_' otomatis, tembus tembok.")
+      print("✅ [ManualHeadshot] Siap. Klik mouse untuk menembak kepala NPC Male dengan 'AI_'.")
   end
 }
