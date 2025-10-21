@@ -1,5 +1,5 @@
 -- AIM.lua
--- Aimbot sederhana + Circle Aim (POV)
+-- Aimbot sederhana + Circle Aim (POV) + Wallcheck
 -- Toggle aktif/nonaktif dan pengaturan ukuran circle
 
 return {
@@ -16,8 +16,9 @@ return {
 
         -- ⚙️ Default values
         vars.AimbotEnabled = vars.AimbotEnabled or false
-        vars.ShowCircle = vars.ShowCircle or false
-        vars.CircleSize = vars.CircleSize or 150
+        vars.ShowCircle    = vars.ShowCircle or false
+        vars.CircleSize    = vars.CircleSize or 150
+        vars.Wallcheck     = vars.Wallcheck or true
 
         -- 🧩 UI
         local Group = tab:AddLeftGroupbox("Aimbot")
@@ -51,7 +52,16 @@ return {
             end
         })
 
-        -- 🔧 Service
+        Group:AddToggle("WallcheckToggle", {
+            Text = "Aktifkan Wallcheck",
+            Default = vars.Wallcheck,
+            Callback = function(v)
+                vars.Wallcheck = v
+                print(v and "[AIM] Wallcheck aktif (tidak tembus tembok) 🧱" or "[AIM] Wallcheck dimatikan 🚫")
+            end
+        })
+
+        -- 🔧 Services
         local RunService = game:GetService("RunService")
         local Camera = workspace.CurrentCamera
 
@@ -62,7 +72,7 @@ return {
         aimCircle.Transparency = 0.8
         aimCircle.Filled = false
 
-        -- 🧠 Cek target valid (AI_ Male)
+        -- 🧠 Validasi target (AI_ Male)
         local function isValidNPC(model)
             if not model:IsA("Model") or model.Name ~= "Male" then return false end
             local humanoid = model:FindFirstChildOfClass("Humanoid")
@@ -71,6 +81,20 @@ return {
                 if string.sub(c.Name, 1, 3) == "AI_" then return true end
             end
             return false
+        end
+
+        -- 🔦 Wallcheck Raycast
+        local function isVisible(part)
+            if not vars.Wallcheck then return true end
+            local origin = Camera.CFrame.Position
+            local direction = (part.Position - origin)
+            local params = RaycastParams.new()
+            params.FilterType = Enum.RaycastFilterType.Blacklist
+            params.FilterDescendantsInstances = {workspace.CurrentCamera}
+
+            local result = workspace:Raycast(origin, direction, params)
+            if not result then return true end
+            return result.Instance:IsDescendantOf(part.Parent)
         end
 
         local function getClosestTarget()
@@ -86,7 +110,7 @@ return {
                         if visible then
                             local screenPos = Vector2.new(pos.X, pos.Y)
                             local dist = (screenPos - mousePos).Magnitude
-                            if dist < closestDist then
+                            if dist < closestDist and isVisible(head) then
                                 closest = head
                                 closestDist = dist
                             end
@@ -107,6 +131,7 @@ return {
                 aimCircle.Radius = vars.CircleSize
             end
 
+            -- Aimbot
             if not vars.AimbotEnabled then return end
             local target = getClosestTarget()
             if target then
@@ -116,6 +141,6 @@ return {
             end
         end)
 
-        print("✅ [AIM] Aimbot + Circle Aim siap digunakan!")
+        print("✅ [AIM] Aimbot + Circle Aim + Wallcheck siap digunakan!")
     end
 }
