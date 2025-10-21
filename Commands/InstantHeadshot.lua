@@ -1,38 +1,38 @@
--- ManualWallbang.lua
+-- ManualHeadshot.lua
 return {
   Execute = function(tab)
       local vars = _G.BotVars or {}
       local Tabs = vars.Tabs or {}
       tab = tab or Tabs.Combat
-      if not tab then return warn("[ManualWallbang] Tab Combat tidak ditemukan!") end
+      if not tab then return warn("[ManualHeadshot] Tab Combat tidak ditemukan!") end
 
       local ReplicatedFirst = game:GetService("ReplicatedFirst")
-      local Send = ReplicatedFirst.Actor.BulletServiceMultithread.Send
+      local BulletEvent = ReplicatedFirst:WaitForChild("BulletEvent") -- contoh remote
       local UserInputService = game:GetService("UserInputService")
       local Camera = workspace.CurrentCamera
+      local Players = game:GetService("Players")
+      local LocalPlayer = Players.LocalPlayer
 
-      vars.ManualWallbangEnabled = vars.ManualWallbangEnabled or false
+      vars.ManualHeadshotEnabled = vars.ManualHeadshotEnabled or false
 
-      local Group = tab:AddLeftGroupbox("Manual Wallbang")
+      local Group = tab:AddLeftGroupbox("Manual Headshot")
 
-      Group:AddToggle("ManualWallbangToggle", {
-          Text = "Aktifkan Manual Wallbang",
-          Default = vars.ManualWallbangEnabled,
+      Group:AddToggle("ManualHeadshotToggle", {
+          Text = "Aktifkan Manual Headshot",
+          Default = vars.ManualHeadshotEnabled,
           Callback = function(v)
-              vars.ManualWallbangEnabled = v
-              print("[ManualWallbang] Aktif:", v)
+              vars.ManualHeadshotEnabled = v
+              print("[ManualHeadshot] Aktif:", v)
           end
       })
 
-      -- Filter NPC Male dengan child "AI_"
+      -- Filter semua NPC valid (punya Humanoid & Head)
       local function isValidNPC(model)
-          if not model:IsA("Model") or model.Name ~= "Male" then return false end
+          if not model:IsA("Model") then return false end
           local humanoid = model:FindFirstChildOfClass("Humanoid")
-          if not humanoid or humanoid.Health <= 0 then return false end
-          for _, c in ipairs(model:GetChildren()) do
-              if string.sub(c.Name,1,3) == "AI_" then
-                  return true
-              end
+          local head = model:FindFirstChild("Head")
+          if humanoid and humanoid.Health > 0 and head then
+              return true
           end
           return false
       end
@@ -42,32 +42,24 @@ return {
           local heads = {}
           for _, model in ipairs(workspace:GetChildren()) do
               if isValidNPC(model) then
-                  local head = model:FindFirstChild("Head")
-                  if head then table.insert(heads, head) end
+                  table.insert(heads, model.Head)
               end
           end
           return heads
       end
 
-      -- Fungsi tembak manual wallbang
-      local function FireManualWallbang()
-          if not vars.ManualWallbangEnabled then return end
-          local originCFrame = Camera.CFrame
+      -- Fungsi tembak manual headshot
+      local function FireManualHeadshot()
+          if not vars.ManualHeadshotEnabled then return end
+          local origin = Camera.CFrame.Position
           local heads = getNPCHeads()
           for _, head in ipairs(heads) do
-              local bulletData = {
-                  Velocity = 1e9,         -- peluru super cepat
-                  Caliber = "intermediaterifle_556x45mmNATO_M855",
-                  UID = "WALL_"..tostring(head:GetDebugId()),
-                  Ignore = {},            -- tembus semua
-                  OriginCFrame = originCFrame,
-                  Tracer = "Default",
-                  Replicate = true,
-                  Local = true,
-                  Range = 1e9,            -- jarak tak terbatas
-                  Penetration = true      -- wallbang
-              }
-              Send:Fire(1, bulletData.UID, bulletData)
+              -- Kirim data ke server, langsung headshot
+              BulletEvent:Fire(
+                  2,          -- contoh parameter, sesuaikan dengan game
+                  head.Position,
+                  origin
+              )
           end
       end
 
@@ -75,10 +67,10 @@ return {
       UserInputService.InputBegan:Connect(function(input, gpe)
           if gpe then return end
           if input.UserInputType == Enum.UserInputType.MouseButton1 then
-              FireManualWallbang()
+              FireManualHeadshot()
           end
       end)
 
-      print("✅ [ManualWallbang] Siap. Klik mouse untuk menembak kepala NPC dengan wallbang.")
+      print("✅ [ManualHeadshot] Siap. Klik mouse untuk menembak kepala NPC.")
   end
 }
