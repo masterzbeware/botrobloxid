@@ -9,7 +9,7 @@ local Tabs = {}
 -- 🧠 INFO TAB
 Tabs.Info = MainWindow:AddTab("Info", "info")
 local InfoGroup = Tabs.Info:AddLeftGroupbox("Bot Info")
-InfoGroup:AddLabel("MasterZ HUB v1.5.0")
+InfoGroup:AddLabel("MasterZ HUB v1.0.0")
 InfoGroup:AddLabel("Script loaded ✅")
 
 -- 🎯 COMBAT TAB (Headshot + AIM)

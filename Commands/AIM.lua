@@ -1,6 +1,6 @@
 -- AIM.lua
--- Aimbot kuat & presisi hanya untuk Model "Male" yang punya child AI_
--- Dengan Circle Aim, Wallcheck (default off), dan Toggle kontrol
+-- Aimbot presisi tinggi ke Model "Male" dengan child "AI_"
+-- Ditingkatkan: Respons lebih cepat, smooth adaptif, dan penguncian kuat
 
 return {
     Execute = function(tab)
@@ -13,11 +13,13 @@ return {
             return
         end
 
-        -- Default
+        -- Default vars
         vars.AimbotEnabled = vars.AimbotEnabled or false
         vars.ShowCircle    = vars.ShowCircle or false
         vars.CircleSize    = vars.CircleSize or 150
-        vars.Wallcheck     = vars.Wallcheck or false -- 🔧 sekarang wallcheck default nonaktif
+        vars.Wallcheck     = vars.Wallcheck or false
+        vars.AimStrength   = vars.AimStrength or 0.45  -- 🔥 lebih tinggi = lebih kuat
+        vars.AimSmoothness = vars.AimSmoothness or 0.15 -- 🔧 adaptif smoothing
 
         -- UI
         local Group = tab:AddLeftGroupbox("Aimbot")
@@ -50,9 +52,31 @@ return {
             end
         })
 
+        Group:AddSlider("AimStrength", {
+            Text = "Kekuatan Aim",
+            Default = vars.AimStrength,
+            Min = 0.1,
+            Max = 1,
+            Rounding = 2,
+            Callback = function(v)
+                vars.AimStrength = v
+            end
+        })
+
+        Group:AddSlider("AimSmoothness", {
+            Text = "Kelembutan Aim",
+            Default = vars.AimSmoothness,
+            Min = 0.05,
+            Max = 0.5,
+            Rounding = 2,
+            Callback = function(v)
+                vars.AimSmoothness = v
+            end
+        })
+
         Group:AddToggle("WallcheckToggle", {
             Text = "Aktifkan Wallcheck",
-            Default = vars.Wallcheck, -- default: false
+            Default = vars.Wallcheck,
             Callback = function(v)
                 vars.Wallcheck = v
                 print(v and "[AIM] Wallcheck aktif 🧱" or "[AIM] Wallcheck dimatikan 🚫")
@@ -63,16 +87,14 @@ return {
         local RunService = game:GetService("RunService")
         local Camera = workspace.CurrentCamera
 
-        -- Circle
+        -- Circle Aim Visual
         local aimCircle = Drawing.new("Circle")
         aimCircle.Color = Color3.fromRGB(0, 255, 255)
         aimCircle.Thickness = 1.5
         aimCircle.Transparency = 0.8
         aimCircle.Filled = false
 
-        -------------------------------------------------
-        -- NPC Detection: Male model + child "AI_"
-        -------------------------------------------------
+        -- Validasi NPC
         local function isValidNPC(model)
             if not model:IsA("Model") or model.Name ~= "Male" then return false end
             local humanoid = model:FindFirstChildOfClass("Humanoid")
@@ -85,28 +107,22 @@ return {
             return false
         end
 
-        -------------------------------------------------
-        -- Wallcheck: Raycast dari kamera ke target
-        -------------------------------------------------
+        -- Wallcheck
         local function isVisible(part)
             if not vars.Wallcheck then return true end
             local origin = Camera.CFrame.Position
             local direction = (part.Position - origin)
             local params = RaycastParams.new()
             params.FilterType = Enum.RaycastFilterType.Blacklist
-            params.FilterDescendantsInstances = {Camera}
+            params.FilterDescendantsInstances = {Camera, game.Players.LocalPlayer.Character}
 
             local result = workspace:Raycast(origin, direction, params)
             if not result then return true end
             return result.Instance:IsDescendantOf(part.Parent)
         end
 
-        -------------------------------------------------
-        -- Cari target terdekat di layar (head)
-        -------------------------------------------------
+        -- Cache NPC setiap 1 detik
         local validNPCs = {}
-
-        -- cache NPC tiap 1.5 detik agar ringan
         task.spawn(function()
             while true do
                 validNPCs = {}
@@ -116,17 +132,18 @@ return {
                         if head then table.insert(validNPCs, head) end
                     end
                 end
-                task.wait(1.5)
+                task.wait(1)
             end
         end)
 
+        -- Cari target terdekat di tengah layar
         local function getClosestTarget()
-            local mousePos = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+            local center = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
             local closest, bestDist = nil, vars.CircleSize
             for _, head in ipairs(validNPCs) do
                 local pos, onScreen = Camera:WorldToViewportPoint(head.Position)
                 if onScreen then
-                    local dist = (Vector2.new(pos.X, pos.Y) - mousePos).Magnitude
+                    local dist = (Vector2.new(pos.X, pos.Y) - center).Magnitude
                     if dist < bestDist and isVisible(head) then
                         closest = head
                         bestDist = dist
@@ -136,11 +153,9 @@ return {
             return closest
         end
 
-        -------------------------------------------------
-        -- Render Loop: Circle + Aim lock
-        -------------------------------------------------
-        RunService.RenderStepped:Connect(function()
-            -- update circle
+        -- Aimbot loop
+        RunService.RenderStepped:Connect(function(dt)
+            -- Circle
             aimCircle.Visible = vars.ShowCircle
             if vars.ShowCircle then
                 local center = Camera.ViewportSize / 2
@@ -148,16 +163,22 @@ return {
                 aimCircle.Radius = vars.CircleSize
             end
 
-            -- Aimbot aktif
             if not vars.AimbotEnabled then return end
+
             local target = getClosestTarget()
             if target then
                 local curCF = Camera.CFrame
                 local targetCF = CFrame.lookAt(curCF.Position, target.Position)
-                Camera.CFrame = curCF:Lerp(targetCF, 0.2) -- kuat dan halus
+
+                -- adaptif lerp (kuat tapi smooth)
+                local strength = math.clamp(vars.AimStrength, 0.1, 1)
+                local smooth = math.clamp(vars.AimSmoothness, 0.05, 0.5)
+                local delta = dt * (strength / smooth) * 5
+
+                Camera.CFrame = curCF:Lerp(targetCF, math.clamp(delta, 0.15, 0.8))
             end
         end)
 
-        print("✅ [AIM] Aimbot siap — fokus ke Model 'Male' yang punya AI_. Wallcheck default: OFF")
+        print("✅ [AIM] Aimbot diperkuat — respons lebih cepat & stabil. Fokus ke Model 'Male' dengan AI_.")
     end
 }
