@@ -1,5 +1,5 @@
 -- Bullet.lua
--- 💥 Headshot Auto (pakai BulletServiceMultithread.Send) dengan Range sangat besar
+-- 💥 Headshot Manual (pakai BulletServiceMultithread.Send) tanpa auto-fire
 
 return {
     Execute = function()
@@ -8,6 +8,7 @@ return {
         local ReplicatedFirst = game:GetService("ReplicatedFirst")
         local Camera = workspace.CurrentCamera
         local UserInputService = game:GetService("UserInputService")
+        local HttpService = game:GetService("HttpService")
 
         -- Cari Send remote (Sigma Spy style)
         local ok, Actor = pcall(function() return ReplicatedFirst:WaitForChild("Actor", 2) end)
@@ -33,7 +34,7 @@ return {
         local Group = Tabs.Bullet:AddLeftGroupbox("Headshot Control")
 
         Group:AddToggle("EnableHeadshot", {
-            Text = "Aktifkan Headshot Semua NPC (Range Tak Terbatas)",
+            Text = "Aktifkan Headshot Klik Kiri (Range Tak Terbatas)",
             Default = false,
             Callback = function(Value)
                 vars.ToggleHeadshot = Value
@@ -57,48 +58,36 @@ return {
             return result
         end
 
-        -- Helper: buat payload sesuai contoh Sigma Spy (dengan Range besar)
+        -- Payload untuk tembak kepala
         local function makePayload(originCFrame, uid)
             return {
                 Velocity = 3110.666858146635,
                 Caliber = "intermediaterifle_556x45mmNATO_M855",
                 UID = uid,
-                Ignore = workspace.Male, -- sesuai contoh; sesuaikan kalau perlu
+                Ignore = workspace.Male,
                 OriginCFrame = originCFrame,
                 Tracer = "Default",
                 Replicate = true,
                 Local = true,
-                Range = 1e9, -- hampir tak terbatas
+                Range = 1e9 -- jarak sangat besar
             }
         end
 
-        -- Fungsi tembak kepala menggunakan Send:Fire
+        -- Fungsi tembak semua kepala NPC
         local function shootAllHeads()
             if not vars.ToggleHeadshot then return end
-
             local heads = getAllNPCHeads()
             if #heads == 0 then return end
 
-            local originPos = Camera.CFrame.Position
             local originCFrame = Camera.CFrame
 
             for _, head in ipairs(heads) do
                 if head and head.Parent then
-                    -- UID: bisa digenerate per tembakan supaya unik
-                    local uid = tostring(game:GetService("HttpService"):GenerateGUID(false))
-
-                    -- Build payload & kirim
+                    local uid = HttpService:GenerateGUID(false)
                     local payload = makePayload(originCFrame, uid)
-
-                    -- Versi 1: Fire sebagai "1, UID, payload" (format Sigma Spy)
                     pcall(function()
                         Send:Fire(1, uid, payload)
                     end)
-
-                    -- Versi 2 (opsional fallback): Fire posisi origin->target (beberapa game juga memakai ini)
-                    -- pcall(function()
-                    --     Send:Fire(0, originPos, head.Position)
-                    -- end)
                 end
             end
         end
@@ -111,14 +100,6 @@ return {
             end
         end)
 
-        -- Optional: auto-fire loop (non-blocking)
-        task.spawn(function()
-            while true do
-                task.wait(0.05)
-                if vars.ToggleHeadshot then
-                    shootAllHeads()
-                end
-            end
-        end)
+        print("✅ Bullet.lua siap — klik kiri = headshot semua NPC, tanpa auto-fire")
     end
 }
