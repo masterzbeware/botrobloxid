@@ -1,17 +1,34 @@
 -- Headshot.lua
--- Klik kiri untuk menembak semua Male AI_ di map, menembus tembok, 100% headshot
+-- Klik kiri untuk menembak semua Male AI_, menembus tembok, 100% headshot, dengan toggle
+
 return {
     Execute = function()
         local vars = _G.BotVars or {}
         _G.BotVars = vars
 
-        vars.EnableManualHeadshot = true
+        vars.EnableManualHeadshot = vars.EnableManualHeadshot or false
         vars.HeadshotRange = math.huge -- Range tak terbatas
 
         local Camera = workspace.CurrentCamera
         local ReplicatedFirst = game:GetService("ReplicatedFirst")
         local HttpService = game:GetService("HttpService")
         local UserInputService = game:GetService("UserInputService")
+
+        -- UI (jika tersedia)
+        local Window = vars.MainWindow
+        if Window then
+            local Tabs = { Headshot = Window:AddTab("HEADSHOT", "target") }
+            local Group = Tabs.Headshot:AddLeftGroupbox("Headshot Control")
+
+            Group:AddToggle("EnableManualHeadshot", {
+                Text = "Aktifkan Manual Headshot",
+                Default = vars.EnableManualHeadshot,
+                Callback = function(Value)
+                    vars.EnableManualHeadshot = Value
+                    print(Value and "[Headshot] Aktif ✅" or "[Headshot] Nonaktif ❌")
+                end
+            })
+        end
 
         -- Remote setup
         local Actor = ReplicatedFirst:WaitForChild("Actor", 2)
@@ -35,7 +52,6 @@ return {
 
         -- Ambil semua target dalam range (menembus tembok)
         local function getTargetsInRange()
-            local camPos = Camera.CFrame.Position
             local targets = {}
             for _, model in ipairs(workspace:GetChildren()) do
                 if model:IsA("Model") and isValidNPC(model) then
@@ -59,7 +75,7 @@ return {
                 Tracer = "Default",
                 Replicate = true,
                 Local = true,
-                Range = math.huge, -- Range infinite
+                Range = math.huge,
             }
         end
 
@@ -87,6 +103,6 @@ return {
             end
         end)
 
-        print("✅ Headshot.lua aktif — klik kiri untuk menembak semua Male AI_ di map, menembus tembok, 100% headshot")
+        print("✅ Headshot.lua aktif — toggle ON/OFF tersedia, klik kiri untuk tembak semua Male AI_ menembus tembok")
     end
 }
