@@ -1,16 +1,17 @@
 -- HeadshotAuto.lua
--- 🎯 Auto Headshot ke NPC Male AI_ (tanpa burst) dengan slider jarak tembak
+-- 🎯 Auto Headshot ke NPC Male AI_ menggunakan BulletServiceMultithread.Send (ringan + draggable range)
 
 return {
   Execute = function()
       local vars = _G.BotVars
       local Window = vars.MainWindow
       local Camera = workspace.CurrentCamera
+      local ReplicatedFirst = game:GetService("ReplicatedFirst")
       local UserInputService = game:GetService("UserInputService")
       local HttpService = game:GetService("HttpService")
       local RunService = game:GetService("RunService")
 
-      -- Cari Send remote (Sigma Spy style)
+      -- Cari Send remote
       local Actor = ReplicatedFirst:WaitForChild("Actor", 2)
       local BulletSvc = Actor:WaitForChild("BulletServiceMultithread", 2)
       local Send = BulletSvc:WaitForChild("Send", 2)
@@ -19,9 +20,9 @@ return {
       local Tabs = { Headshot = Window:AddTab("HEADSHOT", "target") }
       local Group = Tabs.Headshot:AddLeftGroupbox("Headshot Control")
 
-      -- Toggle aktif/nonaktif
+      -- Toggle headshot
       Group:AddToggle("EnableAutoHeadshot", {
-          Text = "Aktifkan Auto Headshot",
+          Text = "Aktifkan Headshot",
           Default = false,
           Callback = function(Value)
               vars.ToggleAutoHeadshot = Value
@@ -29,22 +30,22 @@ return {
           end
       })
 
-      -- Slider jarak tembak
+      -- Draggable slider untuk jarak tembak
       Group:AddSlider("HeadshotRange", {
-          Text = "Jarak tembak (studs)",
-          Default = 1000,
+          Text = "Jarak Headshot",
+          Default = 500, -- default 500 studs
           Min = 50,
-          Max = 5000,
+          Max = 2000,
           Rounding = 0,
           Callback = function(Value)
               vars.HeadshotRange = Value
           end
       })
 
-      -- Fungsi cari semua kepala NPC Male AI_ di radius
+      -- Cari semua kepala NPC Male AI_ dalam range
       local function getHeadsInRange()
           local heads = {}
-          local range = vars.HeadshotRange or 1000
+          local range = vars.HeadshotRange or 500
           for _, model in ipairs(workspace:GetDescendants()) do
               if model:IsA("Model") and model.Name == "Male" then
                   for _, c in ipairs(model:GetChildren()) do
@@ -76,25 +77,27 @@ return {
           }
       end
 
-      -- Fungsi tembak kepala
+      -- Fungsi tembak kepala NPC
       local function shootHeads()
           if not vars.ToggleAutoHeadshot then return end
           local heads = getHeadsInRange()
           if #heads == 0 then return end
+
           local originCFrame = Camera.CFrame
 
           for _, head in ipairs(heads) do
-              if head and head.Parent then
+              task.spawn(function()
                   local uid = HttpService:GenerateGUID(false)
                   local payload = makePayload(originCFrame, uid)
                   pcall(function()
                       Send:Fire(1, uid, payload)
                   end)
-              end
+              end)
+              task.wait(0.01) -- delay sedikit supaya tidak lag
           end
       end
 
-      -- Klik kiri untuk menembak semua kepala NPC di radius
+      -- Klik kiri untuk menembak semua kepala NPC
       UserInputService.InputBegan:Connect(function(input, gpe)
           if gpe then return end
           if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -102,6 +105,6 @@ return {
           end
       end)
 
-      print("✅ HeadshotAuto.lua siap digunakan — klik kiri = tembak kepala semua NPC Male AI_ dalam radius slider")
+      print("✅ HeadshotAuto.lua aktif — Klik untuk tembak kepala NPC, jarak bisa diatur")
   end
 }
