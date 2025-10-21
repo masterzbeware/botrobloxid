@@ -16,7 +16,7 @@ return {
           Text = "Jumlah Peluru per Burst",
           Default = vars.BurstCount,
           Min = 1,
-          Max = 10,
+          Max = 100,
           Rounding = 0,
           Callback = function(v) vars.BurstCount = v end
       })
