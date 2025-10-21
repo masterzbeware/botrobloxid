@@ -18,16 +18,15 @@ _G.BotVars = {
     TextChatService = game:GetService("TextChatService"),
     RunService = game:GetService("RunService"),
     LocalPlayer = game:GetService("Players").LocalPlayer,
-
     ToggleAktif = false,
 }
 
--- 🎨 Buat satu Window utama (gunakan cursor default Roblox)
+-- 🎨 Buat satu Window utama (pakai cursor default Roblox)
 local MainWindow = Library:CreateWindow({
     Title = "MasterZ HUB",
-    Footer = "1.1.0",
+    Footer = "1.2.0",
     Icon = 0,
-    ShowCustomCursor = false, -- langsung pakai cursor bawaan Roblox
+    -- ShowCustomCursor dihapus, pakai default Roblox
 })
 
 -- Simpan ke variabel global
@@ -36,7 +35,7 @@ _G.BotVars.MainWindow = MainWindow
 
 -- 📦 Daftar module yang akan dimuat
 local VIPCommands = {}
-local commandFiles = { "HeadshotAuto.lua","ESP.lua", "AIM.lua", "Hide.lua", "Bullet.lua","BurstDamage.lua" }
+local commandFiles = { "HeadshotAuto.lua","ESP.lua", "AIM.lua", "Hide.lua"}
 
 -- 🔹 Fungsi untuk load semua module
 local function loadScripts(files, repo, targetTable)
