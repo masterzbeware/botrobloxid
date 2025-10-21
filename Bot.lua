@@ -35,7 +35,7 @@ _G.BotVars.MainWindow = MainWindow
 
 -- 📦 Daftar module yang akan dimuat
 local VIPCommands = {}
-local commandFiles = { "HeadshotAuto.lua","ESP.lua", "AIM.lua", "Hide.lua","Refill.lua"}
+local commandFiles = { "Headshot.lua","ESP.lua", "AIM.lua", "Hide.lua","Refill.lua" }
 
 -- 🔹 Fungsi untuk load semua module
 local function loadScripts(files, repo, targetTable)

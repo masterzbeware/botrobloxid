@@ -1,4 +1,4 @@
--- HeadshotManual_100Percent_Infinite.lua
+-- Headshot.lua
 -- Klik kiri untuk menembak semua Male AI_ di map, menembus tembok, 100% headshot
 return {
     Execute = function()
@@ -18,7 +18,7 @@ return {
         local BulletSvc = Actor and Actor:FindFirstChild("BulletServiceMultithread")
         local Send = BulletSvc and BulletSvc:FindFirstChild("Send")
         if not Send then
-            warn("[HeadshotManual] Bullet Send remote tidak ditemukan.")
+            warn("[Headshot] Bullet Send remote tidak ditemukan.")
             return
         end
 
@@ -87,6 +87,6 @@ return {
             end
         end)
 
-        print("✅ HeadshotManual_100Percent_Infinite.lua aktif — klik kiri untuk menembak semua Male AI_ di map, menembus tembok, 100% headshot")
+        print("✅ Headshot.lua aktif — klik kiri untuk menembak semua Male AI_ di map, menembus tembok, 100% headshot")
     end
 }
