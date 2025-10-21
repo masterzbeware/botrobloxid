@@ -1,5 +1,5 @@
--- BulletHeadshot.lua
--- 💥 Auto Headshot: Semua NPC Male (Head) langsung kena tanpa peduli tembok
+-- Bullet.lua
+-- 💥 Headshot Auto: Tembak semua NPC Male AI_ langsung ke kepala, tanpa log
 
 return {
     Execute = function()
@@ -9,78 +9,64 @@ return {
         local Camera = workspace.CurrentCamera
         local UserInputService = game:GetService("UserInputService")
 
-        -- Cari event tembakan
+        -- Cari Remote Bullet
         local BulletEvent = ReplicatedFirst:FindFirstChild("BulletEvent", true)
         if not BulletEvent then
-            warn("[Bullet] Tidak menemukan BulletEvent di ReplicatedFirst!")
+            warn("[Bullet] BulletEvent tidak ditemukan!")
             return
         end
 
-        -- 🔘 UI Control
+        -- UI
         local Tabs = { Bullet = Window:AddTab("BULLET", "zap") }
-        local Group = Tabs.Bullet:AddLeftGroupbox("Headshot Control")
+        local Group = Tabs.Bullet:AddLeftGroupbox("Burst Control")
 
-        Group:AddToggle("EnableAutoHeadshot", {
-            Text = "Aktifkan Auto Headshot Semua NPC",
+        Group:AddToggle("EnableBurst", {
+            Text = "Aktifkan Burst Headshot (Semua NPC)",
             Default = false,
             Callback = function(Value)
-                vars.ToggleBulletHeadshot = Value
-                print(Value and "[Bullet] Auto Headshot aktif ✅" or "[Bullet] Auto Headshot nonaktif ❌")
+                vars.ToggleBurst = Value
             end
         })
 
-        -- 🔍 Ambil semua kepala NPC valid
-        local function getAllHeads()
-            local heads = {}
+        -- Ambil semua kepala NPC Male AI_
+        local function getAllNPCHeads()
+            local result = {}
             for _, model in ipairs(workspace:GetDescendants()) do
                 if model:IsA("Model") and model.Name == "Male" then
-                    for _, child in ipairs(model:GetChildren()) do
-                        if string.sub(child.Name, 1, 3) == "AI_" then
+                    for _, c in ipairs(model:GetChildren()) do
+                        if string.sub(c.Name,1,3) == "AI_" then
                             local head = model:FindFirstChild("Head")
-                            if head then
-                                table.insert(heads, head)
-                            end
+                            if head then table.insert(result, head) end
                             break
                         end
                     end
                 end
             end
-            return heads
+            return result
         end
 
-        -- 🎯 Fungsi tembak ke semua kepala
-        local function shootHeads()
-            if not vars.ToggleBulletHeadshot then return end
-            if not BulletEvent then return end
-
-            local heads = getAllHeads()
+        -- Fungsi menembak semua kepala NPC
+        local function shootAllNPCHeads()
+            if not vars.ToggleBurst then return end
+            local heads = getAllNPCHeads()
             if #heads == 0 then return end
 
+            local origin = Camera.CFrame.Position
+
             for _, head in ipairs(heads) do
-                local origin = Camera.CFrame.Position
-                local direction = (head.Position - origin).Unit
-                local args = {nil, origin, head.Position, nil, direction, nil, nil, true}
+                local targetPos = head.Position
+                local direction = (targetPos - origin).Unit
+                local args = {nil, origin, targetPos, nil, direction, nil, nil, true}
                 BulletEvent:Fire(unpack(args))
             end
         end
 
-        -- 🔫 Klik kiri untuk menembak semua kepala
+        -- Klik kiri untuk tembak semua kepala NPC
         UserInputService.InputBegan:Connect(function(input, gpe)
             if gpe then return end
             if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                shootHeads()
+                shootAllNPCHeads()
             end
         end)
-
-        -- 🔁 Auto fire loop (opsional)
-        task.spawn(function()
-            while task.wait(0.05) do
-                if vars.ToggleBulletHeadshot then
-                    shootHeads()
-                end
-            end
-        end)
-
-        print("✅ BulletHeadshot.lua aktif — semua NPC pasti kena kepala, menembus tembok")
     end
 }
