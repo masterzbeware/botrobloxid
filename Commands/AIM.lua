@@ -1,5 +1,5 @@
--- AIM.lua
--- 🎯 Auto Aim Lengket ke Kepala NPC "Male"
+-- AIM_LockHead.lua
+-- 🎯 Aim Assist Lengket ke Kepala NPC "Male" (Instan Lock)
 
 return {
     Execute = function()
@@ -21,7 +21,19 @@ return {
             end
         })
 
-        -- Cari kepala NPC terdekat (head only)
+        -- Slider Smoothness (opsional)
+        Group:AddSlider("AimSmoothness", {
+            Text = "Kelembutan Aim (0 = instan)",
+            Default = 0,
+            Min = 0,
+            Max = 0.1,
+            Rounding = 3,
+            Callback = function(Value)
+                vars.AimSmoothness = Value
+            end
+        })
+
+        -- Cari kepala NPC terdekat
         local function getNearestHead()
             local nearest, dist = nil, math.huge
             for _, model in ipairs(workspace:GetChildren()) do
@@ -44,19 +56,19 @@ return {
             return nearest
         end
 
-        -- Auto Aim Lock Kepala
+        -- Lock kamera ke kepala target
         RunService.RenderStepped:Connect(function()
             if not vars.ToggleAIM then return end
 
             local head = getNearestHead()
             if not head then return end
 
-            -- Kamera langsung lock ke kepala target
             local currentCF = Camera.CFrame
             local targetCF = CFrame.lookAt(currentCF.Position, head.Position)
-            Camera.CFrame = currentCF:Lerp(targetCF, 0.01) -- 0.01 = super lengket
+            local smooth = vars.AimSmoothness or 0
+            Camera.CFrame = currentCF:Lerp(targetCF, smooth)
         end)
 
-        print("✅ AIM.lua aktif — kamera otomatis lengket ke kepala NPC")
+        print("✅ AIM_LockHead.lua aktif — kamera otomatis lock kepala NPC")
     end
 }
