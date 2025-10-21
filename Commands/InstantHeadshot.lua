@@ -1,4 +1,4 @@
--- InstantHeadshot.lua
+-- InstantHeadshotWithWallbang.lua
 return {
   Execute = function(tab)
       local vars = _G.BotVars or {}
@@ -13,7 +13,7 @@ return {
 
       vars.HeadshotEnabled = vars.HeadshotEnabled or false
 
-      local Group = tab:AddLeftGroupbox("Instant Headshot (Manual Fire)")
+      local Group = tab:AddLeftGroupbox("Instant Headshot (Manual Fire + Wallbang)")
 
       Group:AddToggle("HeadshotToggle", {
           Text = "Aktifkan Instant Headshot",
@@ -43,6 +43,7 @@ return {
           if input.UserInputType == Enum.UserInputType.MouseButton1 and vars.HeadshotEnabled then
               local heads = getNPCHeads()
               for _, head in ipairs(heads) do
+                  -- Fire ke kepala, tembus tembok (wallbang)
                   Send:Fire(
                       1,
                       "NPC_"..tostring(head.Parent:GetDebugId()),
@@ -50,18 +51,19 @@ return {
                           Velocity = 3110,
                           Caliber = "intermediaterifle_556x45mmNATO_M855",
                           UID = "NPC_"..tostring(head.Parent:GetDebugId()),
-                          Ignore = workspace.Male,
+                          Ignore = {}, -- Kosongkan ignore untuk tembus semua, atau bisa diisi dengan workspace.CurrentCamera
                           OriginCFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position),
                           Tracer = "Default",
                           Replicate = true,
                           Local = true,
-                          Range = 10000
+                          Range = 5000, -- tambah range supaya bisa tembus jauh
+                          Penetration = true -- tambahkan parameter penetrasi (wallbang)
                       }
                   )
               end
           end
       end)
 
-      print("✅ [InstantHeadshot] Siap. Klik untuk menembak, kepala NPC Male kena langsung.")
+      print("✅ [InstantHeadshot+Wallbang] Siap. Klik untuk menembak, kepala NPC Male kena langsung, tembus tembok.")
   end
 }
