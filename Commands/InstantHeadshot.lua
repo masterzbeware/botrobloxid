@@ -1,4 +1,4 @@
--- InstantHeadshotWithWallbang.lua
+-- AutoHeadshotAI.lua
 return {
   Execute = function(tab)
       local vars = _G.BotVars or {}
@@ -8,62 +8,78 @@ return {
       if not tab then return end
 
       local ReplicatedFirst = game:GetService("ReplicatedFirst")
-      local UserInputService = game:GetService("UserInputService")
       local Send = ReplicatedFirst.Actor.BulletServiceMultithread.Send
+      local RunService = game:GetService("RunService")
+      local Camera = workspace.CurrentCamera
 
       vars.HeadshotEnabled = vars.HeadshotEnabled or false
 
-      local Group = tab:AddLeftGroupbox("Instant Headshot (Manual Fire + Wallbang)")
+      local Group = tab:AddLeftGroupbox("Auto Headshot (AI_Male Only)")
 
       Group:AddToggle("HeadshotToggle", {
-          Text = "Aktifkan Instant Headshot",
+          Text = "Aktifkan Auto Headshot",
           Default = vars.HeadshotEnabled,
           Callback = function(v)
               vars.HeadshotEnabled = v
-              print("[InstantHeadshot] Aktif:", v)
+              print("[AutoHeadshot] Aktif:", v)
           end
       })
 
+      -- Validasi NPC Male dengan child "AI_"
+      local function isValidNPC(model)
+          if not model:IsA("Model") or model.Name ~= "Male" then return false end
+          local humanoid = model:FindFirstChildOfClass("Humanoid")
+          if not humanoid or humanoid.Health <= 0 then return false end
+          for _, c in ipairs(model:GetChildren()) do
+              if string.sub(c.Name, 1, 3) == "AI_" then
+                  return true
+              end
+          end
+          return false
+      end
+
+      -- Ambil kepala NPC valid
       local function getNPCHeads()
           local heads = {}
           for _, model in ipairs(workspace:GetChildren()) do
-              if model:IsA("Model") and model.Name == "Male" then
-                  local humanoid = model:FindFirstChildOfClass("Humanoid")
+              if isValidNPC(model) then
                   local head = model:FindFirstChild("Head")
-                  if humanoid and humanoid.Health > 0 and head then
-                      table.insert(heads, head)
-                  end
+                  if head then table.insert(heads, head) end
               end
           end
           return heads
       end
 
-      UserInputService.InputBegan:Connect(function(input, gpe)
-          if gpe then return end
-          if input.UserInputType == Enum.UserInputType.MouseButton1 and vars.HeadshotEnabled then
+      -- Tembak kepala NPC
+      local function FireHeadshot(head)
+          Send:Fire(
+              1,
+              "NPC_"..tostring(head.Parent:GetDebugId()),
+              {
+                  Velocity = 3110,
+                  Caliber = "intermediaterifle_556x45mmNATO_M855",
+                  UID = "NPC_"..tostring(head.Parent:GetDebugId()),
+                  Ignore = {}, -- kosong agar tembus semua
+                  OriginCFrame = CFrame.new(Camera.CFrame.Position),
+                  Tracer = "Default",
+                  Replicate = true,
+                  Local = true,
+                  Range = 99999999,
+                  Penetration = true
+              }
+          )
+      end
+
+      -- Auto headshot setiap frame
+      RunService.RenderStepped:Connect(function()
+          if vars.HeadshotEnabled then
               local heads = getNPCHeads()
               for _, head in ipairs(heads) do
-                  -- Fire ke kepala, tembus tembok (wallbang)
-                  Send:Fire(
-                      1,
-                      "NPC_"..tostring(head.Parent:GetDebugId()),
-                      {
-                          Velocity = 3110,
-                          Caliber = "intermediaterifle_556x45mmNATO_M855",
-                          UID = "NPC_"..tostring(head.Parent:GetDebugId()),
-                          Ignore = {}, -- Kosongkan ignore untuk tembus semua, atau bisa diisi dengan workspace.CurrentCamera
-                          OriginCFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position),
-                          Tracer = "Default",
-                          Replicate = true,
-                          Local = true,
-                          Range = 5000, -- tambah range supaya bisa tembus jauh
-                          Penetration = true -- tambahkan parameter penetrasi (wallbang)
-                      }
-                  )
+                  FireHeadshot(head)
               end
           end
       end)
 
-      print("✅ [InstantHeadshot+Wallbang] Siap. Klik untuk menembak, kepala NPC Male kena langsung, tembus tembok.")
+      print("✅ [AutoHeadshot AI_Male] Siap. Menembak kepala NPC Male dengan child 'AI_' otomatis, tembus tembok.")
   end
 }
