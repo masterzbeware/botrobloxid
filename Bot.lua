@@ -1,5 +1,5 @@
 -- Bot.lua
--- MasterZ Beware Bot System (UI Loader tanpa Client & tanpa Command Handler)
+-- MasterZ Beware Bot System (UI Loader tanpa Client, tanpa Command Handler, dan tanpa Cursor)
 
 local repoBase     = "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Commands/"
 local obsidianRepo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
@@ -21,20 +21,36 @@ _G.BotVars = {
     ToggleAktif = false,
 }
 
--- 🎨 Buat satu Window utama
+-- 🖱️ Hapus semua bentuk cursor
+pcall(function()
+    local UserInputService = game:GetService("UserInputService")
+    local player = _G.BotVars.LocalPlayer
+    if player and player:FindFirstChild("PlayerGui") then
+        for _, gui in ipairs(player.PlayerGui:GetDescendants()) do
+            if gui:IsA("ImageLabel") or gui:IsA("ImageButton") then
+                if gui.Name:lower():find("cursor") then
+                    gui:Destroy()
+                end
+            end
+        end
+    end
+    UserInputService.MouseIconEnabled = false
+end)
+
+-- 🎨 Buat Window utama
 local MainWindow = Library:CreateWindow({
     Title = "MasterZ HUB",
     Footer = "1.0.0",
     Icon = 0,
 })
 
--- Simpan ke variabel global
+-- Simpan ke global
 _G.BotVars.Library = Library
 _G.BotVars.MainWindow = MainWindow
 
 -- 📦 Daftar module
 local VIPCommands = {}
-local commandFiles = { "Headshot.lua","ESP.lua", "AIM.lua", "Hide.lua", "WindowTab.lua", "NoRecoil.lua"}
+local commandFiles = { "Headshot.lua", "ESP.lua", "AIM.lua", "Hide.lua", "WindowTab.lua"}
 
 -- 🔹 Fungsi load semua module
 local function loadScripts(files, repo, targetTable)
@@ -62,7 +78,6 @@ loadScripts(commandFiles, repoBase, VIPCommands)
 _G.BotVars.CommandFiles = VIPCommands
 
 -- 🔹 Jalankan semua module
--- Module sendiri yang akan menentukan tab UI melalui WindowTab.lua
 for name, module in pairs(VIPCommands) do
     if module.Execute then
         debugPrint("Running UI module: " .. name)
@@ -70,4 +85,4 @@ for name, module in pairs(VIPCommands) do
     end
 end
 
-debugPrint("✅ Bot.lua loaded — semua UI module aktif dengan cursor default Roblox")
+debugPrint("✅ Bot.lua loaded — semua UI module aktif (tanpa cursor apa pun)")
