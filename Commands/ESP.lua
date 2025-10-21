@@ -1,7 +1,6 @@
 -- ESP.lua
 -- ESP Skeleton + Tracer + Distance untuk semua AI_ (Male NPC)
--- Menggunakan tab Visual dari WindowTab.lua
--- Sekarang update otomatis (tidak perlu toggle ulang)
+-- Otomatis aktif saat salah satu toggle (Skeleton / Tracer / Distance) diaktifkan
 
 return {
     Execute = function(tab)
@@ -20,11 +19,10 @@ return {
         local Camera = workspace.CurrentCamera
 
         -- Default settings
-        vars.ShowSkeleton = vars.ShowSkeleton ~= false
-        vars.ShowTracer   = vars.ShowTracer ~= false
-        vars.ShowDistance = vars.ShowDistance ~= false
+        vars.ShowSkeleton = vars.ShowSkeleton or false
+        vars.ShowTracer   = vars.ShowTracer or false
+        vars.ShowDistance = vars.ShowDistance or false
         vars.ESPRange     = vars.ESPRange or 500
-        vars.ToggleESP    = vars.ToggleESP or false
 
         -- Colors
         local SkeletonColor = Color3.fromRGB(255, 255, 255)
@@ -38,31 +36,40 @@ return {
         -- === UI CONTROLS === --
         ---------------------------
 
-        Group:AddToggle("EnableESPSystem", {
-            Text = "Aktifkan ESP System",
-            Default = vars.ToggleESP,
-            Callback = function(Value)
-                vars.ToggleESP = Value
-                if Value then startESP() else stopESP() end
+        local function updateESPState()
+            local anyEnabled = vars.ShowSkeleton or vars.ShowTracer or vars.ShowDistance
+            if anyEnabled and not ESPConnection then
+                startESP()
+            elseif not anyEnabled and ESPConnection then
+                stopESP()
             end
-        })
+        end
 
         Group:AddToggle("ToggleSkeletonESP", {
             Text = "Tampilkan Skeleton",
             Default = vars.ShowSkeleton,
-            Callback = function(v) vars.ShowSkeleton = v end
+            Callback = function(v)
+                vars.ShowSkeleton = v
+                updateESPState()
+            end
         })
 
         Group:AddToggle("ToggleTracerESP", {
             Text = "Tampilkan Tracer",
             Default = vars.ShowTracer,
-            Callback = function(v) vars.ShowTracer = v end
+            Callback = function(v)
+                vars.ShowTracer = v
+                updateESPState()
+            end
         })
 
         Group:AddToggle("ToggleDistanceESP", {
             Text = "Tampilkan Distance",
             Default = vars.ShowDistance,
-            Callback = function(v) vars.ShowDistance = v end
+            Callback = function(v)
+                vars.ShowDistance = v
+                updateESPState()
+            end
         })
 
         Group:AddSlider("ESPRangeSlider", {
@@ -195,7 +202,10 @@ return {
 
             if ESPConnection then ESPConnection:Disconnect() end
             ESPConnection = RunService.RenderStepped:Connect(function()
-                if not vars.ToggleESP then return end
+                if not (vars.ShowSkeleton or vars.ShowTracer or vars.ShowDistance) then
+                    stopESP()
+                    return
+                end
 
                 local camPos = Camera.CFrame.Position
                 local halfX, halfY = Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2
@@ -282,6 +292,9 @@ return {
             clearAllESP()
         end
 
-        print("✅ [ESP] Auto-update aktif — Skeleton, Tracer, Distance, dan Range real-time.")
+        -- Cek awal jika user sudah nyalakan toggle sebelumnya
+        updateESPState()
+
+        print("✅ [ESP] Siap — aktif otomatis saat salah satu toggle dinyalakan.")
     end
 }
