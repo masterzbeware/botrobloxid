@@ -1,102 +1,140 @@
 return {
-  Execute = function(tab)
-      local vars = _G.BotVars or {}
-      local Tabs = vars.Tabs or {}
-      local CombatTab = tab or Tabs.Combat
-
-      if not CombatTab then
-          warn("[No Recoil] Tab Combat tidak ditemukan!")
-          return
-      end
-
-      local Group = CombatTab:AddLeftGroupbox("No Recoil (M855)")
-
-      vars.NoRecoil = vars.NoRecoil or false
-
-      Group:AddToggle("ToggleNoRecoil", {
-          Text = "No Recoil",
-          Default = vars.NoRecoil,
-          Callback = function(v)
-              vars.NoRecoil = v
-              if v then
-                  -- Ubah RecoilForce menjadi 0 saat diaktifkan
-                  local success, Calibers = pcall(function()
-                      return require(game:GetService("ReplicatedStorage").Shared.Configs.Calibers)
-                  end)
-                  
-                  if success and Calibers then
-                      -- Coba beberapa struktur yang mungkin
-                      if Calibers.v1 and Calibers.v1.intermediaterifle_556x45mmNATO_M855 then
-                          Calibers.v1.intermediaterifle_556x45mmNATO_M855["RecoilForce"] = 0
-                          print("✅ RecoilForce M855 diubah menjadi 0 (struktur v1)")
-                      elseif Calibers.intermediaterifle_556x45mmNATO_M855 then
-                          Calibers.intermediaterifle_556x45mmNATO_M855["RecoilForce"] = 0
-                          print("✅ RecoilForce M855 diubah menjadi 0 (struktur langsung)")
-                      else
-                          -- Cari tabel M855 secara manual
-                          for name, data in pairs(Calibers) do
-                              if string.find(tostring(name), "556x45mmNATO_M855") then
-                                  data["RecoilForce"] = 0
-                                  print("✅ RecoilForce " .. tostring(name) .. " diubah menjadi 0")
-                                  break
-                              end
-                          end
-                      end
-                  else
-                      warn("❌ Gagal memuat module Calibers")
-                  end
-              else
-                  -- Reset ke nilai default saat dimatikan (opsional)
-                  local success, Calibers = pcall(function()
-                      return require(game:GetService("ReplicatedStorage").Shared.Configs.Calibers)
-                  end)
-                  
-                  if success and Calibers then
-                      -- Reset ke nilai default (100)
-                      if Calibers.v1 and Calibers.v1.intermediaterifle_556x45mmNATO_M855 then
-                          Calibers.v1.intermediaterifle_556x45mmNATO_M855["RecoilForce"] = 100
-                          print("❌ RecoilForce M855 dikembalikan ke 100")
-                      elseif Calibers.intermediaterifle_556x45mmNATO_M855 then
-                          Calibers.intermediaterifle_556x45mmNATO_M855["RecoilForce"] = 100
-                          print("❌ RecoilForce M855 dikembalikan ke 100")
-                      end
-                  end
-              end
-          end
-      })
-
-      -- Hook untuk memastikan perubahan tetap berlaku
-      if not getgenv().NoRecoilHooked then
-          getgenv().NoRecoilHooked = true
-          
-          -- Periodic check untuk memastikan RecoilForce tetap 0
-          coroutine.wrap(function()
-              while wait(5) do
-                  if vars.NoRecoil then
-                      local success, Calibers = pcall(function()
-                          return require(game:GetService("ReplicatedStorage").Shared.Configs.Calibers)
-                      end)
-                      
-                      if success and Calibers then
-                          if Calibers.v1 and Calibers.v1.intermediaterifle_556x45mmNATO_M855 then
-                              if Calibers.v1.intermediaterifle_556x45mmNATO_M855["RecoilForce"] ~= 0 then
-                                  Calibers.v1.intermediaterifle_556x45mmNATO_M855["RecoilForce"] = 0
-                                  print("🔄 RecoilForce diperbaiki menjadi 0")
-                              end
-                          elseif Calibers.intermediaterifle_556x45mmNATO_M855 then
-                              if Calibers.intermediaterifle_556x45mmNATO_M855["RecoilForce"] ~= 0 then
-                                  Calibers.intermediaterifle_556x45mmNATO_M855["RecoilForce"] = 0
-                                  print("🔄 RecoilForce diperbaiki menjadi 0")
-                              end
-                          end
-                      end
-                  end
-              end
-          end)()
-          
-          print("✅ [No Recoil] Sistem periodic check aktif.")
-      end
-
-      print("✅ [No Recoil] Sistem aktif. Gunakan toggle untuk mengaktifkan/mematikan no recoil.")
-  end
-}
+    Execute = function(tab)
+        local vars = _G.BotVars or {}
+        local Tabs = vars.Tabs or {}
+        local CombatTab = tab or Tabs.Combat
+  
+        if not CombatTab then
+            warn("[No Recoil] Tab Combat tidak ditemukan!")
+            return
+        end
+  
+        local Group = CombatTab:AddLeftGroupbox("No Recoil (M855)")
+  
+        vars.NoRecoil = vars.NoRecoil or false
+        vars.RecoilX = vars.RecoilX or 0.8  -- Default nilai X untuk recoil kuat
+  
+        -- Function untuk apply recoil settings
+        local function applyRecoilSettings()
+            if not vars.NoRecoil then return end
+            
+            local success, Calibers = pcall(function()
+                return require(game:GetService("ReplicatedStorage").Shared.Configs.Calibers)
+            end)
+            
+            if success and Calibers then
+                -- Apply RecoilForce = 0
+                if Calibers.v1 and Calibers.v1.intermediaterifle_556x45mmNATO_M855 then
+                    Calibers.v1.intermediaterifle_556x45mmNATO_M855["RecoilForce"] = 0
+                elseif Calibers.intermediaterifle_556x45mmNATO_M855 then
+                    Calibers.intermediaterifle_556x45mmNATO_M855["RecoilForce"] = 0
+                else
+                    -- Cari tabel M855 secara manual
+                    for name, data in pairs(Calibers) do
+                        if string.find(tostring(name), "556x45mmNATO_M855") then
+                            data["RecoilForce"] = 0
+                            break
+                        end
+                    end
+                end
+                
+                -- Apply recoil range ke senjata (hanya X yang diubah, Y tetap 0.7)
+                local gunSuccess, Gun = pcall(function()
+                    return require(game:GetService("ReplicatedStorage").Shared.Configs.Weapon.Weapons_Player["Platform_AR-15"].M16A2["Receiver.M16A2"])
+                end)
+                
+                if gunSuccess and Gun then
+                    Gun.Config.Tune.Recoil_Range = Vector2.new(vars.RecoilX, 0.7)  -- Y tetap 0.7
+                    print("✅ Recoil range diubah: " .. vars.RecoilX .. ", 0.7")
+                end
+            else
+                warn("❌ Gagal memuat module Calibers")
+            end
+        end
+  
+        -- Function untuk reset ke default
+        local function resetToDefault()
+            local success, Calibers = pcall(function()
+                return require(game:GetService("ReplicatedStorage").Shared.Configs.Calibers)
+            end)
+            
+            if success and Calibers then
+                -- Reset RecoilForce ke default (100)
+                if Calibers.v1 and Calibers.v1.intermediaterifle_556x45mmNATO_M855 then
+                    Calibers.v1.intermediaterifle_556x45mmNATO_M855["RecoilForce"] = 100
+                    print("❌ RecoilForce M855 dikembalikan ke 100")
+                elseif Calibers.intermediaterifle_556x45mmNATO_M855 then
+                    Calibers.intermediaterifle_556x45mmNATO_M855["RecoilForce"] = 100
+                    print("❌ RecoilForce M855 dikembalikan ke 100")
+                end
+            end
+            
+            -- Reset recoil range ke default senjata (0.35, 0.3)
+            local gunSuccess, Gun = pcall(function()
+                return require(game:GetService("ReplicatedStorage").Shared.Configs.Weapon.Weapons_Player["Platform_AR-15"].M16A2["Receiver.M16A2"])
+            end)
+            
+            if gunSuccess and Gun then
+                Gun.Config.Tune.Recoil_Range = Vector2.new(0.35, 0.3)  -- Default M16A2
+                print("🔄 Recoil range dikembalikan ke default: 0.35, 0.3")
+            end
+        end
+  
+        -- Toggle No Recoil
+        Group:AddToggle("ToggleNoRecoil", {
+            Text = "No Recoil",
+            Default = vars.NoRecoil,
+            Callback = function(v)
+                vars.NoRecoil = v
+                if v then
+                    applyRecoilSettings()
+                    print("✅ No Recoil aktif")
+                else
+                    resetToDefault()
+                    print("❌ No Recoil dimatikan - Semua nilai dikembalikan ke default")
+                end
+            end
+        })
+  
+        -- Slider untuk Recoil X saja (Y tetap 0.7)
+        Group:AddSlider("RecoilXSlider", {
+            Text = "Recoil Range X",
+            Default = vars.RecoilX,
+            Min = 0.1,
+            Max = 2.0,
+            Rounding = 2,
+            Callback = function(v)
+                vars.RecoilX = v
+                if vars.NoRecoil then
+                    applyRecoilSettings()
+                end
+            end
+        })
+  
+        -- Hook untuk memastikan perubahan tetap berlaku
+        if not getgenv().NoRecoilHooked then
+            getgenv().NoRecoilHooked = true
+            
+            -- Periodic check untuk memastikan settings tetap
+            coroutine.wrap(function()
+                while wait(5) do
+                    if vars.NoRecoil then
+                        applyRecoilSettings()
+                    end
+                end
+            end)()
+            
+            print("✅ [No Recoil] Sistem periodic check aktif.")
+        end
+  
+        -- Apply settings awal jika toggle aktif
+        if vars.NoRecoil then
+            applyRecoilSettings()
+        else
+            -- Pastikan dalam state default
+            resetToDefault()
+        end
+  
+        print("✅ [No Recoil] Sistem aktif. Gunakan toggle untuk mengaktifkan/mematikan no recoil.")
+    end
+  }
