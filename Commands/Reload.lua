@@ -1,5 +1,4 @@
--- Reload.lua
-
+-- Modules/Reload.lua
 return {
   Execute = function(tab)
       local vars = _G.BotVars or {}
@@ -10,18 +9,16 @@ return {
 
       local ReplicatedStorage = game:GetService("ReplicatedStorage")
       local Players = game:GetService("Players")
-      local RunService = game:GetService("RunService")
       local RemoteEvent = ReplicatedStorage:WaitForChild("Events"):WaitForChild("RemoteEvent")
       local player = Players.LocalPlayer
       local char = player.Character or player.CharacterAdded:Wait()
-      local camera = workspace.CurrentCamera
 
-      vars.AutoReload = vars.AutoReload or true
+      if vars.AutoReload == nil then vars.AutoReload = true end
       vars.ReloadDelay = vars.ReloadDelay or 1.8
       vars.Reloading = vars.Reloading or false
       vars.MagCheckInterval = vars.MagCheckInterval or 0.1
 
-      local Group = tab:AddRightGroupbox("Auto Reload")
+      local Group = tab:AddLeftGroupbox("Auto Reload")
       Group:AddToggle("AutoReload", {
           Text = "Aktifkan Auto Reload",
           Default = vars.AutoReload,
@@ -50,8 +47,7 @@ return {
               if vars.AutoReload and not vars.Reloading then
                   local weapon = char:FindFirstChildWhichIsA("Tool")
                   if weapon and weapon:FindFirstChild("Ammo") then
-                      local ammo = weapon.Ammo.Value
-                      if ammo <= 0 then
+                      if weapon.Ammo.Value <= 0 then
                           doReload()
                       end
                   end
@@ -59,6 +55,6 @@ return {
           end
       end)
 
-      print("✅ [Reload] Auto reload siap digunakan.")
+      print("[Reload] Auto reload siap digunakan.")
   end
 }
