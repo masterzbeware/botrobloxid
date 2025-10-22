@@ -26,7 +26,6 @@ return {
         vars.MagCheckInterval = vars.MagCheckInterval or 0.1
 
         -- Toggle AutoReload
-        task.defer(function()
             Group:AddToggle("ToggleAutoReload", {
                 Text = "Aktifkan Auto Reload",
                 Default = vars.AutoReload,
@@ -34,7 +33,6 @@ return {
                     vars.AutoReload = v
                 end
             })
-        end)
 
         -- Fungsi reload
         local function doReload()
