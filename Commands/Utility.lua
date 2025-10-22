@@ -4,7 +4,7 @@ return {
     Execute = function(tab)
         local vars = _G.BotVars or {}
         local Tabs = vars.Tabs or {}
-        local UtilityTab = tab or Tabs.Utility
+        local UtilityTab = tab or Tabs.Visual
   
         if not UtilityTab then
             warn("[Utility] Tab Utility tidak ditemukan!")
@@ -27,7 +27,7 @@ return {
         }
   
         -- Groupbox
-        local Group = UtilityTab:AddLeftGroupbox("Binoculars Infinite Zoom")
+        local Group = UtilityTab:AddRightGroupbox("Binoculars Infinite Zoom")
   
         vars.InfiniteZoomEnabled = vars.InfiniteZoomEnabled or false
         vars.SelectedGear = vars.SelectedGear or "Binoculars"

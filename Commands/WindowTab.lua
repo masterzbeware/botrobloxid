@@ -8,13 +8,13 @@ local Tabs = {}
 -- Info Tab
 Tabs.Info = MainWindow:AddTab("Info", "info")
 
--- Bot Info
+-- Bot Info (Kiri)
 local BotGroup = Tabs.Info:AddLeftGroupbox("Bot Info")
 BotGroup:AddLabel("MasterZ HUB v1.0.0")
 BotGroup:AddLabel("Script loaded")
 
--- Server Info
-local ServerGroup = Tabs.Info:AddLeftGroupbox("Server Info")
+-- Server Info (Kanan)
+local ServerGroup = Tabs.Info:AddRightGroupbox("Server Info")
 
 -- Players (Auto Detect)
 local playersLabel = ServerGroup:AddLabel("Players: ...")
@@ -30,7 +30,7 @@ local latencyLabel = ServerGroup:AddLabel("Latency: ...")
 local function updateLatency()
     local stats = game:GetService("Stats")
     local ping = stats.Network.ServerStatsItem["Data Ping"]:GetValue()
-    latencyLabel:SetText("Latency: " .. math.floor(ping) .. "ms")
+    latencyLabel:SetText("Latency: " .. math.floor(ping) + "ms")
 end
 
 -- Server Region (Auto Detect)
@@ -68,25 +68,8 @@ spawn(function()
     end
 end)
 
-ServerGroup:AddButton("Join Script", function()
-    print("Copy join script")
-end)
-
--- Wave / Status
-local StatusGroup = Tabs.Info:AddLeftGroupbox("Wave")
-StatusGroup:AddLabel("Your executor seems to support this script")
-
--- Discord
-local DiscordGroup = Tabs.Info:AddLeftGroupbox("Discord")
-DiscordGroup:AddButton("Tap to join the Discord Server", function()
-    print("Join Discord")
-end)
-
 -- Combat Tab
 Tabs.Combat = MainWindow:AddTab("Combat", "crosshair")
-
--- Utility Tab
-Tabs.Utility = MainWindow:AddTab("Utility", "sliders")
 
 -- Visual Tab
 Tabs.Visual = MainWindow:AddTab("Visual", "eye")
