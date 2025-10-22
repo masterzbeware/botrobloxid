@@ -1,81 +1,49 @@
--- Modules/Reload.lua
 return {
     Execute = function(tab)
         local vars = _G.BotVars or {}
         local Tabs = vars.Tabs or {}
         local VisualTab = tab or Tabs.Visual
 
-        -- Tunggu sampai VisualTab siap
-        repeat task.wait() until VisualTab and VisualTab.AddLeftGroupbox
-
-        -- Buat group sendiri di VisualTab
-        local Group = VisualTab:AddLeftGroupbox("Auto Reload")
-
-        local ReplicatedStorage = game:GetService("ReplicatedStorage")
-        local Players = game:GetService("Players")
-        local player = Players.LocalPlayer
-        local char = player.Character or player.CharacterAdded:Wait()
-        local RemoteEvent = ReplicatedStorage:WaitForChild("Events"):WaitForChild("RemoteEvent")
-
-        -- Variabel default
-        vars.AutoReload = vars.AutoReload ~= false
-        vars.ReloadDelay = vars.ReloadDelay or 1.8
-        vars.Reloading = vars.Reloading or false
-        vars.MagCheckInterval = vars.MagCheckInterval or 0.1
-
-        -- Toggle AutoReload
-        Group:AddToggle("ToggleAutoReload", {
-            Text = "Aktifkan Auto Reload",
-            Default = vars.AutoReload,
-            Callback = function(v)
-                vars.AutoReload = v
-            end
-        })
-
-        -- Slider Reload Delay
-        Group:AddSlider("ReloadDelaySlider", {
-            Text = "Reload Delay",
-            Default = vars.ReloadDelay,
-            Min = 0.5,
-            Max = 5,
-            Rounding = 1,
-            Callback = function(v)
-                vars.ReloadDelay = v
-            end
-        })
-
-        -- Fungsi reload
-        local function doReload()
-            if vars.Reloading then return end
-            vars.Reloading = true
-
-            RemoteEvent:FireServer("ActionActor", "b6ca2d2d-dc75-4987-b8b8-085a9a89539c", 0, "Reload", false)
-            
-            task.delay(vars.ReloadDelay, function()
-                RemoteEvent:FireServer("ActionActor", "cd6c81a7-3f9a-4288-baaa-eb9514dce761", 0, "Reloaded", {
-                    Capacity = 30,
-                    Name = "M4A1_Stanag_Default",
-                    Caliber = "intermediaterifle_556x45mmNATO_M855",
-                    UID = "07a4535b-fc24-48c0-9dc4-94d68dddd0df"
-                })
-                vars.Reloading = false
-            end)
+        if not VisualTab then
+            warn("[ESP] Tab Visual tidak ditemukan!")
+            return
         end
 
-        -- Loop auto reload
-        task.spawn(function()
-            while task.wait(vars.MagCheckInterval) do
-                if vars.AutoReload and not vars.Reloading then
-                    local weapon = char:FindFirstChildWhichIsA("Tool")
-                    if weapon and weapon:FindFirstChild("Ammo") then
-                        if weapon.Ammo.Value <= 0 then
-                            doReload()
-                        end
-                    end
-                end
-            end
-        end)
+        -- Buat group sendiri
+        local Group = VisualTab:AddLeftGroupbox("ESP Control")
 
-        print("[Reload] Auto reload siap di VisualTab.")
+        -- Variabel toggle default
+        vars.ShowSkeleton = vars.ShowSkeleton or false
+        vars.ShowTracer   = vars.ShowTracer or false
+        vars.ShowDistance = vars.ShowDistance or false
+
+        -- Toggle Skeleton
+        Group:AddToggle("ToggleSkeletonESP", {
+            Text = "Tampilkan Skeleton",
+            Default = vars.ShowSkeleton,
+            Callback = function(v)
+                vars.ShowSkeleton = v
+            end
+        })
+
+        -- Toggle Tracer
+        Group:AddToggle("ToggleTracerESP", {
+            Text = "Tampilkan Tracer",
+            Default = vars.ShowTracer,
+            Callback = function(v)
+                vars.ShowTracer = v
+            end
+        })
+
+        -- Toggle Distance
+        Group:AddToggle("ToggleDistanceESP", {
+            Text = "Tampilkan Distance",
+            Default = vars.ShowDistance,
+            Callback = function(v)
+                vars.ShowDistance = v
+            end
+        })
+
+        print("✅ [ESP] Toggle siap di VisualTab")
     end
 }
