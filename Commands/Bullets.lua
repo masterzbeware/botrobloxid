@@ -35,7 +35,7 @@ return {
           Text = "Bullets Count",
           Default = vars.BulletsValue,
           Min = 1,
-          Max = 50,
+          Max = 30,
           Rounding = 0,
           Callback = function(v)
               vars.BulletsValue = v
