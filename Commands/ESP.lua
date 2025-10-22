@@ -263,6 +263,6 @@ return {
         end
 
         updateESPState()
-        print("✅ [ESP] Siap")
+        print("[ESP] Toggle siap di VisualTab")
     end
 }
