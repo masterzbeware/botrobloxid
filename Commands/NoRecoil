@@ -1,41 +1,66 @@
 return {
-    Execute = function(tab)
-        local vars = _G.BotVars or {}
-        local Tabs = vars.Tabs or {}
-        local CombatTab = tab or Tabs.Combat
+  Execute = function(tab)
+      local vars = _G.BotVars or {}
+      local Tabs = vars.Tabs or {}
+      local CombatTab = tab or Tabs.Combat
 
-        if not CombatTab then
-            warn("[AntiRecoil] Tab Combat tidak ditemukan!")
-            return
-        end
+      if not CombatTab then
+          warn("[AntiRecoil] Tab Combat tidak ditemukan!")
+          return
+      end
 
-        local Group = CombatTab:AddLeftGroupbox("Anti Recoil (M4A1)")
+      local Group = CombatTab:AddLeftGroupbox("Anti Recoil (M4A1)")
 
-        vars.AntiRecoil = vars.AntiRecoil or false
+      vars.AntiRecoil = vars.AntiRecoil or false
 
-        local Players = game:GetService("Players")
-        local player = Players.LocalPlayer
-        local camera = workspace.CurrentCamera
+      local Players = game:GetService("Players")
+      local player = Players.LocalPlayer
+      local camera = workspace.CurrentCamera
+      local ReplicatedFirst = game:GetService("ReplicatedFirst")
 
-        -- Toggle Anti Recoil
-        Group:AddToggle("ToggleAntiRecoil", {
-            Text = "Anti Recoil",
-            Default = vars.AntiRecoil,
-            Callback = function(v)
-                vars.AntiRecoil = v
-            end
-        })
+      -- Remote reference (berdasarkan log kamu)
+      local BulletService = ReplicatedFirst:FindFirstChild("Actor") and ReplicatedFirst.Actor:FindFirstChild("BulletServiceMultithread")
+      local BulletEvent = ReplicatedFirst:FindFirstChild("BulletEvent")
 
-        -- Loop untuk mengatur ulang rotasi kamera
-        game:GetService("RunService").RenderStepped:Connect(function()
-            if vars.AntiRecoil then
-                -- Mengatur ulang posisi dan rotasi kamera ke posisi awal
-                local camCFrame = camera.CFrame
-                -- Jika ingin mengunci rotasi agar tetap stabil, bisa disesuaikan
-                camera.CFrame = CFrame.new(camCFrame.Position, camCFrame.Position + camCFrame.LookVector)
-            end
-        end)
+      Group:AddToggle("ToggleAntiRecoil", {
+          Text = "Anti Recoil",
+          Default = vars.AntiRecoil,
+          Callback = function(v)
+              vars.AntiRecoil = v
+          end
+      })
 
-        print("✅ [Anti Recoil] Aktif - Efek recoil dinonaktifkan.")
-    end
+      -- Hook ke event tembakan (jika remote ditemukan)
+      if BulletService and BulletService:FindFirstChild("Send") then
+          local oldFire = BulletService.Send.Fire
+          BulletService.Send.Fire = function(self, ...)
+              local args = {...}
+              if vars.AntiRecoil and typeof(args[3]) == "table" and args[3].OriginCFrame then
+                  local origin = args[3].OriginCFrame
+                  -- Override arah tembakan sesuai kamera saat ini (tanpa recoil offset)
+                  args[3].OriginCFrame = CFrame.new(origin.Position, origin.Position + camera.CFrame.LookVector)
+              end
+              return oldFire(self, unpack(args))
+          end
+      elseif BulletEvent then
+          local oldFire = BulletEvent.Fire
+          BulletEvent.Fire = function(self, ...)
+              local args = {...}
+              if vars.AntiRecoil and typeof(args[1]) == "number" and typeof(args[2]) == "CFrame" then
+                  -- Jika event menggunakan posisi tembakan (bukan OriginCFrame)
+                  local pos1, pos2 = args[2], args[3]
+                  if typeof(pos1) == "Vector3" and typeof(pos2) == "Vector3" then
+                      -- Gunakan arah kamera untuk menjaga arah tetap lurus
+                      local newPos2 = pos1 + (camera.CFrame.LookVector * (pos1 - pos2).Magnitude)
+                      args[3] = newPos2
+                  end
+              end
+              return oldFire(self, unpack(args))
+          end
+      else
+          warn("[AntiRecoil] Tidak dapat menemukan remote tembakan.")
+      end
+
+      print("✅ [Anti Recoil] Sistem aktif. Recoil kamera dan arah peluru distabilkan.")
+  end
 }
