@@ -1,0 +1,41 @@
+return {
+    Execute = function(tab)
+        local vars = _G.BotVars or {}
+        local Tabs = vars.Tabs or {}
+        local CombatTab = tab or Tabs.Combat
+
+        if not CombatTab then
+            warn("[AntiRecoil] Tab Combat tidak ditemukan!")
+            return
+        end
+
+        local Group = CombatTab:AddLeftGroupbox("Anti Recoil (M4A1)")
+
+        vars.AntiRecoil = vars.AntiRecoil or false
+
+        local Players = game:GetService("Players")
+        local player = Players.LocalPlayer
+        local camera = workspace.CurrentCamera
+
+        -- Toggle Anti Recoil
+        Group:AddToggle("ToggleAntiRecoil", {
+            Text = "Anti Recoil",
+            Default = vars.AntiRecoil,
+            Callback = function(v)
+                vars.AntiRecoil = v
+            end
+        })
+
+        -- Loop untuk mengatur ulang rotasi kamera
+        game:GetService("RunService").RenderStepped:Connect(function()
+            if vars.AntiRecoil then
+                -- Mengatur ulang posisi dan rotasi kamera ke posisi awal
+                local camCFrame = camera.CFrame
+                -- Jika ingin mengunci rotasi agar tetap stabil, bisa disesuaikan
+                camera.CFrame = CFrame.new(camCFrame.Position, camCFrame.Position + camCFrame.LookVector)
+            end
+        end)
+
+        print("✅ [Anti Recoil] Aktif - Efek recoil dinonaktifkan.")
+    end
+}
