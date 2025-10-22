@@ -86,7 +86,7 @@ end)
 Tabs.Combat = MainWindow:AddTab("Combat", "crosshair")
 
 -- Utility Tab
-Tabs.Utility = MainWindow:AddTab("Utility", "tool")
+Tabs.Utility = MainWindow:AddTab("Utility", "other")
 
 -- Visual Tab
 Tabs.Visual = MainWindow:AddTab("Visual", "eye")
