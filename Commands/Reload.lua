@@ -10,6 +10,7 @@ return {
             return
         end
 
+        -- Buat group di CombatTab
         local Group = CombatTab:AddLeftGroupbox("Auto Reload")
 
         local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -18,19 +19,24 @@ return {
         local player = Players.LocalPlayer
         local char = player.Character or player.CharacterAdded:Wait()
 
+        -- Variabel default
         vars.AutoReload = vars.AutoReload ~= false
         vars.ReloadDelay = vars.ReloadDelay or 1.8
         vars.Reloading = vars.Reloading or false
         vars.MagCheckInterval = vars.MagCheckInterval or 0.1
 
-        Group:AddToggle("AutoReload", {
-            Text = "Aktifkan Auto Reload",
-            Default = vars.AutoReload,
-            Callback = function(v)
-                vars.AutoReload = v
-            end
-        })
+        -- Toggle AutoReload
+        task.defer(function()
+            Group:AddToggle("ToggleAutoReload", {
+                Text = "Aktifkan Auto Reload",
+                Default = vars.AutoReload,
+                Callback = function(v)
+                    vars.AutoReload = v
+                end
+            })
+        end)
 
+        -- Fungsi reload
         local function doReload()
             if vars.Reloading then return end
             vars.Reloading = true
@@ -46,6 +52,7 @@ return {
             end)
         end
 
+        -- Loop auto reload
         task.spawn(function()
             while task.wait(vars.MagCheckInterval) do
                 if vars.AutoReload and not vars.Reloading then
