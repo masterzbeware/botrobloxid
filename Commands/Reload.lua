@@ -2,12 +2,11 @@
 return {
   Execute = function(tab)
       local vars = _G.BotVars or {}
-      vars.Tabs = vars.Tabs or {}
+      local Tabs = vars.Tabs or {}
+      local CombatTab = tab or Tabs.Combat
 
-      -- Ambil tab dari parameter atau dari Tabs.Combat
-      local CombatTab = tab or vars.Tabs.Combat
       if not CombatTab then
-          warn("[Reload] Tab Combat tidak ditemukan! UI tidak dibuat.")
+          warn("[Reload] Tab Combat tidak ditemukan!")
           return
       end
 
@@ -22,14 +21,8 @@ return {
       vars.Reloading = vars.Reloading or false
       vars.MagCheckInterval = vars.MagCheckInterval or 0.1
 
-      -- Tambahkan toggle ke RightGroup yang sudah ada
-      local Group = CombatTab.RightGroup
-      if not Group then
-          -- fallback jika RightGroup belum ada
-          Group = CombatTab:AddRightGroupbox("Auto Reload")
-          CombatTab.RightGroup = Group
-      end
-
+      -- Buat group sendiri di CombatTab
+      local Group = CombatTab:AddLeftGroupbox("Auto Reload")
       Group:AddToggle("AutoReload", {
           Text = "Aktifkan Auto Reload",
           Default = vars.AutoReload,
@@ -67,6 +60,6 @@ return {
           end
       end)
 
-      print("[Reload] Auto reload siap digunakan di Right Controls Combat.")
+      print("[Reload] Auto reload siap di CombatTab.")
   end
 }
