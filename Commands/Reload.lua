@@ -5,19 +5,17 @@ return {
         local Tabs = vars.Tabs or {}
         local VisualTab = tab or Tabs.Visual
 
-        if not VisualTab then
-            warn("[Reload] Tab Visual tidak ditemukan!")
-            return
-        end
+        -- Tunggu sampai VisualTab siap
+        repeat task.wait() until VisualTab and VisualTab.AddLeftGroupbox
 
         -- Buat group sendiri di VisualTab
         local Group = VisualTab:AddLeftGroupbox("Auto Reload")
 
         local ReplicatedStorage = game:GetService("ReplicatedStorage")
         local Players = game:GetService("Players")
-        local RemoteEvent = ReplicatedStorage:WaitForChild("Events"):WaitForChild("RemoteEvent")
         local player = Players.LocalPlayer
         local char = player.Character or player.CharacterAdded:Wait()
+        local RemoteEvent = ReplicatedStorage:WaitForChild("Events"):WaitForChild("RemoteEvent")
 
         -- Variabel default
         vars.AutoReload = vars.AutoReload ~= false
@@ -50,7 +48,9 @@ return {
         local function doReload()
             if vars.Reloading then return end
             vars.Reloading = true
+
             RemoteEvent:FireServer("ActionActor", "b6ca2d2d-dc75-4987-b8b8-085a9a89539c", 0, "Reload", false)
+            
             task.delay(vars.ReloadDelay, function()
                 RemoteEvent:FireServer("ActionActor", "cd6c81a7-3f9a-4288-baaa-eb9514dce761", 0, "Reloaded", {
                     Capacity = 30,
