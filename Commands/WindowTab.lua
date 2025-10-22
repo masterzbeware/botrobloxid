@@ -6,21 +6,21 @@ local MainWindow = _G.BotVars.MainWindow
 
 local Tabs = {}
 
--- 🧠 INFO TAB
+-- INFO TAB
 Tabs.Info = MainWindow:AddTab("Info", "info")
 local InfoGroup = Tabs.Info:AddLeftGroupbox("Bot Info")
 InfoGroup:AddLabel("MasterZ HUB v1.0.0")
-InfoGroup:AddLabel("Script loaded ✅")
+InfoGroup:AddLabel("Script loaded")
 
--- 🎯 COMBAT TAB (Headshot + AIM)
+-- COMBAT TAB (Headshot + AIM)
 Tabs.Combat = MainWindow:AddTab("Combat", "crosshair")
 
--- 👁️ VISUAL TAB (ESP)
+-- VISUAL TAB (ESP)
 Tabs.Visual = MainWindow:AddTab("Visual", "eye")
 
 -- Simpan ke global agar module lain bisa akses
 _G.BotVars.Tabs = Tabs
 
-print("[MasterZ HUB] WindowTab.lua loaded — Tabs siap digunakan.")
+print("[MasterZ HUB] WindowTab.lua loaded - Tabs siap digunakan.")
 
 return Tabs
