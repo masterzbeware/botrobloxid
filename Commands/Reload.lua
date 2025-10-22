@@ -1,5 +1,4 @@
 -- Reload.lua
--- Mengatur auto reload & visual indikator reload
 
 return {
   Execute = function(tab)
@@ -7,140 +6,59 @@ return {
       _G.BotVars = vars
       local Tabs = vars.Tabs or {}
       tab = tab or Tabs.Combat
+      if not tab then warn("[Reload] Tab Combat tidak ditemukan!") return end
 
-      if not tab then
-          warn("[Reload] Tab Combat tidak ditemukan!")
-          return
-      end
-
-      vars.ReloadKey = vars.ReloadKey or Enum.KeyCode.R
-      vars.AutoReload = vars.AutoReload or false
-      vars.ReloadDelay = vars.ReloadDelay or 1.2
-      vars.ShowReloadBar = vars.ShowReloadBar or true
-      vars.Reloading = vars.Reloading or false
-      vars.ReloadColor = vars.ReloadColor or Color3.fromRGB(0, 255, 0)
-      vars.DebugMode = vars.DebugMode or false
-
-      local UserInputService = game:GetService("UserInputService")
+      local ReplicatedStorage = game:GetService("ReplicatedStorage")
+      local Players = game:GetService("Players")
       local RunService = game:GetService("RunService")
-      local Camera = workspace.CurrentCamera
+      local RemoteEvent = ReplicatedStorage:WaitForChild("Events"):WaitForChild("RemoteEvent")
+      local player = Players.LocalPlayer
+      local char = player.Character or player.CharacterAdded:Wait()
+      local camera = workspace.CurrentCamera
 
-      local Group = tab:AddRightGroupbox("Reload Controller")
+      vars.AutoReload = vars.AutoReload or true
+      vars.ReloadDelay = vars.ReloadDelay or 1.8
+      vars.Reloading = vars.Reloading or false
+      vars.MagCheckInterval = vars.MagCheckInterval or 0.1
 
+      local Group = tab:AddRightGroupbox("Auto Reload")
       Group:AddToggle("AutoReload", {
           Text = "Aktifkan Auto Reload",
           Default = vars.AutoReload,
           Callback = function(v)
               vars.AutoReload = v
-              print("[Reload]", v and "Auto Reload aktif ✅" or "Auto Reload nonaktif ❌")
           end
       })
 
-      Group:AddSlider("ReloadDelay", {
-          Text = "Waktu Reload (detik)",
-          Default = vars.ReloadDelay,
-          Min = 0.2,
-          Max = 3,
-          Rounding = 1,
-          Callback = function(v)
-              vars.ReloadDelay = v
-          end
-      })
-
-      Group:AddDropdown("ReloadKey", {
-          Text = "Tombol Reload",
-          Default = tostring(vars.ReloadKey),
-          Values = { "R", "E", "Q", "T" },
-          Callback = function(value)
-              vars.ReloadKey = Enum.KeyCode[value]
-          end
-      })
-
-      Group:AddToggle("ShowReloadBar", {
-          Text = "Tampilkan Reload Bar",
-          Default = vars.ShowReloadBar,
-          Callback = function(v)
-              vars.ShowReloadBar = v
-          end
-      })
-
-      Group:AddColorPicker("ReloadColor", {
-          Text = "Warna Reload Bar",
-          Default = vars.ReloadColor,
-          Callback = function(v)
-              vars.ReloadColor = v
-          end
-      })
-
-      Group:AddToggle("DebugMode", {
-          Text = "Debug Mode",
-          Default = vars.DebugMode,
-          Callback = function(v)
-              vars.DebugMode = v
-          end
-      })
-
-      local success, Drawing = pcall(function() return Drawing end)
-      local drawAvailable = success and typeof(Drawing) == "table"
-      local reloadBar
-
-      if drawAvailable and vars.ShowReloadBar then
-          pcall(function()
-              reloadBar = Drawing.new("Square")
-              reloadBar.Visible = false
-              reloadBar.Filled = true
-              reloadBar.Size = Vector2.new(0, 6)
-              reloadBar.Position = Vector2.new(Camera.ViewportSize.X / 2 - 50, Camera.ViewportSize.Y - 60)
-              reloadBar.Color = vars.ReloadColor
-              reloadBar.Transparency = 0.9
-          end)
-      end
-
-      local function startReload()
+      local function doReload()
           if vars.Reloading then return end
           vars.Reloading = true
-          if vars.DebugMode then print("[Reload] Mulai reload...") end
-
-          if drawAvailable and reloadBar and vars.ShowReloadBar then
-              task.spawn(function()
-                  local elapsed = 0
-                  reloadBar.Visible = true
-                  while elapsed < vars.ReloadDelay do
-                      elapsed += RunService.RenderStepped:Wait()
-                      local pct = math.clamp(elapsed / vars.ReloadDelay, 0, 1)
-                      reloadBar.Size = Vector2.new(pct * 100, 6)
-                  end
-                  reloadBar.Visible = false
-              end)
-          else
-              task.delay(vars.ReloadDelay, function()
-                  vars.Reloading = false
-              end)
-          end
-
+          RemoteEvent:FireServer("ActionActor", "b6ca2d2d-dc75-4987-b8b8-085a9a89539c", 0, "Reload", false)
           task.delay(vars.ReloadDelay, function()
+              RemoteEvent:FireServer("ActionActor", "cd6c81a7-3f9a-4288-baaa-eb9514dce761", 0, "Reloaded", {
+                  Capacity = 30,
+                  Name = "M4A1_Stanag_Default",
+                  Caliber = "intermediaterifle_556x45mmNATO_M855",
+                  UID = "07a4535b-fc24-48c0-9dc4-94d68dddd0df"
+              })
               vars.Reloading = false
-              if vars.DebugMode then print("[Reload] Selesai reload.") end
           end)
       end
 
-      UserInputService.InputBegan:Connect(function(input, gameProcessed)
-          if gameProcessed then return end
-          if input.KeyCode == vars.ReloadKey and not vars.Reloading then
-              startReload()
+      task.spawn(function()
+          while task.wait(vars.MagCheckInterval) do
+              if vars.AutoReload and not vars.Reloading then
+                  local weapon = char:FindFirstChildWhichIsA("Tool")
+                  if weapon and weapon:FindFirstChild("Ammo") then
+                      local ammo = weapon.Ammo.Value
+                      if ammo <= 0 then
+                          doReload()
+                      end
+                  end
+              end
           end
       end)
 
-      if vars.AutoReload then
-          task.spawn(function()
-              while task.wait(0.2) do
-                  if vars.AutoReload and not vars.Reloading then
-                      startReload()
-                  end
-              end
-          end)
-      end
-
-      print("✅ [Reload] Siap digunakan — Controller aktif di tab Combat.")
+      print("✅ [Reload] Auto reload siap digunakan.")
   end
 }
