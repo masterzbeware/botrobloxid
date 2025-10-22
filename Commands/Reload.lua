@@ -1,11 +1,22 @@
 -- Modules/Reload.lua
 return {
   Execute = function(tab)
-      local vars = _G.BotVars or {}
-      _G.BotVars = vars
-      local Tabs = vars.Tabs or {}
-      tab = tab or Tabs.Combat
-      if not tab then warn("[Reload] Tab Combat tidak ditemukan!") return end
+      _G.BotVars = _G.BotVars or {}
+      local vars = _G.BotVars
+      vars.Tabs = vars.Tabs or {}
+
+      -- Tunggu sampai Tab Combat tersedia dari WindowTab.lua
+      if not vars.Tabs.Combat then
+          repeat
+              task.wait(0.1)
+          until vars.Tabs and vars.Tabs.Combat
+      end
+
+      tab = tab or vars.Tabs.Combat
+      if not tab then
+          warn("[Reload] Tab Combat tidak ditemukan, membatalkan eksekusi.")
+          return
+      end
 
       local ReplicatedStorage = game:GetService("ReplicatedStorage")
       local Players = game:GetService("Players")
@@ -55,6 +66,6 @@ return {
           end
       end)
 
-      print("[Reload] Auto reload siap digunakan.")
+      print("[Reload] Auto reload siap digunakan (Combat Tab).")
   end
 }
