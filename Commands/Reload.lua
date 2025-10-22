@@ -22,8 +22,14 @@ return {
       vars.Reloading = vars.Reloading or false
       vars.MagCheckInterval = vars.MagCheckInterval or 0.1
 
-      -- Tambahkan toggle di Combat tab
-      local Group = CombatTab:AddLeftGroupbox("Auto Reload")
+      -- Tambahkan toggle ke RightGroup yang sudah ada
+      local Group = CombatTab.RightGroup
+      if not Group then
+          -- fallback jika RightGroup belum ada
+          Group = CombatTab:AddRightGroupbox("Auto Reload")
+          CombatTab.RightGroup = Group
+      end
+
       Group:AddToggle("AutoReload", {
           Text = "Aktifkan Auto Reload",
           Default = vars.AutoReload,
@@ -61,6 +67,6 @@ return {
           end
       end)
 
-      print("[Reload] Auto reload siap digunakan.")
+      print("[Reload] Auto reload siap digunakan di Right Controls Combat.")
   end
 }
