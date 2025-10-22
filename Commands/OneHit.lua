@@ -1,3 +1,4 @@
+-- onehit.lua
 return {
   Execute = function(tab)
       local vars = _G.BotVars or {}
@@ -5,152 +6,153 @@ return {
       local CombatTab = tab or Tabs.Combat
 
       if not CombatTab then
-          warn("[Wallhack Bullet] Tab Combat tidak ditemukan!")
+          warn("[One Hit Kill] Tab Combat tidak ditemukan!")
           return
       end
 
-      local Group = CombatTab:AddLeftGroupbox("Wallhack Bullet")
+      local Group = CombatTab:AddLeftGroupbox("One Hit Kill (M855)")
 
-      vars.WallhackBullet = vars.WallhackBullet or false
+      vars.OneHitKill = vars.OneHitKill or false
 
-      local ReplicatedFirst = game:GetService("ReplicatedFirst")
-      local Players = game:GetService("Players")
-      local player = Players.LocalPlayer
-      local BulletEvent = ReplicatedFirst:WaitForChild("BulletEvent")
-      local Workspace = game:GetService("Workspace")
-
-      Group:AddToggle("ToggleWallhackBullet", {
-          Text = "Wallhack Bullet (Through Walls)",
-          Default = vars.WallhackBullet,
+      Group:AddToggle("ToggleOneHitKill", {
+          Text = "One Hit Kill (9999 Damage)",
+          Default = vars.OneHitKill,
           Callback = function(v)
-              vars.WallhackBullet = v
-              
+              vars.OneHitKill = v
               if v then
-                  -- ✅ AKTIFKAN MAGIC BULLET + WALL PENETRATION
+                  -- Ubah semua damage menjadi 9999 saat diaktifkan
                   local success, Calibers = pcall(function()
                       return require(game:GetService("ReplicatedStorage").Shared.Configs.Calibers)
                   end)
                   
                   if success and Calibers then
-                      if Calibers.intermediaterifle_556x45mmNATO_M855 then
+                      -- Coba beberapa struktur yang mungkin
+                      if Calibers.v1 and Calibers.v1.intermediaterifle_556x45mmNATO_M855 then
+                          local ammo = Calibers.v1.intermediaterifle_556x45mmNATO_M855
+                          -- Buat damage table dengan 9999 untuk semua jarak dan bagian tubuh
+                          local godDamage = {}
+                          for i = 1, 21 do
+                              godDamage[i] = 9999
+                          end
+                          
+                          ammo["Damage"] = {
+                              ["Head"] = godDamage,
+                              ["Torso"] = godDamage,
+                              ["Arms"] = godDamage,
+                              ["Legs"] = godDamage
+                          }
+                          print("✅ One Hit Kill activated! All damage = 9999 (struktur v1)")
+                      elseif Calibers.intermediaterifle_556x45mmNATO_M855 then
                           local ammo = Calibers.intermediaterifle_556x45mmNATO_M855
-                          -- Magic Bullet Properties
-                          ammo["Weight"] = 999
-                          ammo["BallisticCoeff"] = 999
-                          ammo["Spread"] = 0
-                          ammo["RecoilForce"] = 0
-                          ammo["Drag"] = 0
-                          -- Wallhack Properties
-                          ammo["Size"] = "50cal"  -- Larger bullet for better penetration
-                          ammo["CanBreach"] = true  -- Can break through materials
-                          print("✅ Wallhack Bullet activated!")
+                          -- Buat damage table dengan 9999 untuk semua jarak dan bagian tubuh
+                          local godDamage = {}
+                          for i = 1, 21 do
+                              godDamage[i] = 9999
+                          end
+                          
+                          ammo["Damage"] = {
+                              ["Head"] = godDamage,
+                              ["Torso"] = godDamage,
+                              ["Arms"] = godDamage,
+                              ["Legs"] = godDamage
+                          }
+                          print("✅ One Hit Kill activated! All damage = 9999 (struktur langsung)")
+                      else
+                          -- Cari tabel M855 secara manual
+                          for name, data in pairs(Calibers) do
+                              if string.find(tostring(name), "556x45mmNATO_M855") then
+                                  local godDamage = {}
+                                  for i = 1, 21 do
+                                      godDamage[i] = 9999
+                                  end
+                                  
+                                  data["Damage"] = {
+                                      ["Head"] = godDamage,
+                                      ["Torso"] = godDamage,
+                                      ["Arms"] = godDamage,
+                                      ["Legs"] = godDamage
+                                  }
+                                  print("✅ One Hit Kill " .. tostring(name) .. " activated! All damage = 9999")
+                                  break
+                              end
+                          end
                       end
+                  else
+                      warn("❌ Gagal memuat module Calibers")
                   end
               else
-                  -- ❌ NONAKTIFKAN - Reset ke normal
+                  -- Reset ke nilai default saat dimatikan
                   local success, Calibers = pcall(function()
                       return require(game:GetService("ReplicatedStorage").Shared.Configs.Calibers)
                   end)
                   
                   if success and Calibers then
-                      if Calibers.intermediaterifle_556x45mmNATO_M855 then
-                          local ammo = Calibers.intermediaterifle_556x45mmNATO_M855
-                          ammo["Weight"] = 12
-                          ammo["BallisticCoeff"] = 0.151
-                          ammo["Spread"] = 1.6
-                          ammo["RecoilForce"] = 100
-                          ammo["Drag"] = 2298.52
-                          ammo["Size"] = "5.56"
-                          ammo["CanBreach"] = false
-                          print("❌ Wallhack Bullet deactivated!")
+                      -- Reset ke damage normal
+                      local normalDamage = {
+                          ["Head"] = {106.62, 105.6, 104.6, 103.5, 102.5, 101.5, 100.5, 99.4, 98.4, 97.4, 96.3, 95.3, 94.3, 93.3, 79.97, 66.64, 53.31, 39.99, 26.66, 13.33, 0},
+                          ["Torso"] = {73.17, 71.9, 70.7, 69.4, 52.6, 48.7, 48.3, 47.8, 47.3, 46.9, 46.4, 45.9, 45.5, 45, 38.57, 32.14, 25.71, 19.29, 12.86, 6.43, 0},
+                          ["Arms"] = {21, 20.6, 20.2, 19.7, 19.3, 18.9, 18.5, 18, 17.6, 17.2, 16.7, 16.3, 15.9, 15.5, 13.29, 11.07, 8.86, 6.64, 4.43, 2.21, 0},
+                          ["Legs"] = {24.4, 24, 23.6, 23.1, 22.7, 22.3, 21.8, 21.4, 20.9, 20.5, 20.1, 19.6, 19.2, 18.8, 16.11, 13.43, 10.74, 8.06, 5.37, 2.69, 0}
+                      }
+                      
+                      if Calibers.v1 and Calibers.v1.intermediaterifle_556x45mmNATO_M855 then
+                          Calibers.v1.intermediaterifle_556x45mmNATO_M855["Damage"] = normalDamage
+                          print("❌ One Hit Kill deactivated! Damage kembali normal (struktur v1)")
+                      elseif Calibers.intermediaterifle_556x45mmNATO_M855 then
+                          Calibers.intermediaterifle_556x45mmNATO_M855["Damage"] = normalDamage
+                          print("❌ One Hit Kill deactivated! Damage kembali normal (struktur langsung)")
                       end
                   end
               end
           end
       })
 
-      -- ✅ WALLHACK + AUTO HEADSHOT HOOK
-      local oldFire
-      oldFire = hookfunction(BulletEvent.Fire, function(self, ...)
-          local args = {...}
+      -- Hook untuk memastikan perubahan tetap berlaku
+      if not getgenv().OneHitKillHooked then
+          getgenv().OneHitKillHooked = true
           
-          if vars.WallhackBullet and #args >= 7 then
-              -- Cari musuh terdekat (termasuk yang di balik tembok)
-              local closestTarget = nil
-              local closestHead = nil
-              local closestDistance = math.huge
-              
-              for _, target in pairs(Players:GetPlayers()) do
-                  if target ~= player and target.Character and target.Character:FindFirstChild("Head") then
-                      local head = target.Character.Head
-                      local humanoid = target.Character:FindFirstChild("Humanoid")
-                      
-                      -- Cek jika musuh masih alive
-                      if humanoid and humanoid.Health > 0 then
-                          local distance = (player.Character.Head.Position - head.Position).Magnitude
-                          
-                          if distance < closestDistance then
-                              closestDistance = distance
-                              closestTarget = target
-                              closestHead = head
-                          end
-                      end
-                  end
-              end
-              
-              if closestHead then
-                  -- Modifikasi untuk WALLHACK + AUTO HEADSHOT
-                  args[2] = player.Character.Head.Position  -- Origin dari kepala player
-                  args[3] = closestHead.Position           -- Impact langsung ke kepala musuh
-                  args[4] = closestHead                    -- Hit part = Head
-                  args[5] = Vector3.new(0, 1, 0)           -- Normal vector (atas kepala)
-                  args[6] = Enum.Material.Plastic          -- Material kepala
-                  args[7] = "intermediaterifle_556x45mmNATO_M855"
-                  args[8] = true                           -- Hit confirm
-                  
-                  -- ⚡ FORCE THROUGH WALLS - Skip wall collision check
-                  -- Dengan mengatur impact langsung ke kepala musuh, sistem collision dilewati
-                  
-                  print("🎯 Wallhack Headshot! Distance: " .. math.floor(closestDistance))
-              end
-          end
-          
-          return oldFire(self, unpack(args))
-      end)
-
-      -- ✅ PERIODIC WALLHACK CHECK
-      if not getgenv().WallhackHooked then
-          getgenv().WallhackHooked = true
-          
+          -- Periodic check untuk memastikan damage tetap 9999
           coroutine.wrap(function()
-              while wait(3) do
-                  if vars.WallhackBullet then
-                      -- Pastikan magic bullet properties tetap aktif
+              while wait(5) do
+                  if vars.OneHitKill then
                       local success, Calibers = pcall(function()
                           return require(game:GetService("ReplicatedStorage").Shared.Configs.Calibers)
                       end)
                       
                       if success and Calibers then
-                          if Calibers.intermediaterifle_556x45mmNATO_M855 then
-                              local ammo = Calibers.intermediaterifle_556x45mmNATO_M855
-                              -- Maintain wallhack properties
-                              if ammo["Size"] ~= "50cal" then
-                                  ammo["Size"] = "50cal"
-                                  print("🔄 Wall penetration maintained")
+                          local godDamage = {}
+                          for i = 1, 21 do
+                              godDamage[i] = 9999
+                          end
+                          
+                          local expectedDamage = {
+                              ["Head"] = godDamage,
+                              ["Torso"] = godDamage,
+                              ["Arms"] = godDamage,
+                              ["Legs"] = godDamage
+                          }
+                          
+                          if Calibers.v1 and Calibers.v1.intermediaterifle_556x45mmNATO_M855 then
+                              local currentDamage = Calibers.v1.intermediaterifle_556x45mmNATO_M855["Damage"]
+                              if currentDamage and currentDamage["Head"] and currentDamage["Head"][1] ~= 9999 then
+                                  Calibers.v1.intermediaterifle_556x45mmNATO_M855["Damage"] = expectedDamage
+                                  print("🔄 One Hit Kill damage diperbaiki menjadi 9999")
                               end
-                              if ammo["CanBreach"] ~= true then
-                                  ammo["CanBreach"] = true
+                          elseif Calibers.intermediaterifle_556x45mmNATO_M855 then
+                              local currentDamage = Calibers.intermediaterifle_556x45mmNATO_M855["Damage"]
+                              if currentDamage and currentDamage["Head"] and currentDamage["Head"][1] ~= 9999 then
+                                  Calibers.intermediaterifle_556x45mmNATO_M855["Damage"] = expectedDamage
+                                  print("🔄 One Hit Kill damage diperbaiki menjadi 9999")
                               end
                           end
                       end
                   end
               end
           end)()
+          
+          print("✅ [One Hit Kill] Sistem periodic check aktif.")
       end
 
-      print("✅ [Wallhack Bullet] Sistem aktif - Tembus tembok + Auto Headshot!")
-      print("   - Peluru tembus semua obstacle")
-      print("   - Auto target kepala musuh")
-      print("   - Work through walls & covers")
+      print("✅ [One Hit Kill] Sistem aktif. Gunakan toggle untuk one hit kill (9999 damage).")
   end
 }
