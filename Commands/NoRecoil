@@ -14,7 +14,7 @@ return {
       vars.NoRecoil = vars.NoRecoil or false
 
       Group:AddToggle("ToggleNoRecoil", {
-          Text = "No Recoil (0 RecoilForce)",
+          Text = "No Recoil",
           Default = vars.NoRecoil,
           Callback = function(v)
               vars.NoRecoil = v
