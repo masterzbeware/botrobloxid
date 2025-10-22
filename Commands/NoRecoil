@@ -18,7 +18,6 @@ return {
       local camera = workspace.CurrentCamera
       local ReplicatedFirst = game:GetService("ReplicatedFirst")
 
-      -- Remote reference (berdasarkan log kamu)
       local BulletService = ReplicatedFirst:FindFirstChild("Actor") and ReplicatedFirst.Actor:FindFirstChild("BulletServiceMultithread")
       local BulletEvent = ReplicatedFirst:FindFirstChild("BulletEvent")
 
@@ -30,35 +29,39 @@ return {
           end
       })
 
-      -- Hook ke event tembakan (jika remote ditemukan)
-      if BulletService and BulletService:FindFirstChild("Send") then
-          local oldFire = BulletService.Send.Fire
-          BulletService.Send.Fire = function(self, ...)
+      -- Metamethod hook
+      if not getgenv().AntiRecoilHooked then
+          getgenv().AntiRecoilHooked = true
+
+          local oldNamecall
+          oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+              local method = getnamecallmethod()
               local args = {...}
-              if vars.AntiRecoil and typeof(args[3]) == "table" and args[3].OriginCFrame then
-                  local origin = args[3].OriginCFrame
-                  -- Override arah tembakan sesuai kamera saat ini (tanpa recoil offset)
-                  args[3].OriginCFrame = CFrame.new(origin.Position, origin.Position + camera.CFrame.LookVector)
-              end
-              return oldFire(self, unpack(args))
-          end
-      elseif BulletEvent then
-          local oldFire = BulletEvent.Fire
-          BulletEvent.Fire = function(self, ...)
-              local args = {...}
-              if vars.AntiRecoil and typeof(args[1]) == "number" and typeof(args[2]) == "CFrame" then
-                  -- Jika event menggunakan posisi tembakan (bukan OriginCFrame)
-                  local pos1, pos2 = args[2], args[3]
-                  if typeof(pos1) == "Vector3" and typeof(pos2) == "Vector3" then
-                      -- Gunakan arah kamera untuk menjaga arah tetap lurus
-                      local newPos2 = pos1 + (camera.CFrame.LookVector * (pos1 - pos2).Magnitude)
+
+              if vars.AntiRecoil and method == "Fire" and (self == BulletService.Send or self == BulletEvent) then
+                  -- Tangkap tipe argument dan ubah OriginCFrame / arah tembakan
+                  local cam = workspace.CurrentCamera
+
+                  -- Jika argumen adalah struktur bullet (OriginCFrame)
+                  if typeof(args[3]) == "table" and args[3].OriginCFrame then
+                      local origin = args[3].OriginCFrame
+                      args[3].OriginCFrame = CFrame.new(origin.Position, origin.Position + cam.CFrame.LookVector)
+                      return oldNamecall(self, unpack(args))
+                  end
+
+                  -- Jika argumen adalah posisi Vector3 (tembakan langsung)
+                  if typeof(args[2]) == "Vector3" and typeof(args[3]) == "Vector3" then
+                      local pos1, pos2 = args[2], args[3]
+                      local newPos2 = pos1 + (cam.CFrame.LookVector * (pos1 - pos2).Magnitude)
                       args[3] = newPos2
+                      return oldNamecall(self, unpack(args))
                   end
               end
-              return oldFire(self, unpack(args))
-          end
-      else
-          warn("[AntiRecoil] Tidak dapat menemukan remote tembakan.")
+
+              return oldNamecall(self, ...)
+          end)
+
+          print("✅ [Anti Recoil] Hook metamethod aktif.")
       end
 
       print("✅ [Anti Recoil] Sistem aktif. Recoil kamera dan arah peluru distabilkan.")
