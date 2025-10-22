@@ -14,7 +14,7 @@ return {
 
         -- Variabel default
         vars.AutoReload = vars.AutoReload ~= false
-        vars.ReloadDelay = vars.ReloadDelay or 0.2 -- default 0.2 detik
+        vars.ReloadDelay = vars.ReloadDelay or 0.2
         vars.Reloading = vars.Reloading or false
         vars.MagCheckInterval = vars.MagCheckInterval or 0.1
 
