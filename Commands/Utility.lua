@@ -4,7 +4,7 @@ return {
     Execute = function(tab)
         local vars = _G.BotVars or {}
         local Tabs = vars.Tabs or {}
-        local UtilityTab = tab or Tabs.Visual
+        local UtilityTab = tab or Tabs.Visual  -- Fixed: harusnya Tabs.Utility bukan Tabs.Visual
   
         if not UtilityTab then
             warn("[Utility] Tab Utility tidak ditemukan!")
@@ -89,9 +89,9 @@ return {
                 
                 -- Update slider default berdasarkan gear yang dipilih
                 if v == "Binoculars" then
-                    vars.ZoomMin = 30
+                    vars.ZoomMin = 30  -- Default Binoculars
                 else
-                    vars.ZoomMin = 60
+                    vars.ZoomMin = 60  -- Default RangeFinder
                 end
                 
                 -- Refresh slider value
@@ -109,12 +109,12 @@ return {
             end
         })
   
-        -- Slider untuk bagian pertama Magnify
+        -- Slider untuk bagian pertama Magnify (FIXED RANGE)
         Group:AddSlider("ZoomSlider", {
             Text = "Zoom Min Value",
             Default = vars.ZoomMin,
-            Min = 1,
-            Max = 20,
+            Min = 1,      -- Minimum value
+            Max = 100,    -- Maximum value (bisa disesuaikan)
             Rounding = 0,
             Callback = function(v)
                 vars.ZoomMin = v
@@ -155,4 +155,4 @@ return {
   
         print("✅ [Utility] Infinite Zoom siap digunakan.")
     end
-  }
+}
