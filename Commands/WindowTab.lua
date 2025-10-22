@@ -30,7 +30,7 @@ local latencyLabel = ServerGroup:AddLabel("Latency: ...")
 local function updateLatency()
     local stats = game:GetService("Stats")
     local ping = stats.Network.ServerStatsItem["Data Ping"]:GetValue()
-    latencyLabel:SetText("Latency: " .. math.floor(ping) + "ms")
+    latencyLabel:SetText("Latency: " .. math.floor(ping) .. "ms")
 end
 
 -- Server Region (Auto Detect)
@@ -70,6 +70,9 @@ end)
 
 -- Combat Tab
 Tabs.Combat = MainWindow:AddTab("Combat", "crosshair")
+
+-- Utility Tab
+Tabs.Utility = MainWindow:AddTab("Utility", "sliders")
 
 -- Visual Tab
 Tabs.Visual = MainWindow:AddTab("Visual", "eye")
