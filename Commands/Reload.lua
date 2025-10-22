@@ -2,7 +2,7 @@ return {
     Execute = function(tab)
         local vars = _G.BotVars or {}
         local Tabs = vars.Tabs or {}
-        local VisualTab = tab or Tabs.Visual
+        local VisualTab = tab or Tabs.Combat
 
         if not VisualTab then
             warn("[ESP] Tab Visual tidak ditemukan!")
