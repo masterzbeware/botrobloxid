@@ -5,65 +5,98 @@ return {
       local CombatTab = tab or Tabs.Combat
 
       if not CombatTab then
-          warn("[AntiRecoil] Tab Combat tidak ditemukan!")
+          warn("[No Recoil] Tab Combat tidak ditemukan!")
           return
       end
 
-      local Group = CombatTab:AddLeftGroupbox("Anti Recoil (M4A1)")
+      local Group = CombatTab:AddLeftGroupbox("No Recoil (M855)")
 
-      vars.AntiRecoil = vars.AntiRecoil or false
+      vars.NoRecoil = vars.NoRecoil or false
 
-      local Players = game:GetService("Players")
-      local player = Players.LocalPlayer
-      local camera = workspace.CurrentCamera
-      local ReplicatedFirst = game:GetService("ReplicatedFirst")
-
-      local BulletService = ReplicatedFirst:FindFirstChild("Actor") and ReplicatedFirst.Actor:FindFirstChild("BulletServiceMultithread")
-      local BulletEvent = ReplicatedFirst:FindFirstChild("BulletEvent")
-
-      Group:AddToggle("ToggleAntiRecoil", {
-          Text = "Anti Recoil",
-          Default = vars.AntiRecoil,
+      Group:AddToggle("ToggleNoRecoil", {
+          Text = "No Recoil (0 RecoilForce)",
+          Default = vars.NoRecoil,
           Callback = function(v)
-              vars.AntiRecoil = v
+              vars.NoRecoil = v
+              if v then
+                  -- Ubah RecoilForce menjadi 0 saat diaktifkan
+                  local success, Calibers = pcall(function()
+                      return require(game:GetService("ReplicatedStorage").Shared.Configs.Calibers)
+                  end)
+                  
+                  if success and Calibers then
+                      -- Coba beberapa struktur yang mungkin
+                      if Calibers.v1 and Calibers.v1.intermediaterifle_556x45mmNATO_M855 then
+                          Calibers.v1.intermediaterifle_556x45mmNATO_M855["RecoilForce"] = 0
+                          print("✅ RecoilForce M855 diubah menjadi 0 (struktur v1)")
+                      elseif Calibers.intermediaterifle_556x45mmNATO_M855 then
+                          Calibers.intermediaterifle_556x45mmNATO_M855["RecoilForce"] = 0
+                          print("✅ RecoilForce M855 diubah menjadi 0 (struktur langsung)")
+                      else
+                          -- Cari tabel M855 secara manual
+                          for name, data in pairs(Calibers) do
+                              if string.find(tostring(name), "556x45mmNATO_M855") then
+                                  data["RecoilForce"] = 0
+                                  print("✅ RecoilForce " .. tostring(name) .. " diubah menjadi 0")
+                                  break
+                              end
+                          end
+                      end
+                  else
+                      warn("❌ Gagal memuat module Calibers")
+                  end
+              else
+                  -- Reset ke nilai default saat dimatikan (opsional)
+                  local success, Calibers = pcall(function()
+                      return require(game:GetService("ReplicatedStorage").Shared.Configs.Calibers)
+                  end)
+                  
+                  if success and Calibers then
+                      -- Reset ke nilai default (100)
+                      if Calibers.v1 and Calibers.v1.intermediaterifle_556x45mmNATO_M855 then
+                          Calibers.v1.intermediaterifle_556x45mmNATO_M855["RecoilForce"] = 100
+                          print("❌ RecoilForce M855 dikembalikan ke 100")
+                      elseif Calibers.intermediaterifle_556x45mmNATO_M855 then
+                          Calibers.intermediaterifle_556x45mmNATO_M855["RecoilForce"] = 100
+                          print("❌ RecoilForce M855 dikembalikan ke 100")
+                      end
+                  end
+              end
           end
       })
 
-      -- Metamethod hook
-      if not getgenv().AntiRecoilHooked then
-          getgenv().AntiRecoilHooked = true
-
-          local oldNamecall
-          oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
-              local method = getnamecallmethod()
-              local args = {...}
-
-              if vars.AntiRecoil and method == "Fire" and (self == BulletService.Send or self == BulletEvent) then
-                  -- Tangkap tipe argument dan ubah OriginCFrame / arah tembakan
-                  local cam = workspace.CurrentCamera
-
-                  -- Jika argumen adalah struktur bullet (OriginCFrame)
-                  if typeof(args[3]) == "table" and args[3].OriginCFrame then
-                      local origin = args[3].OriginCFrame
-                      args[3].OriginCFrame = CFrame.new(origin.Position, origin.Position + cam.CFrame.LookVector)
-                      return oldNamecall(self, unpack(args))
-                  end
-
-                  -- Jika argumen adalah posisi Vector3 (tembakan langsung)
-                  if typeof(args[2]) == "Vector3" and typeof(args[3]) == "Vector3" then
-                      local pos1, pos2 = args[2], args[3]
-                      local newPos2 = pos1 + (cam.CFrame.LookVector * (pos1 - pos2).Magnitude)
-                      args[3] = newPos2
-                      return oldNamecall(self, unpack(args))
+      -- Hook untuk memastikan perubahan tetap berlaku
+      if not getgenv().NoRecoilHooked then
+          getgenv().NoRecoilHooked = true
+          
+          -- Periodic check untuk memastikan RecoilForce tetap 0
+          coroutine.wrap(function()
+              while wait(5) do
+                  if vars.NoRecoil then
+                      local success, Calibers = pcall(function()
+                          return require(game:GetService("ReplicatedStorage").Shared.Configs.Calibers)
+                      end)
+                      
+                      if success and Calibers then
+                          if Calibers.v1 and Calibers.v1.intermediaterifle_556x45mmNATO_M855 then
+                              if Calibers.v1.intermediaterifle_556x45mmNATO_M855["RecoilForce"] ~= 0 then
+                                  Calibers.v1.intermediaterifle_556x45mmNATO_M855["RecoilForce"] = 0
+                                  print("🔄 RecoilForce diperbaiki menjadi 0")
+                              end
+                          elseif Calibers.intermediaterifle_556x45mmNATO_M855 then
+                              if Calibers.intermediaterifle_556x45mmNATO_M855["RecoilForce"] ~= 0 then
+                                  Calibers.intermediaterifle_556x45mmNATO_M855["RecoilForce"] = 0
+                                  print("🔄 RecoilForce diperbaiki menjadi 0")
+                              end
+                          end
+                      end
                   end
               end
-
-              return oldNamecall(self, ...)
-          end)
-
-          print("✅ [Anti Recoil] Hook metamethod aktif.")
+          end)()
+          
+          print("✅ [No Recoil] Sistem periodic check aktif.")
       end
 
-      print("✅ [Anti Recoil] Sistem aktif. Recoil kamera dan arah peluru distabilkan.")
+      print("✅ [No Recoil] Sistem aktif. Gunakan toggle untuk mengaktifkan/mematikan no recoil.")
   end
 }
