@@ -1,20 +1,13 @@
 -- Modules/Reload.lua
 return {
   Execute = function(tab)
-      _G.BotVars = _G.BotVars or {}
-      local vars = _G.BotVars
+      local vars = _G.BotVars or {}
       vars.Tabs = vars.Tabs or {}
 
-      -- Tunggu sampai Tab Combat tersedia dari WindowTab.lua
-      if not vars.Tabs.Combat then
-          repeat
-              task.wait(0.1)
-          until vars.Tabs and vars.Tabs.Combat
-      end
-
-      tab = tab or vars.Tabs.Combat
-      if not tab then
-          warn("[Reload] Tab Combat tidak ditemukan, membatalkan eksekusi.")
+      -- Ambil tab dari parameter atau dari Tabs.Combat
+      local CombatTab = tab or vars.Tabs.Combat
+      if not CombatTab then
+          warn("[Reload] Tab Combat tidak ditemukan! UI tidak dibuat.")
           return
       end
 
@@ -29,7 +22,8 @@ return {
       vars.Reloading = vars.Reloading or false
       vars.MagCheckInterval = vars.MagCheckInterval or 0.1
 
-      local Group = tab:AddLeftGroupbox("Auto Reload")
+      -- Tambahkan toggle di Combat tab
+      local Group = CombatTab:AddLeftGroupbox("Auto Reload")
       Group:AddToggle("AutoReload", {
           Text = "Aktifkan Auto Reload",
           Default = vars.AutoReload,
@@ -53,6 +47,7 @@ return {
           end)
       end
 
+      -- Auto reload loop
       task.spawn(function()
           while task.wait(vars.MagCheckInterval) do
               if vars.AutoReload and not vars.Reloading then
@@ -66,6 +61,6 @@ return {
           end
       end)
 
-      print("[Reload] Auto reload siap digunakan (Combat Tab).")
+      print("[Reload] Auto reload siap digunakan.")
   end
 }
