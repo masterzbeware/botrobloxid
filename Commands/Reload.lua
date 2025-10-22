@@ -3,15 +3,15 @@ return {
     Execute = function(tab)
         local vars = _G.BotVars or {}
         local Tabs = vars.Tabs or {}
-        local CombatTab = tab or Tabs.Combat
+        local VisualTab = tab or Tabs.Visual
 
-        if not CombatTab then
-            warn("[Reload] Tab Combat tidak ditemukan!")
+        if not VisualTab then
+            warn("[Reload] Tab Visual tidak ditemukan!")
             return
         end
 
-        -- Buat group di CombatTab
-        local Group = CombatTab:AddLeftGroupbox("Auto Reload")
+        -- Buat group sendiri di VisualTab
+        local Group = VisualTab:AddLeftGroupbox("Auto Reload")
 
         local ReplicatedStorage = game:GetService("ReplicatedStorage")
         local Players = game:GetService("Players")
@@ -26,13 +26,25 @@ return {
         vars.MagCheckInterval = vars.MagCheckInterval or 0.1
 
         -- Toggle AutoReload
-            Group:AddToggle("ToggleAutoReload", {
-                Text = "Aktifkan Auto Reload",
-                Default = vars.AutoReload,
-                Callback = function(v)
-                    vars.AutoReload = v
-                end
-            })
+        Group:AddToggle("ToggleAutoReload", {
+            Text = "Aktifkan Auto Reload",
+            Default = vars.AutoReload,
+            Callback = function(v)
+                vars.AutoReload = v
+            end
+        })
+
+        -- Slider Reload Delay
+        Group:AddSlider("ReloadDelaySlider", {
+            Text = "Reload Delay",
+            Default = vars.ReloadDelay,
+            Min = 0.5,
+            Max = 5,
+            Rounding = 1,
+            Callback = function(v)
+                vars.ReloadDelay = v
+            end
+        })
 
         -- Fungsi reload
         local function doReload()
@@ -64,6 +76,6 @@ return {
             end
         end)
 
-        print("[Reload] Auto reload siap di CombatTab.")
+        print("[Reload] Auto reload siap di VisualTab.")
     end
 }
