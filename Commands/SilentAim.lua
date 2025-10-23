@@ -9,11 +9,10 @@ return {
           return
       end
 
-      local Group = CombatTab:AddLeftGroupbox("Silent Aim NPC Male AI + No Recoil")
+      local Group = CombatTab:AddLeftGroupbox("Silent Aim NPC Male AI")
 
       -- Settings
       vars.SilentAim = vars.SilentAim or false
-      vars.NoRecoil = vars.NoRecoil or false
       vars.HeadshotOnly = vars.HeadshotOnly or true
       vars.FOV = vars.FOV or 100
       vars.MaxDistance = vars.MaxDistance or 500
@@ -151,41 +150,6 @@ return {
           Rounding = 0,
           Callback = function(v)
               vars.MaxDistance = v
-          end
-      })
-
-      -- No Recoil System
-      Group:AddToggle("ToggleNoRecoil", {
-          Text = "No Recoil",
-          Default = vars.NoRecoil,
-          Callback = function(v)
-              vars.NoRecoil = v
-              if v then
-                  local success, Calibers = pcall(function()
-                      return require(game:GetService("ReplicatedStorage").Shared.Configs.Calibers)
-                  end)
-                  
-                  if success and Calibers then
-                      if Calibers.v1 and Calibers.v1.intermediaterifle_556x45mmNATO_M855 then
-                          Calibers.v1.intermediaterifle_556x45mmNATO_M855["RecoilForce"] = 0
-                      elseif Calibers.intermediaterifle_556x45mmNATO_M855 then
-                          Calibers.intermediaterifle_556x45mmNATO_M855["RecoilForce"] = 0
-                      end
-                  end
-              else
-                  -- Reset recoil
-                  local success, Calibers = pcall(function()
-                      return require(game:GetService("ReplicatedStorage").Shared.Configs.Calibers)
-                  end)
-                  
-                  if success and Calibers then
-                      if Calibers.v1 and Calibers.v1.intermediaterifle_556x45mmNATO_M855 then
-                          Calibers.v1.intermediaterifle_556x45mmNATO_M855["RecoilForce"] = 100
-                      elseif Calibers.intermediaterifle_556x45mmNATO_M855 then
-                          Calibers.intermediaterifle_556x45mmNATO_M855["RecoilForce"] = 100
-                      end
-                  end
-              end
           end
       })
 
