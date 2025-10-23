@@ -16,13 +16,13 @@ return {
         vars.ShowSkeleton = vars.ShowSkeleton or false
         vars.ShowTracer   = vars.ShowTracer or false
         vars.ShowDistance = vars.ShowDistance or false
-        vars.ShowWeapon   = vars.ShowWeapon or false  -- Fitur baru: tampilkan senjata
+        vars.ShowWeapon   = vars.ShowWeapon or false
         vars.ESPRange     = vars.ESPRange or 500
 
         local SkeletonColor = Color3.fromRGB(255, 255, 255)
         local TracerColor   = Color3.fromRGB(255, 0, 0)
         local DistanceColor = Color3.fromRGB(255, 255, 255)
-        local WeaponColor   = Color3.fromRGB(0, 255, 0)  -- Warna hijau untuk teks senjata
+        local WeaponColor   = Color3.fromRGB(0, 255, 0)
 
         local ActiveESP = {}
         local ESPConnection, DescendantConnection
@@ -63,7 +63,6 @@ return {
             end
         })
 
-        -- Toggle baru untuk menampilkan senjata
         Group:AddToggle("ToggleWeaponESP", {
             Text = "Tampilkan Senjata",
             Default = vars.ShowWeapon,
@@ -87,28 +86,54 @@ return {
         local function isValidNPC(model)
             if not model:IsA("Model") or model.Name ~= "Male" then return false end
             local humanoid = model:FindFirstChildOfClass("Humanoid")
-            if not humanoid or humanoid.Health <= 0 then return false end
-            for _, c in ipairs(model:GetChildren()) do
-                if string.sub(c.Name, 1, 3) == "AI_" then
-                    return true
-                end
-            end
-            return false
+            return humanoid and humanoid.Health > 0
         end
 
-        -- Fungsi baru untuk mendapatkan nama senjata dari NPC
+        -- Daftar nama senjata yang umum dalam game
+        local weaponNames = {
+            "MAKAROV", "AK", "M4A1", "M9BERETTA", "VZ", "PPSH", "RPK", "RPD", 
+            "DB", "MOSIN", "SVD", "PP19", "KSVK", "SAIGA", "PKM", "APS",
+            "HECATE", "MP5", "SVDS", "GROZA", "HK416A5", "DEAGLE", "GLOCK17G3"
+        }
+
         local function getWeaponName(model)
+            -- Cek semua child untuk mencari senjata
             for _, child in ipairs(model:GetChildren()) do
-                -- Cek jika ada senjata dengan awalan AI_
-                if string.sub(child.Name, 1, 3) == "AI_" then
-                    local weaponName = child.Name
-                    -- Hapus awalan "AI_" untuk tampilan yang lebih bersih
-                    if string.sub(weaponName, 1, 3) == "AI_" then
-                        weaponName = string.sub(weaponName, 4)
+                local childName = child.Name:upper()
+                
+                -- Cek jika nama child mengandung nama senjata yang dikenal
+                for _, weapon in ipairs(weaponNames) do
+                    if string.find(childName, weapon) then
+                        return weapon
                     end
-                    return weaponName
+                end
+                
+                -- Cek pola umum senjata (tanpa prefix AI_)
+                if childName:match("^[A-Z]+_[A-Z0-9]+") or 
+                   childName:match("^[A-Z][A-Z0-9]+$") then
+                    -- Hapus underscore dan format ulang
+                    local cleanName = childName:gsub("_", " ")
+                    if cleanName ~= "FAKEHEAD" and cleanName ~= "ROOT" then
+                        return cleanName
+                    end
                 end
             end
+            
+            -- Jika tidak ditemukan senjata spesifik, cek berdasarkan tipe object
+            for _, child in ipairs(model:GetChildren()) do
+                if child:IsA("Tool") then
+                    return child.Name
+                elseif child:IsA("Part") and child.Name ~= "FakeHead" and child.Name ~= "Head" then
+                    local name = child.Name:upper()
+                    if not name:match("UPPER") and not name:match("LOWER") and 
+                       not name:match("ARM") and not name:match("LEG") and 
+                       not name:match("TORSO") and not name:match("FOOT") and 
+                       not name:match("HAND") and name ~= "PART" then
+                        return child.Name
+                    end
+                end
+            end
+            
             return "Unknown"
         end
 
@@ -143,7 +168,7 @@ return {
         local function newText(isWeaponText)
             local text = Drawing.new("Text")
             text.Color = isWeaponText and WeaponColor or DistanceColor
-            text.Size = isWeaponText and 12 or 14  -- Ukuran lebih kecil untuk teks senjata
+            text.Size = isWeaponText and 12 or 14
             text.Center = true
             text.Outline = true
             text.Visible = false
@@ -170,7 +195,7 @@ return {
             for _ in pairs(parts) do table.insert(lines, newLine(false)) end
             local tracer = newLine(true)
             local distanceText = newText(false)
-            local weaponText = newText(true)  -- Teks khusus untuk senjata
+            local weaponText = newText(true)
 
             ActiveESP[model] = {
                 Parts = parts,
@@ -178,7 +203,7 @@ return {
                 Tracer = tracer,
                 DistanceText = distanceText,
                 WeaponText = weaponText,
-                WeaponName = getWeaponName(model)  -- Simpan nama senjata
+                WeaponName = getWeaponName(model)
             }
 
             model.AncestryChanged:Connect(function(_, parent)
@@ -257,9 +282,9 @@ return {
                         data.DistanceText.Visible = false
                     end
 
-                    -- Update teks senjata (FITUR BARU)
+                    -- Update teks senjata
                     if vars.ShowWeapon and data.WeaponText then
-                        data.WeaponText.Position = Vector2.new(pos.X, pos.Y - 40)  -- Posisi di bawah teks jarak
+                        data.WeaponText.Position = Vector2.new(pos.X, pos.Y - 40)
                         data.WeaponText.Text = data.WeaponName
                         data.WeaponText.Visible = true
                     elseif data.WeaponText then
@@ -313,6 +338,6 @@ return {
         end
 
         updateESPState()
-        print("[ESP] Toggle siap di VisualTab - Fitur senjata ditambahkan!")
+        print("[ESP] Toggle siap di VisualTab - Deteksi senjata ditingkatkan!")
     end
 }

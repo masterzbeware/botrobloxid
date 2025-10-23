@@ -2,14 +2,13 @@ return {
   Execute = function(tab)
       local vars = _G.BotVars or {}
       local Tabs = vars.Tabs or {}
-      local VisualTab = tab or Tabs.Visual
-
+      local VisualTab = tab or Tabs.Combat
       if not VisualTab then
           warn("[Medical] Tab Visual tidak ditemukan!")
           return
       end
 
-      local Group = VisualTab:AddLeftGroupbox("Auto Heal System")
+      local Group = VisualTab:AddLeftGroupbox("Auto Heal")
       local RunService = game:GetService("RunService")
 
       vars.AutoHeal = vars.AutoHeal or false
