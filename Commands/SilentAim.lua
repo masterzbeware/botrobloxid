@@ -14,16 +14,7 @@ return {
       -- Settings
       vars.SilentAim = vars.SilentAim or false
       vars.HeadshotOnly = vars.HeadshotOnly or true
-      vars.FOV = vars.FOV or 100
-      vars.MaxDistance = vars.MaxDistance or 500
-
-      -- FOV Circle (Visual)
-      local circle = Drawing.new("Circle")
-      circle.Visible = false
-      circle.Radius = vars.FOV
-      circle.Color = Color3.fromRGB(255, 255, 255)
-      circle.Thickness = 2
-      circle.Position = workspace.CurrentCamera.ViewportSize / 2
+      vars.MaxDistance = 400  -- Fixed distance 400 studs
 
       -- Function to check if model has AI_ child
       local function hasAIChild(model)
@@ -35,12 +26,12 @@ return {
           return false
       end
 
-      -- Find closest Male NPC dengan filter AI_
+      -- Find closest Male NPC dengan filter AI_ (tanpa FOV)
       local function getClosestMaleNPC()
           local closestNPC = nil
-          local closestDistance = vars.FOV
-          local mousePos = workspace.CurrentCamera.ViewportSize / 2
+          local closestDistance = vars.MaxDistance
           local camera = workspace.CurrentCamera
+          local playerPosition = camera.CFrame.Position
           
           -- Cari semua model Male di workspace yang memiliki child AI_
           for _, male in pairs(workspace:GetDescendants()) do
@@ -49,16 +40,13 @@ return {
                   -- Filter: hanya yang memiliki child dengan nama diawali "AI_"
                   if hasAIChild(male) then
                       local headPos = male.Head.Position
-                      local screenPos, onScreen = camera:WorldToViewportPoint(headPos)
                       
-                      -- Check distance from player
-                      local distanceFromPlayer = (headPos - camera.CFrame.Position).Magnitude
+                      -- Check distance from player saja (tanpa FOV)
+                      local distanceFromPlayer = (headPos - playerPosition).Magnitude
                       
-                      if onScreen and distanceFromPlayer <= vars.MaxDistance then
-                          local distanceFromCrosshair = (Vector2.new(mousePos.X, mousePos.Y) - Vector2.new(screenPos.X, screenPos.Y)).Magnitude
-                          
-                          if distanceFromCrosshair < closestDistance then
-                              closestDistance = distanceFromCrosshair
+                      if distanceFromPlayer <= vars.MaxDistance then
+                          if distanceFromPlayer < closestDistance then
+                              closestDistance = distanceFromPlayer
                               closestNPC = male
                           end
                       end
@@ -84,7 +72,6 @@ return {
                   if targetNPC and targetNPC:FindFirstChild("Head") then
                       -- Calculate direction to head
                       local headPos = targetNPC.Head.Position
-                      local direction = (headPos - originCFrame.Position).Unit
                       
                       -- Create new CFrame pointing to head
                       local newCFrame = CFrame.lookAt(originCFrame.Position, headPos)
@@ -97,14 +84,15 @@ return {
                           end
                       end
                       
+                      local distance = math.floor((headPos - originCFrame.Position).Magnitude)
                       print("🎯 Silent Aim: Targeting Male NPC with AI")
                       print("   Head Position: " .. tostring(headPos))
-                      print("   Distance: " .. math.floor((headPos - originCFrame.Position).Magnitude))
+                      print("   Distance: " .. distance .. " studs")
                       print("   AI Children: " .. table.concat(aiChildren, ", "))
                       
                       return originalDischarge(self, newCFrame, caliber, velocity, replicate, localShooter, ignore, tracer, ...)
                   else
-                      print("❌ No Male NPC with AI found in FOV")
+                      print("❌ No Male NPC with AI found within " .. vars.MaxDistance .. " studs")
                   end
               end
               
@@ -112,13 +100,12 @@ return {
           end
       end
 
-      -- UI Elements
+      -- UI Elements (sederhana, tanpa FOV)
       Group:AddToggle("ToggleSilentAim", {
           Text = "Silent Aim NPC Male AI",
           Default = vars.SilentAim,
           Callback = function(v)
               vars.SilentAim = v
-              circle.Visible = v
           end
       })
 
@@ -129,34 +116,6 @@ return {
               vars.HeadshotOnly = v
           end
       })
-
-      Group:AddSlider("FOVSlider", {
-          Text = "FOV Size",
-          Default = vars.FOV,
-          Min = 10,
-          Max = 500,
-          Rounding = 0,
-          Callback = function(v)
-              vars.FOV = v
-              circle.Radius = v
-          end
-      })
-
-      Group:AddSlider("MaxDistanceSlider", {
-          Text = "Max Distance",
-          Default = vars.MaxDistance,
-          Min = 50,
-          Max = 1000,
-          Rounding = 0,
-          Callback = function(v)
-              vars.MaxDistance = v
-          end
-      })
-
-      -- Update FOV circle position
-      game:GetService("RunService").RenderStepped:Connect(function()
-          circle.Position = workspace.CurrentCamera.ViewportSize / 2
-      end)
 
       -- Debug info dengan detil AI
       coroutine.wrap(function()
@@ -179,21 +138,33 @@ return {
                       print(string.format("🎯 Male NPC AI Target | Distance: %.1f studs | AI Components: %d (%s)", 
                           distance, aiCount, table.concat(aiNames, ", ")))
                   else
-                      print("🔍 Searching for Male NPC with AI components...")
+                      print("🔍 No Male NPC with AI found within " .. vars.MaxDistance .. " studs")
                       
-                      -- Debug: list semua Male dengan AI di workspace
+                      -- Debug: list semua Male dengan AI di workspace beserta jaraknya
                       local maleWithAI = 0
+                      local cameraPos = workspace.CurrentCamera.CFrame.Position
+                      
                       for _, male in pairs(workspace:GetDescendants()) do
                           if male:IsA("Model") and male.Name == "Male" and hasAIChild(male) then
+                              local distance = (male.Head.Position - cameraPos).Magnitude
                               maleWithAI = maleWithAI + 1
+                              print(string.format("   Male #%d: %.1f studs", maleWithAI, distance))
                           end
                       end
-                      print("   Total Male with AI in workspace: " .. maleWithAI)
+                      
+                      if maleWithAI > 0 then
+                          print("   Total Male with AI in workspace: " .. maleWithAI)
+                      else
+                          print("   ❌ No Male with AI found in entire workspace")
+                      end
                   end
               end
           end
       end)()
 
-      print("✅ [Silent Aim NPC Male AI] Sistem aktif. Target hanya Male dengan komponen AI.")
+      print("✅ [Silent Aim NPC Male AI] Sistem aktif.")
+      print("   Target: Male dengan komponen AI")
+      print("   Max Distance: " .. vars.MaxDistance .. " studs")
+      print("   FOV: Disabled (target terdekat dalam radius)")
   end
 }
