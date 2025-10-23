@@ -20,6 +20,7 @@ return {
         local humanoid = nil
         local lastHealTime = 0
         local HEAL_COOLDOWN = 0.5
+        local isMonitoring = false
 
         Group:AddToggle("ToggleAutoHeal", {
             Text = "Auto Heal",
@@ -37,13 +38,19 @@ return {
         })
 
         function StartRealTimeHealthMonitor()
-            StopRealTimeHealthMonitor() -- Pastikan stop dulu
+            if isMonitoring then
+                print("⚠️ Health monitoring sudah aktif")
+                return
+            end
             
             local player = game.Players.LocalPlayer
             if not player then 
                 warn("❌ Player tidak ditemukan!")
                 return 
             end
+            
+            isMonitoring = true
+            print("🔄 Memulai health monitoring...")
             
             -- Function untuk setup character dengan delay yang tepat
             local function setupCharacter(character)
@@ -52,6 +59,8 @@ return {
                 local maxAttempts = 10
                 
                 local function waitForHumanoid()
+                    if not isMonitoring then return false end
+                    
                     humanoid = character:FindFirstChildOfClass("Humanoid")
                     if humanoid then
                         -- Setup health monitoring
@@ -73,12 +82,12 @@ return {
                 end
                 
                 -- Coba beberapa kali dengan delay
-                while attempts < maxAttempts and not waitForHumanoid() do
+                while attempts < maxAttempts and isMonitoring and not waitForHumanoid() do
                     attempts += 1
                     wait(0.5)
                 end
                 
-                if attempts >= maxAttempts then
+                if attempts >= maxAttempts and isMonitoring then
                     warn("❌ Gagal menemukan Humanoid setelah " .. maxAttempts .. " attempts")
                 end
             end
@@ -93,7 +102,7 @@ return {
             -- Listen untuk character changes
             characterAddedConnection = player.CharacterAdded:Connect(function(character)
                 wait(2) -- Tunggu character fully loaded
-                if vars.AutoHeal then
+                if vars.AutoHeal and isMonitoring then
                     coroutine.wrap(function()
                         setupCharacter(character)
                     end)()
@@ -102,6 +111,12 @@ return {
         end
 
         function StopRealTimeHealthMonitor()
+            if not isMonitoring then
+                return
+            end
+            
+            isMonitoring = false
+            
             if healthMonitorConnection then
                 healthMonitorConnection:Disconnect()
                 healthMonitorConnection = nil
@@ -115,6 +130,9 @@ return {
         end
 
         function CheckAndHeal(currentHealth)
+            -- Cek apakah masih monitoring
+            if not isMonitoring then return end
+            
             -- Cek cooldown
             if tick() - lastHealTime < HEAL_COOLDOWN then
                 return
@@ -136,20 +154,28 @@ return {
         end
 
         function ExecuteHealingSequence()
+            -- Cek apakah masih monitoring
+            if not isMonitoring then return end
+            
             -- Urutan: Dressing → Bandage → Dressing
             print("🔁 Memulai healing sequence: Dressing → Bandage → Dressing")
             
             -- Gunakan coroutine untuk menghindari blocking
             coroutine.wrap(function()
+                if not isMonitoring then return end
                 UseMedicalItem("Dressing")
                 wait(0.3)
                 
+                if not isMonitoring then return end
                 UseMedicalItem("Bandage") 
                 wait(0.3)
                 
+                if not isMonitoring then return end
                 UseMedicalItem("Dressing")
                 
-                print("✅ Healing sequence selesai")
+                if isMonitoring then
+                    print("✅ Healing sequence selesai")
+                end
             end)()
         end
 
