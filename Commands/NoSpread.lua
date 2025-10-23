@@ -9,7 +9,7 @@ return {
             return
         end
 
-        local Group = CombatTab:AddLeftGroupbox("No Spread (M855)")
+        local Group = CombatTab:AddRightGroupbox("No Spread")
 
         vars.NoSpread = vars.NoSpread or false
 

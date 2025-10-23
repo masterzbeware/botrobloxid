@@ -16,9 +16,10 @@ return {
 
         -- Status variables
         local healthMonitorConnection = nil
+        local characterAddedConnection = nil
         local humanoid = nil
         local lastHealTime = 0
-        local HEAL_COOLDOWN = 0.5 -- Cooldown lebih pendek untuk sequence cepat
+        local HEAL_COOLDOWN = 0.5
 
         Group:AddToggle("ToggleAutoHeal", {
             Text = "Auto Heal (<100 HP)",
@@ -38,40 +39,64 @@ return {
         function StartRealTimeHealthMonitor()
             StopRealTimeHealthMonitor() -- Pastikan stop dulu
             
-            -- Cari humanoid player
             local player = game.Players.LocalPlayer
-            if not player then return end
+            if not player then 
+                warn("❌ Player tidak ditemukan!")
+                return 
+            end
             
-            -- Function untuk setup character
+            -- Function untuk setup character dengan delay yang tepat
             local function setupCharacter(character)
-                humanoid = character:FindFirstChildOfClass("Humanoid")
-                if humanoid then
-                    -- Direct health change event
-                    healthMonitorConnection = humanoid.HealthChanged:Connect(function(health)
-                        if vars.AutoHeal and health < 100 then
-                            CheckAndHeal(health)
+                -- Tunggu humanoid tersedia
+                local attempts = 0
+                local maxAttempts = 10
+                
+                local function waitForHumanoid()
+                    humanoid = character:FindFirstChildOfClass("Humanoid")
+                    if humanoid then
+                        -- Setup health monitoring
+                        healthMonitorConnection = humanoid.HealthChanged:Connect(function(health)
+                            if vars.AutoHeal and health < 100 then
+                                CheckAndHeal(health)
+                            end
+                        end)
+                        
+                        -- Check health saat ini
+                        if vars.AutoHeal and humanoid.Health < 100 then
+                            CheckAndHeal(humanoid.Health)
                         end
-                    end)
-                    
-                    -- Juga check health saat ini
-                    if vars.AutoHeal and humanoid.Health < 100 then
-                        CheckAndHeal(humanoid.Health)
+                        
+                        print("✅ Real-time health monitoring aktif - HP: " .. math.floor(humanoid.Health))
+                        return true
                     end
-                    
-                    print("✅ Real-time health monitoring aktif")
+                    return false
+                end
+                
+                -- Coba beberapa kali dengan delay
+                while attempts < maxAttempts and not waitForHumanoid() do
+                    attempts += 1
+                    wait(0.5)
+                end
+                
+                if attempts >= maxAttempts then
+                    warn("❌ Gagal menemukan Humanoid setelah " .. maxAttempts .. " attempts")
                 end
             end
             
-            -- Setup character saat ini
+            -- Setup character saat ini (jika ada)
             if player.Character then
-                setupCharacter(player.Character)
+                coroutine.wrap(function()
+                    setupCharacter(player.Character)
+                end)()
             end
             
-            -- Juga listen untuk character changes (respawn, dll)
-            player.CharacterAdded:Connect(function(character)
-                wait(1) -- Tunggu character fully loaded
+            -- Listen untuk character changes
+            characterAddedConnection = player.CharacterAdded:Connect(function(character)
+                wait(2) -- Tunggu character fully loaded
                 if vars.AutoHeal then
-                    setupCharacter(character)
+                    coroutine.wrap(function()
+                        setupCharacter(character)
+                    end)()
                 end
             end)
         end
@@ -80,6 +105,10 @@ return {
             if healthMonitorConnection then
                 healthMonitorConnection:Disconnect()
                 healthMonitorConnection = nil
+            end
+            if characterAddedConnection then
+                characterAddedConnection:Disconnect()
+                characterAddedConnection = nil
             end
             humanoid = nil
             print("❌ Health monitoring dihentikan")
@@ -91,8 +120,13 @@ return {
                 return
             end
             
-            -- Pastikan health masih di bawah 100 (double check)
+            -- Pastikan health masih di bawah 100
             if currentHealth >= 100 then
+                return
+            end
+            
+            -- Pastikan player masih hidup
+            if humanoid and humanoid.Health <= 0 then
                 return
             end
             
@@ -105,35 +139,41 @@ return {
             -- Urutan: Dressing → Bandage → Dressing
             print("🔁 Memulai healing sequence: Dressing → Bandage → Dressing")
             
-            -- Dressing pertama
-            UseMedicalItem("Dressing")
-            wait(0.2) -- Tunggu sebentar antara item
-            
-            -- Bandage
-            UseMedicalItem("Bandage") 
-            wait(0.2)
-            
-            -- Dressing kedua
-            UseMedicalItem("Dressing")
-            
-            print("✅ Healing sequence selesai")
+            -- Gunakan coroutine untuk menghindari blocking
+            coroutine.wrap(function()
+                UseMedicalItem("Dressing")
+                wait(0.3)
+                
+                UseMedicalItem("Bandage") 
+                wait(0.3)
+                
+                UseMedicalItem("Dressing")
+                
+                print("✅ Healing sequence selesai")
+            end)()
         end
 
         function UseMedicalItem(itemType)
             local ReplicatedStorage = game:GetService("ReplicatedStorage")
-            local RemoteEvent = ReplicatedStorage:FindFirstChild("RemoteEvent") or ReplicatedStorage:FindFirstChild("Events")
+            local RemoteEvent = ReplicatedStorage:FindFirstChild("RemoteEvent") 
+            
+            if not RemoteEvent then
+                -- Coba cari di Events folder
+                local Events = ReplicatedStorage:FindFirstChild("Events")
+                if Events then
+                    RemoteEvent = Events:FindFirstChild("RemoteEvent")
+                end
+            end
             
             if not RemoteEvent then
                 warn("❌ RemoteEvent tidak ditemukan!")
                 return false
             end
 
-            -- Dapatkan Player ID yang benar
             local playerId = GetPlayerID()
             local success = false
             
             if itemType == "Dressing" then
-                -- Gunakan struktur yang benar untuk Dressing
                 success = pcall(function()
                     RemoteEvent:FireServer(
                         "StateActor",
@@ -144,13 +184,12 @@ return {
                     )
                 end)
             elseif itemType == "Bandage" then
-                -- Gunakan struktur yang benar untuk Bandage
                 success = pcall(function()
                     RemoteEvent:FireServer(
-                        "StateActor",
+                        "StateActor", 
                         playerId,
                         "Medical",
-                        "Bandage", 
+                        "Bandage",
                         true
                     )
                 end)
@@ -168,25 +207,9 @@ return {
         function GetPlayerID()
             local player = game.Players.LocalPlayer
             if player then
-                -- Gunakan UserId sebagai string (format yang umum)
                 return tostring(player.UserId)
             end
             return "unknown"
-        end
-
-        function GetCurrentHealth()
-            if humanoid and humanoid.Health then
-                return humanoid.Health
-            end
-            
-            local player = game.Players.LocalPlayer
-            if player and player.Character then
-                local hum = player.Character:FindFirstChildOfClass("Humanoid")
-                if hum then
-                    return hum.Health
-                end
-            end
-            return nil
         end
 
         -- Auto restart monitoring jika game dimuat ulang
@@ -194,9 +217,10 @@ return {
             getgenv().BandageHooked = true
             
             -- Auto restart ketika player respawn
-            game:GetService("Players").LocalPlayer.CharacterAdded:Connect(function()
+            game:GetService("Players").LocalPlayer.CharacterAdded:Connect(function(character)
+                wait(3) -- Tunggu lebih lama untuk character fully loaded
                 if vars.AutoHeal then
-                    wait(2) -- Tunggu character fully loaded
+                    print("🔄 Character respawned - restarting health monitor...")
                     StartRealTimeHealthMonitor()
                 end
             end)
@@ -204,9 +228,9 @@ return {
             print("✅ [Auto Heal] Real-time system aktif")
         end
 
-        -- Jika AutoHeal sudah aktif sebelumnya, start monitoring
+        -- Jika AutoHeal sudah aktif sebelumnya, start monitoring dengan delay
         if vars.AutoHeal then
-            wait(1) -- Tunggu sedikit sebelum start
+            wait(2)
             StartRealTimeHealthMonitor()
         end
 
