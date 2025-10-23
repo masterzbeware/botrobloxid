@@ -71,7 +71,7 @@ return {
             
             -- Periodic check untuk memastikan Spread tetap 0
             coroutine.wrap(function()
-                while wait(5) do
+                while wait(3) do
                     if vars.NoSpread then
                         local success, Calibers = pcall(function()
                             return require(game:GetService("ReplicatedStorage").Shared.Configs.Calibers)

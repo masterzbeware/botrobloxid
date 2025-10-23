@@ -71,7 +71,7 @@ return {
           
           -- Periodic check untuk memastikan RecoilForce tetap 0
           coroutine.wrap(function()
-              while wait(5) do
+              while wait(3) do
                   if vars.NoRecoil then
                       local success, Calibers = pcall(function()
                           return require(game:GetService("ReplicatedStorage").Shared.Configs.Calibers)

@@ -13,9 +13,7 @@ return {
 
       -- Settings
       vars.SilentAim = vars.SilentAim or false
-      vars.BodyPart = vars.BodyPart or "Head"
-      vars.DamageBoost = vars.DamageBoost or false  -- New: Damage boost
-      vars.RapidFire = vars.RapidFire or false      -- New: Rapid fire
+      vars.BodyPart = vars.BodyPart or "Head"  -- Default head
       vars.MaxDistance = 400
 
       -- Function to check if model has AI_ child
@@ -28,8 +26,9 @@ return {
           return false
       end
 
-      -- Function to check if target visible
+      -- Function to check if target visible (no walls in between)
       local function isTargetVisible(targetPart, originPosition)
+          -- Raycast from player to target part
           local rayOrigin = originPosition
           local rayDirection = (targetPart.Position - originPosition).Unit
           local rayDistance = (targetPart.Position - originPosition).Magnitude
@@ -42,31 +41,42 @@ return {
           local rayResult = workspace:Raycast(rayOrigin, rayDirection * rayDistance, raycastParams)
           
           if rayResult then
+              -- Jika raycast kena sesuatu sebelum target
               local hitInstance = rayResult.Instance
               if hitInstance and hitInstance:IsDescendantOf(targetPart.Parent) then
+                  -- Kena target sendiri (visible)
                   return true
               else
+                  -- Kena wall/obstacle sebelum target
                   return false
               end
           end
+          
+          -- No obstacles found (visible)
           return true
       end
 
-      -- Find closest Male NPC
+      -- Find closest Male NPC dengan filter AI_ dan wall check
       local function getClosestMaleNPC()
           local closestNPC = nil
           local closestDistance = vars.MaxDistance
           local camera = workspace.CurrentCamera
           local playerPosition = camera.CFrame.Position
           
+          -- Cari semua model Male di workspace yang memiliki child AI_
           for _, male in pairs(workspace:GetDescendants()) do
               if male:IsA("Model") and male.Name == "Male" and male:FindFirstChild("Head") then
+                  
+                  -- Filter: hanya yang memiliki child dengan nama diawali "AI_"
                   if hasAIChild(male) then
                       local head = male.Head
                       local headPos = head.Position
+                      
+                      -- Check distance from player
                       local distanceFromPlayer = (headPos - playerPosition).Magnitude
                       
                       if distanceFromPlayer <= vars.MaxDistance then
+                          -- Check if target is visible (no walls)
                           if isTargetVisible(head, playerPosition) then
                               if distanceFromPlayer < closestDistance then
                                   closestDistance = distanceFromPlayer
@@ -77,10 +87,11 @@ return {
                   end
               end
           end
+          
           return closestNPC
       end
 
-      -- Get target body part
+      -- Get target body part position based on selection
       local function getTargetBodyPart(targetNPC)
           local bodyPart = vars.BodyPart
         
@@ -93,11 +104,12 @@ return {
           elseif bodyPart == "Torso" and targetNPC:FindFirstChild("Torso") then
               return targetNPC.Torso
           else
+              -- Fallback to Head jika bagian tubuh tidak ditemukan
               return targetNPC:FindFirstChild("Head") or targetNPC:FindFirstChild("HumanoidRootPart")
           end
       end
 
-      -- Hook BulletService untuk silent aim dengan damage boost
+      -- Hook BulletService untuk silent aim
       local originalDischarge
       local BulletService = require(game:GetService("ReplicatedStorage").Shared.Services.BulletService)
       
@@ -113,34 +125,32 @@ return {
                       local targetPart = getTargetBodyPart(targetNPC)
                       
                       if targetPart then
+                          -- Calculate direction to body part
                           local partPos = targetPart.Position
+                          
+                          -- Create new CFrame pointing to body part
                           local newCFrame = CFrame.lookAt(originCFrame.Position, partPos)
                           
-                          -- DAMAGE BOOST: Ubah ke caliber yang lebih powerful
-                          local boostedCaliber = caliber
-                          if vars.DamageBoost then
-                              boostedCaliber = "intermediaterifle_556x45mmNATO_M855"  -- Ganti dengan caliber terkuat
-                              print("💥 DAMAGE BOOST: Using high-power caliber")
-                          end
-                          
-                          -- RAPID FIRE: Multiple shots
-                          if vars.RapidFire then
-                              coroutine.wrap(function()
-                                  for i = 1, 3 do  -- 3 shot rapid
-                                      wait(0.05)   -- 50ms delay
-                                      originalDischarge(self, newCFrame, boostedCaliber, velocity, replicate, localShooter, ignore, tracer, ...)
-                                  end
-                              end)()
-                              print("🔫 RAPID FIRE: 3-shot burst")
+                          -- Get AI child names for debug
+                          local aiChildren = {}
+                          for _, child in pairs(targetNPC:GetChildren()) do
+                              if string.sub(child.Name, 1, 3) == "AI_" then
+                                  table.insert(aiChildren, child.Name)
+                              end
                           end
                           
                           local distance = math.floor((partPos - originCFrame.Position).Magnitude)
-                          print("🎯 Targeting " .. vars.BodyPart .. " | Distance: " .. distance .. " studs")
+                          print("🎯 Silent Aim: Targeting " .. vars.BodyPart)
+                          print("   Target: " .. targetNPC.Name)
+                          print("   Body Part: " .. targetPart.Name)
+                          print("   Position: " .. tostring(partPos))
+                          print("   Distance: " .. distance .. " studs")
+                          print("   AI Components: " .. table.concat(aiChildren, ", "))
                           
-                          return originalDischarge(self, newCFrame, boostedCaliber, velocity, replicate, localShooter, ignore, tracer, ...)
+                          return originalDischarge(self, newCFrame, caliber, velocity, replicate, localShooter, ignore, tracer, ...)
                       end
                   else
-                      print("❌ No target found")
+                      print("❌ No visible Male NPC with AI found within " .. vars.MaxDistance .. " studs")
                   end
               end
               
@@ -148,100 +158,59 @@ return {
           end
       end
 
-      -- UI Elements
+      -- UI Elements (Simple - hanya 1 toggle + 1 dropdown)
       Group:AddToggle("ToggleSilentAim", {
           Text = "Silent Aim NPC Male AI",
           Default = vars.SilentAim,
           Callback = function(v)
               vars.SilentAim = v
-              print(v and "✅ Silent Aim: ON" or "❌ Silent Aim: OFF")
+              if v then
+                  print("✅ Silent Aim: ON | Body Part: " .. vars.BodyPart)
+              else
+                  print("❌ Silent Aim: OFF")
+              end
           end
       })
 
       Group:AddDropdown("BodyPartDropdown", {
-          Text = "Target Body Part", 
+          Text = "Target Body Part",
           Default = vars.BodyPart,
           Values = {"Head", "UpperTorso", "HumanoidRootPart", "Torso"},
           Callback = function(v)
               vars.BodyPart = v
-              print("🎯 Body Part: " .. v)
+              print("🎯 Body Part changed to: " .. v)
           end
       })
 
-      Group:AddToggle("ToggleDamageBoost", {
-          Text = "Damage Boost",
-          Default = vars.DamageBoost,
-          Callback = function(v)
-              vars.DamageBoost = v
-              print(v and "💥 Damage Boost: ON" or "💥 Damage Boost: OFF")
-          end
-      })
-
-      Group:AddToggle("ToggleRapidFire", {
-          Text = "Rapid Fire (3-shot)",
-          Default = vars.RapidFire,
-          Callback = function(v)
-              vars.RapidFire = v
-              print(v and "🔫 Rapid Fire: ON" or "🔫 Rapid Fire: OFF")
-          end
-      })
-
-      -- Auto-kill system untuk NPC yang bandel
-      local function forceKillNPC(targetNPC)
-          local humanoid = targetNPC:FindFirstChildOfClass("Humanoid")
-          if humanoid then
-              -- Method 1: Direct health set
-              humanoid.Health = 0
-              
-              -- Method 2: Breakparts (fallback)
-              for _, part in pairs(targetNPC:GetChildren()) do
-                  if part:IsA("BasePart") then
-                      part:BreakJoints()
-                  end
-              end
-              
-              print("☠️ FORCE KILL: " .. targetNPC.Name)
-              return true
-          end
-          return false
-      end
-
-      -- Emergency kill button
-      Group:AddButton("Force Kill Nearest NPC", function()
-          local target = getClosestMaleNPC()
-          if target then
-              if forceKillNPC(target) then
-                  print("✅ Force kill successful")
-              else
-                  print("❌ Force kill failed")
-              end
-          else
-              print("❌ No target for force kill")
-          end
-      end)
-
-      -- Debug info dengan health monitoring
+      -- Debug info
       coroutine.wrap(function()
-          while wait(2) do
+          while wait(3) do
               if vars.SilentAim then
                   local target = getClosestMaleNPC()
                   if target then
                       local targetPart = getTargetBodyPart(target)
                       local distance = (targetPart.Position - workspace.CurrentCamera.CFrame.Position).Magnitude
                       
-                      local humanoid = target:FindFirstChildOfClass("Humanoid")
-                      local healthInfo = ""
-                      if humanoid then
-                          healthInfo = string.format(" | Health: %d/%d", humanoid.Health, humanoid.MaxHealth)
+                      -- Count AI children
+                      local aiCount = 0
+                      for _, child in pairs(target:GetChildren()) do
+                          if string.sub(child.Name, 1, 3) == "AI_" then
+                              aiCount = aiCount + 1
+                          end
                       end
                       
-                      print(string.format("🎯 Locked: %s | Part: %s | Distance: %.1f studs%s", 
-                          target.Name, targetPart.Name, distance, healthInfo))
+                      print(string.format("🎯 Locked: %s | Part: %s | Distance: %.1f studs | AI: %d", 
+                          target.Name, targetPart.Name, distance, aiCount))
+                  else
+                      print("🔍 Searching for Male NPC with AI...")
                   end
               end
           end
       end)()
 
-      print("✅ [Enhanced Silent Aim] Sistem aktif dengan damage boost options!")
+      print("✅ [Silent Aim NPC Male AI] Sistem aktif.")
+      print("   Target: Male dengan komponen AI")
+      print("   Max Distance: " .. vars.MaxDistance .. " studs") 
+      print("   Default Body Part: " .. vars.BodyPart)
   end
 }
