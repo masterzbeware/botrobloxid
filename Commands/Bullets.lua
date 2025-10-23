@@ -9,7 +9,7 @@ return {
           return
       end
 
-      local Group = CombatTab:AddLeftGroupbox("Custom Bullets (M855)")
+      local Group = CombatTab:AddRightGroupbox("Custom Bullets (M855)")
 
       vars.BulletsToggle = vars.BulletsToggle or false
       vars.BulletsValue = vars.BulletsValue or 1

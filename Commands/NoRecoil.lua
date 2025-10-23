@@ -9,7 +9,7 @@ return {
           return
       end
 
-      local Group = CombatTab:AddLeftGroupbox("No Recoil (M855)")
+      local Group = CombatTab:AddRightGroupbox("No Recoil (M855)")
 
       vars.NoRecoil = vars.NoRecoil or false
 
