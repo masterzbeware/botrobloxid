@@ -14,7 +14,7 @@ return {
       -- Settings
       vars.SilentAim = vars.SilentAim or false
       vars.BodyPart = vars.BodyPart or "Head"  -- Default head
-      vars.MaxDistance = 400
+      vars.MaxDistance = 800
 
       -- Function to check if model has AI_ child
       local function hasAIChild(model)
@@ -160,7 +160,7 @@ return {
 
       -- UI Elements (Simple - hanya 1 toggle + 1 dropdown)
       Group:AddToggle("ToggleSilentAim", {
-          Text = "Silent Aim NPC Male AI",
+          Text = "Silent Aim",
           Default = vars.SilentAim,
           Callback = function(v)
               vars.SilentAim = v
@@ -173,7 +173,7 @@ return {
       })
 
       Group:AddDropdown("BodyPartDropdown", {
-          Text = "Target Body Part",
+          Text = "Target Body",
           Default = vars.BodyPart,
           Values = {"Head", "UpperTorso", "HumanoidRootPart", "Torso"},
           Callback = function(v)
