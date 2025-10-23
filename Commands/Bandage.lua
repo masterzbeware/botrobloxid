@@ -2,24 +2,24 @@ return {
     Execute = function(tab)
         local vars = _G.BotVars or {}
         local Tabs = vars.Tabs or {}
-        -- PERUBAHAN: Sekarang menggunakan Tabs.Combat
         local CombatTab = tab or Tabs.Combat
+
         if not CombatTab then
-            warn("[Bandage] Tab Combat tidak ditemukan!")
+            warn("[Auto Heal] Tab Combat tidak ditemukan!")
             return
         end
-  
+
         local Group = CombatTab:AddLeftGroupbox("Auto Heal")
         local RunService = game:GetService("RunService")
-  
+
         vars.AutoHeal = vars.AutoHeal or false
-  
+
         -- Status variables
         local healthMonitorConnection = nil
         local humanoid = nil
         local lastHealTime = 0
         local HEAL_COOLDOWN = 0.5 -- Cooldown lebih pendek untuk sequence cepat
-  
+
         Group:AddToggle("ToggleAutoHeal", {
             Text = "Auto Heal (<100 HP)",
             Default = vars.AutoHeal,
@@ -34,7 +34,7 @@ return {
                 end
             end
         })
-  
+
         function StartRealTimeHealthMonitor()
             StopRealTimeHealthMonitor() -- Pastikan stop dulu
             
@@ -75,7 +75,7 @@ return {
                 end
             end)
         end
-  
+
         function StopRealTimeHealthMonitor()
             if healthMonitorConnection then
                 healthMonitorConnection:Disconnect()
@@ -84,7 +84,7 @@ return {
             humanoid = nil
             print("❌ Health monitoring dihentikan")
         end
-  
+
         function CheckAndHeal(currentHealth)
             -- Cek cooldown
             if tick() - lastHealTime < HEAL_COOLDOWN then
@@ -100,7 +100,7 @@ return {
             ExecuteHealingSequence()
             lastHealTime = tick()
         end
-  
+
         function ExecuteHealingSequence()
             -- Urutan: Dressing → Bandage → Dressing
             print("🔁 Memulai healing sequence: Dressing → Bandage → Dressing")
@@ -118,38 +118,39 @@ return {
             
             print("✅ Healing sequence selesai")
         end
-  
+
         function UseMedicalItem(itemType)
             local ReplicatedStorage = game:GetService("ReplicatedStorage")
-            local RemoteEvent = ReplicatedStorage.Events.RemoteEvent
+            local RemoteEvent = ReplicatedStorage:FindFirstChild("RemoteEvent") or ReplicatedStorage:FindFirstChild("Events")
             
             if not RemoteEvent then
                 warn("❌ RemoteEvent tidak ditemukan!")
                 return false
             end
-  
+
             -- Dapatkan Player ID yang benar
             local playerId = GetPlayerID()
             local success = false
             
             if itemType == "Dressing" then
-                -- Gunakan struktur dengan table index [5] = true
+                -- Gunakan struktur yang benar untuk Dressing
                 success = pcall(function()
                     RemoteEvent:FireServer(
                         "StateActor",
                         playerId,
                         "Medical",
-                        [5] = true
+                        "Dressing",
+                        true
                     )
                 end)
             elseif itemType == "Bandage" then
-                -- Gunakan struktur dengan parameter terpisah
+                -- Gunakan struktur yang benar untuk Bandage
                 success = pcall(function()
                     RemoteEvent:FireServer(
                         "StateActor",
                         playerId,
                         "Medical",
-                        "Bandage",
+                        "Bandage", 
                         true
                     )
                 end)
@@ -163,18 +164,16 @@ return {
                 return false
             end
         end
-  
+
         function GetPlayerID()
             local player = game.Players.LocalPlayer
-            -- Coba beberapa format ID yang mungkin
             if player then
-                -- Coba UserId sebagai string
+                -- Gunakan UserId sebagai string (format yang umum)
                 return tostring(player.UserId)
             end
-            -- Fallback ke ID dari RemoteSpy
-            return "23ab53e8-49dd-4682-97e7-a0d71f293ef4"
+            return "unknown"
         end
-  
+
         function GetCurrentHealth()
             if humanoid and humanoid.Health then
                 return humanoid.Health
@@ -189,7 +188,7 @@ return {
             end
             return nil
         end
-  
+
         -- Auto restart monitoring jika game dimuat ulang
         if not getgenv().BandageHooked then
             getgenv().BandageHooked = true
@@ -204,12 +203,13 @@ return {
             
             print("✅ [Auto Heal] Real-time system aktif")
         end
-  
+
         -- Jika AutoHeal sudah aktif sebelumnya, start monitoring
         if vars.AutoHeal then
+            wait(1) -- Tunggu sedikit sebelum start
             StartRealTimeHealthMonitor()
         end
-  
-        print("[Bandage] Auto Heal system siap di CombatTab - Urutan: Dressing → Bandage → Dressing")
+
+        print("✅ [Auto Heal] Sistem aktif. Gunakan toggle untuk mengaktifkan/mematikan auto heal.")
     end
-  }
+}

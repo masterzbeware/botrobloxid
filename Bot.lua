@@ -26,7 +26,7 @@ local MainWindow = Library:CreateWindow({
 _G.BotVars.Library = Library
 _G.BotVars.MainWindow = MainWindow
 
-local Commands = {}
+local VIPCommands = {}
 local commandFiles = {"ESP.lua","WindowTab.lua","NoSpread.lua","NoRecoil.lua","Bullets.lua","Utility.lua","SilentAim.lua","Bandage.lua"}
 
 local function loadScripts(files, repo, targetTable)
@@ -49,10 +49,10 @@ local function loadScripts(files, repo, targetTable)
     end
 end
 
-loadScripts(commandFiles, repoBase, Commands)
-_G.BotVars.CommandFiles = Commands
+loadScripts(commandFiles, repoBase, VIPCommands)
+_G.BotVars.CommandFiles = VIPCommands
 
-for name, module in pairs(Commands) do
+for name, module in pairs(VIPCommands) do
     if module.Execute then
         debugPrint("Running UI module: " .. name)
         module.Execute()

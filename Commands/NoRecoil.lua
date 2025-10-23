@@ -9,7 +9,7 @@ return {
           return
       end
 
-      local Group = CombatTab:AddLeftGroupbox("No Recoil (M855)")
+      local Group = CombatTab:AddRightGroupbox("No Recoil")
 
       vars.NoRecoil = vars.NoRecoil or false
 
@@ -28,16 +28,13 @@ return {
                       -- Coba beberapa struktur yang mungkin
                       if Calibers.v1 and Calibers.v1.intermediaterifle_556x45mmNATO_M855 then
                           Calibers.v1.intermediaterifle_556x45mmNATO_M855["RecoilForce"] = 0
-                          print("✅ RecoilForce M855 diubah menjadi 0 (struktur v1)")
                       elseif Calibers.intermediaterifle_556x45mmNATO_M855 then
                           Calibers.intermediaterifle_556x45mmNATO_M855["RecoilForce"] = 0
-                          print("✅ RecoilForce M855 diubah menjadi 0 (struktur langsung)")
                       else
                           -- Cari tabel M855 secara manual
                           for name, data in pairs(Calibers) do
                               if string.find(tostring(name), "556x45mmNATO_M855") then
                                   data["RecoilForce"] = 0
-                                  print("✅ RecoilForce " .. tostring(name) .. " diubah menjadi 0")
                                   break
                               end
                           end
@@ -55,10 +52,8 @@ return {
                       -- Reset ke nilai default (100)
                       if Calibers.v1 and Calibers.v1.intermediaterifle_556x45mmNATO_M855 then
                           Calibers.v1.intermediaterifle_556x45mmNATO_M855["RecoilForce"] = 100
-                          print("❌ RecoilForce M855 dikembalikan ke 100")
                       elseif Calibers.intermediaterifle_556x45mmNATO_M855 then
                           Calibers.intermediaterifle_556x45mmNATO_M855["RecoilForce"] = 100
-                          print("❌ RecoilForce M855 dikembalikan ke 100")
                       end
                   end
               end
@@ -81,22 +76,16 @@ return {
                           if Calibers.v1 and Calibers.v1.intermediaterifle_556x45mmNATO_M855 then
                               if Calibers.v1.intermediaterifle_556x45mmNATO_M855["RecoilForce"] ~= 0 then
                                   Calibers.v1.intermediaterifle_556x45mmNATO_M855["RecoilForce"] = 0
-                                  print("🔄 RecoilForce diperbaiki menjadi 0")
                               end
                           elseif Calibers.intermediaterifle_556x45mmNATO_M855 then
                               if Calibers.intermediaterifle_556x45mmNATO_M855["RecoilForce"] ~= 0 then
                                   Calibers.intermediaterifle_556x45mmNATO_M855["RecoilForce"] = 0
-                                  print("🔄 RecoilForce diperbaiki menjadi 0")
                               end
                           end
                       end
                   end
               end
           end)()
-          
-          print("✅ [No Recoil] Sistem periodic check aktif.")
       end
-
-      print("✅ [No Recoil] Sistem aktif. Gunakan toggle untuk mengaktifkan/mematikan no recoil.")
   end
 }
