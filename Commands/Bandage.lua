@@ -22,7 +22,7 @@ return {
         local HEAL_COOLDOWN = 0.5
 
         Group:AddToggle("ToggleAutoHeal", {
-            Text = "Auto Heal (<100 HP)",
+            Text = "Auto Heal",
             Default = vars.AutoHeal,
             Callback = function(v)
                 vars.AutoHeal = v
