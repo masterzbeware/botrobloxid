@@ -128,7 +128,10 @@ return {
                             local newCFrame = CFrame.lookAt(originCFrame.Position, partPos)
 
                             -- Hindari kena karakter sendiri
-                            local newIgnore = table.clone(ignore or {})
+                            local newIgnore = {}
+                            if typeof(ignore) == "table" then
+                                newIgnore = table.clone(ignore)
+                            end
                             table.insert(newIgnore, game.Players.LocalPlayer.Character)
 
                             local distance = (partPos - originCFrame.Position).Magnitude
