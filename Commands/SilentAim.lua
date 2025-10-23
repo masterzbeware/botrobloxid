@@ -9,7 +9,7 @@ return {
           return
       end
 
-      local Group = CombatTab:AddLeftGroupbox("Silent Aim NPC Male + No Recoil")
+      local Group = CombatTab:AddLeftGroupbox("Silent Aim NPC Male AI + No Recoil")
 
       -- Settings
       vars.SilentAim = vars.SilentAim or false
@@ -26,28 +26,42 @@ return {
       circle.Thickness = 2
       circle.Position = workspace.CurrentCamera.ViewportSize / 2
 
-      -- Find closest Male NPC
+      -- Function to check if model has AI_ child
+      local function hasAIChild(model)
+          for _, child in pairs(model:GetChildren()) do
+              if string.sub(child.Name, 1, 3) == "AI_" then
+                  return true
+              end
+          end
+          return false
+      end
+
+      -- Find closest Male NPC dengan filter AI_
       local function getClosestMaleNPC()
           local closestNPC = nil
           local closestDistance = vars.FOV
           local mousePos = workspace.CurrentCamera.ViewportSize / 2
           local camera = workspace.CurrentCamera
           
-          -- Cari semua model Male di workspace
+          -- Cari semua model Male di workspace yang memiliki child AI_
           for _, male in pairs(workspace:GetDescendants()) do
               if male:IsA("Model") and male.Name == "Male" and male:FindFirstChild("Head") then
-                  local headPos = male.Head.Position
-                  local screenPos, onScreen = camera:WorldToViewportPoint(headPos)
                   
-                  -- Check distance from player
-                  local distanceFromPlayer = (headPos - camera.CFrame.Position).Magnitude
-                  
-                  if onScreen and distanceFromPlayer <= vars.MaxDistance then
-                      local distanceFromCrosshair = (Vector2.new(mousePos.X, mousePos.Y) - Vector2.new(screenPos.X, screenPos.Y)).Magnitude
+                  -- Filter: hanya yang memiliki child dengan nama diawali "AI_"
+                  if hasAIChild(male) then
+                      local headPos = male.Head.Position
+                      local screenPos, onScreen = camera:WorldToViewportPoint(headPos)
                       
-                      if distanceFromCrosshair < closestDistance then
-                          closestDistance = distanceFromCrosshair
-                          closestNPC = male
+                      -- Check distance from player
+                      local distanceFromPlayer = (headPos - camera.CFrame.Position).Magnitude
+                      
+                      if onScreen and distanceFromPlayer <= vars.MaxDistance then
+                          local distanceFromCrosshair = (Vector2.new(mousePos.X, mousePos.Y) - Vector2.new(screenPos.X, screenPos.Y)).Magnitude
+                          
+                          if distanceFromCrosshair < closestDistance then
+                              closestDistance = distanceFromCrosshair
+                              closestNPC = male
+                          end
                       end
                   end
               end
@@ -76,13 +90,22 @@ return {
                       -- Create new CFrame pointing to head
                       local newCFrame = CFrame.lookAt(originCFrame.Position, headPos)
                       
-                      print("🎯 Silent Aim: Targeting Male NPC head")
+                      -- Get AI child names for debug
+                      local aiChildren = {}
+                      for _, child in pairs(targetNPC:GetChildren()) do
+                          if string.sub(child.Name, 1, 3) == "AI_" then
+                              table.insert(aiChildren, child.Name)
+                          end
+                      end
+                      
+                      print("🎯 Silent Aim: Targeting Male NPC with AI")
                       print("   Head Position: " .. tostring(headPos))
                       print("   Distance: " .. math.floor((headPos - originCFrame.Position).Magnitude))
+                      print("   AI Children: " .. table.concat(aiChildren, ", "))
                       
                       return originalDischarge(self, newCFrame, caliber, velocity, replicate, localShooter, ignore, tracer, ...)
                   else
-                      print("❌ No Male NPC found in FOV")
+                      print("❌ No Male NPC with AI found in FOV")
                   end
               end
               
@@ -92,7 +115,7 @@ return {
 
       -- UI Elements
       Group:AddToggle("ToggleSilentAim", {
-          Text = "Silent Aim NPC Male",
+          Text = "Silent Aim NPC Male AI",
           Default = vars.SilentAim,
           Callback = function(v)
               vars.SilentAim = v
@@ -171,19 +194,42 @@ return {
           circle.Position = workspace.CurrentCamera.ViewportSize / 2
       end)
 
-      -- Debug info
+      -- Debug info dengan detil AI
       coroutine.wrap(function()
-          while wait(2) do
+          while wait(3) do
               if vars.SilentAim then
                   local target = getClosestMaleNPC()
                   if target then
                       local distance = (target.Head.Position - workspace.CurrentCamera.CFrame.Position).Magnitude
-                      print(string.format("🎯 Male NPC Target: Distance %.1f studs", distance))
+                      
+                      -- Count AI children
+                      local aiCount = 0
+                      local aiNames = {}
+                      for _, child in pairs(target:GetChildren()) do
+                          if string.sub(child.Name, 1, 3) == "AI_" then
+                              aiCount = aiCount + 1
+                              table.insert(aiNames, child.Name)
+                          end
+                      end
+                      
+                      print(string.format("🎯 Male NPC AI Target | Distance: %.1f studs | AI Components: %d (%s)", 
+                          distance, aiCount, table.concat(aiNames, ", ")))
+                  else
+                      print("🔍 Searching for Male NPC with AI components...")
+                      
+                      -- Debug: list semua Male dengan AI di workspace
+                      local maleWithAI = 0
+                      for _, male in pairs(workspace:GetDescendants()) do
+                          if male:IsA("Model") and male.Name == "Male" and hasAIChild(male) then
+                              maleWithAI = maleWithAI + 1
+                          end
+                      end
+                      print("   Total Male with AI in workspace: " .. maleWithAI)
                   end
               end
           end
       end)()
 
-      print("✅ [Silent Aim NPC Male] Sistem aktif. Target otomatis ke kepala Male NPC terdekat.")
+      print("✅ [Silent Aim NPC Male AI] Sistem aktif. Target hanya Male dengan komponen AI.")
   end
 }
