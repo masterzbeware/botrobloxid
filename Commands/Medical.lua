@@ -9,7 +9,7 @@ return {
           return
       end
 
-      local Group = CombatTab:AddLeftGroupbox("Auto Heal System")
+      local Group = CombatTab:AddRightGroupbox("Auto Heal System")
 
       vars.AutoHeal = vars.AutoHeal or false
 
