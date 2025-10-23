@@ -37,7 +37,8 @@ return {
 
       -- Find important objects
       local BulletEvent = ReplicatedFirst:FindFirstChild("BulletEvent")
-      local BulletServiceMultithread = ReplicatedFirst:FindFirstChild("Actor"):FindFirstChild("BulletServiceMultithread")
+      local Actor = ReplicatedFirst:FindFirstChild("Actor")
+      local BulletServiceMultithread = Actor and Actor:FindFirstChild("BulletServiceMultithread")
       local SendEvent = BulletServiceMultithread and BulletServiceMultithread:FindFirstChild("Send")
 
       if not BulletEvent or not SendEvent then
@@ -52,12 +53,16 @@ return {
       local function isVisible(targetPosition, origin)
           if not vars.SilentAimWallCheck then return true end
           
+          local localPlayer = game.Players.LocalPlayer
+          local localCharacter = localPlayer.Character
+          if not localCharacter then return false end
+          
           local direction = (targetPosition - origin).Unit
           local distance = (targetPosition - origin).Magnitude
           
           local raycastParams = RaycastParams.new()
           raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-          raycastParams.FilterDescendantsInstances = {game.Players.LocalPlayer.Character}
+          raycastParams.FilterDescendantsInstances = {localCharacter}
           
           local result = workspace:Raycast(origin, direction * distance, raycastParams)
           return result == nil
@@ -112,7 +117,7 @@ return {
           return bestTarget
       end
 
-      -- Hook 1: BulletService.Discharge (High Level)
+      -- Hook 1: BulletService.Discharge (High Level) - INI YANG PALING PENTING
       BulletService.Discharge = function(self, originCFrame, caliber, velocity, uid, replicate, isLocal, ...)
           if vars.SilentAim and isLocal then
               local targetData = getBestTarget()
@@ -138,66 +143,60 @@ return {
           return OriginalDischarge(self, originCFrame, caliber, velocity, uid, replicate, isLocal, ...)
       end
 
-      -- Hook 2: Direct Send Event (Low Level)
-      local OriginalSendFire = SendEvent.Fire
-      SendEvent.Fire = function(self, ...)
-          local args = {...}
-          
-          if vars.SilentAim and args[1] == 1 then -- Check if it's a bullet send
-              local targetData = getBestTarget()
-              
-              if targetData and targetData.Part then
-                  -- Modify the bullet data
-                  local bulletData = args[3]
-                  if bulletData and bulletData.OriginCFrame then
-                      local newOrigin = bulletData.OriginCFrame.Position
-                      local newLookVector = (targetData.Part.Position - newOrigin).Unit
-                      local newCFrame = CFrame.new(newOrigin, newOrigin + newLookVector)
-                      
-                      -- Update bullet data
-                      bulletData.OriginCFrame = newCFrame
-                      bulletData.Velocity = vars.SilentAimVelocity
-                      bulletData.Range = 999999
-                      
-                      print("🎯 [Silent Aim] Direct Send Modified: " .. targetData.Player.Name)
-                  end
-              end
-          end
-          
-          return OriginalSendFire(self, ...)
-      end
-
-      -- Hook 3: RemoteEvent untuk ActionActor
-      local RemoteEvent = ReplicatedStorage.Events.RemoteEvent
-      local OriginalFireSignal
+      -- Hook 2: Direct manipulation melalui BulletEvent (Alternative method)
+      local OriginalBulletEventFire
       
-      -- Hook firesignal jika memungkinkan
-      if getgenv().firesignal then
-          OriginalFireSignal = getgenv().firesignal
-          getgenv().firesignal = function(event, ...)
+      -- Coba hook BulletEvent jika ada
+      if BulletEvent then
+          OriginalBulletEventFire = BulletEvent.Fire
+          BulletEvent.Fire = function(self, ...)
               local args = {...}
               
-              if event == RemoteEvent and vars.SilentAim then
-                  if args[1] == "ActionActor" and args[4] == "Discharge" then
+              if vars.SilentAim and args[1] == 1 then -- Check jika ini bullet event
+                  local targetData = getBestTarget()
+                  
+                  if targetData and targetData.Part then
+                      print("🎯 [Silent Aim] BulletEvent intercepted: " .. targetData.Player.Name)
+                      -- Di sini kita bisa modify args jika diperlukan
+                  end
+              end
+              
+              return OriginalBulletEventFire(self, ...)
+          end
+      end
+
+      -- Hook 3: Manipulasi langsung melalui module script
+      local function modifyBulletTrajectory(originCFrame, targetPosition)
+          local newOrigin = originCFrame.Position
+          local newLookVector = (targetPosition - newOrigin).Unit
+          return CFrame.new(newOrigin, newOrigin + newLookVector)
+      end
+
+      -- Hook untuk memastikan perubahan tetap berlaku
+      local function rehookIfNeeded()
+          if BulletService.Discharge == OriginalDischarge then
+              BulletService.Discharge = function(self, ...)
+                  local args = {...}
+                  local originCFrame, caliber, velocity, uid, replicate, isLocal = args[1], args[2], args[3], args[4], args[5], args[6]
+                  
+                  if vars.SilentAim and isLocal then
                       local targetData = getBestTarget()
                       
                       if targetData and targetData.Part then
-                          -- Modify discharge data
-                          local dischargeData = args[5]
-                          if dischargeData and dischargeData[1] then
-                              local originCFrame = dischargeData[1]
-                              local newOrigin = originCFrame.Position
-                              local newLookVector = (targetData.Part.Position - newOrigin).Unit
-                              local newCFrame = CFrame.new(newOrigin, newOrigin + newLookVector)
-                              
-                              dischargeData[1] = newCFrame
-                              print("🎯 [Silent Aim] RemoteEvent Modified: " .. targetData.Player.Name)
-                          end
+                          local newCFrame = modifyBulletTrajectory(originCFrame, targetData.Part.Position)
+                          local newVelocity = vars.SilentAimVelocity
+                          
+                          print("🎯 [Silent Aim] Re-hooked: " .. targetData.Player.Name)
+                          
+                          args[1] = newCFrame
+                          args[3] = newVelocity
+                          
+                          return OriginalDischarge(self, unpack(args))
                       end
                   end
+                  
+                  return OriginalDischarge(self, ...)
               end
-              
-              return OriginalFireSignal(event, ...)
           end
       end
 
@@ -208,7 +207,8 @@ return {
           Callback = function(v)
               vars.SilentAim = v
               if v then
-                  print("🎯 [Silent Aim] AUTO-LOCK Diaktifkan - Multi-layer hook aktif!")
+                  print("🎯 [Silent Aim] AUTO-LOCK Diaktifkan - Tembak saja!")
+                  rehookIfNeeded()
               else
                   print("❌ [Silent Aim] Dimatikan")
               end
@@ -287,29 +287,27 @@ return {
           end
       end)
 
-      -- Cleanup function
-      local function cleanup()
-          if OriginalDischarge then
-              BulletService.Discharge = OriginalDischarge
-          end
-          if OriginalSendFire then
-              SendEvent.Fire = OriginalSendFire
-          end
-          if OriginalFireSignal then
-              getgenv().firesignal = OriginalFireSignal
-          end
-          targetIndicator:Remove()
+      -- Periodic rehook untuk memastikan hook tetap aktif
+      if not getgenv().SilentAimRehook then
+          getgenv().SilentAimRehook = true
+          coroutine.wrap(function()
+              while wait(5) do
+                  if vars.SilentAim then
+                      rehookIfNeeded()
+                  end
+              end
+          end)()
       end
 
-      -- Auto cleanup
+      -- Cleanup ketika character respawn
       game.Players.LocalPlayer.CharacterAdded:Connect(function()
-          wait(1)
-          cleanup()
-          -- Re-initialize setelah respawn
           wait(2)
+          rehookIfNeeded()
       end)
 
-      print("✅ [Silent Aim] Multi-layer silent aim loaded!")
-      print("🎯 Hooked: BulletService.Discharge, SendEvent, RemoteEvent")
+      print("✅ [Silent Aim] System loaded!")
+      print("🎯 Primary Hook: BulletService.Discharge")
+      print("🎯 Secondary Hook: BulletEvent (jika tersedia)")
+      print("🎯 Auto-rehook system: Active")
   end
 }
