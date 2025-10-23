@@ -13,9 +13,10 @@ return {
   
         -- Settings
         vars.SilentAim = vars.SilentAim or false
+        vars.HeadshotOnly = vars.HeadshotOnly or true
         vars.FOV = vars.FOV or 100
         vars.MaxDistance = vars.MaxDistance or 500
-
+  
         -- FOV Circle (Visual)
         local circle = Drawing.new("Circle")
         circle.Visible = false
@@ -33,26 +34,20 @@ return {
             end
             return false
         end
-
-        -- Function to check if model is local player
-        local function isLocalPlayer(model)
-            local localPlayer = game.Players.LocalPlayer
-            return localPlayer and model:IsDescendantOf(localPlayer.Character)
-        end
   
-        -- Find closest Male NPC dengan filter AI_ dan exclude local player
+        -- Find closest Male NPC dengan filter AI_
         local function getClosestMaleNPC()
             local closestNPC = nil
             local closestDistance = vars.FOV
             local mousePos = workspace.CurrentCamera.ViewportSize / 2
             local camera = workspace.CurrentCamera
             
-            -- Cari semua model Male di workspace yang memiliki child AI_ dan bukan local player
+            -- Cari semua model Male di workspace yang memiliki child AI_
             for _, male in pairs(workspace:GetDescendants()) do
                 if male:IsA("Model") and male.Name == "Male" and male:FindFirstChild("Head") then
                     
-                    -- Filter: hanya yang memiliki child dengan nama diawali "AI_" dan bukan local player
-                    if hasAIChild(male) and not isLocalPlayer(male) then
+                    -- Filter: hanya yang memiliki child dengan nama diawali "AI_"
+                    if hasAIChild(male) then
                         local headPos = male.Head.Position
                         local screenPos, onScreen = camera:WorldToViewportPoint(headPos)
                         
@@ -117,13 +112,21 @@ return {
             end
         end
   
-        -- UI Elements - Hanya 1 toggle dan 2 slider
+        -- UI Elements
         Group:AddToggle("ToggleSilentAim", {
-            Text = "Enable Silent Aim",
+            Text = "Silent Aim NPC Male AI",
             Default = vars.SilentAim,
             Callback = function(v)
                 vars.SilentAim = v
                 circle.Visible = v
+            end
+        })
+  
+        Group:AddToggle("ToggleHeadshot", {
+            Text = "Headshot Only",
+            Default = vars.HeadshotOnly,
+            Callback = function(v)
+                vars.HeadshotOnly = v
             end
         })
   
@@ -178,19 +181,19 @@ return {
                     else
                         print("🔍 Searching for Male NPC with AI components...")
                         
-                        -- Debug: list semua Male dengan AI di workspace (exclude local player)
+                        -- Debug: list semua Male dengan AI di workspace
                         local maleWithAI = 0
                         for _, male in pairs(workspace:GetDescendants()) do
-                            if male:IsA("Model") and male.Name == "Male" and hasAIChild(male) and not isLocalPlayer(male) then
+                            if male:IsA("Model") and male.Name == "Male" and hasAIChild(male) then
                                 maleWithAI = maleWithAI + 1
                             end
                         end
-                        print("   Total Male with AI in workspace (exclude self): " .. maleWithAI)
+                        print("   Total Male with AI in workspace: " .. maleWithAI)
                     end
                 end
             end
         end)()
   
-        print("✅ [Silent Aim NPC Male AI] Sistem aktif. Target hanya Male dengan komponen AI (tidak termasuk diri sendiri).")
+        print("✅ [Silent Aim NPC Male AI] Sistem aktif. Target hanya Male dengan komponen AI.")
     end
-}
+  }
