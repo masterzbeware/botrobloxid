@@ -9,13 +9,14 @@ return {
           return
       end
 
-      local Group = CombatTab:AddLeftGroupbox("Silent Aim + No Recoil")
+      local Group = CombatTab:AddLeftGroupbox("Silent Aim NPC Male + No Recoil")
 
       -- Settings
       vars.SilentAim = vars.SilentAim or false
       vars.NoRecoil = vars.NoRecoil or false
       vars.HeadshotOnly = vars.HeadshotOnly or true
       vars.FOV = vars.FOV or 100
+      vars.MaxDistance = vars.MaxDistance or 500
 
       -- FOV Circle (Visual)
       local circle = Drawing.new("Circle")
@@ -25,32 +26,34 @@ return {
       circle.Thickness = 2
       circle.Position = workspace.CurrentCamera.ViewportSize / 2
 
-      -- Get Players
-      local Players = game:GetService("Players")
-      local LocalPlayer = Players.LocalPlayer
-      
-      -- Find closest player to crosshair
-      local function getClosestPlayer()
-          local closestPlayer = nil
+      -- Find closest Male NPC
+      local function getClosestMaleNPC()
+          local closestNPC = nil
           local closestDistance = vars.FOV
           local mousePos = workspace.CurrentCamera.ViewportSize / 2
+          local camera = workspace.CurrentCamera
           
-          for _, player in pairs(Players:GetPlayers()) do
-              if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
-                  local headPos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(player.Character.Head.Position)
+          -- Cari semua model Male di workspace
+          for _, male in pairs(workspace:GetDescendants()) do
+              if male:IsA("Model") and male.Name == "Male" and male:FindFirstChild("Head") then
+                  local headPos = male.Head.Position
+                  local screenPos, onScreen = camera:WorldToViewportPoint(headPos)
                   
-                  if onScreen then
-                      local distance = (Vector2.new(mousePos.X, mousePos.Y) - Vector2.new(headPos.X, headPos.Y)).Magnitude
+                  -- Check distance from player
+                  local distanceFromPlayer = (headPos - camera.CFrame.Position).Magnitude
+                  
+                  if onScreen and distanceFromPlayer <= vars.MaxDistance then
+                      local distanceFromCrosshair = (Vector2.new(mousePos.X, mousePos.Y) - Vector2.new(screenPos.X, screenPos.Y)).Magnitude
                       
-                      if distance < closestDistance then
-                          closestDistance = distance
-                          closestPlayer = player
+                      if distanceFromCrosshair < closestDistance then
+                          closestDistance = distanceFromCrosshair
+                          closestNPC = male
                       end
                   end
               end
           end
           
-          return closestPlayer
+          return closestNPC
       end
 
       -- Hook BulletService untuk silent aim
@@ -63,18 +66,23 @@ return {
           
           BulletService.Discharge = function(self, originCFrame, caliber, velocity, replicate, localShooter, ignore, tracer, ...)
               if vars.SilentAim then
-                  local target = getClosestPlayer()
+                  local targetNPC = getClosestMaleNPC()
                   
-                  if target and target.Character and target.Character:FindFirstChild("Head") then
+                  if targetNPC and targetNPC:FindFirstChild("Head") then
                       -- Calculate direction to head
-                      local headPos = target.Character.Head.Position
+                      local headPos = targetNPC.Head.Position
                       local direction = (headPos - originCFrame.Position).Unit
                       
                       -- Create new CFrame pointing to head
                       local newCFrame = CFrame.lookAt(originCFrame.Position, headPos)
                       
-                      print("🎯 Silent Aim: Targeting " .. target.Name .. " head")
+                      print("🎯 Silent Aim: Targeting Male NPC head")
+                      print("   Head Position: " .. tostring(headPos))
+                      print("   Distance: " .. math.floor((headPos - originCFrame.Position).Magnitude))
+                      
                       return originalDischarge(self, newCFrame, caliber, velocity, replicate, localShooter, ignore, tracer, ...)
+                  else
+                      print("❌ No Male NPC found in FOV")
                   end
               end
               
@@ -84,7 +92,7 @@ return {
 
       -- UI Elements
       Group:AddToggle("ToggleSilentAim", {
-          Text = "Silent Aim",
+          Text = "Silent Aim NPC Male",
           Default = vars.SilentAim,
           Callback = function(v)
               vars.SilentAim = v
@@ -103,7 +111,7 @@ return {
       Group:AddSlider("FOVSlider", {
           Text = "FOV Size",
           Default = vars.FOV,
-          Min = 100,
+          Min = 10,
           Max = 500,
           Rounding = 0,
           Callback = function(v)
@@ -112,7 +120,18 @@ return {
           end
       })
 
-      -- No Recoil System (dari kode asli)
+      Group:AddSlider("MaxDistanceSlider", {
+          Text = "Max Distance",
+          Default = vars.MaxDistance,
+          Min = 50,
+          Max = 1000,
+          Rounding = 0,
+          Callback = function(v)
+              vars.MaxDistance = v
+          end
+      })
+
+      -- No Recoil System
       Group:AddToggle("ToggleNoRecoil", {
           Text = "No Recoil",
           Default = vars.NoRecoil,
@@ -152,6 +171,19 @@ return {
           circle.Position = workspace.CurrentCamera.ViewportSize / 2
       end)
 
-      print("✅ [Silent Aim] Sistem aktif. Target otomatis ke head player terdekat dalam FOV.")
+      -- Debug info
+      coroutine.wrap(function()
+          while wait(2) do
+              if vars.SilentAim then
+                  local target = getClosestMaleNPC()
+                  if target then
+                      local distance = (target.Head.Position - workspace.CurrentCamera.CFrame.Position).Magnitude
+                      print(string.format("🎯 Male NPC Target: Distance %.1f studs", distance))
+                  end
+              end
+          end
+      end)()
+
+      print("✅ [Silent Aim NPC Male] Sistem aktif. Target otomatis ke kepala Male NPC terdekat.")
   end
 }
