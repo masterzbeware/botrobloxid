@@ -9,13 +9,12 @@ return {
             return
         end
   
-        local Group = CombatTab:AddLeftGroupbox("Silent Aim Prediction")
+        local Group = CombatTab:AddLeftGroupbox("Silent Aim")
   
         vars.SilentAim = vars.SilentAim or false
         vars.FOV = vars.FOV or 100
         vars.MaxDistance = vars.MaxDistance or 400
-        vars.Prediction = vars.Prediction or 0.1
-
+  
         local circle = Drawing.new("Circle")
         circle.Visible = false
         circle.Radius = vars.FOV
@@ -26,65 +25,44 @@ return {
         local localPlayer = game:GetService("Players").LocalPlayer
         local camera = workspace.CurrentCamera
   
-        local validTargets = {}
-        local targetVelocities = {}
+        local validMaleNPCs = {}
         local lastCacheUpdate = 0
-        local CACHE_UPDATE_INTERVAL = 0.1
+        local CACHE_UPDATE_INTERVAL = 2
   
-        local function updateTargetCache()
+        local function updateMaleNPCCache()
             local currentTime = tick()
             if currentTime - lastCacheUpdate < CACHE_UPDATE_INTERVAL then
                 return
             end
             
             lastCacheUpdate = currentTime
-            table.clear(validTargets)
+            table.clear(validMaleNPCs)
             
             for _, male in pairs(workspace:GetChildren()) do
                 if male:IsA("Model") and male.Name == "Male" then
                     local isLocalPlayerChar = localPlayer.Character and male == localPlayer.Character
                     
-                    if not isLocalPlayerChar and male:FindFirstChild("Head") and male:FindFirstChild("HumanoidRootPart") then
-                        local rootPart = male.HumanoidRootPart
-                        
-                        -- Simpan velocity untuk prediction
-                        if not targetVelocities[male] then
-                            targetVelocities[male] = {
-                                position = rootPart.Position,
-                                time = currentTime,
-                                velocity = Vector3.new(0, 0, 0)
-                            }
-                        else
-                            local oldData = targetVelocities[male]
-                            local deltaTime = currentTime - oldData.time
-                            
-                            if deltaTime > 0 then
-                                local displacement = rootPart.Position - oldData.position
-                                local velocity = displacement / deltaTime
-                                
-                                targetVelocities[male] = {
-                                    position = rootPart.Position,
-                                    time = currentTime,
-                                    velocity = velocity
-                                }
+                    if not isLocalPlayerChar and male:FindFirstChild("Head") then
+                        for _, child in pairs(male:GetChildren()) do
+                            if string.sub(child.Name, 1, 3) == "AI_" then
+                                table.insert(validMaleNPCs, male)
+                                break
                             end
                         end
-                        
-                        table.insert(validTargets, male)
                     end
                 end
             end
         end
   
-        local function getClosestTarget()
-            updateTargetCache()
+        local function getClosestMaleNPC()
+            updateMaleNPCCache()
             
-            local closestTarget = nil
+            local closestNPC = nil
             local closestDistance = vars.FOV
             local mousePos = workspace.CurrentCamera.ViewportSize / 2
             
-            for _, target in pairs(validTargets) do
-                local head = target:FindFirstChild("Head")
+            for _, male in pairs(validMaleNPCs) do
+                local head = male:FindFirstChild("Head")
                 if head then
                     local headPos = head.Position
                     local screenPos, onScreen = camera:WorldToViewportPoint(headPos)
@@ -96,35 +74,13 @@ return {
                         
                         if distanceFromCrosshair < closestDistance then
                             closestDistance = distanceFromCrosshair
-                            closestTarget = target
+                            closestNPC = male
                         end
                     end
                 end
             end
             
-            return closestTarget
-        end
-
-        local function predictTargetPosition(target)
-            if not target or not target:FindFirstChild("Head") then
-                return nil
-            end
-            
-            local head = target.Head
-            local currentPos = head.Position
-            
-            -- Jika tidak ada data velocity, return posisi saat ini
-            if not targetVelocities[target] then
-                return currentPos
-            end
-            
-            local velocityData = targetVelocities[target]
-            local velocity = velocityData.velocity
-            
-            -- Prediksi posisi berdasarkan velocity dan waktu
-            local predictedPos = currentPos + (velocity * vars.Prediction)
-            
-            return predictedPos
+            return closestNPC
         end
   
         local originalDischarge
@@ -136,25 +92,13 @@ return {
             
             BulletService.Discharge = function(self, originCFrame, caliber, velocity, replicate, localShooter, ignore, tracer, ...)
                 if vars.SilentAim then
-                    local target = getClosestTarget()
+                    local targetNPC = getClosestMaleNPC()
                     
-                    if target and target:FindFirstChild("Head") then
-                        -- Gunakan predicted position bukan current position
-                        local predictedHeadPos = predictTargetPosition(target)
+                    if targetNPC and targetNPC:FindFirstChild("Head") then
+                        local headPos = targetNPC.Head.Position
+                        local newCFrame = CFrame.lookAt(originCFrame.Position, headPos)
                         
-                        if predictedHeadPos then
-                            local newCFrame = CFrame.lookAt(originCFrame.Position, predictedHeadPos)
-                            
-                            -- Debug info
-                            local currentPos = target.Head.Position
-                            local velocityData = targetVelocities[target]
-                            if velocityData then
-                                local speed = velocityData.velocity.Magnitude
-                                print(string.format("Silent Aim Prediction | Speed: %.1f | Prediction: %.2f", speed, vars.Prediction))
-                            end
-                            
-                            return originalDischarge(self, newCFrame, caliber, velocity, replicate, localShooter, ignore, tracer, ...)
-                        end
+                        return originalDischarge(self, newCFrame, caliber, velocity, replicate, localShooter, ignore, tracer, ...)
                     end
                 end
                 
@@ -163,7 +107,7 @@ return {
         end
   
         Group:AddToggle("ToggleSilentAim", {
-            Text = "Silent Aim Prediction",
+            Text = "Silent Aim",
             Default = vars.SilentAim,
             Callback = function(v)
                 vars.SilentAim = v
@@ -193,17 +137,6 @@ return {
                 vars.MaxDistance = v
             end
         })
-
-        Group:AddSlider("PredictionSlider", {
-            Text = "Prediction Amount",
-            Default = vars.Prediction,
-            Min = 0,
-            Max = 0.5,
-            Rounding = 2,
-            Callback = function(v)
-                vars.Prediction = v
-            end
-        })
   
         local lastRenderTime = 0
         game:GetService("RunService").RenderStepped:Connect(function()
@@ -215,20 +148,28 @@ return {
         end)
   
         coroutine.wrap(function()
-            while wait(5) do
+            while wait(10) do
                 if vars.SilentAim then
-                    local target = getClosestTarget()
+                    local target = getClosestMaleNPC()
                     if target then
                         local distance = (target.Head.Position - camera.CFrame.Position).Magnitude
-                        local velocityData = targetVelocities[target]
-                        local speed = velocityData and velocityData.velocity.Magnitude or 0
                         
-                        print(string.format("Target | Distance: %.1f | Speed: %.1f | Prediction: %.2f", distance, speed, vars.Prediction))
+                        local aiCount = 0
+                        for _, child in pairs(target:GetChildren()) do
+                            if string.sub(child.Name, 1, 3) == "AI_" then
+                                aiCount = aiCount + 1
+                            end
+                        end
+                        
+                        print(string.format("Silent Aim Target | Distance: %.1f studs | AI Components: %d", distance, aiCount))
+                    else
+                        print("Searching for Male NPC with AI components...")
+                        print("Total cached Male with AI: " .. #validMaleNPCs)
                     end
                 end
             end
         end)()
   
-        print("Silent Aim dengan Prediction System aktif!")
+        print("Silent Aim NPC Male AI sistem aktif.")
     end
 }
