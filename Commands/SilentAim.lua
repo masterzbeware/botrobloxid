@@ -24,10 +24,16 @@ return {
         circle.Thickness = 2
         circle.Position = workspace.CurrentCamera.ViewportSize / 2
 
-        -- Get local player
+        -- Get services
         local localPlayer = game:GetService("Players").LocalPlayer
-  
-        -- Function to check if model has AI_ child
+        local camera = workspace.CurrentCamera
+        local runService = game:GetService("RunService")
+
+        -- Cache untuk NPC yang valid
+        local validNPCCache = {}
+        local cacheValid = false
+
+        -- Function to check if model has AI_ child (optimized)
         local function hasAIChild(model)
             for _, child in pairs(model:GetChildren()) do
                 if string.sub(child.Name, 1, 3) == "AI_" then
@@ -39,39 +45,73 @@ return {
 
         -- Function to check if model is local player
         local function isLocalPlayer(model)
-            if model:FindFirstChild("Head") and localPlayer.Character then
-                return model == localPlayer.Character
-            end
-            return false
+            return localPlayer.Character and model == localPlayer.Character
         end
+
+        -- Update cache secara realtime
+        local function updateNPCCache()
+            if cacheValid then return end
+            
+            validNPCCache = {}
+            
+            -- Scan hanya models Male yang langsung di workspace
+            for _, male in pairs(workspace:GetChildren()) do
+                if male:IsA("Model") and male.Name == "Male" and male:FindFirstChild("Head") then
+                    if hasAIChild(male) and not isLocalPlayer(male) then
+                        table.insert(validNPCCache, male)
+                    end
+                end
+            end
+            
+            cacheValid = true
+        end
+
+        -- Invalidate cache ketika ada perubahan di workspace
+        workspace.ChildAdded:Connect(function(child)
+            if child:IsA("Model") and child.Name == "Male" then
+                cacheValid = false
+            end
+        end)
+
+        workspace.ChildRemoved:Connect(function(child)
+            if child:IsA("Model") and child.Name == "Male" then
+                cacheValid = false
+            end
+        end)
   
-        -- Find closest Male NPC dengan filter AI_ dan exclude local player
+        -- Find closest Male NPC secara realtime
         local function getClosestMaleNPC()
+            updateNPCCache() -- Update cache jika diperlukan
+
             local closestNPC = nil
             local closestDistance = vars.FOV
-            local mousePos = workspace.CurrentCamera.ViewportSize / 2
-            local camera = workspace.CurrentCamera
+            local mousePos = camera.ViewportSize / 2
+            local cameraPos = camera.CFrame.Position
             
-            -- Cari semua model Male di workspace yang memiliki child AI_ dan bukan local player
-            for _, male in pairs(workspace:GetDescendants()) do
-                if male:IsA("Model") and male.Name == "Male" and male:FindFirstChild("Head") then
+            for _, male in pairs(validNPCCache) do
+                -- Cek cepat apakah model masih valid
+                if male.Parent and male:FindFirstChild("Head") then
+                    local head = male.Head
+                    local headPos = head.Position
                     
-                    -- Filter: hanya yang memiliki child dengan nama diawali "AI_" dan bukan local player
-                    if hasAIChild(male) and not isLocalPlayer(male) then
-                        local headPos = male.Head.Position
-                        local screenPos, onScreen = camera:WorldToViewportPoint(headPos)
-                        
-                        -- Check distance from player
-                        local distanceFromPlayer = (headPos - camera.CFrame.Position).Magnitude
-                        
-                        if onScreen and distanceFromPlayer <= vars.MaxDistance then
-                            local distanceFromCrosshair = (Vector2.new(mousePos.X, mousePos.Y) - Vector2.new(screenPos.X, screenPos.Y)).Magnitude
-                            
-                            if distanceFromCrosshair < closestDistance then
-                                closestDistance = distanceFromCrosshair
-                                closestNPC = male
-                            end
-                        end
+                    -- Cek distance dari player terlebih dahulu (lebih cepat)
+                    local distanceFromPlayer = (headPos - cameraPos).Magnitude
+                    if distanceFromPlayer > vars.MaxDistance then
+                        continue
+                    end
+                    
+                    -- Cek jika di dalam viewport
+                    local screenPos, onScreen = camera:WorldToViewportPoint(headPos)
+                    if not onScreen then
+                        continue
+                    end
+                    
+                    -- Hitung distance dari crosshair
+                    local distanceFromCrosshair = (Vector2.new(mousePos.X, mousePos.Y) - Vector2.new(screenPos.X, screenPos.Y)).Magnitude
+                    
+                    if distanceFromCrosshair < closestDistance then
+                        closestDistance = distanceFromCrosshair
+                        closestNPC = male
                     end
                 end
             end
@@ -92,25 +132,9 @@ return {
                     local targetNPC = getClosestMaleNPC()
                     
                     if targetNPC and targetNPC:FindFirstChild("Head") then
-                        -- Calculate direction to head
                         local headPos = targetNPC.Head.Position
-                        
-                        -- Create new CFrame pointing to head
                         local newCFrame = CFrame.lookAt(originCFrame.Position, headPos)
-                        
-                        -- Get AI child names for debug
-                        local aiChildren = {}
-                        for _, child in pairs(targetNPC:GetChildren()) do
-                            if string.sub(child.Name, 1, 3) == "AI_" then
-                                table.insert(aiChildren, child.Name)
-                            end
-                        end
-                        
                         return originalDischarge(self, newCFrame, caliber, velocity, replicate, localShooter, ignore, tracer, ...)
-                    else
-                        if vars.SilentAim then
-                            print("❌ No valid Male NPC with AI found in FOV (excluding self)")
-                        end
                     end
                 end
                 
@@ -150,48 +174,94 @@ return {
                 vars.MaxDistance = v
             end
         })
-  
-        -- Update FOV circle position
-        game:GetService("RunService").RenderStepped:Connect(function()
-            circle.Position = workspace.CurrentCamera.ViewportSize / 2
-        end)
-  
-        -- Debug info dengan detil AI
-        coroutine.wrap(function()
-            while wait(3) do
-                if vars.SilentAim then
-                    local target = getClosestMaleNPC()
-                    if target then
-                        local distance = (target.Head.Position - workspace.CurrentCamera.CFrame.Position).Magnitude
-                        
-                        -- Count AI children
-                        local aiCount = 0
-                        local aiNames = {}
-                        for _, child in pairs(target:GetChildren()) do
-                            if string.sub(child.Name, 1, 3) == "AI_" then
-                                aiCount = aiCount + 1
-                                table.insert(aiNames, child.Name)
-                            end
+
+        -- Real-time target tracking info
+        local targetInfo = {
+            active = false,
+            distance = 0,
+            aiCount = 0
+        }
+
+        -- Real-time update system
+        runService.Heartbeat:Connect(function()
+            -- Update circle position
+            circle.Position = camera.ViewportSize / 2
+            
+            -- Update target info realtime
+            if vars.SilentAim then
+                local target = getClosestMaleNPC()
+                if target and target:FindFirstChild("Head") then
+                    targetInfo.active = true
+                    targetInfo.distance = (target.Head.Position - camera.CFrame.Position).Magnitude
+                    
+                    -- Hitung AI components
+                    targetInfo.aiCount = 0
+                    for _, child in pairs(target:GetChildren()) do
+                        if string.sub(child.Name, 1, 3) == "AI_" then
+                            targetInfo.aiCount = targetInfo.aiCount + 1
                         end
-                        
-                        print(string.format("🎯 Male NPC AI Target | Distance: %.1f studs | AI Components: %d (%s)", 
-                            distance, aiCount, table.concat(aiNames, ", ")))
-                    else
-                        print("🔍 Searching for Male NPC with AI components (excluding self)...")
-                        
-                        -- Debug: list semua Male dengan AI di workspace (exclude self)
-                        local maleWithAI = 0
-                        for _, male in pairs(workspace:GetDescendants()) do
-                            if male:IsA("Model") and male.Name == "Male" and hasAIChild(male) and not isLocalPlayer(male) then
-                                maleWithAI = maleWithAI + 1
-                            end
-                        end
-                        print("   Total valid Male with AI in workspace: " .. maleWithAI)
                     end
+                else
+                    targetInfo.active = false
                 end
+            else
+                targetInfo.active = false
             end
-        end)()
+        end)
+
+        -- Real-time debug display (opsional)
+        local debugText = Drawing.new("Text")
+        debugText.Visible = false
+        debugText.Color = Color3.fromRGB(255, 255, 255)
+        debugText.Size = 18
+        debugText.Position = Vector2.new(10, 50)
+        debugText.Text = ""
+
+        runService.Heartbeat:Connect(function()
+            if vars.SilentAim then
+                if targetInfo.active then
+                    debugText.Text = string.format("🎯 LOCKED | Distance: %.1f | AI: %d", 
+                        targetInfo.distance, targetInfo.aiCount)
+                    debugText.Color = Color3.fromRGB(0, 255, 0)
+                else
+                    debugText.Text = "🔍 SEARCHING..."
+                    debugText.Color = Color3.fromRGB(255, 255, 0)
+                end
+                debugText.Visible = true
+            else
+                debugText.Visible = false
+            end
+        end)
+
+        -- Toggle untuk debug display
+        Group:AddToggle("ShowDebug", {
+            Text = "Show Debug Info",
+            Default = false,
+            Callback = function(v)
+                debugText.Visible = v and vars.SilentAim
+            end
+        })
   
-        print("✅ [Silent Aim NPC Male AI] Sistem aktif. Target hanya Male dengan komponen AI (tidak termasuk diri sendiri).")
+        print("✅ [Silent Aim NPC Male AI] Sistem REAL-TIME aktif.")
+        
+        -- Cleanup
+        Group:AddButton("Cleanup", {
+            Text = "Cleanup Cache",
+            Func = function()
+                validNPCCache = {}
+                cacheValid = false
+                print("🧹 Cache dibersihkan")
+            end
+        })
+
+        -- Auto cleanup ketika window ditutup
+        CombatTab:OnDestroy(function()
+            if circle then
+                circle:Remove()
+            end
+            if debugText then
+                debugText:Remove()
+            end
+        end)
     end
 }
