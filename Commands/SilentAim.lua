@@ -18,6 +18,19 @@ return {
         local ReplicatedStorage = game:GetService("ReplicatedStorage")
         local UnreliableRemoteEvent = ReplicatedStorage.Events.UnreliableRemoteEvent
 
+        -- DEBUG: Cek apakah BulletService ada
+        local BulletService
+        local success, err = pcall(function()
+            BulletService = require(game:GetService("ReplicatedStorage").Shared.Services.BulletService)
+        end)
+        
+        if not success then
+            warn("[DEBUG] BulletService tidak ditemukan: " .. tostring(err))
+            return
+        else
+            print("[DEBUG] BulletService berhasil di-load")
+        end
+
         -- Cache system
         local validTargets = {}
         local lastCacheUpdate = 0
@@ -42,6 +55,8 @@ return {
                     end
                 end
             end
+            
+            print("[DEBUG] Found " .. #validTargets .. " Male targets")
         end
 
         local function getClosestTarget()
@@ -70,30 +85,45 @@ return {
                 end
             end
             
+            if closestTarget then
+                print("[DEBUG] Closest target: " .. closestTarget.Name .. " | Distance: " .. closestDistance)
+            else
+                print("[DEBUG] No target found")
+            end
+            
             return closestTarget
         end
 
         -- SILENT AIM SYSTEM (BulletService Hook)
         local originalDischarge
-        local BulletService = require(game:GetService("ReplicatedStorage").Shared.Services.BulletService)
-        
         if BulletService and not getgenv().SilentAimHooked then
             getgenv().SilentAimHooked = true
-            originalDischarge = BulletService.Discharge
             
-            BulletService.Discharge = function(self, originCFrame, caliber, velocity, replicate, localShooter, ignore, tracer, ...)
-                if vars.AimbotEnabled then
-                    local target = getClosestTarget()
-                    
-                    if target and target:FindFirstChild("Head") then
-                        local headPos = target.Head.Position
-                        local newCFrame = CFrame.lookAt(originCFrame.Position, headPos)
+            -- Cek apakah fungsi Discharge ada
+            if BulletService.Discharge then
+                originalDischarge = BulletService.Discharge
+                
+                BulletService.Discharge = function(self, originCFrame, caliber, velocity, replicate, localShooter, ignore, tracer, ...)
+                    if vars.AimbotEnabled then
+                        local target = getClosestTarget()
                         
-                        return originalDischarge(self, newCFrame, caliber, velocity, replicate, localShooter, ignore, tracer, ...)
+                        if target and target:FindFirstChild("Head") then
+                            local headPos = target.Head.Position
+                            local newCFrame = CFrame.lookAt(originCFrame.Position, headPos)
+                            
+                            print("[DEBUG] Silent Aim activated! Targeting: " .. target.Name)
+                            return originalDischarge(self, newCFrame, caliber, velocity, replicate, localShooter, ignore, tracer, ...)
+                        else
+                            print("[DEBUG] No target for Silent Aim")
+                        end
                     end
+                    
+                    return originalDischarge(self, originCFrame, caliber, velocity, replicate, localShooter, ignore, tracer, ...)
                 end
                 
-                return originalDischarge(self, originCFrame, caliber, velocity, replicate, localShooter, ignore, tracer, ...)
+                print("[DEBUG] Silent Aim hook berhasil dipasang")
+            else
+                warn("[DEBUG] Fungsi Discharge tidak ditemukan di BulletService")
             end
         end
 
@@ -138,6 +168,9 @@ return {
             
             if state then
                 movementAimbotConnection = game:GetService("RunService").Heartbeat:Connect(applyMovementAimbot)
+                print("[DEBUG] Movement Aimbot diaktifkan")
+            else
+                print("[DEBUG] Movement Aimbot dimatikan")
             end
         end
 
@@ -148,6 +181,7 @@ return {
             Callback = function(v)
                 vars.AimbotEnabled = v
                 toggleAimbot(v)
+                print("[DEBUG] Aimbot toggle: " .. tostring(v))
             end
         })
 
@@ -156,6 +190,6 @@ return {
             toggleAimbot(true)
         end
 
-        print("Aimbot System aktif! Target: Semua Male NPC")
+        print("Aimbot System loaded dengan debug info!")
     end
 }
