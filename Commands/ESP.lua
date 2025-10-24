@@ -15,39 +15,22 @@ return {
 
         -- Inisialisasi variabel ESP
         vars.ShowSkeleton = vars.ShowSkeleton or false
-        vars.ShowTracer = vars.ShowTracer or false
+        vars.ShowTracer   = vars.ShowTracer or false
         vars.ShowDistance = vars.ShowDistance or false
-        vars.ShowBox = vars.ShowBox or false
-        vars.ESPRange = vars.ESPRange or 500
-        
-        -- Variabel warna untuk Box ESP
-        vars.BoxColorR = vars.BoxColorR or 255
-        vars.BoxColorG = vars.BoxColorG or 255
-        vars.BoxColorB = vars.BoxColorB or 255
+        vars.ShowBox      = vars.ShowBox or false  -- Toggle untuk Box ESP
+        vars.ESPRange     = vars.ESPRange or 500
 
         local SkeletonColor = Color3.fromRGB(255, 255, 255)
-        local TracerColor = Color3.fromRGB(255, 0, 0)
+        local TracerColor   = Color3.fromRGB(255, 0, 0)
         local DistanceColor = Color3.fromRGB(255, 255, 255)
-        local BoxColor = Color3.fromRGB(vars.BoxColorR, vars.BoxColorG, vars.BoxColorB)
+        local BoxColor      = Color3.fromRGB(255, 255, 255)  -- Warna putih untuk Box ESP
 
         local ActiveESP = {}
         local ESPConnection, DescendantConnection
 
-        -- Cache untuk optimasi
+        -- Optimasi: Cache untuk mengurangi pembuatan objek berulang
         local Vector2New = Vector2.new
         local WorldToViewportPoint = Camera.WorldToViewportPoint
-
-        -- Fungsi untuk update warna Box ESP
-        local function updateBoxColor()
-            BoxColor = Color3.fromRGB(vars.BoxColorR, vars.BoxColorG, vars.BoxColorB)
-            for model, data in pairs(ActiveESP) do
-                if data.BoxLines then
-                    for _, line in pairs(data.BoxLines) do
-                        line.Color = BoxColor
-                    end
-                end
-            end
-        end
 
         local function updateESPState()
             local anyEnabled = vars.ShowSkeleton or vars.ShowTracer or vars.ShowDistance or vars.ShowBox
@@ -58,7 +41,7 @@ return {
             end
         end
 
-        -- Toggle ESP
+        -- Toggle untuk berbagai jenis ESP
         Group:AddToggle("ToggleSkeletonESP", {
             Text = "Tampilkan Skeleton",
             Default = vars.ShowSkeleton,
@@ -86,24 +69,13 @@ return {
             end
         })
 
+        -- Toggle baru untuk Box ESP
         Group:AddToggle("ToggleBoxESP", {
             Text = "Tampilkan Box ESP",
             Default = vars.ShowBox,
             Callback = function(v)
                 vars.ShowBox = v
                 updateESPState()
-            end
-        })
-
-        -- Color Picker untuk Box ESP
-        Group:AddColorPicker("BoxColorPicker", {
-            Text = "Warna Box ESP",
-            Default = Color3.fromRGB(vars.BoxColorR, vars.BoxColorG, vars.BoxColorB),
-            Callback = function(color)
-                vars.BoxColorR = math.floor(color.R * 255)
-                vars.BoxColorG = math.floor(color.G * 255)
-                vars.BoxColorB = math.floor(color.B * 255)
-                updateBoxColor()
             end
         })
 
@@ -123,6 +95,7 @@ return {
             local humanoid = model:FindFirstChildOfClass("Humanoid")
             if not humanoid or humanoid.Health <= 0 then return false end
             
+            -- Optimasi: Cek AI_ hanya sekali
             for _, c in ipairs(model:GetChildren()) do
                 if string.sub(c.Name, 1, 3) == "AI_" then
                     return true
@@ -132,11 +105,11 @@ return {
         end
 
         local partNames = {
-            "Head", "UpperTorso", "LowerTorso",
-            "LeftUpperArm", "LeftLowerArm", "LeftHand",
-            "RightUpperArm", "RightLowerArm", "RightHand",
-            "LeftUpperLeg", "LeftLowerLeg", "LeftFoot",
-            "RightUpperLeg", "RightLowerLeg", "RightFoot"
+            "Head","UpperTorso","LowerTorso",
+            "LeftUpperArm","LeftLowerArm","LeftHand",
+            "RightUpperArm","RightLowerArm","RightHand",
+            "LeftUpperLeg","LeftLowerLeg","LeftFoot",
+            "RightUpperLeg","RightLowerLeg","RightFoot"
         }
 
         local function getBodyParts(model)
@@ -194,8 +167,9 @@ return {
             local lines = {}
             for _ in pairs(parts) do table.insert(lines, newLine(false)) end
             
+            -- Buat garis untuk box ESP (8 garis untuk box 3D)
             local boxLines = {}
-            for i = 1, 12 do
+            for i = 1, 8 do
                 table.insert(boxLines, newLine(false, true))
             end
 
@@ -276,9 +250,9 @@ return {
             return corners
         end
 
-        -- Optimasi frame rate
+        -- Optimasi: Gunakan delta time untuk mengurangi update frequency
         local lastUpdate = 0
-        local UPDATE_INTERVAL = 0.033
+        local UPDATE_INTERVAL = 0.033 -- ~30 FPS
 
         function startESP()
             clearAllESP()
@@ -288,10 +262,11 @@ return {
                 if isValidNPC(obj) then createESP(obj) end
             end
 
+            -- Optimasi: Gunakan DescendantAdded dengan debounce
             if DescendantConnection then DescendantConnection:Disconnect() end
             DescendantConnection = workspace.DescendantAdded:Connect(function(obj)
                 if isValidNPC(obj) then 
-                    task.wait(0.1)
+                    task.wait(0.1) -- Debounce kecil
                     createESP(obj) 
                 end
             end)
@@ -393,6 +368,7 @@ return {
                             local screenCorners = {}
                             local anyOnScreen = false
                             
+                            -- Convert 3D corners ke 2D screen points
                             for i, corner in ipairs(corners) do
                                 local screenPos, onScreen = WorldToViewportPoint(Camera, corner)
                                 screenCorners[i] = Vector2New(screenPos.X, screenPos.Y)
@@ -400,10 +376,11 @@ return {
                             end
                             
                             if anyOnScreen then
+                                -- Draw box edges
                                 local connections = {
-                                    {1,2}, {2,3}, {3,4}, {4,1},
-                                    {5,6}, {6,7}, {7,8}, {8,5},
-                                    {1,5}, {2,6}, {3,7}, {4,8}
+                                    {1,2}, {2,3}, {3,4}, {4,1}, -- Front face
+                                    {5,6}, {6,7}, {7,8}, {8,5}, -- Back face
+                                    {1,5}, {2,6}, {3,7}, {4,8}  -- Connecting edges
                                 }
                                 
                                 for i, conn in ipairs(connections) do
@@ -434,6 +411,6 @@ return {
         end
 
         updateESPState()
-        print("[ESP] Loaded dengan Box ESP Color Picker")
+        print("[ESP] Toggle siap di VisualTab - Box ESP ditambahkan!")
     end
 }
