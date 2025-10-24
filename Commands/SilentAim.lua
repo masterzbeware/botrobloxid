@@ -9,12 +9,12 @@ return {
             return
         end
   
-        local Group = CombatTab:AddLeftGroupbox("Silent Aim NPC Male AI")
+        local Group = CombatTab:AddLeftGroupbox("Silent Aim")
   
         -- Settings
         vars.SilentAim = vars.SilentAim or false
         vars.FOV = vars.FOV or 100
-        vars.MaxDistance = vars.MaxDistance or 500
+        vars.MaxDistance = vars.MaxDistance or 400
   
         -- FOV Circle (Visual)
         local circle = Drawing.new("Circle")
@@ -106,11 +106,6 @@ return {
                             end
                         end
                         
-                        print("🎯 Silent Aim: Targeting Male NPC with AI")
-                        print("   Head Position: " .. tostring(headPos))
-                        print("   Distance: " .. math.floor((headPos - originCFrame.Position).Magnitude))
-                        print("   AI Children: " .. table.concat(aiChildren, ", "))
-                        
                         return originalDischarge(self, newCFrame, caliber, velocity, replicate, localShooter, ignore, tracer, ...)
                     else
                         if vars.SilentAim then
@@ -125,7 +120,7 @@ return {
   
         -- UI Elements
         Group:AddToggle("ToggleSilentAim", {
-            Text = "Silent Aim NPC Male AI",
+            Text = "Silent Aim",
             Default = vars.SilentAim,
             Callback = function(v)
                 vars.SilentAim = v
@@ -136,7 +131,7 @@ return {
         Group:AddSlider("FOVSlider", {
             Text = "FOV Size",
             Default = vars.FOV,
-            Min = 10,
+            Min = 5,
             Max = 500,
             Rounding = 0,
             Callback = function(v)
