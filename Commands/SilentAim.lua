@@ -3,86 +3,77 @@ return {
         local vars = _G.BotVars or {}
         local Tabs = vars.Tabs or {}
         local CombatTab = tab or Tabs.Combat
-  
+
         if not CombatTab then
-            warn("[Silent Aim] Tab Combat tidak ditemukan!")
+            warn("[Aimbot System] Tab Combat tidak ditemukan!")
             return
         end
-  
-        local Group = CombatTab:AddLeftGroupbox("Silent Aim")
-  
-        vars.SilentAim = vars.SilentAim or false
-        vars.FOV = vars.FOV or 100
-        vars.MaxDistance = vars.MaxDistance or 400
-  
-        local circle = Drawing.new("Circle")
-        circle.Visible = false
-        circle.Radius = vars.FOV
-        circle.Color = Color3.fromRGB(255, 255, 255)
-        circle.Thickness = 2
-        circle.Position = workspace.CurrentCamera.ViewportSize / 2
+
+        local Group = CombatTab:AddLeftGroupbox("Aimbot System")
+
+        vars.AimbotEnabled = vars.AimbotEnabled or false
 
         local localPlayer = game:GetService("Players").LocalPlayer
         local camera = workspace.CurrentCamera
-  
-        local validMaleNPCs = {}
+        local ReplicatedStorage = game:GetService("ReplicatedStorage")
+        local UnreliableRemoteEvent = ReplicatedStorage.Events.UnreliableRemoteEvent
+
+        -- Cache system
+        local validTargets = {}
         local lastCacheUpdate = 0
-        local CACHE_UPDATE_INTERVAL = 2
-  
-        local function updateMaleNPCCache()
+        local CACHE_UPDATE_INTERVAL = 1
+
+        local function updateTargetCache()
             local currentTime = tick()
             if currentTime - lastCacheUpdate < CACHE_UPDATE_INTERVAL then
                 return
             end
             
             lastCacheUpdate = currentTime
-            table.clear(validMaleNPCs)
+            table.clear(validTargets)
             
+            -- Cari semua Male kecuali diri sendiri
             for _, male in pairs(workspace:GetChildren()) do
                 if male:IsA("Model") and male.Name == "Male" then
                     local isLocalPlayerChar = localPlayer.Character and male == localPlayer.Character
                     
-                    if not isLocalPlayerChar and male:FindFirstChild("Head") then
-                        for _, child in pairs(male:GetChildren()) do
-                            if string.sub(child.Name, 1, 3) == "AI_" then
-                                table.insert(validMaleNPCs, male)
-                                break
-                            end
-                        end
+                    if not isLocalPlayerChar and male:FindFirstChild("Head") and male:FindFirstChild("HumanoidRootPart") then
+                        table.insert(validTargets, male)
                     end
                 end
             end
         end
-  
-        local function getClosestMaleNPC()
-            updateMaleNPCCache()
+
+        local function getClosestTarget()
+            updateTargetCache()
             
-            local closestNPC = nil
-            local closestDistance = vars.FOV
-            local mousePos = workspace.CurrentCamera.ViewportSize / 2
+            local closestTarget = nil
+            local closestDistance = 100  -- Fixed FOV
             
-            for _, male in pairs(validMaleNPCs) do
-                local head = male:FindFirstChild("Head")
+            for _, target in pairs(validTargets) do
+                local head = target:FindFirstChild("Head")
                 if head then
                     local headPos = head.Position
                     local screenPos, onScreen = camera:WorldToViewportPoint(headPos)
                     
                     local distanceFromPlayer = (headPos - camera.CFrame.Position).Magnitude
                     
-                    if onScreen and distanceFromPlayer <= vars.MaxDistance then
+                    if onScreen and distanceFromPlayer <= 400 then
+                        local mousePos = workspace.CurrentCamera.ViewportSize / 2
                         local distanceFromCrosshair = (Vector2.new(mousePos.X, mousePos.Y) - Vector2.new(screenPos.X, screenPos.Y)).Magnitude
                         
                         if distanceFromCrosshair < closestDistance then
                             closestDistance = distanceFromCrosshair
-                            closestNPC = male
+                            closestTarget = target
                         end
                     end
                 end
             end
             
-            return closestNPC
+            return closestTarget
         end
-  
+
+        -- SILENT AIM SYSTEM (BulletService Hook)
         local originalDischarge
         local BulletService = require(game:GetService("ReplicatedStorage").Shared.Services.BulletService)
         
@@ -91,11 +82,11 @@ return {
             originalDischarge = BulletService.Discharge
             
             BulletService.Discharge = function(self, originCFrame, caliber, velocity, replicate, localShooter, ignore, tracer, ...)
-                if vars.SilentAim then
-                    local targetNPC = getClosestMaleNPC()
+                if vars.AimbotEnabled then
+                    local target = getClosestTarget()
                     
-                    if targetNPC and targetNPC:FindFirstChild("Head") then
-                        local headPos = targetNPC.Head.Position
+                    if target and target:FindFirstChild("Head") then
+                        local headPos = target.Head.Position
                         local newCFrame = CFrame.lookAt(originCFrame.Position, headPos)
                         
                         return originalDischarge(self, newCFrame, caliber, velocity, replicate, localShooter, ignore, tracer, ...)
@@ -105,71 +96,66 @@ return {
                 return originalDischarge(self, originCFrame, caliber, velocity, replicate, localShooter, ignore, tracer, ...)
             end
         end
-  
-        Group:AddToggle("ToggleSilentAim", {
-            Text = "Silent Aim",
-            Default = vars.SilentAim,
+
+        -- MOVEMENT AIMBOT SYSTEM (ReplicateMovement)
+        local function applyMovementAimbot()
+            if not vars.AimbotEnabled then return end
+            
+            local target = getClosestTarget()
+            if not target or not target:FindFirstChild("Head") then return end
+            
+            local localChar = localPlayer.Character
+            if not localChar or not localChar:FindFirstChild("HumanoidRootPart") then return end
+            
+            local rootPart = localChar.HumanoidRootPart
+            local headPos = target.Head.Position
+            
+            -- Calculate rotation to target
+            local targetCF = CFrame.new(rootPart.Position, Vector3.new(headPos.X, rootPart.Position.Y, headPos.Z))
+            
+            -- Extract position and rotation
+            local x, y, z = rootPart.Position.X, rootPart.Position.Y, rootPart.Position.Z
+            local rx, ry, rz = targetCF:ToEulerAnglesXYZ()
+            
+            -- Send modified movement to server
+            local movementData = string.format(
+                "[\"ReplicateMovement\",\"%s\",%.6f,%.6f,%.6f,%.6f,false,0,%.6f,%.6f,0]",
+                tostring(rootPart:GetAttribute("ActorId") or "default"),
+                x, y, z,
+                rz, ry, rx
+            )
+            
+            UnreliableRemoteEvent:FireServer(movementData)
+        end
+
+        -- MOVEMENT AIMBOT LOOP
+        local movementAimbotConnection
+        local function toggleAimbot(state)
+            if movementAimbotConnection then
+                movementAimbotConnection:Disconnect()
+                movementAimbotConnection = nil
+            end
+            
+            if state then
+                movementAimbotConnection = game:GetService("RunService").Heartbeat:Connect(applyMovementAimbot)
+            end
+        end
+
+        -- UI ELEMENTS
+        Group:AddToggle("ToggleAimbot", {
+            Text = "Aimbot",
+            Default = vars.AimbotEnabled,
             Callback = function(v)
-                vars.SilentAim = v
-                circle.Visible = v
+                vars.AimbotEnabled = v
+                toggleAimbot(v)
             end
         })
-  
-        Group:AddSlider("FOVSlider", {
-            Text = "FOV Size",
-            Default = vars.FOV,
-            Min = 5,
-            Max = 500,
-            Rounding = 0,
-            Callback = function(v)
-                vars.FOV = v
-                circle.Radius = v
-            end
-        })
-  
-        Group:AddSlider("MaxDistanceSlider", {
-            Text = "Max Distance",
-            Default = vars.MaxDistance,
-            Min = 50,
-            Max = 400,
-            Rounding = 0,
-            Callback = function(v)
-                vars.MaxDistance = v
-            end
-        })
-  
-        local lastRenderTime = 0
-        game:GetService("RunService").RenderStepped:Connect(function()
-            local currentTime = tick()
-            if currentTime - lastRenderTime > 0.033 then
-                circle.Position = workspace.CurrentCamera.ViewportSize / 2
-                lastRenderTime = currentTime
-            end
-        end)
-  
-        coroutine.wrap(function()
-            while wait(10) do
-                if vars.SilentAim then
-                    local target = getClosestMaleNPC()
-                    if target then
-                        local distance = (target.Head.Position - camera.CFrame.Position).Magnitude
-                        
-                        local aiCount = 0
-                        for _, child in pairs(target:GetChildren()) do
-                            if string.sub(child.Name, 1, 3) == "AI_" then
-                                aiCount = aiCount + 1
-                            end
-                        end
-                        
-                        print(string.format("Silent Aim Target | Distance: %.1f studs | AI Components: %d", distance, aiCount))
-                    else
-                        print("Searching for Male NPC with AI components...")
-                        print("Total cached Male with AI: " .. #validMaleNPCs)
-                    end
-                end
-            end
-        end)()
-  
-        print("Silent Aim NPC Male AI sistem aktif.")
+
+        -- Auto-enable jika sudah aktif
+        if vars.AimbotEnabled then
+            toggleAimbot(true)
+        end
+
+        print("Aimbot System aktif! Target: Semua Male NPC")
     end
 }
