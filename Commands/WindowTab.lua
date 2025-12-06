@@ -69,7 +69,7 @@ spawn(function()
 end)
 
 -- Combat Tab
-Tabs.Combat = MainWindow:AddTab("Oven", "crosshair")
+Tabs.Main = MainWindow:AddTab("Oven", "crosshair")
 
 -- Visual Tab
 Tabs.Visual = MainWindow:AddTab("Visual", "eye")
