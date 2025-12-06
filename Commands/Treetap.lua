@@ -2,7 +2,7 @@ return {
     Execute = function(tab)
         local vars = _G.BotVars or {}
         local Tabs = vars.Tabs or {}
-        local MainTab = tab or Tabs.Main
+        local MainTab = tab or Tabs.Harvest
 
         if not MainTab then
             warn("[Auto Harvest Treetap] Tab tidak ditemukan!")

@@ -10,7 +10,7 @@ return {
       end
 
       -- UI GROUP
-      local Group = MainTab:AddRightGroupbox("Auto Harvest Compost Bin")
+      local Group = MainTab:AddLeftGroupbox("Auto Harvest Compost Bin")
 
       vars.AutoHarvestTreetap = vars.AutoHarvestTreetap or false
       vars.HarvestDelay = vars.HarvestDelay or 1 -- default 1 detik

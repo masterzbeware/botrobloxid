@@ -2,7 +2,7 @@ return {
   Execute = function(tab)
       local vars = _G.BotVars or {}
       local Tabs = vars.Tabs or {}
-      local MainTab = tab or Tabs.Main
+      local MainTab = tab or Tabs.Harvest
 
       if not MainTab then
           warn("[Auto Harvest White Cow] Tab tidak ditemukan!")
@@ -10,7 +10,7 @@ return {
       end
 
       -- UI GROUP
-      local Group = MainTab:AddLeftGroupbox("Auto Harvest White Cow")
+      local Group = MainTab:AddRightGroupbox("Auto Harvest White Cow")
 
       vars.AutoHarvestTreetap = vars.AutoHarvestTreetap or false
       vars.HarvestDelay = vars.HarvestDelay or 1 -- default 1 detik
