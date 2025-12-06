@@ -68,8 +68,11 @@ task.spawn(function()
     end
 end)
 
--- Combat/Oven Tab
-Tabs.Main = MainWindow:AddTab("Oven", "crosshair")
+-- Oven Tab
+Tabs.Oven = MainWindow:AddTab("Oven", "crosshair")
+
+-- Harvest Tab (baru)
+Tabs.Harvest = MainWindow:AddTab("Harvest", "crosshair") -- ikon bisa diganti sesuai kebutuhan
 
 -- Save Tabs di global
 _G.BotVars.Tabs = Tabs
