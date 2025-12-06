@@ -27,7 +27,7 @@ _G.BotVars.Library = Library
 _G.BotVars.MainWindow = MainWindow
 
 local VIPCommands = {}
-local commandFiles = {"AutoOven.lua","WindowTab.lua","Crop.lua"}
+local commandFiles = {"AutoOven.lua","WindowTab.lua"}
 
 local function loadScripts(files, repo, targetTable)
     for _, fileName in ipairs(files) do

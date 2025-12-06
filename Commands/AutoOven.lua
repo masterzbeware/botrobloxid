@@ -51,7 +51,8 @@ return {
                             end
                         end
                     end
-                    print("Semua oven selesai dicraft!")
+                    print("Semua oven selesai dicraft! Tunggu 3 menit 20 detik sebelum panen crop...")
+                    task.wait(181)
                 else
                     task.wait(1)
                 end
