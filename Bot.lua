@@ -41,8 +41,10 @@ local VIPCommands = {}
 local commandFiles = {
     "AutoOven.lua",
     "WindowTab.lua",
-    "AutoHarvest.lua",
-    "AutoInsert.lua"
+    "Cow.lua",
+    "Treetap.lua",
+    "Compostbin.lua",
+    "AutoInsert.lua",
 }
 
 -- FUNCTION LOAD SCRIPT DARI GITHUB
