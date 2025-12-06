@@ -16,6 +16,7 @@ return {
       vars.AutoInsert = vars.AutoInsert or false
       vars.InsertDelay = vars.InsertDelay or 1 -- default 1 detik
       vars.InsertTarget = vars.InsertTarget or "Small Food Trough" -- default target
+      _G.BotVars = vars -- pastikan disimpan global
 
       -- TOGGLE
       Group:AddToggle("ToggleAutoInsert", {
@@ -27,16 +28,19 @@ return {
       })
 
       -- DROPDOWN PILIH BLOCK
-      task.wait(0.05) -- Obsidian UI butuh sedikit delay sebelum dropdown
-      Group:AddDropdown("DropdownInsertTarget", {
-          Text = "Pilih Block",
-          Default = vars.InsertTarget,
-          Options = {"Small Food Trough", "Butter Churn", "Small Water Trough", "Compost Bin"},
-          Callback = function(v)
-              vars.InsertTarget = v
-              print("[Auto Insert] Target diubah ke:", v)
-          end
-      })
+      -- Obsidian kadang butuh delay, kita gunakan spawn
+      spawn(function()
+          task.wait(0.1)
+          Group:AddDropdown("DropdownInsertTarget", {
+              Text = "Pilih Block",
+              Default = vars.InsertTarget,
+              Options = {"Small Food Trough", "Butter Churn", "Small Water Trough", "Compost Bin"},
+              Callback = function(v)
+                  vars.InsertTarget = v
+                  print("[Auto Insert] Target diubah ke:", v)
+              end
+          })
+      end)
 
       -- SLIDER DELAY
       Group:AddSlider("SliderInsertDelay", {
@@ -61,9 +65,8 @@ return {
       coroutine.wrap(function()
           while true do
               if not vars.AutoInsert then
-                  task.wait(0.1) -- loop ringan saat toggle mati
+                  task.wait(0.1)
               else
-                  -- LOOP SEMUA BLOCK SESUAI TARGET
                   for _, block in ipairs(LoadedBlocks:GetChildren()) do
                       if block.Name == vars.InsertTarget then
                           local voxel = block:GetAttribute("VoxelPosition")
