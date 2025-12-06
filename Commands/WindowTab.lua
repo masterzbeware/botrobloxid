@@ -1,5 +1,3 @@
--- Commands/WindowTab.lua
-
 local Library = _G.BotVars.Library
 local MainWindow = _G.BotVars.MainWindow
 
@@ -28,8 +26,12 @@ end
 -- Latency (Auto Detect)
 local latencyLabel = ServerGroup:AddLabel("Latency: ...")
 local function updateLatency()
-    local stats = game:GetService("Stats")
-    local ping = stats.Network.ServerStatsItem["Data Ping"]:GetValue()
+    local ping = 0
+    pcall(function()
+        local stats = game:GetService("Stats")
+        local dataPing = stats.Network.ServerStatsItem["Data Ping"]
+        if dataPing then ping = dataPing:GetValue() end
+    end)
     latencyLabel:SetText("Latency: " .. math.floor(ping) .. "ms")
 end
 
@@ -37,12 +39,9 @@ end
 local regionLabel = ServerGroup:AddLabel("Server Region: ...")
 local function updateRegion()
     local region = "Unknown"
-    local success, result = pcall(function()
-        return game:GetService("LocalizationService").RobloxLocaleId
+    pcall(function()
+        region = game:GetService("LocalizationService").RobloxLocaleId or "Unknown"
     end)
-    if success then
-        region = result or "Unknown"
-    end
     regionLabel:SetText("Server Region: " .. region)
 end
 
@@ -59,16 +58,17 @@ local function updateTime()
 end
 
 -- Update semua info server setiap detik
-spawn(function()
-    while wait(1) do
+task.spawn(function()
+    while true do
         updatePlayers()
         updateLatency()
         updateRegion()
         updateTime()
+        task.wait(1)
     end
 end)
 
--- Combat Tab
+-- Combat/Oven Tab
 Tabs.Main = MainWindow:AddTab("Oven", "crosshair")
 
 -- Save Tabs di global
