@@ -12,6 +12,7 @@ return {
         -- UI GROUP
         local Group = MainTab:AddRightGroupbox("Auto Harvest Blocks")
 
+        -- DEFAULT VARS
         vars.AutoHarvest = vars.AutoHarvest or false
         vars.HarvestDelay = vars.HarvestDelay or 1 -- default 1 detik
         vars.HarvestTarget = vars.HarvestTarget or "Mushroom Box" -- default target
@@ -26,12 +27,14 @@ return {
         })
 
         -- DROPDOWN PILIH MODEL
+        task.wait(0.05) -- Obsidian UI kadang butuh sedikit delay sebelum dropdown
         Group:AddDropdown("DropdownHarvestTarget", {
             Text = "Pilih Model",
             Default = vars.HarvestTarget,
             Options = {"Mushroom Box", "White Cow", "Treetap", "Compost Bin"},
             Callback = function(v)
                 vars.HarvestTarget = v
+                print("[Auto Harvest] Target harvest diubah ke:", v)
             end
         })
 
@@ -53,13 +56,13 @@ return {
         local HarvestCrop = ReplicatedStorage:WaitForChild("Relay"):WaitForChild("Blocks"):WaitForChild("HarvestCrop")
         local LoadedBlocks = workspace:WaitForChild("LoadedBlocks")
 
-        -- LOOP SYSTEM (lebih efisien)
+        -- LOOP SYSTEM
         coroutine.wrap(function()
             while true do
                 if not vars.AutoHarvest then
-                    task.wait(0.1) -- delay kecil supaya CPU ringan
+                    task.wait(0.1) -- loop ringan saat toggle mati
                 else
-                    -- LOOP SEMUA BLOCK
+                    -- LOOP SEMUA BLOCK SESUAI TARGET
                     for _, block in ipairs(LoadedBlocks:GetChildren()) do
                         if block.Name == vars.HarvestTarget then
                             local voxel = block:GetAttribute("VoxelPosition")
@@ -74,7 +77,6 @@ return {
                             end
                         end
                     end
-
                     task.wait(vars.HarvestDelay)
                 end
             end
