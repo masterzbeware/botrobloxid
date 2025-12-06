@@ -25,7 +25,6 @@ return {
         local LoadedBlocks = workspace:WaitForChild("LoadedBlocks")
         local CraftItem = ReplicatedStorage:WaitForChild("Relay"):WaitForChild("Inventory"):WaitForChild("CraftItem")
 
-        -- Coroutine untuk loop auto oven
         coroutine.wrap(function()
             while true do
                 if vars.AutoOven then
@@ -41,19 +40,18 @@ return {
                                 else
                                     warn("Gagal craft oven ke", i, err)
                                 end
-                                task.wait(0.3) -- delay antar oven
+                                task.wait(0.3)
                             end
                         end
                     end
 
-                    print("Selesai loop craft semua oven. Menunggu 3 menit 20 detik sebelum loop berikutnya...")
-                    task.wait(181) -- tunggu 3 menit 20 detik
+                    task.wait(181) -- delay antar loop
                 else
-                    task.wait(1) -- jika toggle mati, cek lagi tiap detik
+                    task.wait(1) -- cek toggle
                 end
             end
         end)()
 
-        print("Sistem Auto Oven aktif.")
+        print("Auto Oven siap digunakan di tab Oven.")
     end
 }
