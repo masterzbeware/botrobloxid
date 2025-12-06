@@ -2,7 +2,7 @@ return {
   Execute = function(tab)
       local vars = _G.BotVars or {}
       local Tabs = vars.Tabs or {}
-      local OvenTab = tab or Tabs.Oven
+      local OvenTab = tab or Tabs.Main
 
       if not OvenTab then
           warn("[Auto Oven] Tab Oven tidak ditemukan!")

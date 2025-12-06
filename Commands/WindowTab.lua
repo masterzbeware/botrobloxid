@@ -71,9 +71,6 @@ end)
 -- Combat Tab
 Tabs.Main = MainWindow:AddTab("Oven", "crosshair")
 
--- Visual Tab
-Tabs.Visual = MainWindow:AddTab("Visual", "eye")
-
 -- Save Tabs di global
 _G.BotVars.Tabs = Tabs
 
