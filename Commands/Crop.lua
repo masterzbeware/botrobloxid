@@ -9,7 +9,8 @@ return {
           return
       end
 
-      local Group = OvenTab:AddLeftGroupbox("Auto Oven")
+      -- Ganti ke RightGroup
+      local Group = OvenTab:AddRightGroupbox("Auto Oven")
 
       vars.AutoOven = vars.AutoOven or false
 
@@ -37,12 +38,13 @@ return {
                           end)
                       end
                   end
+                  task.wait(0) -- super cepat tapi tetap yield
               else
                   task.wait(1)
               end
           end
       end)()
 
-      print("Sistem Auto Oven aktif (mode super cepat).")
+      print("Sistem Auto Oven aktif (mode super cepat) di RightGroup.")
   end
 }
