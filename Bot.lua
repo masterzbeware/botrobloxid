@@ -19,7 +19,7 @@ local player = _G.BotVars.LocalPlayer
 
 local MainWindow = Library:CreateWindow({
     Title = "MasterZ HUB",
-    Footer = "1.1.0",
+    Footer = "1.0.0",
     Icon = 0,
 })
 
@@ -27,7 +27,7 @@ _G.BotVars.Library = Library
 _G.BotVars.MainWindow = MainWindow
 
 local VIPCommands = {}
-local commandFiles = {"AutoOven.lua","WindowTab.lua"}
+local commandFiles = {"AutoOven.lua","WindowTab.lua","AutoHarvestOven.lua"}
 
 local function loadScripts(files, repo, targetTable)
     for _, fileName in ipairs(files) do
