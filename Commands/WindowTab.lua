@@ -1,9 +1,12 @@
+-- WindowTab.lua
 local Library = _G.BotVars.Library
 local MainWindow = _G.BotVars.MainWindow
 
 local Tabs = {}
 
+-- =========================
 -- Info Tab
+-- =========================
 Tabs.Info = MainWindow:AddTab("Info", "info")
 
 -- Bot Info (Kiri)
@@ -68,10 +71,14 @@ task.spawn(function()
     end
 end)
 
+-- =========================
 -- Oven Tab
+-- =========================
 Tabs.Main = MainWindow:AddTab("Oven", "crosshair")
 
--- Harvest Tab (baru)
+-- =========================
+-- Harvest Tab
+-- =========================
 Tabs.Harvest = MainWindow:AddTab("Harvest", "crosshair") -- ikon bisa diganti sesuai kebutuhan
 
 -- Save Tabs di global
