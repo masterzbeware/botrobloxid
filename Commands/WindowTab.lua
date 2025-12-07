@@ -69,7 +69,7 @@ task.spawn(function()
 end)
 
 -- Oven Tab
-Tabs.Oven = MainWindow:AddTab("Oven", "crosshair")
+Tabs.Main = MainWindow:AddTab("Oven", "crosshair")
 
 -- Harvest Tab (baru)
 Tabs.Harvest = MainWindow:AddTab("Harvest", "crosshair") -- ikon bisa diganti sesuai kebutuhan
