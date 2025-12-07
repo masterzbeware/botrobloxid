@@ -20,9 +20,9 @@ local ServerGroup = Tabs.Info:AddRightGroupbox("Server Info")
 -- Players (Auto Detect)
 local playersLabel = ServerGroup:AddLabel("Players: ...")
 local function updatePlayers()
-    local players = game:GetService("Players")
-    local playerCount = #players:GetPlayers()
-    local maxPlayers = players.MaxPlayers
+    local Players = game:GetService("Players")
+    local playerCount = #Players:GetPlayers()
+    local maxPlayers = Players.MaxPlayers
     playersLabel:SetText("Players: " .. playerCount .. "/" .. maxPlayers)
 end
 
@@ -31,8 +31,8 @@ local latencyLabel = ServerGroup:AddLabel("Latency: ...")
 local function updateLatency()
     local ping = 0
     pcall(function()
-        local stats = game:GetService("Stats")
-        local dataPing = stats.Network.ServerStatsItem["Data Ping"]
+        local Stats = game:GetService("Stats")
+        local dataPing = Stats.Network.ServerStatsItem["Data Ping"]
         if dataPing then ping = dataPing:GetValue() end
     end)
     latencyLabel:SetText("Latency: " .. math.floor(ping) .. "ms")
@@ -75,11 +75,6 @@ end)
 -- Oven Tab
 -- =========================
 Tabs.Main = MainWindow:AddTab("Oven", "crosshair")
-
--- =========================
--- Harvest Tab
--- =========================
-Tabs.Harvest = MainWindow:AddTab("Harvest", "crosshair") -- ikon bisa diganti sesuai kebutuhan
 
 -- Save Tabs di global
 _G.BotVars.Tabs = Tabs

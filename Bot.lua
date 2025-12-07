@@ -36,10 +36,7 @@ _G.BotVars.MainWindow = MainWindow
 local commandFiles = {
     "AutoOven.lua",
     "WindowTab.lua",
-    "Cow.lua",
-    "Treetap.lua",
-    "Compostbin.lua",
-    "AutoInsert.lua",
+    "AutoInsert.lua"
 }
 
 -- FUNCTION LOAD SCRIPT DARI GITHUB
