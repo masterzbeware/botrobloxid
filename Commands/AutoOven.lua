@@ -1,3 +1,4 @@
+-- AutoOven.lua
 return {
     Execute = function(tab)
         local vars = _G.BotVars or {}
@@ -10,10 +11,12 @@ return {
         end
 
         -- UI GROUP
-        local Group = MainTab:AddLeftGroupbox("Auto Craft Oven")
+        local Group = MainTab:AddRightGroupbox("Auto Craft Oven")
 
+        -- DEFAULT VARS
         vars.AutoCraftOven = vars.AutoCraftOven or false
         vars.CraftDelay = vars.CraftDelay or 1 -- default 1 detik
+        _G.BotVars = vars -- simpan global
 
         -- TOGGLE
         Group:AddToggle("ToggleAutoCraftOven", {
@@ -42,14 +45,13 @@ return {
         local CraftItem = ReplicatedStorage:WaitForChild("Relay"):WaitForChild("Inventory"):WaitForChild("CraftItem")
         local LoadedBlocks = workspace:WaitForChild("LoadedBlocks")
 
-        -- LOOP SYSTEM (lebih efisien)
+        -- LOOP SYSTEM
         coroutine.wrap(function()
             while true do
-                -- tunggu sampai AutoCraftOven aktif
                 if not vars.AutoCraftOven then
-                    task.wait(0.1) -- delay kecil supaya CPU ringan
+                    task.wait(0.1) -- delay ringan kalau toggle mati
                 else
-                    -- AMBIL SEMUA POSISI OVEN
+                    -- Ambil semua posisi oven
                     local ovenPositions = {}
                     for _, block in ipairs(LoadedBlocks:GetChildren()) do
                         if block.Name == "Baker's Oven" then
@@ -60,9 +62,11 @@ return {
                         end
                     end
 
-                    print("Total oven ditemukan:", #ovenPositions)
+                    if #ovenPositions > 0 then
+                        print("[Auto Craft Oven] Total oven ditemukan:", #ovenPositions)
+                    end
 
-                    -- AUTO CRAFT SEMUA OVEN
+                    -- Craft semua oven
                     for i, pos in ipairs(ovenPositions) do
                         local success, err = pcall(function()
                             CraftItem:InvokeServer("Baker's Oven", "Chocolate Bar", pos)

@@ -1,3 +1,4 @@
+-- Treetap.lua
 return {
     Execute = function(tab)
         local vars = _G.BotVars or {}
@@ -12,8 +13,10 @@ return {
         -- UI GROUP
         local Group = MainTab:AddLeftGroupbox("Auto Harvest Treetap")
 
+        -- DEFAULT VARS
         vars.AutoHarvestTreetap = vars.AutoHarvestTreetap or false
         vars.HarvestDelay = vars.HarvestDelay or 1 -- default 1 detik
+        _G.BotVars = vars -- simpan global
 
         -- TOGGLE
         Group:AddToggle("ToggleAutoHarvestTreetap", {
