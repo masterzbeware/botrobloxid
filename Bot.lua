@@ -1,9 +1,11 @@
--- Bot.lua (versi load-only, tanpa VIPCommands / auto execute)
+-- Bot.lua (versi lengkap dan sudah diperbaiki)
 
 local repoBase     = "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Commands/"
 local obsidianRepo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
 
+-- =========================
 -- Load Obsidian Library
+-- =========================
 local success, Library = pcall(function()
     return loadstring(game:HttpGet(obsidianRepo .. "Library.lua"))()
 end)
@@ -11,7 +13,9 @@ if not success or not Library then
     error("[Bot.lua] Gagal load Obsidian Library!")
 end
 
--- GLOBAL VARIABLES
+-- =========================
+-- Global Variables
+-- =========================
 _G.BotVars = {
     Players = game:GetService("Players"),
     TextChatService = game:GetService("TextChatService"),
@@ -22,7 +26,9 @@ _G.BotVars = {
 
 local player = _G.BotVars.LocalPlayer
 
--- CREATE MAIN WINDOW
+-- =========================
+-- Create Main Window
+-- =========================
 local MainWindow = Library:CreateWindow({
     Title = "MasterZ HUB",
     Footer = "1.1.0",
@@ -32,15 +38,19 @@ local MainWindow = Library:CreateWindow({
 _G.BotVars.Library = Library
 _G.BotVars.MainWindow = MainWindow
 
--- LIST MODUL UI
+-- =========================
+-- List Modul UI
+-- =========================
 local commandFiles = {
+    "WindowTab.lua",   -- harus load dulu agar Tabs.Main ada
     "AutoOven.lua",
-    "WindowTab.lua",
     "AutoInsert.lua"
 }
 
--- FUNCTION LOAD SCRIPT DARI GITHUB
-_G.BotVars.Modules = {} -- tempat menyimpan modul
+-- =========================
+-- Load Modul dari GitHub
+-- =========================
+_G.BotVars.Modules = {}
 
 for _, fileName in ipairs(commandFiles) do
     local url = repoBase .. fileName
@@ -61,6 +71,30 @@ for _, fileName in ipairs(commandFiles) do
         end
     else
         warn("[Bot.lua] Failed to load " .. fileName)
+    end
+end
+
+-- =========================
+-- Jalankan WindowTab.lua dulu
+-- =========================
+local windowTabModule = _G.BotVars.Modules.windowtab
+if windowTabModule then
+    -- WindowTab.lua tidak memiliki Execute? kalau ada gunakan:
+    if type(windowTabModule.Execute) == "function" then
+        windowTabModule.Execute()
+    end
+end
+
+-- =========================
+-- Jalankan AutoInsert.lua di tab Oven
+-- =========================
+local autoInsertModule = _G.BotVars.Modules.autoinsert
+if autoInsertModule and type(autoInsertModule.Execute) == "function" then
+    -- pastikan Tabs.Main sudah ada
+    if _G.BotVars.Tabs and _G.BotVars.Tabs.Main then
+        autoInsertModule.Execute(_G.BotVars.Tabs.Main)
+    else
+        warn("[Bot.lua] Tabs.Main belum ditemukan, AutoInsert tidak dijalankan.")
     end
 end
 
