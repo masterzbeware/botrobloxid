@@ -10,7 +10,9 @@ return {
           return
       end
 
+      -- =========================
       -- UI GROUP
+      -- =========================
       local Group
       if MainTab.AddRightGroupbox then
           Group = MainTab:AddRightGroupbox("Auto Plant")
@@ -19,13 +21,17 @@ return {
           warn("[Auto Plant] AddRightGroupbox tidak tersedia, menggunakan AddLeftGroupbox")
       end
 
+      -- =========================
       -- DEFAULT VARS
+      -- =========================
       vars.AutoPlant = vars.AutoPlant or false
       vars.PlantDelay = vars.PlantDelay or 10
       vars.PlantTarget = vars.PlantTarget or "Cacao"
       _G.BotVars = vars
 
+      -- =========================
       -- TOGGLE
+      -- =========================
       Group:AddToggle("ToggleAutoPlant", {
           Text = "Auto Plant",
           Default = vars.AutoPlant,
@@ -35,10 +41,14 @@ return {
           end
       })
 
-      -- MODEL / CROP YANG DIIZINKAN
-      local allowedCrops = {"Cacao"}
+      -- =========================
+      -- ALLOWED CROPS
+      -- =========================
+      local allowedCrops = {"Cacao", "Coffee", "Wheat", "Sugarcane"}
 
+      -- =========================
       -- DROPDOWN PILIH CROP
+      -- =========================
       task.spawn(function()
           task.wait(0.5)
           if Group.AddDropdown then
@@ -58,7 +68,9 @@ return {
           end
       end)
 
+      -- =========================
       -- SLIDER DELAY
+      -- =========================
       Group:AddSlider("SliderPlantDelay", {
           Text = "Delay Plant",
           Default = vars.PlantDelay,
@@ -71,12 +83,16 @@ return {
           end
       })
 
+      -- =========================
       -- SERVICES
+      -- =========================
       local ReplicatedStorage = game:GetService("ReplicatedStorage")
       local LoadedBlocks = workspace:WaitForChild("LoadedBlocks")
       local HarvestCrop = ReplicatedStorage:WaitForChild("Relay"):WaitForChild("Blocks"):WaitForChild("HarvestCrop")
 
-      -- LOOP PLANT
+      -- =========================
+      -- LOOP PLANT (toggle OFF menghentikan proses)
+      -- =========================
       coroutine.wrap(function()
           while true do
               if vars.AutoPlant then
@@ -84,25 +100,23 @@ return {
                       if block:IsA("MeshPart") and block.Name == vars.PlantTarget then
                           local voxel = block:GetAttribute("VoxelPosition")
                           if voxel then
-                              local pos = vector.create(voxel.X, voxel.Y, voxel.Z)
+                              -- spawn per block biar tidak lag
                               task.spawn(function()
                                   local success, err = pcall(function()
-                                      HarvestCrop:InvokeServer(pos)
+                                      HarvestCrop:InvokeServer(vector.create(voxel.X, voxel.Y, voxel.Z))
                                   end)
-                                  if success then
-                                      print("Harvest", vars.PlantTarget, "ke-", i, "berhasil")
-                                  else
-                                      warn("Gagal harvest", vars.PlantTarget, i, err)
+                                  if not success then
+                                      warn("Gagal harvest", block.Name, err)
                                   end
                               end)
-                              task.wait(0.1)
+                              task.wait(0.1) -- delay mini antar block
                           end
                       end
                   end
                   task.wait(vars.PlantDelay)
               else
-                  -- toggle OFF → tunggu sampai ON lagi
-                  repeat task.wait(0.5) until vars.AutoPlant
+                  -- toggle OFF → tunggu sampai toggle ON, tidak looping sia-sia
+                  repeat task.wait(2) until vars.AutoPlant
               end
           end
       end)()
