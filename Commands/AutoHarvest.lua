@@ -11,7 +11,7 @@ return {
       end
 
       -- UI GROUP
-      local Group = MainTab:AddLeftGroupbox("Auto Harvest")
+      local Group = MainTab:AddRightGroupbox("Auto Harvest")
 
       -- DEFAULT VARS
       vars.AutoHarvest = vars.AutoHarvest or false
