@@ -13,27 +13,26 @@ return {
         -- UI GROUP
         local Group = MainTab:AddLeftGroupbox("Auto Insert Items")
 
-        -- MODEL YANG DIIZINKAN (hapus Mushroom Box)
-        local allowedModels = {"Compost Bin", "Large Water Trough", "Small Water Trough"}
-
         -- DEFAULT VARS
+        vars.AutoInsert = vars.AutoInsert or false
         vars.InsertDelay = vars.InsertDelay or 1
         vars.InsertTarget = vars.InsertTarget or "Compost Bin"
-        vars.AutoInsert = vars.AutoInsert or true -- set true supaya toggle default ON
-        _G.BotVars = vars
+        _G.BotVars = vars -- simpan global
 
         -- TOGGLE
-        local toggle = Group:AddToggle("ToggleAutoInsert", {
+        Group:AddToggle("ToggleAutoInsert", {
             Text = "Auto Insert",
             Default = vars.AutoInsert,
             Callback = function(v)
                 vars.AutoInsert = v
+                print("[Auto Insert] Toggle:", v and "ON" or "OFF")
             end
         })
-        -- pastikan vars mengikuti toggle default
-        vars.AutoInsert = toggle:GetState() -- Obsidian toggle state
 
-        -- DROPDOWN PILIH BLOCK (Obsidian format)
+        -- MODEL YANG DIIZINKAN
+        local allowedModels = {"Compost Bin", "Large Water Trough", "Small Water Trough"}
+
+        -- DROPDOWN PILIH BLOCK
         task.spawn(function()
             task.wait(0.5)
             if Group.AddDropdown then
@@ -48,6 +47,8 @@ return {
                     end
                 })
                 dropdown:SetValue(vars.InsertTarget)
+            else
+                warn("[Auto Insert] AddDropdown tidak tersedia di Group")
             end
         end)
 
@@ -69,12 +70,10 @@ return {
         local Blocks = ReplicatedStorage:WaitForChild("Relay"):WaitForChild("Blocks")
         local InsertItem = Blocks:WaitForChild("InsertItem")
 
-        -- LOOP SYSTEM
+        -- LOOP SYSTEM (hanya insert jika toggle ON)
         coroutine.wrap(function()
             while true do
-                if not vars.AutoInsert then
-                    task.wait(0.1)
-                else
+                if vars.AutoInsert then
                     local LoadedBlocks = workspace:FindFirstChild("LoadedBlocks")
                     if LoadedBlocks then
                         for _, block in ipairs(LoadedBlocks:GetChildren()) do
@@ -94,6 +93,9 @@ return {
                         end
                     end
                     task.wait(vars.InsertDelay)
+                else
+                    -- toggle OFF → tunggu lebih lama supaya CPU tidak terbebani
+                    task.wait(0.5)
                 end
             end
         end)()

@@ -31,7 +31,7 @@ local player = _G.BotVars.LocalPlayer
 -- =========================
 local MainWindow = Library:CreateWindow({
     Title = "MasterZ HUB",
-    Footer = "1.1.1",
+    Footer = "1.1.2",
     Icon = 0,
 })
 

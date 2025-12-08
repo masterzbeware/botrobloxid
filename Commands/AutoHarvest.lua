@@ -1,17 +1,23 @@
 -- AutoHarvest.lua
 return {
   Execute = function(tab)
-    local vars = _G.BotVars or {}
-    local Tabs = vars.Tabs or {}
-    local MainTab = tab or Tabs.Main
+      local vars = _G.BotVars or {}
+      local Tabs = vars.Tabs or {}
+      local MainTab = tab or Tabs.Main
 
       if not MainTab then
           warn("[Auto Harvest] Tab tidak ditemukan!")
           return
       end
 
-      -- UI GROUP
-      local Group = MainTab:AddRightGroupbox("Auto Harvest")
+      -- UI GROUP (cek AddRightGroupbox, fallback ke AddLeftGroupbox)
+      local Group
+      if MainTab.AddRightGroupbox then
+          Group = MainTab:AddRightGroupbox("Auto Harvest")
+      else
+          warn("[Auto Harvest] AddRightGroupbox tidak tersedia, menggunakan AddLeftGroupbox")
+          Group = MainTab:AddLeftGroupbox("Auto Harvest")
+      end
 
       -- DEFAULT VARS
       vars.AutoHarvest = vars.AutoHarvest or false
@@ -25,6 +31,7 @@ return {
           Default = vars.AutoHarvest,
           Callback = function(v)
               vars.AutoHarvest = v
+              print("[Auto Harvest] Toggle:", v and "ON" or "OFF")
           end
       })
 
@@ -51,7 +58,6 @@ return {
                       print("[Auto Harvest] Target diubah ke:", v)
                   end
               })
-
               dropdown:SetValue(vars.HarvestTarget)
           else
               warn("[Auto Harvest] AddDropdown tidak tersedia di Group")
@@ -73,15 +79,14 @@ return {
 
       -- SERVICES
       local ReplicatedStorage = game:GetService("ReplicatedStorage")
-      local LoadedBlocks = workspace:WaitForChild("LoadedBlocks")
-      local HarvestCrop = ReplicatedStorage:WaitForChild("Relay"):WaitForChild("Blocks"):WaitForChild("HarvestCrop")
+      local Blocks = ReplicatedStorage:WaitForChild("Relay"):WaitForChild("Blocks")
+      local HarvestCrop = Blocks:WaitForChild("HarvestCrop")
 
-      -- LOOP HARVEST REAL-TIME
+      -- LOOP HARVEST (hanya jalankan saat toggle ON)
       coroutine.wrap(function()
+          local LoadedBlocks = workspace:WaitForChild("LoadedBlocks")
           while true do
-              if not vars.AutoHarvest then
-                  task.wait(0.1)
-              else
+              if vars.AutoHarvest then
                   for _, block in ipairs(LoadedBlocks:GetChildren()) do
                       if block.Name == vars.HarvestTarget then
                           local voxel = block:GetAttribute("VoxelPosition")
@@ -100,6 +105,9 @@ return {
                       end
                   end
                   task.wait(vars.HarvestDelay)
+              else
+                  -- toggle OFF → tunggu lebih lama supaya CPU tidak terbebani
+                  task.wait(0.5)
               end
           end
       end)()
