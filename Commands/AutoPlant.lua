@@ -74,8 +74,8 @@ return {
         Group:AddSlider("SliderPlantDelay", {
             Text = "Delay Plant",
             Default = vars.PlantDelay,
-            Min = 5,
-            Max = 10,
+            Min = 2,
+            Max = 4,
             Rounding = 1,
             Compact = false,
             Callback = function(v)

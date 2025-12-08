@@ -4,14 +4,15 @@ return {
       local vars = _G.BotVars or {}
       local Tabs = vars.Tabs or {}
       local MainTab = tab or Tabs.Main
-      vars.Tabs = Tabs -- fix penting
 
       if not MainTab then
           warn("[Auto Craft] Tab tidak ditemukan!")
           return
       end
 
+      -- =========================
       -- UI GROUP
+      -- =========================
       local Group
       if MainTab.AddRightGroupbox then
           Group = MainTab:AddRightGroupbox("Auto Craft")
@@ -20,13 +21,17 @@ return {
           warn("[Auto Craft] AddRightGroupbox tidak tersedia, menggunakan AddLeftGroupbox")
       end
 
+      -- =========================
       -- DEFAULT VARS
+      -- =========================
       vars.AutoCraft = vars.AutoCraft or false
       vars.CraftDelay = vars.CraftDelay or 5
-      vars.CraftItemTarget = vars.CraftItemTarget or "Chocolate Bar"
+      vars.SelectedItem = vars.SelectedItem or "Cacao"
       _G.BotVars = vars
 
+      -- =========================
       -- TOGGLE
+      -- =========================
       Group:AddToggle("ToggleAutoCraft", {
           Text = "Auto Craft",
           Default = vars.AutoCraft,
@@ -36,94 +41,72 @@ return {
           end
       })
 
+      -- =========================
       -- LIST ITEM CRAFT
-      local craftableItems = {
-          "Chocolate Bar",
-          "Bread",
-          "Pie",
-          "Apple Pie",
-          "Chocolate Cake"
-      }
+      -- =========================
+      local craftableItems = {"Cacao"} -- isi sesuai kebutuhan game
 
-      -- DROPDOWN
+      -- =========================
+      -- DROPDOWN ITEM CRAFT
+      -- =========================
       task.spawn(function()
           task.wait(0.5)
           if Group.AddDropdown then
-              local dd = Group:AddDropdown("DropdownCraftItemTarget", {
-                  Text = "Craft Item",
+              local dropdown = Group:AddDropdown("DropdownCraftItem", {
+                  Text = "Pilih Item Craft",
                   Values = craftableItems,
-                  Default = vars.CraftItemTarget,
+                  Default = vars.SelectedItem,
                   Multi = false,
                   Callback = function(v)
-                      vars.CraftItemTarget = v
-                      print("[Auto Craft] Craft item diubah ke:", v)
+                      vars.SelectedItem = v
+                      print("[Auto Craft] Item Craft diubah ke:", v)
                   end
               })
-              dd:SetValue(vars.CraftItemTarget)
+              dropdown:SetValue(vars.SelectedItem)
+          else
+              warn("[Auto Craft] AddDropdown tidak tersedia")
           end
       end)
 
-      -- SLIDER
+      -- =========================
+      -- SLIDER DELAY
+      -- =========================
       Group:AddSlider("SliderCraftDelay", {
           Text = "Delay Craft",
           Default = vars.CraftDelay,
-          Min = 2,
-          Max = 10,
+          Min = 1,
+          Max = 15,
           Rounding = 1,
-          Compact = false,
           Callback = function(v)
               vars.CraftDelay = v
           end
       })
 
+      -- =========================
       -- SERVICES
+      -- =========================
       local ReplicatedStorage = game:GetService("ReplicatedStorage")
-      local LoadedBlocks = workspace:WaitForChild("LoadedBlocks")
-      local CraftItem = ReplicatedStorage:WaitForChild("Relay"):WaitForChild("Inventory"):WaitForChild("CraftItem")
+      local CraftRemote = ReplicatedStorage:WaitForChild("Relay"):WaitForChild("Server"):WaitForChild("CraftItem")
 
-      -- LOOP AUTO CRAFT
+      -- =========================
+      -- LOOP CRAFT (menggunakan sistem AutoPlant: pause ketika OFF)
+      -- =========================
       coroutine.wrap(function()
           while true do
               if vars.AutoCraft then
-
-                  -- CARI SEMUA OVEN
-                  local ovens = {}
-                  for _, block in ipairs(LoadedBlocks:GetChildren()) do
-                      if block.Name == "Baker's Oven" then
-                          local voxel = block:GetAttribute("VoxelPosition")
-                          if voxel then
-                              table.insert(ovens, voxel)
-                          end
-                      end
-                  end
-
-                  print("[Auto Craft] Total oven ditemukan:", #ovens)
-
-                  -- PROSES CRAFT
-                  for i, pos in ipairs(ovens) do
-                      task.spawn(function()
-                          local success, err = pcall(function()
-                              CraftItem:InvokeServer("Baker's Oven", vars.CraftItemTarget, pos)
-                          end)
-
-                          if not success then
-                              warn("[Auto Craft] Gagal craft:", err)
-                          else
-                              print("[Auto Craft] Craft", vars.CraftItemTarget, "di oven", i)
-                          end
-                      end)
-
-                      task.wait(0.1)
-                  end
+                  -- ========== PROSES CRAFT ==========
+                  pcall(function()
+                      CraftRemote:InvokeServer(vars.SelectedItem)
+                  end)
 
                   task.wait(vars.CraftDelay)
-
               else
+                  -- ========== toggle OFF → pause sampai ON ==========
                   repeat task.wait(2) until vars.AutoCraft
               end
           end
       end)()
 
-      print("[Auto Craft] Sistem aktif. Craft item:", vars.CraftItemTarget)
+      print("[Auto Craft] Sistem aktif. Target:", vars.SelectedItem)
   end
 }
