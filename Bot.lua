@@ -45,7 +45,8 @@ local commandFiles = {
     "WindowTab.lua",   -- harus load dulu agar Tabs.Main ada
     "AutoInsert.lua",
     "AutoHarvest.lua",
-    "AutoPlant.lua"
+    "AutoPlant.lua",
+    "AutoCraft.lua"
 }
 
 -- =========================
@@ -118,6 +119,18 @@ if autoPlantModule and type(autoPlantModule.Execute) == "function" then
     else
         warn("[Bot.lua] Tabs.Main belum ditemukan, AutoPlant tidak dijalankan.")
     end
+end
+
+-- Jalankan AutoCraft.lua
+local autoCraftModule = _G.BotVars.Modules.autocraft
+if autoCraftModule and type(autoCraftModule.Execute) == "function" then
+    if _G.BotVars.Tabs and _G.BotVars.Tabs.Main then
+        autoCraftModule.Execute(_G.BotVars.Tabs.Main)
+    else
+        warn("[Bot.lua] Tabs.Main belum ditemukan, AutoCraft tidak dijalankan.")
+    end
+else
+    warn("[Bot.lua] Modul AutoCraft tidak ditemukan atau tidak memiliki fungsi Execute.")
 end
 
 
