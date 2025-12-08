@@ -13,31 +13,33 @@ return {
         -- UI GROUP
         local Group = MainTab:AddLeftGroupbox("Auto Insert Items")
 
+        -- MODEL YANG DIIZINKAN (hapus Mushroom Box)
+        local allowedModels = {"Compost Bin", "Large Water Trough", "Small Water Trough"}
+
         -- DEFAULT VARS
-        vars.AutoInsert = vars.AutoInsert or false
         vars.InsertDelay = vars.InsertDelay or 1
         vars.InsertTarget = vars.InsertTarget or "Compost Bin"
-        _G.BotVars = vars -- simpan global
+        vars.AutoInsert = vars.AutoInsert or true -- set true supaya toggle default ON
+        _G.BotVars = vars
 
         -- TOGGLE
-        Group:AddToggle("ToggleAutoInsert", {
+        local toggle = Group:AddToggle("ToggleAutoInsert", {
             Text = "Auto Insert",
             Default = vars.AutoInsert,
             Callback = function(v)
                 vars.AutoInsert = v
             end
         })
-
-        -- MODEL YANG DIIZINKAN (hapus Mushroom Box)
-        local allowedModels = {"Compost Bin", "Large Water Trough", "Small Water Trough"}
+        -- pastikan vars mengikuti toggle default
+        vars.AutoInsert = toggle:GetState() -- Obsidian toggle state
 
         -- DROPDOWN PILIH BLOCK (Obsidian format)
         task.spawn(function()
-            task.wait(0.5) -- delay supaya UI siap
+            task.wait(0.5)
             if Group.AddDropdown then
                 local dropdown = Group:AddDropdown("DropdownInsertTarget", {
                     Text = "Pilih Block",
-                    Values = allowedModels,       -- hanya model tertentu
+                    Values = allowedModels,
                     Default = vars.InsertTarget,
                     Multi = false,
                     Callback = function(v)
@@ -45,11 +47,7 @@ return {
                         print("[Auto Insert] Target diubah ke:", v)
                     end
                 })
-
-                -- pastikan default tampil
                 dropdown:SetValue(vars.InsertTarget)
-            else
-                warn("[Auto Insert] AddDropdown tidak tersedia di Group")
             end
         end)
 
@@ -71,7 +69,7 @@ return {
         local Blocks = ReplicatedStorage:WaitForChild("Relay"):WaitForChild("Blocks")
         local InsertItem = Blocks:WaitForChild("InsertItem")
 
-        -- LOOP SYSTEM (real-time check)
+        -- LOOP SYSTEM
         coroutine.wrap(function()
             while true do
                 if not vars.AutoInsert then
@@ -80,7 +78,6 @@ return {
                     local LoadedBlocks = workspace:FindFirstChild("LoadedBlocks")
                     if LoadedBlocks then
                         for _, block in ipairs(LoadedBlocks:GetChildren()) do
-                            -- hanya model yang diizinkan
                             if block.Name == vars.InsertTarget and table.find(allowedModels, block.Name) then
                                 local voxel = block:GetAttribute("VoxelPosition")
                                 if voxel then

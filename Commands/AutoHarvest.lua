@@ -1,9 +1,9 @@
 -- AutoHarvest.lua
 return {
   Execute = function(tab)
-      local vars = _G.BotVars or {}
-      local Tabs = vars.Tabs or {}
-      local MainTab = tab or (vars.Tabs and vars.Tabs.Main)
+    local vars = _G.BotVars or {}
+    local Tabs = vars.Tabs or {}
+    local MainTab = tab or Tabs.Main
 
       if not MainTab then
           warn("[Auto Harvest] Tab tidak ditemukan!")
