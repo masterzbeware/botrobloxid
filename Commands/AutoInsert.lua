@@ -28,27 +28,16 @@ return {
             end
         })
 
+        -- MODEL YANG DIIZINKAN
+        local allowedModels = {"Compost Bin", "Large Water Trough", "Small Water Trough", "Mushroom Box"}
+
         -- DROPDOWN PILIH BLOCK (Obsidian format)
         task.spawn(function()
             task.wait(0.5) -- delay supaya UI siap
-            local LoadedBlocks = workspace:FindFirstChild("LoadedBlocks")
-            local blockNames = {}
-
-            if LoadedBlocks then
-                for _, model in ipairs(LoadedBlocks:GetChildren()) do
-                    table.insert(blockNames, model.Name)
-                end
-            end
-
-            -- jika kosong, pakai default list
-            if #blockNames == 0 then
-                blockNames = {"Compost Bin", "Large Water Trough", "Small Water Trough", "Mushroom Box"}
-            end
-
             if Group.AddDropdown then
                 local dropdown = Group:AddDropdown("DropdownInsertTarget", {
                     Text = "Pilih Block",
-                    Values = blockNames,       -- Sesuai Obsidian Library
+                    Values = allowedModels,       -- hanya model tertentu
                     Default = vars.InsertTarget,
                     Multi = false,
                     Callback = function(v)
@@ -91,7 +80,8 @@ return {
                     local LoadedBlocks = workspace:FindFirstChild("LoadedBlocks")
                     if LoadedBlocks then
                         for _, block in ipairs(LoadedBlocks:GetChildren()) do
-                            if block.Name == vars.InsertTarget then
+                            -- hanya model yang diizinkan
+                            if block.Name == vars.InsertTarget and table.find(allowedModels, block.Name) then
                                 local voxel = block:GetAttribute("VoxelPosition")
                                 if voxel then
                                     local success, err = pcall(function()
