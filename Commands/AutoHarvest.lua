@@ -84,7 +84,7 @@ return {
       local HarvestCrop = Blocks:WaitForChild("HarvestCrop")
       local LoadedBlocks = workspace:WaitForChild("LoadedBlocks")
 
-      -- LOOP HARVEST
+      -- LOOP HARVEST (toggle OFF benar-benar menghentikan proses)
       coroutine.wrap(function()
           while true do
               if vars.AutoHarvest then
@@ -107,7 +107,8 @@ return {
                   end
                   task.wait(vars.HarvestDelay)
               else
-                  task.wait(0.5)
+                  -- toggle OFF → tunggu sampai toggle ON, tidak looping sia-sia
+                  repeat task.wait(2) until vars.AutoHarvest
               end
           end
       end)()
