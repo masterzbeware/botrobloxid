@@ -43,7 +43,8 @@ _G.BotVars.MainWindow = MainWindow
 -- =========================
 local commandFiles = {
     "WindowTab.lua",   -- harus load dulu agar Tabs.Main ada
-    "AutoInsert.lua"
+    "AutoInsert.lua",
+    "AutoHarvest.lua"
 }
 
 -- =========================

@@ -28,8 +28,8 @@ return {
             end
         })
 
-        -- MODEL YANG DIIZINKAN
-        local allowedModels = {"Compost Bin", "Large Water Trough", "Small Water Trough", "Mushroom Box"}
+        -- MODEL YANG DIIZINKAN (hapus Mushroom Box)
+        local allowedModels = {"Compost Bin", "Large Water Trough", "Small Water Trough"}
 
         -- DROPDOWN PILIH BLOCK (Obsidian format)
         task.spawn(function()
