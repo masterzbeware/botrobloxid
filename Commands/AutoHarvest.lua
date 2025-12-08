@@ -10,7 +10,7 @@ return {
           return
       end
 
-      -- UI GROUP (cek AddRightGroupbox, fallback ke AddLeftGroupbox)
+      -- UI GROUP
       local Group
       if MainTab.AddRightGroupbox then
           Group = MainTab:AddRightGroupbox("Auto Harvest")
@@ -35,7 +35,7 @@ return {
           end
       })
 
-      -- BLOCKS/ANIMALS YANG DIIZINKAN
+      -- ALLOWED BLOCKS / ANIMALS
       local allowedBlocks = {
           "Preserves Barrel",
           "Butter Churn",
@@ -44,7 +44,7 @@ return {
           "Mushroom Box"
       }
 
-      -- DROPDOWN PILIH TARGET
+      -- DROPDOWN TARGET
       task.spawn(function()
           task.wait(0.5)
           if Group.AddDropdown then
@@ -81,32 +81,31 @@ return {
       local ReplicatedStorage = game:GetService("ReplicatedStorage")
       local Blocks = ReplicatedStorage:WaitForChild("Relay"):WaitForChild("Blocks")
       local HarvestCrop = Blocks:WaitForChild("HarvestCrop")
+      local LoadedBlocks = workspace:WaitForChild("LoadedBlocks")
 
-      -- LOOP HARVEST (hanya jalankan saat toggle ON)
+      -- LOOP HARVEST
       coroutine.wrap(function()
-          local LoadedBlocks = workspace:WaitForChild("LoadedBlocks")
           while true do
               if vars.AutoHarvest then
                   for _, block in ipairs(LoadedBlocks:GetChildren()) do
                       if block.Name == vars.HarvestTarget then
                           local voxel = block:GetAttribute("VoxelPosition")
                           if voxel then
+                              -- spawn per block biar tidak lag
                               task.spawn(function()
                                   local success, err = pcall(function()
                                       HarvestCrop:InvokeServer(vector.create(voxel.X, voxel.Y, voxel.Z))
                                   end)
-                                  if success then
-                                      print("Harvest", block.Name, "berhasil di posisi:", voxel)
-                                  else
+                                  if not success then
                                       warn("Gagal harvest", block.Name, err)
                                   end
                               end)
+                              task.wait(0.1) -- delay mini antar block untuk mencegah lag
                           end
                       end
                   end
                   task.wait(vars.HarvestDelay)
               else
-                  -- toggle OFF → tunggu lebih lama supaya CPU tidak terbebani
                   task.wait(0.5)
               end
           end

@@ -56,8 +56,8 @@ return {
         Group:AddSlider("SliderInsertDelay", {
             Text = "Delay Insert",
             Default = vars.InsertDelay,
-            Min = 0.5,
-            Max = 2,
+            Min = 1,
+            Max = 5,
             Rounding = 1,
             Compact = false,
             Callback = function(v)
@@ -95,7 +95,7 @@ return {
                     task.wait(vars.InsertDelay)
                 else
                     -- toggle OFF → tunggu lebih lama supaya CPU tidak terbebani
-                    task.wait(0.5)
+                    task.wait(1)
                 end
             end
         end)()
