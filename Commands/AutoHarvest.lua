@@ -41,7 +41,8 @@ return {
           "Butter Churn",
           "White Cow",
           "Treetap",
-          "Mushroom Box"
+          "Mushroom Box",
+          "Compost Bin"
       }
 
       -- DROPDOWN TARGET
