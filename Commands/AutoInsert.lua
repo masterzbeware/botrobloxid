@@ -15,7 +15,7 @@ return {
 
         -- DEFAULT VARS
         vars.AutoInsert = vars.AutoInsert or false
-        vars.InsertDelay = vars.InsertDelay or 1 -- default 1 detik
+        vars.InsertDelay = vars.InsertDelay or 1
         vars.InsertTarget = vars.InsertTarget or "Compost Bin"
         _G.BotVars = vars -- simpan global
 
@@ -28,36 +28,40 @@ return {
             end
         })
 
-        -- DROPDOWN PILIH BLOCK (dynamic)
+        -- DROPDOWN PILIH BLOCK (Obsidian format)
         task.spawn(function()
-            task.wait(0.5)
-            local function getLoadedBlockNames()
-                local names = {}
-                local LoadedBlocks = workspace:FindFirstChild("LoadedBlocks")
-                if LoadedBlocks then
-                    for _, model in ipairs(LoadedBlocks:GetChildren()) do
-                        table.insert(names, model.Name)
+            task.wait(0.5) -- delay supaya UI siap
+            local LoadedBlocks = workspace:FindFirstChild("LoadedBlocks")
+            local blockNames = {}
+
+            if LoadedBlocks then
+                for _, model in ipairs(LoadedBlocks:GetChildren()) do
+                    table.insert(blockNames, model.Name)
+                end
+            end
+
+            -- jika kosong, pakai default list
+            if #blockNames == 0 then
+                blockNames = {"Compost Bin", "Large Water Trough", "Small Water Trough", "Mushroom Box"}
+            end
+
+            if Group.AddDropdown then
+                local dropdown = Group:AddDropdown("DropdownInsertTarget", {
+                    Text = "Pilih Block",
+                    Values = blockNames,       -- Sesuai Obsidian Library
+                    Default = vars.InsertTarget,
+                    Multi = false,
+                    Callback = function(v)
+                        vars.InsertTarget = v
+                        print("[Auto Insert] Target diubah ke:", v)
                     end
-                end
-                return names
+                })
+
+                -- pastikan default tampil
+                dropdown:SetValue(vars.InsertTarget)
+            else
+                warn("[Auto Insert] AddDropdown tidak tersedia di Group")
             end
-
-            local options = getLoadedBlockNames()
-            if #options == 0 then
-                options = {"Compost Bin", "Large Water Trough", "Small Water Trough", "Mushroom Box"}
-            end
-
-            local dropdown = Group:AddDropdown("DropdownInsertTarget", {
-                Text = "Pilih Block",
-                Default = vars.InsertTarget,
-                Options = options,
-                Callback = function(v)
-                    vars.InsertTarget = v
-                    print("[Auto Insert] Target diubah ke:", v)
-                end
-            })
-
-            dropdown:SetValue(vars.InsertTarget)
         end)
 
         -- SLIDER DELAY
@@ -78,7 +82,7 @@ return {
         local Blocks = ReplicatedStorage:WaitForChild("Relay"):WaitForChild("Blocks")
         local InsertItem = Blocks:WaitForChild("InsertItem")
 
-        -- LOOP SYSTEM
+        -- LOOP SYSTEM (real-time check)
         coroutine.wrap(function()
             while true do
                 if not vars.AutoInsert then
