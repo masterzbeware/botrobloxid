@@ -16,7 +16,7 @@ return {
         -- DEFAULT VARS
         vars.AutoInsert = vars.AutoInsert or false
         vars.InsertDelay = vars.InsertDelay or 1 -- default 1 detik
-        vars.InsertTarget = vars.InsertTarget or "Small Food Trough"
+        vars.InsertTarget = vars.InsertTarget or "Compost Bin"
         _G.BotVars = vars -- simpan global
 
         -- TOGGLE
@@ -28,25 +28,36 @@ return {
             end
         })
 
-        -- DROPDOWN PILIH BLOCK
-        -- gunakan task.spawn + wait lebih lama agar UI library siap
+        -- DROPDOWN PILIH BLOCK (dynamic)
         task.spawn(function()
-            task.wait(0.5) -- delay diperpanjang, 0.5 detik biasanya cukup
-            if Group.AddDropdown then
-                local dropdown = Group:AddDropdown("DropdownInsertTarget", {
-                    Text = "Pilih Block",
-                    Default = vars.InsertTarget,
-                    Options = {"Small Food Trough", "Butter Churn", "Small Water Trough", "Compost Bin"},
-                    Callback = function(v)
-                        vars.InsertTarget = v
-                        print("[Auto Insert] Target diubah ke:", v)
+            task.wait(0.5)
+            local function getLoadedBlockNames()
+                local names = {}
+                local LoadedBlocks = workspace:FindFirstChild("LoadedBlocks")
+                if LoadedBlocks then
+                    for _, model in ipairs(LoadedBlocks:GetChildren()) do
+                        table.insert(names, model.Name)
                     end
-                })
-                -- set default agar dropdown menampilkan pilihan saat dibuka
-                dropdown:SetValue(vars.InsertTarget)
-            else
-                warn("[Auto Insert] AddDropdown tidak tersedia di Group")
+                end
+                return names
             end
+
+            local options = getLoadedBlockNames()
+            if #options == 0 then
+                options = {"Compost Bin", "Large Water Trough", "Small Water Trough", "Mushroom Box"}
+            end
+
+            local dropdown = Group:AddDropdown("DropdownInsertTarget", {
+                Text = "Pilih Block",
+                Default = vars.InsertTarget,
+                Options = options,
+                Callback = function(v)
+                    vars.InsertTarget = v
+                    print("[Auto Insert] Target diubah ke:", v)
+                end
+            })
+
+            dropdown:SetValue(vars.InsertTarget)
         end)
 
         -- SLIDER DELAY
@@ -64,7 +75,6 @@ return {
 
         -- SERVICES
         local ReplicatedStorage = game:GetService("ReplicatedStorage")
-        local LoadedBlocks = workspace:WaitForChild("LoadedBlocks")
         local Blocks = ReplicatedStorage:WaitForChild("Relay"):WaitForChild("Blocks")
         local InsertItem = Blocks:WaitForChild("InsertItem")
 
@@ -74,17 +84,20 @@ return {
                 if not vars.AutoInsert then
                     task.wait(0.1)
                 else
-                    for _, block in ipairs(LoadedBlocks:GetChildren()) do
-                        if block.Name == vars.InsertTarget then
-                            local voxel = block:GetAttribute("VoxelPosition")
-                            if voxel then
-                                local success, err = pcall(function()
-                                    InsertItem:InvokeServer(vector.create(voxel.X, voxel.Y, voxel.Z))
-                                end)
-                                if success then
-                                    print("Berhasil insert ke:", block.Name)
-                                else
-                                    warn("Gagal insert ke:", block.Name, err)
+                    local LoadedBlocks = workspace:FindFirstChild("LoadedBlocks")
+                    if LoadedBlocks then
+                        for _, block in ipairs(LoadedBlocks:GetChildren()) do
+                            if block.Name == vars.InsertTarget then
+                                local voxel = block:GetAttribute("VoxelPosition")
+                                if voxel then
+                                    local success, err = pcall(function()
+                                        InsertItem:InvokeServer(vector.create(voxel.X, voxel.Y, voxel.Z))
+                                    end)
+                                    if success then
+                                        print("Berhasil insert ke:", block.Name)
+                                    else
+                                        warn("Gagal insert ke:", block.Name, err)
+                                    end
                                 end
                             end
                         end
