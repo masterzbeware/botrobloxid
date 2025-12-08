@@ -78,23 +78,34 @@ end
 -- Jalankan WindowTab.lua dulu
 -- =========================
 local windowTabModule = _G.BotVars.Modules.windowtab
-if windowTabModule then
-    -- WindowTab.lua tidak memiliki Execute? kalau ada gunakan:
-    if type(windowTabModule.Execute) == "function" then
-        windowTabModule.Execute()
-    end
+if windowTabModule and type(windowTabModule.Execute) == "function" then
+    windowTabModule.Execute()
 end
 
+-- Tunggu sebentar agar Tabs.Main siap
+task.wait(0.1)
+
 -- =========================
--- Jalankan AutoInsert.lua di tab Oven
+-- Jalankan AutoInsert.lua
 -- =========================
 local autoInsertModule = _G.BotVars.Modules.autoinsert
 if autoInsertModule and type(autoInsertModule.Execute) == "function" then
-    -- pastikan Tabs.Main sudah ada
     if _G.BotVars.Tabs and _G.BotVars.Tabs.Main then
         autoInsertModule.Execute(_G.BotVars.Tabs.Main)
     else
         warn("[Bot.lua] Tabs.Main belum ditemukan, AutoInsert tidak dijalankan.")
+    end
+end
+
+-- =========================
+-- Jalankan AutoHarvest.lua
+-- =========================
+local autoHarvestModule = _G.BotVars.Modules.autoharvest
+if autoHarvestModule and type(autoHarvestModule.Execute) == "function" then
+    if _G.BotVars.Tabs and _G.BotVars.Tabs.Main then
+        autoHarvestModule.Execute(_G.BotVars.Tabs.Main)
+    else
+        warn("[Bot.lua] Tabs.Main belum ditemukan, AutoHarvest tidak dijalankan.")
     end
 end
 
