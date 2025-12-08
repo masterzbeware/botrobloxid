@@ -31,7 +31,7 @@ local player = _G.BotVars.LocalPlayer
 -- =========================
 local MainWindow = Library:CreateWindow({
     Title = "MasterZ HUB",
-    Footer = "1.1.2",
+    Footer = "1.0.5",
     Icon = 0,
 })
 
@@ -83,7 +83,7 @@ if windowTabModule and type(windowTabModule.Execute) == "function" then
 end
 
 -- Tunggu sebentar agar Tabs.Main siap
-task.wait(0.1)
+task.wait(2)
 
 -- =========================
 -- Jalankan AutoInsert.lua
