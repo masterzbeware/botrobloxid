@@ -76,11 +76,6 @@ end)
 -- =========================
 Tabs.Main = MainWindow:AddTab("Main", "crosshair")
 
--- =========================
--- Plant Tab (Auto Harvest)
--- =========================
-Tabs.Plant = MainWindow:AddTab("Plant", "leaf") -- icon "leaf" bisa diganti
-
 -- Save Tabs di global
 _G.BotVars.Tabs = Tabs
 
