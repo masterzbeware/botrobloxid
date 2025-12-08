@@ -43,7 +43,6 @@ _G.BotVars.MainWindow = MainWindow
 -- =========================
 local commandFiles = {
     "WindowTab.lua",   -- harus load dulu agar Tabs.Main ada
-    "AutoOven.lua",
     "AutoInsert.lua"
 }
 

@@ -29,17 +29,24 @@ return {
         })
 
         -- DROPDOWN PILIH BLOCK
-        spawn(function()
-            task.wait(0.1) -- delay kecil untuk UI library
-            Group:AddDropdown("DropdownInsertTarget", {
-                Text = "Pilih Block",
-                Default = vars.InsertTarget,
-                Options = {"Small Food Trough", "Butter Churn", "Small Water Trough", "Compost Bin"},
-                Callback = function(v)
-                    vars.InsertTarget = v
-                    print("[Auto Insert] Target diubah ke:", v)
-                end
-            })
+        -- gunakan task.spawn + wait lebih lama agar UI library siap
+        task.spawn(function()
+            task.wait(0.5) -- delay diperpanjang, 0.5 detik biasanya cukup
+            if Group.AddDropdown then
+                local dropdown = Group:AddDropdown("DropdownInsertTarget", {
+                    Text = "Pilih Block",
+                    Default = vars.InsertTarget,
+                    Options = {"Small Food Trough", "Butter Churn", "Small Water Trough", "Compost Bin"},
+                    Callback = function(v)
+                        vars.InsertTarget = v
+                        print("[Auto Insert] Target diubah ke:", v)
+                    end
+                })
+                -- set default agar dropdown menampilkan pilihan saat dibuka
+                dropdown:SetValue(vars.InsertTarget)
+            else
+                warn("[Auto Insert] AddDropdown tidak tersedia di Group")
+            end
         end)
 
         -- SLIDER DELAY
