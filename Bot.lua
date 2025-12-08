@@ -147,4 +147,5 @@ else
 end
 
 
+
 print("✅ Bot.lua loaded — semua modul siap digunakan.")

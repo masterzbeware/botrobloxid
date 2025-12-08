@@ -25,8 +25,8 @@ return {
       -- DEFAULT VARS
       -- =========================
       vars.AutoFill = vars.AutoFill or false
-      vars.FillDelay = vars.FillDelay or 2
-      vars.FillTarget = vars.FillTarget or "Brick Well"
+      vars.FillDelay = vars.FillDelay or 1
+      vars.FillTarget = vars.FillTarget or {"Brick Well"} -- default bisa pilih lebih dari 1
       _G.BotVars = vars
 
       -- =========================

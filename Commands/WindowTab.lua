@@ -11,7 +11,7 @@ Tabs.Info = MainWindow:AddTab("Info", "info")
 
 -- Bot Info (Kiri)
 local BotGroup = Tabs.Info:AddLeftGroupbox("Bot Info")
-BotGroup:AddLabel("MasterZ HUB v1.0.0")
+BotGroup:AddLabel("MasterZ HUB v1.2.0")
 BotGroup:AddLabel("Script loaded")
 
 -- Server Info (Kanan)
