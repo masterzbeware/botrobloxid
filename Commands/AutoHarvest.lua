@@ -70,7 +70,7 @@ return {
           Text = "Delay Harvest",
           Default = vars.HarvestDelay,
           Min = 0.3,
-          Max = 2,
+          Max = 3,
           Rounding = 1,
           Compact = false,
           Callback = function(v)

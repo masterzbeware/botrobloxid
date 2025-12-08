@@ -30,7 +30,7 @@ return {
         })
 
         -- MODEL YANG DIIZINKAN
-        local allowedModels = {"Butter Churn","Compost Bin", "Large Water Trough", "Small Water Trough"}
+        local allowedModels = {"Small Food Trough","Butter Churn","Compost Bin", "Large Water Trough", "Small Water Trough"}
 
         -- DROPDOWN PILIH BLOCK
         task.spawn(function()
@@ -56,8 +56,8 @@ return {
         Group:AddSlider("SliderInsertDelay", {
             Text = "Delay Insert",
             Default = vars.InsertDelay,
-            Min = 0.2,
-            Max = 5,
+            Min = 0.3,
+            Max = 3,
             Rounding = 1,
             Compact = false,
             Callback = function(v)
