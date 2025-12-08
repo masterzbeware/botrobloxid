@@ -15,7 +15,7 @@ return {
         -- =========================
         local Group
         if MainTab.AddRightGroupbox then
-            Group = MainTab:AddRightGroupbox("Auto Plant")
+            Group = MainTab:AddLeftGroupbox("Auto Plant")
         else
             Group = MainTab:AddLeftGroupbox("Auto Plant")
             warn("[Auto Plant] AddRightGroupbox tidak tersedia, menggunakan AddLeftGroupbox")
