@@ -46,7 +46,8 @@ local commandFiles = {
     "AutoInsert.lua",
     "AutoHarvest.lua",
     "AutoPlant.lua",
-    "AutoCraft.lua"
+    "AutoCraft.lua",
+    "AutoFill.lua"
 }
 
 -- =========================
@@ -131,6 +132,18 @@ if autoCraftModule and type(autoCraftModule.Execute) == "function" then
     end
 else
     warn("[Bot.lua] Modul AutoCraft tidak ditemukan atau tidak memiliki fungsi Execute.")
+end
+
+-- Jalankan AutoFill.lua
+local autoFillModule = _G.BotVars.Modules.autofill
+if autoFillModule and type(autoFillModule.Execute) == "function" then
+    if _G.BotVars.Tabs and _G.BotVars.Tabs.Main then
+        autoFillModule.Execute(_G.BotVars.Tabs.Main)
+    else
+        warn("[Bot.lua] Tabs.Main belum ditemukan, AutoFill tidak dijalankan.")
+    end
+else
+    warn("[Bot.lua] Modul AutoFill tidak ditemukan atau tidak memiliki fungsi Execute.")
 end
 
 
