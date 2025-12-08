@@ -15,13 +15,13 @@ return {
       if MainTab.AddRightGroupbox then
           Group = MainTab:AddRightGroupbox("Auto Plant")
       else
-          warn("[Auto Plant] AddRightGroupbox tidak tersedia, menggunakan AddLeftGroupbox")
           Group = MainTab:AddLeftGroupbox("Auto Plant")
+          warn("[Auto Plant] AddRightGroupbox tidak tersedia, menggunakan AddLeftGroupbox")
       end
 
       -- DEFAULT VARS
       vars.AutoPlant = vars.AutoPlant or false
-      vars.PlantDelay = vars.PlantDelay or 5
+      vars.PlantDelay = vars.PlantDelay or 10
       vars.PlantTarget = vars.PlantTarget or "Cacao"
       _G.BotVars = vars
 
@@ -35,21 +35,16 @@ return {
           end
       })
 
-      -- ALLOWED BLOCKS
-      local allowedBlocks = {
-          "Cacao",
-          "Coffee",
-          "Wheat",
-          "Sugarcane"
-      }
+      -- MODEL / CROP YANG DIIZINKAN
+      local allowedCrops = {"Cacao", "Coffee", "Wheat", "Sugarcane"}
 
-      -- DROPDOWN TARGET
+      -- DROPDOWN PILIH CROP
       task.spawn(function()
           task.wait(0.5)
           if Group.AddDropdown then
               local dropdown = Group:AddDropdown("DropdownPlantTarget", {
                   Text = "Pilih Crop",
-                  Values = allowedBlocks,
+                  Values = allowedCrops,
                   Default = vars.PlantTarget,
                   Multi = false,
                   Callback = function(v)
@@ -85,8 +80,7 @@ return {
       coroutine.wrap(function()
           while true do
               if vars.AutoPlant then
-                  local blocks = LoadedBlocks:GetChildren()
-                  for i, block in ipairs(blocks) do
+                  for i, block in ipairs(LoadedBlocks:GetChildren()) do
                       if block:IsA("MeshPart") and block.Name == vars.PlantTarget then
                           local voxel = block:GetAttribute("VoxelPosition")
                           if voxel then
@@ -101,12 +95,13 @@ return {
                                       warn("Gagal harvest", vars.PlantTarget, i, err)
                                   end
                               end)
-                              task.wait(0.1) -- delay mini antar block
+                              task.wait(0.1)
                           end
                       end
                   end
                   task.wait(vars.PlantDelay)
               else
+                  -- toggle OFF → tunggu sampai ON lagi
                   repeat task.wait(0.5) until vars.AutoPlant
               end
           end
