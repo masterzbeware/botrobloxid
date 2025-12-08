@@ -74,8 +74,8 @@ return {
       Group:AddSlider("SliderCraftDelay", {
           Text = "Delay Craft",
           Default = vars.CraftDelay,
-          Min = 1,
-          Max = 15,
+          Min = 0.3,
+          Max = 3,
           Rounding = 1,
           Callback = function(v)
               vars.CraftDelay = v
