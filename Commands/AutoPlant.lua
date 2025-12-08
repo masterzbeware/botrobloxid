@@ -25,7 +25,7 @@ return {
         -- DEFAULT VARS
         -- =========================
         vars.AutoPlant = vars.AutoPlant or false
-        vars.PlantDelay = vars.PlantDelay or 2
+        vars.PlantDelay = vars.PlantDelay or 0.3
         vars.PlantTarget = vars.PlantTarget or "Cacao"
         _G.BotVars = vars
 
