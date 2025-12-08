@@ -74,7 +74,7 @@ end)
 -- =========================
 -- Oven Tab
 -- =========================
-Tabs.Main = MainWindow:AddTab("Oven", "crosshair")
+Tabs.Main = MainWindow:AddTab("Main", "crosshair")
 
 -- =========================
 -- Plant Tab (Auto Harvest)

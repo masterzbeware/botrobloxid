@@ -36,7 +36,7 @@ return {
       })
 
       -- MODEL / CROP YANG DIIZINKAN
-      local allowedCrops = {"Cacao", "Coffee", "Wheat", "Sugarcane"}
+      local allowedCrops = {"Cacao"}
 
       -- DROPDOWN PILIH CROP
       task.spawn(function()
