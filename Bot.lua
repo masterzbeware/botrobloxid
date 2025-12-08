@@ -110,4 +110,15 @@ if autoHarvestModule and type(autoHarvestModule.Execute) == "function" then
     end
 end
 
+-- Jalankan AutoPlant.lua
+local autoPlantModule = _G.BotVars.Modules.autoplant
+if autoPlantModule and type(autoPlantModule.Execute) == "function" then
+    if _G.BotVars.Tabs and _G.BotVars.Tabs.Main then
+        autoPlantModule.Execute(_G.BotVars.Tabs.Main)
+    else
+        warn("[Bot.lua] Tabs.Main belum ditemukan, AutoPlant tidak dijalankan.")
+    end
+end
+
+
 print("✅ Bot.lua loaded — semua modul siap digunakan.")
