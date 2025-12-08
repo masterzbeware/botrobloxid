@@ -31,7 +31,7 @@ local player = _G.BotVars.LocalPlayer
 -- =========================
 local MainWindow = Library:CreateWindow({
     Title = "MasterZ HUB",
-    Footer = "1.1.0",
+    Footer = "1.0.0",
     Icon = 0,
 })
 
@@ -46,8 +46,7 @@ local commandFiles = {
     "AutoInsert.lua",
     "AutoHarvest.lua",
     "AutoPlant.lua",
-    "AutoCraft.lua",
-    "AutoFill.lua"
+    "AutoCraft.lua"
 }
 
 -- =========================
