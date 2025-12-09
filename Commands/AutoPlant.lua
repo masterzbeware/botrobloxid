@@ -112,7 +112,7 @@ return {
                   end
                   task.wait(vars.PlantDelay)
               else
-                  repeat task.wait(1) until vars.AutoPlant
+                  repeat task.wait(0.1) until vars.AutoPlant
               end
           end
       end)()
