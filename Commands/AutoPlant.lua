@@ -13,7 +13,7 @@ return {
       local Group = MainTab:AddLeftGroupbox("Auto Planter Cart")
 
       vars.AutoPlanter  = vars.AutoPlanter or false
-      vars.PlanterDelay = vars.PlanterDelay or 0.3
+      vars.PlanterDelay = vars.PlanterDelay or 0.5
       _G.BotVars = vars
 
       Group:AddToggle("ToggleAutoPlanter", {
@@ -28,7 +28,7 @@ return {
       Group:AddSlider("SliderPlanterDelay", {
           Text = "Delay Antar Batch",
           Default = vars.PlanterDelay,
-          Min = 0.3,
+          Min = 0.5,
           Max = 4,
           Rounding = 1,
           Callback = function(v)
