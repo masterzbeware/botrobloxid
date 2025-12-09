@@ -28,8 +28,8 @@ return {
       Group:AddSlider("SliderPlanterDelay", {
           Text = "Delay Antar Batch",
           Default = vars.PlanterDelay,
-          Min = 0,
-          Max = 5,
+          Min = 0.3,
+          Max = 4,
           Rounding = 1,
           Callback = function(v)
               vars.PlanterDelay = v
@@ -79,7 +79,7 @@ return {
                   end
                   task.wait(vars.PlanterDelay) -- delay antar batch
               else
-                  task.wait(0.05)
+                  task.wait(0.08)
               end
           end
       end)()
