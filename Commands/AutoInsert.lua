@@ -95,7 +95,7 @@ return {
                     task.wait(vars.InsertDelay)
                 else
                     -- toggle OFF → tunggu lebih lama supaya CPU tidak terbebani
-                    task.wait(2)
+                    task.wait(0.5)
                 end
             end
         end)()

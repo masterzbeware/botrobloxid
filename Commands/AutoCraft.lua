@@ -89,7 +89,7 @@ return {
 
                     task.wait(vars.CraftDelay)
                 else
-                    repeat task.wait(2) until vars.AutoCraft
+                    repeat task.wait(0.5) until vars.AutoCraft
                 end
             end
         end)()

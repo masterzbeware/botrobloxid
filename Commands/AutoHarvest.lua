@@ -109,7 +109,7 @@ return {
                   task.wait(vars.HarvestDelay)
               else
                   -- toggle OFF → tunggu sampai toggle ON, tidak looping sia-sia
-                  repeat task.wait(2) until vars.AutoHarvest
+                  repeat task.wait(0.5) until vars.AutoHarvest
               end
           end
       end)()

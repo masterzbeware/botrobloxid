@@ -116,7 +116,7 @@ return {
                     task.wait(vars.PlantDelay)
                 else
                     -- toggle OFF → tunggu sampai toggle ON, tidak looping sia-sia
-                    repeat task.wait(2) until vars.AutoPlant
+                    repeat task.wait(0.5) until vars.AutoPlant
                 end
             end
         end)()

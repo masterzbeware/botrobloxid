@@ -116,7 +116,7 @@ return {
                   end
                   task.wait(vars.FillDelay)
               else
-                  repeat task.wait(2) until vars.AutoFill
+                  repeat task.wait(0.5) until vars.AutoFill
               end
           end
       end)()
