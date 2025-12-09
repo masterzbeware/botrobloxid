@@ -1,4 +1,4 @@
--- Bot.lua (versi lengkap dan sudah diperbaiki)
+-- Bot.lua (versi fix AutoBucket)
 
 local repoBase     = "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Commands/"
 local obsidianRepo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
@@ -42,11 +42,12 @@ _G.BotVars.MainWindow = MainWindow
 -- List Modul UI
 -- =========================
 local commandFiles = {
-    "WindowTab.lua",   -- harus load dulu agar Tabs.Main ada
+    "WindowTab.lua",
     "AutoInsert.lua",
     "AutoHarvest.lua",
     "AutoPlant.lua",
-    "AutoCraft.lua"
+    "AutoCraft.lua",
+    "AutoBucket.lua" -- FIX: nama file sudah benar
 }
 
 -- =========================
@@ -62,89 +63,49 @@ for _, fileName in ipairs(commandFiles) do
         if func then
             local status, cmdTable = pcall(func)
             if status and type(cmdTable) == "table" then
+                -- nama key convert ke lowercase
                 local nameKey = fileName:sub(1, #fileName - 4)
                 _G.BotVars.Modules[nameKey:lower()] = cmdTable
-                print("[Bot.lua] Loaded module: " .. nameKey)
+                print("[Bot.lua] Loaded module:", nameKey)
             else
-                warn("[Bot.lua] Module " .. fileName .. " tidak mengembalikan table!")
+                warn("[Bot.lua] Module", fileName, "tidak mengembalikan table!")
             end
         else
-            warn("[Bot.lua] Loadstring gagal untuk " .. fileName)
+            warn("[Bot.lua] Loadstring gagal untuk", fileName)
         end
     else
-        warn("[Bot.lua] Failed to load " .. fileName)
+        warn("[Bot.lua] Failed to load", fileName)
     end
 end
 
 -- =========================
--- Jalankan WindowTab.lua dulu
+-- Jalankan WindowTab.lua
 -- =========================
 local windowTabModule = _G.BotVars.Modules.windowtab
 if windowTabModule and type(windowTabModule.Execute) == "function" then
     windowTabModule.Execute()
 end
 
--- Tunggu sebentar agar Tabs.Main siap
-task.wait(2)
+task.wait(2) -- beri waktu UI ter-load
 
--- =========================
--- Jalankan AutoInsert.lua
--- =========================
-local autoInsertModule = _G.BotVars.Modules.autoinsert
-if autoInsertModule and type(autoInsertModule.Execute) == "function" then
-    if _G.BotVars.Tabs and _G.BotVars.Tabs.Main then
-        autoInsertModule.Execute(_G.BotVars.Tabs.Main)
+-- Helper Function untuk jalanin modul (lebih clean)
+local function jalankan(nama)
+    local module = _G.BotVars.Modules[nama]
+    if module and type(module.Execute) == "function" then
+        if _G.BotVars.Tabs and _G.BotVars.Tabs.Main then
+            module.Execute(_G.BotVars.Tabs.Main)
+        else
+            warn("[Bot.lua]", nama, "tidak dijalankan — Tabs.Main belum ditemukan")
+        end
     else
-        warn("[Bot.lua] Tabs.Main belum ditemukan, AutoInsert tidak dijalankan.")
+        warn("[Bot.lua] Modul", nama, "tidak ditemukan / tidak memiliki Execute")
     end
 end
 
--- =========================
--- Jalankan AutoHarvest.lua
--- =========================
-local autoHarvestModule = _G.BotVars.Modules.autoharvest
-if autoHarvestModule and type(autoHarvestModule.Execute) == "function" then
-    if _G.BotVars.Tabs and _G.BotVars.Tabs.Main then
-        autoHarvestModule.Execute(_G.BotVars.Tabs.Main)
-    else
-        warn("[Bot.lua] Tabs.Main belum ditemukan, AutoHarvest tidak dijalankan.")
-    end
-end
+jalankan("autoinsert")
+jalankan("autoharvest")
+jalankan("autoplant")
+jalankan("autocraft")
+jalankan("autobucket") -- FIX: nama module benar
 
--- Jalankan AutoPlant.lua
-local autoPlantModule = _G.BotVars.Modules.autoplant
-if autoPlantModule and type(autoPlantModule.Execute) == "function" then
-    if _G.BotVars.Tabs and _G.BotVars.Tabs.Main then
-        autoPlantModule.Execute(_G.BotVars.Tabs.Main)
-    else
-        warn("[Bot.lua] Tabs.Main belum ditemukan, AutoPlant tidak dijalankan.")
-    end
-end
-
--- Jalankan AutoCraft.lua
-local autoCraftModule = _G.BotVars.Modules.autocraft
-if autoCraftModule and type(autoCraftModule.Execute) == "function" then
-    if _G.BotVars.Tabs and _G.BotVars.Tabs.Main then
-        autoCraftModule.Execute(_G.BotVars.Tabs.Main)
-    else
-        warn("[Bot.lua] Tabs.Main belum ditemukan, AutoCraft tidak dijalankan.")
-    end
-else
-    warn("[Bot.lua] Modul AutoCraft tidak ditemukan atau tidak memiliki fungsi Execute.")
-end
-
--- Jalankan AutoFill.lua
-local autoFillModule = _G.BotVars.Modules.autofill
-if autoFillModule and type(autoFillModule.Execute) == "function" then
-    if _G.BotVars.Tabs and _G.BotVars.Tabs.Main then
-        autoFillModule.Execute(_G.BotVars.Tabs.Main)
-    else
-        warn("[Bot.lua] Tabs.Main belum ditemukan, AutoFill tidak dijalankan.")
-    end
-else
-    warn("[Bot.lua] Modul AutoFill tidak ditemukan atau tidak memiliki fungsi Execute.")
-end
-
-
-
-print("✅ Bot.lua loaded — semua modul siap digunakan.")
+print("✅ Bot.lua loaded — semua modul UI aktif.")

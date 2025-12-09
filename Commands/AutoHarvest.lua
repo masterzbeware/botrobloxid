@@ -43,6 +43,7 @@ return {
           "Treetap",
           "Mushroom Box",
           "Compost Bin",
+          "Handmill",
           "Baker's Oven"
       }
 
