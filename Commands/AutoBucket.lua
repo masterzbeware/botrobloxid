@@ -1,4 +1,4 @@
--- AutoBucket.lua (FINAL FIX)
+-- AutoBucket.lua (REWORK FINAL FIX)
 
 return {
     Execute = function(tab)
@@ -11,38 +11,29 @@ return {
             return
         end
 
-        -- =========================
         -- UI GROUP
-        -- =========================
-        local Group
-        if typeof(MainTab.AddRightGroupbox) == "function" then
-            Group = MainTab:AddRightGroupbox("Auto Fill")
-        else
-            Group = MainTab:AddLeftGroupbox("Auto Fill")
-            warn("[AutoBucket] AddRightGroupbox tidak tersedia, gunakan kiri")
-        end
+        local Group = (typeof(MainTab.AddRightGroupbox) == "function")
+            and MainTab:AddRightGroupbox("Auto Fill")
+            or MainTab:AddLeftGroupbox("Auto Fill")
 
-        -- =========================
         -- DEFAULT SETTINGS
-        -- =========================
         vars.AutoFill = vars.AutoFill or false
-        vars.FillDelay = vars.FillDelay or 1
-        vars.FillTarget = vars.FillTarget or {"Brick Well"}
+        vars.FillDelay = vars.FillDelay or 0.2 -- DEFAULT MATCH YOUR MANUAL CODE
+        vars.FillTarget = vars.FillTarget or {"Brick Well", "Stone Well"}
 
         _G.BotVars = vars
 
-        -- =========================
         -- SERVICES
-        -- =========================
         local ReplicatedStorage = game:GetService("ReplicatedStorage")
-        local LootService = ReplicatedStorage:WaitForChild("Relay"):WaitForChild("Inventory")
-        local FillBucket = LootService:WaitForChild("FillBucket")
+        local FillBucket = ReplicatedStorage
+            :WaitForChild("Relay")
+            :WaitForChild("Inventory")
+            :WaitForChild("FillBucket")
 
+        local vector = _G.vector or vector -- ***IMPORTANT FIX***
         local LoadedBlocks = workspace:WaitForChild("LoadedBlocks")
 
-        -- =========================
         -- UI: TOGGLE
-        -- =========================
         Group:AddToggle("ToggleAutoFill", {
             Text = "Auto Fill Well",
             Default = vars.AutoFill,
@@ -52,60 +43,43 @@ return {
             end
         })
 
-        -- =========================
-        -- WELL LIST
-        -- =========================
-        local allowedWells = {"Brick Well", "Stone Well"}
-
-        -- =========================
         -- UI: DROPDOWN TARGET
-        -- =========================
         task.delay(0.7, function()
             if Group.AddDropdown then
-                local dropdown = Group:AddDropdown("DropdownFillTarget", {
+                Group:AddDropdown("DropdownFillTarget", {
                     Text = "Pilih Well",
-                    Values = allowedWells,
+                    Values = {"Brick Well", "Stone Well"},
                     Multi = true,
                     Default = vars.FillTarget,
                     Callback = function(v)
                         vars.FillTarget = v
-                        _G.BotVars.FillTarget = v
                         print("[AutoBucket] Target:", table.concat(v, ", "))
                     end
                 })
-
-                if dropdown.SetValue and typeof(vars.FillTarget) == "table" then
-                    dropdown:SetValue(vars.FillTarget)
-                end
-            else
-                warn("[AutoBucket] Dropdown UI tidak tersedia")
             end
         end)
 
-        -- =========================
         -- UI: SLIDER DELAY
-        -- =========================
         Group:AddSlider("FillDelaySlider", {
             Text = "Delay Fill (detik)",
             Default = vars.FillDelay,
-            Min = 0.2,
-            Max = 4,
+            Min = 0.1,
+            Max = 2,
             Rounding = 0.1,
             Callback = function(v)
                 vars.FillDelay = v
-                _G.BotVars.FillDelay = v
             end
         })
 
-        -- =========================
-        -- MAIN LOOP
-        -- =========================
+        --------------------------------------------------------------------
+        --                      MAIN LOOP FIXED                           --
+        --------------------------------------------------------------------
         task.spawn(function()
             while task.wait(vars.FillDelay) do
                 if not vars.AutoFill then continue end
-                if not LoadedBlocks then continue end
 
-                for i, block in ipairs(LoadedBlocks:GetChildren()) do
+                local blocks = LoadedBlocks:GetChildren()
+                for i, block in ipairs(blocks) do
                     if not vars.AutoFill then break end
                     if not block:IsA("Model") then continue end
                     if not table.find(vars.FillTarget, block.Name) then continue end
@@ -113,23 +87,28 @@ return {
                     local voxel = block:GetAttribute("VoxelPosition")
                     if not voxel then continue end
 
-                    local success, err = pcall(function()
-                        if FillBucket.InvokeServer then
-                            FillBucket:InvokeServer(Vector3.new(voxel.X, voxel.Y, voxel.Z))
+                    -- Spawn agar tidak freeze (MATCH ORIGINAL SCRIPT)
+                    task.spawn(function()
+                        local args = {
+                            vector.create(voxel.X, voxel.Y, voxel.Z)
+                        }
+
+                        local ok, err = pcall(function()
+                            FillBucket:InvokeServer(unpack(args))
+                        end)
+
+                        if ok then
+                            print("Fill Well ke-", i, block.Name, "✓")
+                        else
+                            warn("Gagal Fill", block.Name, "ke-", i, err)
                         end
                     end)
 
-                    if success then
-                        print("[AutoBucket] Fill:", block.Name, "index:", i)
-                    else
-                        warn("[AutoBucket] Error:", err)
-                    end
-
-                    task.wait(0.15)
+                    task.wait(0.05) -- optimized smooth loop
                 end
             end
         end)
 
-        print("[AutoBucket] Sistem Aktiv ✓ | Target:", table.concat(vars.FillTarget, ", "))
+        print("[AutoBucket] System Ready ✓")
     end
 }
