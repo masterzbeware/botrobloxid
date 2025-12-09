@@ -44,7 +44,7 @@ return {
         -- =========================
         -- ALLOWED CROPS
         -- =========================
-        local allowedCrops = {"Cacao"}
+        local allowedCrops = {"Cacao","Cranberry"}
 
         -- =========================
         -- DROPDOWN PILIH CROP
