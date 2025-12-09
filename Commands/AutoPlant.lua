@@ -83,7 +83,7 @@ return {
                   end
                   task.wait(vars.PlanterDelay)
               else
-                  task.wait(0.5)
+                  task.wait(0.05)
               end
           end
       end)()
