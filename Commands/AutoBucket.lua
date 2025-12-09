@@ -1,4 +1,4 @@
--- AutoBucket.lua (REWORK FINAL-V3)
+-- AutoBucket.lua (FINAL STRUCTURE)
 return {
     Execute = function(tab)
         local vars = _G.BotVars or {}
@@ -10,110 +10,97 @@ return {
             return
         end
 
-        -- ========================
-        -- DEFAULT VARIABLES
-        -- ========================
-        vars.AutoFill = vars.AutoFill or false
-        vars.FillDelay = vars.FillDelay or 0.2
-        vars.FillTarget = vars.FillTarget or {"Brick Well", "Stone Well"}
-        _G.BotVars = vars -- global sync
-
-        -- ========================
+        -- =========================
         -- UI GROUP
-        -- ========================
-        local Group = (typeof(MainTab.AddRightGroupbox) == "function")
-            and MainTab:AddRightGroupbox("Auto Fill")
-            or MainTab:AddLeftGroupbox("Auto Fill")
+        -- =========================
+        local Group = (MainTab.AddRightGroupbox and MainTab:AddRightGroupbox("Auto Bucket"))
+            or MainTab:AddLeftGroupbox("Auto Bucket")
 
+        -- DEFAULT SETTINGS
+        vars.AutoBucket = vars.AutoBucket or false
+        vars.BucketDelay = vars.BucketDelay or 0.3
+        vars.SelectedWell = vars.SelectedWell or "Brick Well"
+        _G.BotVars = vars
+
+        -- TOGGLE
+        Group:AddToggle("ToggleAutoBucket", {
+            Text = "Auto Bucket",
+            Default = vars.AutoBucket,
+            Callback = function(v)
+                vars.AutoBucket = v
+                print("[AutoBucket] Status:", v and "ON" or "OFF")
+            end
+        })
+
+        -- DROPDOWN JENIS WELL
+        local wellTypes = {"Brick Well", "Stone Well"}
+        task.defer(function()
+            local dd = Group:AddDropdown("DropdownWellType", {
+                Text = "Target Well",
+                Values = wellTypes,
+                Default = vars.SelectedWell,
+                Callback = function(v)
+                    vars.SelectedWell = v
+                    print("[AutoBucket] Target Well:", v)
+                end
+            })
+            dd:SetValue(vars.SelectedWell)
+        end)
+
+        -- SLIDER DELAY
+        Group:AddSlider("SliderBucketDelay", {
+            Text = "Delay Fill",
+            Min = 0.1, Max = 2,
+            Rounding = 2,
+            Default = vars.BucketDelay,
+            Callback = function(value)
+                vars.BucketDelay = value
+                print("[AutoBucket] Delay:", value)
+            end
+        })
+
+        -- =========================
         -- SERVICES
+        -- =========================
         local ReplicatedStorage = game:GetService("ReplicatedStorage")
         local LoadedBlocks = workspace:WaitForChild("LoadedBlocks")
 
-        local vector = _G.vector or vector
         local FillBucket = ReplicatedStorage
             :WaitForChild("Relay")
             :WaitForChild("Inventory")
             :WaitForChild("FillBucket")
 
-        -- ========================
-        -- UI ELEMENTS
-        -- ========================
-        Group:AddToggle("ToggleAutoFill", {
-            Text = "Auto Fill Well",
-            Default = vars.AutoFill,
-            Callback = function(value)
-                vars.AutoFill = value
-                _G.BotVars.AutoFill = value
-                print("[AutoBucket] Status:", value and "Aktif" or "Mati")
-            end
-        })
-
-        task.delay(0.7, function()
-            if Group.AddDropdown then
-                Group:AddDropdown("DropdownFillTarget", {
-                    Text = "Target Well",
-                    Values = {"Brick Well", "Stone Well"},
-                    Multi = true,
-                    Default = vars.FillTarget,
-                    Callback = function(value)
-                        vars.FillTarget = value
-                        _G.BotVars.FillTarget = value
-                    end
-                })
-            end
-        end)
-
-        Group:AddSlider("FillDelaySlider", {
-            Text = "Delay (detik)",
-            Default = vars.FillDelay,
-            Min = 0.1,
-            Max = 2,
-            Rounding = 0.01,
-            Callback = function(v)
-                v = tonumber(string.format("%.2f", v))
-                vars.FillDelay = v
-                _G.BotVars.FillDelay = v
-                print("[AutoBucket] Delay =", v)
-            end
-        })
-
-        -- ========================
-        -- MAIN AUTO FILL LOOP
-        -- ========================
-        task.spawn(function()
+        -- =========================
+        -- AUTO BUCKET LOOP
+        -- =========================
+        coroutine.wrap(function()
             while true do
-                task.wait(vars.FillDelay or 0.2)
+                if vars.AutoBucket then
+                    for _, block in ipairs(LoadedBlocks:GetChildren()) do
+                        if block:IsA("Model") and block.Name == vars.SelectedWell then
+                            local voxel = block:GetAttribute("VoxelPosition")
 
-                if not vars.AutoFill then continue end
+                            if voxel then
+                                pcall(function()
+                                    FillBucket:InvokeServer(
+                                        vector.create(voxel.X, voxel.Y, voxel.Z)
+                                    )
+                                end)
 
-                local blocks = LoadedBlocks:GetChildren()
-                for i, block in ipairs(blocks) do
-                    if not vars.AutoFill then break end
-                    if not block:IsA("Model") then continue end
-                    if not table.find(vars.FillTarget, block.Name) then continue end
+                                print("[AutoBucket] Fill:", block.Name)
+                                task.wait(vars.BucketDelay)
 
-                    local voxel = block:GetAttribute("VoxelPosition")
-                    if not voxel then continue end
-
-                    task.spawn(function()
-                        local args = {
-                            vector.create(voxel.X, voxel.Y, voxel.Z)
-                        }
-
-                        local ok, err = pcall(function()
-                            FillBucket:InvokeServer(unpack(args))
-                        end)
-
-                        if not ok then
-                            warn("[AutoBucket] Gagal:", block.Name, err)
+                                if not vars.AutoBucket then break end
+                            end
                         end
-                    end)
-
-                    task.wait(0.03) -- smoothing
+                    end
+                else
+                    repeat task.wait(0.5) until vars.AutoBucket
                 end
+                task.wait()
             end
-        end)
+        end)()
 
-        print("[AutoBucket] Siap berjalan ✓")
+        print("[AutoBucket] System Loaded ✔")
     end
 }

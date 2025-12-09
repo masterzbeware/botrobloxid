@@ -31,7 +31,7 @@ local player = _G.BotVars.LocalPlayer
 -- =========================
 local MainWindow = Library:CreateWindow({
     Title = "MasterZ HUB",
-    Footer = "1.2.0",
+    Footer = "1.3.0",
     Icon = 0,
 })
 
@@ -47,6 +47,7 @@ local commandFiles = {
     "AutoHarvest.lua",
     "AutoCrop.lua",
     "AutoCraft.lua",
+    "AutoPlant.lua",
     "AutoBucket.lua" -- FIX: nama file sudah benar
 }
 
@@ -106,6 +107,7 @@ jalankan("autoinsert")
 jalankan("autoharvest")
 jalankan("autocrop")
 jalankan("autocraft")
+jalankan("autoplant")
 jalankan("autobucket") -- FIX: nama module benar
 
 print("✅ Bot.lua loaded — semua modul UI aktif.")
