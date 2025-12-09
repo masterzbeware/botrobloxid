@@ -30,7 +30,7 @@ return {
         })
 
         -- MODEL YANG DIIZINKAN
-        local allowedModels = {"Small Food Trough","Butter Churn","Compost Bin", "Large Water Trough", "Small Water Trough"}
+        local allowedModels = {"Preserves Barrel","Small Food Trough","Butter Churn","Compost Bin", "Large Water Trough", "Small Water Trough"}
 
         -- DROPDOWN PILIH BLOCK
         task.spawn(function()
