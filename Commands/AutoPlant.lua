@@ -1,68 +1,69 @@
--- AutoPlant.lua (FINAL STRUCTURE)
+-- AutoPlant.lua
 return {
   Execute = function(tab)
       local vars = _G.BotVars or {}
       local Tabs = vars.Tabs or {}
       local MainTab = tab or Tabs.Main
-
+      
       if not MainTab then
-          warn("[AutoPlant] Tab tidak ditemukan!")
+          warn("[Auto Plant] Tab tidak ditemukan!")
           return
       end
 
-      -- =========================
-      -- UI SETUP
-      -- =========================
+      -- ==============================
+      -- UI GROUP
+      -- ==============================
       local Group = (MainTab.AddRightGroupbox and MainTab:AddRightGroupbox("Auto Plant"))
           or MainTab:AddLeftGroupbox("Auto Plant")
 
-      vars.AutoPlant = vars.AutoPlant or false
-      vars.PlantDelay = vars.PlantDelay or 0.3
-      vars.SelectedSeed = vars.SelectedSeed or "Wheat Seeds"
+      -- DEFAULT VALUES
+      vars.AutoPlant       = vars.AutoPlant or false
+      vars.PlantDelay      = vars.PlantDelay or 1.5
+      vars.PlantSeed       = vars.PlantSeed or "Wheat Seeds"
       _G.BotVars = vars
 
-      -- Toggle ON/OFF
+
+      -- === Toggle ===
       Group:AddToggle("ToggleAutoPlant", {
           Text = "Auto Plant",
           Default = vars.AutoPlant,
           Callback = function(v)
               vars.AutoPlant = v
-              print("[AutoPlant] Status:", v and "ON" or "OFF")
+              print("[Auto Plant] Toggle:", v and "ON" or "OFF")
           end
       })
 
-      -- Dropdown pilih seed
-      local seedList = {
-          "Wheat Seeds",
-          "Carrot Seeds"
-      }
+
+      -- === Dropdown Seeds ===
+      local SeedsList = {"Wheat Seeds", "Carrot Seeds", "Corn Seeds"} -- isi sesuai item tersedia
+
       task.defer(function()
-          local dd = Group:AddDropdown("DropdownSeed", {
+          local dd = Group:AddDropdown("DropdownPlantSeed", {
               Text = "Pilih Benih",
-              Values = seedList,
-              Default = vars.SelectedSeed,
+              Values = SeedsList,
+              Default = vars.PlantSeed,
               Callback = function(v)
-                  vars.SelectedSeed = v
-                  print("[AutoPlant] Benih:", v)
+                  vars.PlantSeed = v
+                  print("[Auto Plant] Seed:", v)
               end
           })
-          dd:SetValue(vars.SelectedSeed)
+          dd:SetValue(vars.PlantSeed)
       end)
 
-      -- Slider delay
+
+      -- === Slider Delay ===
       Group:AddSlider("SliderPlantDelay", {
           Text = "Delay Tanam",
-          Min = 0.1, Max = 2,
-          Rounding = 2,
+          Min = 0.3, Max = 4,
           Default = vars.PlantDelay,
-          Callback = function(v)
-              vars.PlantDelay = v
-          end
+          Rounding = 1,
+          Callback = function(v) vars.PlantDelay = v end
       })
 
-      -- =========================
-      -- SERVICES
-      -- =========================
+
+      -- ==============================
+      -- SERVER & FUNCTIONS
+      -- ==============================
       local ReplicatedStorage = game:GetService("ReplicatedStorage")
       local LoadedBlocks = workspace:WaitForChild("LoadedBlocks")
 
@@ -71,37 +72,51 @@ return {
           :WaitForChild("Blocks")
           :WaitForChild("PlantCrop")
 
-      -- =========================
-      -- AUTO PLANT LOOP
-      -- =========================
-      coroutine.wrap(function()
-          while true do
-              if vars.AutoPlant then
-                  for _, block in ipairs(LoadedBlocks:GetChildren()) do
-                      if block.Name == "Farmland" then
-                          local voxel = block:GetAttribute("VoxelPosition")
+      local function isOccupied(voxel)
+          for _, block in ipairs(LoadedBlocks:GetChildren()) do
+              local v2 = block:GetAttribute("VoxelPosition")
+              if v2 and v2.X == voxel.X and v2.Y == voxel.Y and v2.Z == voxel.Z then
+                  return true
+              end
+          end
+          return false
+      end
 
-                          if voxel then
+
+      -- ==============================
+      -- AUTO PLANT LOOP
+      -- ==============================
+      coroutine.wrap(function()
+          while task.wait() do
+              if not vars.AutoPlant then
+                  repeat task.wait(0.5) until vars.AutoPlant
+              end
+
+              for _, block in ipairs(LoadedBlocks:GetChildren()) do
+                  if not vars.AutoPlant then break end
+                  if block.Name == "Farmland" then
+                      local voxel = block:GetAttribute("VoxelPosition")
+                      if voxel then
+                          local above = Vector3.new(voxel.X, voxel.Y + 1, voxel.Z)
+                          if not isOccupied(above) then
                               pcall(function()
-                                  PlantCrop:InvokeServer(
-                                      Vector3.new(voxel.X, voxel.Y, voxel.Z)
-                                  )
+                                  PlantCrop:InvokeServer(above, vars.PlantSeed)
                               end)
 
-                              print("[AutoPlant] Tanam di:", voxel)
-                              task.wait(vars.PlantDelay)
+                              print("[Auto Plant] Tanam",
+                                  vars.PlantSeed,
+                                  "di", above
+                              )
 
-                              if not vars.AutoPlant then break end
+                              task.wait(vars.PlantDelay)
                           end
                       end
                   end
-              else
-                  repeat task.wait(0.5) until vars.AutoPlant
               end
               task.wait()
           end
       end)()
 
-      print("[AutoPlant] Loaded ✔ | Benih Default:", vars.SelectedSeed)
-  end,
+      print("[Auto Plant] Aktif. Seed:", vars.PlantSeed)
+  end
 }
