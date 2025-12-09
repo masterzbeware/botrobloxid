@@ -79,7 +79,7 @@ return {
                   end
                   task.wait(vars.PlanterDelay) -- delay antar batch
               else
-                  task.wait(0.08)
+                  task.wait(1)
               end
           end
       end)()
