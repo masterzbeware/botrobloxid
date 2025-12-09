@@ -1,4 +1,4 @@
--- AutoPlant.lua (Ultra Fast & Anti Lag)
+-- AutoPlanter.lua
 return {
   Execute = function(tab)
       local vars = _G.BotVars or {}
@@ -6,65 +6,31 @@ return {
       local MainTab = tab or Tabs.Main
 
       if not MainTab then
-          warn("[Auto Plant] Tab tidak ditemukan!")
+          warn("[Auto Planter] Tab tidak ditemukan!")
           return
       end
 
       -- =========================
       -- UI GROUP
       -- =========================
-      local Group = (MainTab.AddRightGroupbox and MainTab:AddRightGroupbox("Auto Plant"))
-          or MainTab:AddLeftGroupbox("Auto Plant")
+      local Group = MainTab:AddLeftGroupbox("Auto Planter Cart")
 
       -- =========================
       -- DEFAULT VARS
       -- =========================
-      vars.AutoPlant  = vars.AutoPlant or false
-      vars.PlantDelay = vars.PlantDelay or 0.3
-      vars.PlantSeed  = vars.PlantSeed or "Wheat Seeds"
+      vars.AutoPlanter   = vars.AutoPlanter or false
+      vars.PlanterDelay  = vars.PlanterDelay or 0.3
       _G.BotVars = vars
 
       -- =========================
       -- TOGGLE
       -- =========================
-      Group:AddToggle("ToggleAutoPlant", {
-          Text = "Auto Plant",
-          Default = vars.AutoPlant,
+      Group:AddToggle("ToggleAutoPlanter", {
+          Text = "Auto Planter",
+          Default = vars.AutoPlanter,
           Callback = function(v)
-              vars.AutoPlant = v
-              print("[Auto Plant] Toggle:", v and "ON" or "OFF")
-          end
-      })
-
-      -- =========================
-      -- DROPDOWN Seed
-      -- =========================
-      local SeedsList = {"Wheat Seeds", "Carrot Seeds", "Corn Seeds", "Cacao Seeds"} -- sesuaikan dengan game
-
-      task.defer(function()
-          local dd = Group:AddDropdown("DropdownPlantSeed", {
-              Text = "Pilih Benih",
-              Values = SeedsList,
-              Default = vars.PlantSeed,
-              Callback = function(v)
-                  vars.PlantSeed = v
-                  print("[Auto Plant] Seed berubah:", v)
-              end
-          })
-          dd:SetValue(vars.PlantSeed)
-      end)
-
-      -- =========================
-      -- DELAY SLIDER
-      -- =========================
-      Group:AddSlider("SliderPlantDelay", {
-          Text = "Delay Tanam",
-          Default = vars.PlantDelay,
-          Min = 0.1,
-          Max = 3,
-          Rounding = 1,
-          Callback = function(v)
-              vars.PlantDelay = v
+              vars.AutoPlanter = v
+              print("[Auto Planter] Toggle:", v and "ON" or "OFF")
           end
       })
 
@@ -73,60 +39,55 @@ return {
       -- =========================
       local ReplicatedStorage = game:GetService("ReplicatedStorage")
       local LoadedBlocks = workspace:WaitForChild("LoadedBlocks")
-      local PlantCrop = ReplicatedStorage:WaitForChild("Relay"):WaitForChild("Blocks"):WaitForChild("PlantCrop")
+      local UsePlanterCart = ReplicatedStorage:WaitForChild("Relay")
+          :WaitForChild("Blocks")
+          :WaitForChild("UsePlanterCart")
+
+      -- =========================
+      -- CEK FARMLAND TERISI
+      -- =========================
+      local function isOccupied(voxel)
+          for _, block in ipairs(LoadedBlocks:GetChildren()) do
+              local v2 = block:GetAttribute("VoxelPosition")
+              if v2 and v2.X == voxel.X and v2.Y == voxel.Y and v2.Z == voxel.Z then
+                  return true
+              end
+          end
+          return false
+      end
 
       -- =========================
       -- AUTO PLANT LOOP
       -- =========================
       coroutine.wrap(function()
-          local farmlandVoxels = {}    -- cache posisi Farmland
-          local occupiedVoxels = {}    -- cache block di atas untuk cek sudah ditanam
-
           while true do
-              if not vars.AutoPlant then
-                  repeat task.wait(0.5) until vars.AutoPlant
-              end
-
-              -- Update cache farmland
-              farmlandVoxels = {}
-              occupiedVoxels = {}
-
-              for _, block in ipairs(LoadedBlocks:GetChildren()) do
-                  local voxel = block:GetAttribute("VoxelPosition")
-                  if voxel then
-                      local key = voxel.X..","..voxel.Y..","..voxel.Z
-
-                      -- Farmland cache
+              if vars.AutoPlanter then
+                  for _, block in ipairs(LoadedBlocks:GetChildren()) do
                       if block.Name == "Farmland" then
-                          farmlandVoxels[key] = voxel
-                      else
-                          -- semua block lain dianggap occupied
-                          occupiedVoxels[key] = true
+                          local voxel = block:GetAttribute("VoxelPosition")
+                          if voxel then
+                              local above = Vector3.new(voxel.X, voxel.Y + 1, voxel.Z)
+
+                              if not isOccupied(above) then
+                                  -- Spawn thread ringan untuk tiap voxel
+                                  task.spawn(function()
+                                      pcall(function()
+                                          UsePlanterCart:InvokeServer(above)
+                                      end)
+                                  end)
+                                  -- delay mini antar voxel untuk kurangi lag
+                                  task.wait(0.05)
+                              end
+                          end
                       end
                   end
+                  task.wait(vars.PlanterDelay)
+              else
+                  task.wait(0.5)
               end
-
-              -- Tanam batch
-              for key, voxel in pairs(farmlandVoxels) do
-                  if not vars.AutoPlant then break end
-
-                  local aboveKey = voxel.X..","..(voxel.Y + 1)..","..voxel.Z
-                  if not occupiedVoxels[aboveKey] then
-                      task.spawn(function()
-                          pcall(function()
-                              PlantCrop:InvokeServer(Vector3.new(voxel.X, voxel.Y + 1, voxel.Z), vars.PlantSeed)
-                          end)
-                      end)
-
-                      occupiedVoxels[aboveKey] = true -- update cache langsung
-                      task.wait(0.05) -- batch kecil biar aman
-                  end
-              end
-
-              task.wait(vars.PlantDelay)
           end
       end)()
 
-      print("[Auto Plant] Sistem Aktif. Seed:", vars.PlantSeed)
+      print("[Auto Planter] Sistem aktif.")
   end
 }
