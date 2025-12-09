@@ -1,4 +1,4 @@
--- AutoPlant.lua (Fast & Optimized)
+-- AutoPlant.lua (Ultra Fast & Anti Lag)
 return {
   Execute = function(tab)
       local vars = _G.BotVars or {}
@@ -13,9 +13,12 @@ return {
       -- =========================
       -- UI GROUP
       -- =========================
-      local Group = MainTab:AddRightGroupbox("Auto Plant")
+      local Group = (MainTab.AddRightGroupbox and MainTab:AddRightGroupbox("Auto Plant"))
+          or MainTab:AddLeftGroupbox("Auto Plant")
 
-      -- DEFAULT SETTINGS
+      -- =========================
+      -- DEFAULT VARS
+      -- =========================
       vars.AutoPlant  = vars.AutoPlant or false
       vars.PlantDelay = vars.PlantDelay or 0.3
       vars.PlantSeed  = vars.PlantSeed or "Wheat Seeds"
@@ -36,7 +39,7 @@ return {
       -- =========================
       -- DROPDOWN Seed
       -- =========================
-      local SeedsList = {"Wheat Seeds", "Carrot Seeds", "Corn Seeds", "Cacao Seeds"} -- sesuaikan
+      local SeedsList = {"Wheat Seeds", "Carrot Seeds", "Corn Seeds", "Cacao Seeds"} -- sesuaikan dengan game
 
       task.defer(function()
           local dd = Group:AddDropdown("DropdownPlantSeed", {
@@ -45,6 +48,7 @@ return {
               Default = vars.PlantSeed,
               Callback = function(v)
                   vars.PlantSeed = v
+                  print("[Auto Plant] Seed berubah:", v)
               end
           })
           dd:SetValue(vars.PlantSeed)
@@ -69,54 +73,60 @@ return {
       -- =========================
       local ReplicatedStorage = game:GetService("ReplicatedStorage")
       local LoadedBlocks = workspace:WaitForChild("LoadedBlocks")
-
-      local PlantCrop = ReplicatedStorage
-          :WaitForChild("Relay")
-          :WaitForChild("Blocks")
-          :WaitForChild("PlantCrop")
-
-      -- Check block di atas farmland
-      local function isOccupied(voxel)
-          for _, b in ipairs(LoadedBlocks:GetChildren()) do
-              local v2 = b:GetAttribute("VoxelPosition")
-              if v2 and v2.X == voxel.X and v2.Y == voxel.Y and v2.Z == voxel.Z then
-                  return true
-              end
-          end
-          return false
-      end
+      local PlantCrop = ReplicatedStorage:WaitForChild("Relay"):WaitForChild("Blocks"):WaitForChild("PlantCrop")
 
       -- =========================
-      -- AUTO PLANT LOOP (FAST)
+      -- AUTO PLANT LOOP
       -- =========================
       coroutine.wrap(function()
-          while true do
-              if vars.AutoPlant then
-                  for _, block in ipairs(LoadedBlocks:GetChildren()) do
-                      if not vars.AutoPlant then break end
+          local farmlandVoxels = {}    -- cache posisi Farmland
+          local occupiedVoxels = {}    -- cache block di atas untuk cek sudah ditanam
 
+          while true do
+              if not vars.AutoPlant then
+                  repeat task.wait(0.5) until vars.AutoPlant
+              end
+
+              -- Update cache farmland
+              farmlandVoxels = {}
+              occupiedVoxels = {}
+
+              for _, block in ipairs(LoadedBlocks:GetChildren()) do
+                  local voxel = block:GetAttribute("VoxelPosition")
+                  if voxel then
+                      local key = voxel.X..","..voxel.Y..","..voxel.Z
+
+                      -- Farmland cache
                       if block.Name == "Farmland" then
-                          local voxel = block:GetAttribute("VoxelPosition")
-                          if voxel then
-                              local above = Vector3.new(voxel.X, voxel.Y + 1, voxel.Z)
-                              if not isOccupied(above) then
-                                  task.spawn(function()
-                                      pcall(function()
-                                          PlantCrop:InvokeServer(above, vars.PlantSeed)
-                                      end)
-                                  end)
-                                  task.wait(0.05) -- super cepat tapi aman
-                              end
-                          end
+                          farmlandVoxels[key] = voxel
+                      else
+                          -- semua block lain dianggap occupied
+                          occupiedVoxels[key] = true
                       end
                   end
-                  task.wait(vars.PlantDelay)
-              else
-                  repeat task.wait(0.1) until vars.AutoPlant
               end
+
+              -- Tanam batch
+              for key, voxel in pairs(farmlandVoxels) do
+                  if not vars.AutoPlant then break end
+
+                  local aboveKey = voxel.X..","..(voxel.Y + 1)..","..voxel.Z
+                  if not occupiedVoxels[aboveKey] then
+                      task.spawn(function()
+                          pcall(function()
+                              PlantCrop:InvokeServer(Vector3.new(voxel.X, voxel.Y + 1, voxel.Z), vars.PlantSeed)
+                          end)
+                      end)
+
+                      occupiedVoxels[aboveKey] = true -- update cache langsung
+                      task.wait(0.05) -- batch kecil biar aman
+                  end
+              end
+
+              task.wait(vars.PlantDelay)
           end
       end)()
 
-      print("[Auto Plant] Aktif! Seed:", vars.PlantSeed)
+      print("[Auto Plant] Sistem Aktif. Seed:", vars.PlantSeed)
   end
 }
