@@ -1,4 +1,4 @@
--- AutoPlanter.lua
+-- AutoPlanter.lua (one-by-one, batch delay)
 return {
   Execute = function(tab)
       local vars = _G.BotVars or {}
@@ -10,21 +10,12 @@ return {
           return
       end
 
-      -- =========================
-      -- UI GROUP
-      -- =========================
       local Group = MainTab:AddLeftGroupbox("Auto Planter Cart")
 
-      -- =========================
-      -- DEFAULT VARS
-      -- =========================
-      vars.AutoPlanter   = vars.AutoPlanter or false
-      vars.PlanterDelay  = vars.PlanterDelay or 0.3
+      vars.AutoPlanter  = vars.AutoPlanter or false
+      vars.PlanterDelay = vars.PlanterDelay or 0.3
       _G.BotVars = vars
 
-      -- =========================
-      -- TOGGLE
-      -- =========================
       Group:AddToggle("ToggleAutoPlanter", {
           Text = "Auto Planter",
           Default = vars.AutoPlanter,
@@ -34,18 +25,23 @@ return {
           end
       })
 
-      -- =========================
-      -- SERVICES
-      -- =========================
+      Group:AddSlider("SliderPlanterDelay", {
+          Text = "Delay Antar Batch",
+          Default = vars.PlanterDelay,
+          Min = 0,
+          Max = 5,
+          Rounding = 1,
+          Callback = function(v)
+              vars.PlanterDelay = v
+          end
+      })
+
       local ReplicatedStorage = game:GetService("ReplicatedStorage")
       local LoadedBlocks = workspace:WaitForChild("LoadedBlocks")
       local UsePlanterCart = ReplicatedStorage:WaitForChild("Relay")
           :WaitForChild("Blocks")
           :WaitForChild("UsePlanterCart")
 
-      -- =========================
-      -- CEK FARMLAND TERISI
-      -- =========================
       local function isOccupied(voxel)
           for _, block in ipairs(LoadedBlocks:GetChildren()) do
               local v2 = block:GetAttribute("VoxelPosition")
@@ -56,32 +52,32 @@ return {
           return false
       end
 
-      -- =========================
-      -- AUTO PLANT LOOP
-      -- =========================
       coroutine.wrap(function()
           while true do
               if vars.AutoPlanter then
-                  for _, block in ipairs(LoadedBlocks:GetChildren()) do
+                  local blocks = LoadedBlocks:GetChildren()
+                  for i, block in ipairs(blocks) do
                       if block.Name == "Farmland" then
                           local voxel = block:GetAttribute("VoxelPosition")
                           if voxel then
                               local above = Vector3.new(voxel.X, voxel.Y + 1, voxel.Z)
-
                               if not isOccupied(above) then
-                                  -- Spawn thread ringan untuk tiap voxel
                                   task.spawn(function()
-                                      pcall(function()
+                                      local success, err = pcall(function()
                                           UsePlanterCart:InvokeServer(above)
                                       end)
+                                      if success then
+                                          print("Planter Cart ke-", i, "berhasil")
+                                      else
+                                          warn("Gagal Planter Cart ke-", i, err)
+                                      end
                                   end)
-                                  -- delay mini antar voxel untuk kurangi lag
-                                  task.wait(0.05)
+                                  task.wait(0.1) -- delay antar block
                               end
                           end
                       end
                   end
-                  task.wait(vars.PlanterDelay)
+                  task.wait(vars.PlanterDelay) -- delay antar batch
               else
                   task.wait(0.05)
               end
