@@ -1,5 +1,5 @@
 -- Commands/Follow.lua
--- Admin-only follow system with bot spacing via Distance.lua
+-- Admin-only follow system with bot spacing and pair offsets
 
 return {
   Execute = function()
@@ -26,7 +26,7 @@ return {
 
       local humanoid
       local myHRP
-      local adminFollowDistance = 3 -- jarak untuk mengikuti Admin
+      local adminFollowDistance = 3 -- jarak mengikuti Admin
       local defaultBotFollowDistance = 2 -- jarak default antar bot
 
       -- Update references
@@ -61,21 +61,36 @@ return {
 
               local hrp = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
               if hrp then
-                  -- Tentukan jarak
                   local distance = defaultBotFollowDistance
 
+                  -- Admin jarak
                   if Admin:IsAdmin(targetPlayer) then
                       distance = adminFollowDistance
-                  elseif Distance:IsBot(LocalPlayer.UserId) and Distance:IsBot(targetPlayer.UserId) then
-                      local specialDistance = Distance:GetDistance(tostring(LocalPlayer.UserId), tostring(targetPlayer.UserId))
-                      if specialDistance then
-                          distance = specialDistance
-                      end
                   end
 
-                  -- Hitung posisi follow
+                  -- Pasangan bot jarak khusus
+                  local specialDistance = Distance:GetDistance(tostring(LocalPlayer.UserId), tostring(targetPlayer.UserId))
+                  if specialDistance then
+                      distance = specialDistance
+                  end
+
+                  -- HITUNG OFFSET agar bot tidak numpuk
+                  local offset = Vector3.new(0,0,0)
+                  local botIds = {}
+                  for id,_ in pairs(Distance.Bots) do
+                      table.insert(botIds, id)
+                  end
+                  table.sort(botIds) -- agar urutan konsisten
+
+                  local myIndex = table.find(botIds, tostring(LocalPlayer.UserId))
+                  if myIndex and #botIds > 1 then
+                      local side = ((myIndex % 2 == 0) and 1 or -1) -- kiri/kanan bergantian
+                      offset = hrp.CFrame.RightVector * side * distance
+                  end
+
+                  -- Hitung posisi target + offset
                   local direction = (hrp.Position - myHRP.Position).Unit
-                  local targetPosition = hrp.Position - direction * distance
+                  local targetPosition = hrp.Position - direction * distance + offset
 
                   humanoid:MoveTo(targetPosition)
               end
