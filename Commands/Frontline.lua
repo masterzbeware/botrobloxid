@@ -1,6 +1,5 @@
 -- Commands/Frontline.lua
 -- Admin-only frontline system with bots lined up in front of Admin in correct order
-
 return {
   Execute = function()
       local Players = game:GetService("Players")
@@ -26,8 +25,11 @@ return {
 
       local humanoid
       local myHRP
-      local adminFrontDistance = 3 -- jarak di depan Admin
+      local adminFrontDistance = 5 -- jarak di depan Admin
       local defaultBotFrontDistance = 2 -- jarak default antar bot
+
+      -- Flag untuk mengirim chat sekali
+      local hasChatted = false
 
       -- Update references
       local function updateCharacter()
@@ -43,9 +45,28 @@ return {
       local function stopPositioning()
           positioning = false
           targetPlayer = nil
+          hasChatted = false
           if followConnection then
               followConnection:Disconnect()
               followConnection = nil
+          end
+      end
+
+      -- Fungsi untuk mengirim chat
+      local function sendChat(message)
+          local success, err = pcall(function()
+              local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+              if channel then
+                  channel:SendAsync(message)
+              else
+                  game:GetService("ReplicatedStorage")
+                      .DefaultChatSystemChatEvents
+                      .SayMessageRequest
+                      :FireServer(message, "All")
+              end
+          end)
+          if not success then
+              warn("Gagal mengirim chat: "..tostring(err))
           end
       end
 
@@ -63,12 +84,10 @@ return {
               if hrp then
                   local distance = defaultBotFrontDistance
 
-                  -- Admin jarak
                   if Admin:IsAdmin(targetPlayer) then
                       distance = adminFrontDistance
                   end
 
-                  -- Pasangan bot jarak khusus
                   local specialDistance = Distance:GetDistance(tostring(LocalPlayer.UserId), tostring(targetPlayer.UserId))
                   if specialDistance then
                       distance = specialDistance
@@ -88,14 +107,19 @@ return {
                   local totalBots = #botOrder
                   local spacing = 3 -- jarak antar bot
 
-                  -- Bot di tengah lurus di depan admin
                   local middleIndex = math.ceil(totalBots / 2)
                   local horizontalOffset = (myIndex - middleIndex) * spacing
 
                   -- Posisi akhir
                   local targetPosition = hrp.Position
-                  targetPosition = targetPosition + hrp.CFrame.LookVector * adminFrontDistance -- maju ke depan
-                  targetPosition = targetPosition + hrp.CFrame.RightVector * horizontalOffset -- geser ke samping
+                  targetPosition = targetPosition + hrp.CFrame.LookVector * adminFrontDistance
+                  targetPosition = targetPosition + hrp.CFrame.RightVector * horizontalOffset
+
+                  -- Kirim chat sekali saat mulai bergerak
+                  if not hasChatted then
+                      sendChat("Siap, Laksanakan!")
+                      hasChatted = true
+                  end
 
                   humanoid:MoveTo(targetPosition)
               end
