@@ -1,10 +1,12 @@
 -- Commands/Diamond.lua
--- Admin-only diamond formation system with bots around Admin
+-- Admin-only follow system with bots in diamond formation around Admin
+
 return {
   Execute = function()
       local Players = game:GetService("Players")
       local RunService = game:GetService("RunService")
       local TextChatService = game:GetService("TextChatService")
+      local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
       local LocalPlayer = Players.LocalPlayer
       if not LocalPlayer then return end
@@ -19,18 +21,14 @@ return {
           "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Distance.lua"
       ))()
 
-      local positioning = false
+      local following = false
       local targetPlayer
       local followConnection
 
       local humanoid
       local myHRP
-      local defaultSpacing = 3 -- jarak antar bot
+      local defaultBotDistance = 3 -- jarak formasi
 
-      -- Flag untuk mengirim chat sekali
-      local hasChatted = false
-
-      -- Update references
       local function updateCharacter()
           local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
           humanoid = char:WaitForChild("Humanoid")
@@ -40,105 +38,75 @@ return {
       updateCharacter()
       LocalPlayer.CharacterAdded:Connect(updateCharacter)
 
-      -- Stop positioning
-      local function stopPositioning()
-          positioning = false
+      local function sendChat(msg)
+          local sent = false
+          if TextChatService and TextChatService.TextChannels then
+              local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+              if channel then
+                  pcall(function()
+                      channel:SendAsync(msg)
+                  end)
+                  sent = true
+              end
+          end
+          if not sent then
+              pcall(function()
+                  ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(msg, "All")
+              end)
+          end
+      end
+
+      local function stopFollow()
+          following = false
           targetPlayer = nil
-          hasChatted = false
           if followConnection then
               followConnection:Disconnect()
               followConnection = nil
           end
       end
 
-      -- Fungsi untuk mengirim chat
-      local function sendChat(message)
-          local success, err = pcall(function()
-              local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
-              if channel then
-                  channel:SendAsync(message)
-              else
-                  game:GetService("ReplicatedStorage")
-                      .DefaultChatSystemChatEvents
-                      :SayMessageRequest
-                      :FireServer(message, "All")
-              end
-          end)
-          if not success then
-              warn("Gagal mengirim chat: "..tostring(err))
-          end
-      end
-
-      -- Start positioning in diamond formation
-      local function startPositioning(player)
-          stopPositioning()
+      local function startFollow(player)
+          stopFollow()
           targetPlayer = player
-          positioning = true
+          following = true
+
+          sendChat("Siap, Laksanakan!")
 
           followConnection = RunService.Heartbeat:Connect(function()
-              if not positioning or not humanoid or not myHRP then return end
+              if not following or not humanoid or not myHRP then return end
               if not targetPlayer.Character then return end
 
               local hrp = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
               if hrp then
+                  -- Formasi diamond simetris
                   local botOrder = {
-                      "10191476366", -- Bot1
-                      "10191480511", -- Bot2
-                      "10191462654", -- Bot3
-                      "10190853828", -- Bot4
-                      "10191023081", -- Bot5
-                      "10191070611"  -- Bot6
+                      ["10191462654"] = Vector3.new(-defaultBotDistance, 0, defaultBotDistance),  -- Bot3 kiri depan
+                      ["10191476366"] = Vector3.new(0, 0, defaultBotDistance),                     -- Bot1 depan VIP
+                      ["10191480511"] = Vector3.new(defaultBotDistance, 0, defaultBotDistance),    -- Bot2 kanan depan
+                      ["10190853828"] = Vector3.new(-defaultBotDistance, 0, 0),                    -- Bot4 kiri VIP
+                      ["10191023081"] = Vector3.new(defaultBotDistance, 0, 0),                     -- Bot5 kanan VIP
+                      ["10191070611"] = Vector3.new(0, 0, -defaultBotDistance)                     -- Bot6 tepat belakang VIP
                   }
 
-                  -- Cari index bot secara manual
-                  local myIndex = 1
-                  for i, id in ipairs(botOrder) do
-                      if id == tostring(LocalPlayer.UserId) then
-                          myIndex = i
-                          break
-                      end
-                  end
-
-                  -- Diamond formation offsets
-                  local offsets = {
-                      [1] = Vector3.new(-defaultSpacing/2, 0, defaultSpacing),   -- F1
-                      [2] = Vector3.new(defaultSpacing/2, 0, defaultSpacing),    -- F2
-                      [3] = Vector3.new(-defaultSpacing, 0, 0),                  -- L1
-                      [4] = Vector3.new(defaultSpacing, 0, 0),                   -- R1
-                      [5] = Vector3.new(-defaultSpacing/2, 0, -defaultSpacing),  -- B1
-                      [6] = Vector3.new(defaultSpacing/2, 0, -defaultSpacing)    -- B2
-                  }
-
-                  local offset = offsets[myIndex] or Vector3.new(0,0,0)
-                  local targetPosition = hrp.Position 
-                      + hrp.CFrame.RightVector * offset.X
-                      + Vector3.new(0, offset.Y, 0)
-                      + hrp.CFrame.LookVector * offset.Z
-
-                  -- Kirim chat sekali saat mulai bergerak
-                  if not hasChatted then
-                      sendChat("Siap, Laksanakan!")
-                      hasChatted = true
-                  end
-
+                  local myOffset = botOrder[tostring(LocalPlayer.UserId)] or Vector3.new(0,0,-defaultBotDistance)
+                  local targetCFrame = hrp.CFrame
+                  local targetPosition = targetCFrame.Position + targetCFrame.RightVector * myOffset.X + targetCFrame.LookVector * myOffset.Z
                   humanoid:MoveTo(targetPosition)
               end
           end)
       end
 
-      -- Handle chat commands
       local function handleCommand(msg, sender)
           msg = msg:lower()
           if Admin:IsAdmin(sender) then
               if msg == "!diamond" then
-                  startPositioning(sender)
-              elseif msg == "!stop" or msg == "!undiamond" then
-                  stopPositioning()
+                  startFollow(sender)
+              elseif msg == "!stop" or msg == "!unfollow" then
+                  stopFollow()
               end
           end
       end
 
-      -- TextChatService listener
       if TextChatService and TextChatService.TextChannels then
           local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
           if channel then
@@ -152,7 +120,6 @@ return {
           end
       end
 
-      -- Fallback lama
       for _, player in ipairs(Players:GetPlayers()) do
           player.Chatted:Connect(function(msg)
               handleCommand(msg, player)
