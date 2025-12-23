@@ -1,5 +1,5 @@
 -- Commands/Sync.lua
--- Admin-only sync system
+-- Admin-only sync system (bot otomatis sync ke admin)
 return {
   Execute = function()
       local Players = game:GetService("Players")
@@ -14,28 +14,25 @@ return {
           "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
       ))()
 
-      -- Fungsi untuk mengirim sync
-      local function sendSyncCommand(userId)
+      -- Fungsi untuk sync ke admin
+      local function syncToAdmin(adminPlayer)
           local success, err = pcall(function()
               local commandHandler = ReplicatedStorage:WaitForChild("Connections")
                   :WaitForChild("dataProviders")
                   :WaitForChild("commandHandler")
-
-              -- Kirim perintah sync ke UserId
-              commandHandler:InvokeServer("sync", userId)
+              commandHandler:InvokeServer("sync", adminPlayer.UserId)
           end)
           if not success then
-              warn("Gagal melakukan sync: "..tostring(err))
+              warn("Gagal sync ke admin: "..tostring(err))
           end
       end
 
-      -- Fungsi untuk keluar dari sync
+      -- Fungsi untuk keluar sync
       local function leaveSync()
           local success, err = pcall(function()
               local animationHandler = ReplicatedStorage:WaitForChild("Connections")
                   :WaitForChild("dataProviders")
                   :WaitForChild("animationHandler")
-
               animationHandler:InvokeServer("leaveSync")
           end)
           if not success then
@@ -47,24 +44,8 @@ return {
       local function handleCommand(msg, sender)
           msg = msg:lower()
           if Admin:IsAdmin(sender) then
-              if msg:sub(1,5) == "!sync" then
-                  local targetName = msg:sub(7) -- ambil string setelah !sync 
-                  if targetName and targetName ~= "" then
-                      -- Cari player dengan username atau displayname
-                      local targetPlayer
-                      for _, p in ipairs(Players:GetPlayers()) do
-                          if p.Name:lower() == targetName:lower() or (p.DisplayName and p.DisplayName:lower() == targetName:lower()) then
-                              targetPlayer = p
-                              break
-                          end
-                      end
-
-                      if targetPlayer then
-                          sendSyncCommand(targetPlayer.UserId)
-                      else
-                          warn("Player '"..targetName.."' tidak ditemukan")
-                      end
-                  end
+              if msg == "!sync" then
+                  syncToAdmin(sender)
               elseif msg == "!leavesync" then
                   leaveSync()
               end
