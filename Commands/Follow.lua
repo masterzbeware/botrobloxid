@@ -1,5 +1,5 @@
 -- Commands/Follow.lua
--- Admin-only follow system
+-- Admin-only follow system with bot spacing
 
 return {
   Execute = function()
@@ -21,7 +21,8 @@ return {
 
       local humanoid
       local myHRP
-      local followDistance = 3 -- jarak 3 studs
+      local adminFollowDistance = 3 -- jarak untuk mengikuti Admin
+      local botFollowDistance = 2   -- jarak antar Bot
 
       local function updateCharacter()
           local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
@@ -52,22 +53,29 @@ return {
 
               local hrp = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
               if hrp then
-                  -- Hitung arah dan offset agar ada jarak
+                  -- Tentukan jarak: Admin = 3, Bot = 2
+                  local distance
+                  if Admin:IsAdmin(targetPlayer) then
+                      distance = adminFollowDistance
+                  else
+                      distance = botFollowDistance
+                  end
+
                   local direction = (hrp.Position - myHRP.Position).Unit
-                  local targetPosition = hrp.Position - direction * followDistance
+                  local targetPosition = hrp.Position - direction * distance
                   humanoid:MoveTo(targetPosition)
               end
           end)
       end
 
       local function handleCommand(msg, sender)
-          if not Admin:IsAdmin(sender) then return end
-
           msg = msg:lower()
-          if msg == "!follow" then
-              startFollow(sender)
-          elseif msg == "!stop" or msg == "!unfollow" then
-              stopFollow()
+          if Admin:IsAdmin(sender) then
+              if msg == "!follow" then
+                  startFollow(sender)
+              elseif msg == "!stop" or msg == "!unfollow" then
+                  stopFollow()
+              end
           end
       end
 
