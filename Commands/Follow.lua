@@ -1,25 +1,39 @@
--- Follow.lua
--- Command !follow hanya bisa dijalankan oleh UserId tertentu
+-- Commands/Follow.lua
+-- Admin-only follow system
 
 return {
   Execute = function()
       local Players = game:GetService("Players")
       local RunService = game:GetService("RunService")
+      local TextChatService = game:GetService("TextChatService")
 
       local LocalPlayer = Players.LocalPlayer
       if not LocalPlayer then return end
 
-      -- 🔐 USERID YANG DIIZINKAN
-      local ALLOWED_USERID = 10190678566
+      -- 🔗 LOAD ADMIN MODULE (DARI FOLDER Administrator)
+      local Admin = loadstring(game:HttpGet(
+          "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
+      ))()
 
       local following = false
-      local targetPlayer = nil
+      local targetPlayer
       local followConnection
+
+      local humanoid
+      local myHRP
+
+      local function updateCharacter()
+          local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+          humanoid = char:WaitForChild("Humanoid")
+          myHRP = char:WaitForChild("HumanoidRootPart")
+      end
+
+      updateCharacter()
+      LocalPlayer.CharacterAdded:Connect(updateCharacter)
 
       local function stopFollow()
           following = false
           targetPlayer = nil
-
           if followConnection then
               followConnection:Disconnect()
               followConnection = nil
@@ -28,51 +42,55 @@ return {
 
       local function startFollow(player)
           stopFollow()
-
           targetPlayer = player
           following = true
 
           followConnection = RunService.Heartbeat:Connect(function()
-              if not following then return end
-              if not LocalPlayer.Character or not targetPlayer.Character then return end
+              if not following or not humanoid or not myHRP then return end
+              if not targetPlayer.Character then return end
 
-              local myHRP = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-              local targetHRP = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
-              local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-
-              if myHRP and targetHRP and humanoid then
-                  humanoid:MoveTo(targetHRP.Position)
+              local hrp = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+              if hrp then
+                  humanoid:MoveTo(hrp.Position)
               end
           end)
       end
 
-      -- 🔎 Validasi command
-      local function handleChat(player, msg)
-          -- ❌ bukan user yang diizinkan
-          if player.UserId ~= ALLOWED_USERID then
-              return
-          end
+      local function handleCommand(msg, sender)
+          if not Admin:IsAdmin(sender) then return end
 
           msg = msg:lower()
-
           if msg == "!follow" then
-              startFollow(player)
-          elseif msg == "!unfollow" then
+              startFollow(sender)
+          elseif msg == "!stop" or msg == "!unfollow" then
               stopFollow()
           end
       end
 
-      -- Player existing
+      -- TextChatService (baru)
+      if TextChatService and TextChatService.TextChannels then
+          local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+          if channel then
+              channel.OnIncomingMessage = function(message)
+                  local userId = message.TextSource and message.TextSource.UserId
+                  local sender = userId and Players:GetPlayerByUserId(userId)
+                  if sender then
+                      handleCommand(message.Text, sender)
+                  end
+              end
+          end
+      end
+
+      -- Fallback lama
       for _, player in ipairs(Players:GetPlayers()) do
           player.Chatted:Connect(function(msg)
-              handleChat(player, msg)
+              handleCommand(msg, player)
           end)
       end
 
-      -- Player baru join
       Players.PlayerAdded:Connect(function(player)
           player.Chatted:Connect(function(msg)
-              handleChat(player, msg)
+              handleCommand(msg, player)
           end)
       end)
   end
