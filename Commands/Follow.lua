@@ -76,7 +76,7 @@ return {
           following = true
 
           -- 🔹 Chat sekali saat mulai mengikuti
-          sendChat("Siap, Laksanakan!")
+          sendChat("Yes, Sir!")
 
           followConnection = RunService.Heartbeat:Connect(function()
               if not following or not humanoid or not myHRP then return end

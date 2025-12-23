@@ -117,7 +117,7 @@ return {
 
                   -- Kirim chat sekali saat mulai bergerak
                   if not hasChatted then
-                      sendChat("Siap, Laksanakan!")
+                      sendChat("Yes, Sir!")
                       hasChatted = true
                   end
 
