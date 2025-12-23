@@ -1,5 +1,5 @@
 -- Follow.lua
--- Ketik !follow untuk diikuti bot
+-- Command !follow hanya bisa dijalankan oleh UserId tertentu
 
 return {
   Execute = function()
@@ -9,6 +9,9 @@ return {
       local LocalPlayer = Players.LocalPlayer
       if not LocalPlayer then return end
 
+      -- 🔐 USERID YANG DIIZINKAN
+      local ALLOWED_USERID = 10190678566
+
       local following = false
       local targetPlayer = nil
       local followConnection
@@ -16,6 +19,7 @@ return {
       local function stopFollow()
           following = false
           targetPlayer = nil
+
           if followConnection then
               followConnection:Disconnect()
               followConnection = nil
@@ -42,25 +46,33 @@ return {
           end)
       end
 
-      -- Listen chat player lain
+      -- 🔎 Validasi command
+      local function handleChat(player, msg)
+          -- ❌ bukan user yang diizinkan
+          if player.UserId ~= ALLOWED_USERID then
+              return
+          end
+
+          msg = msg:lower()
+
+          if msg == "!follow" then
+              startFollow(player)
+          elseif msg == "!unfollow" then
+              stopFollow()
+          end
+      end
+
+      -- Player existing
       for _, player in ipairs(Players:GetPlayers()) do
           player.Chatted:Connect(function(msg)
-              if msg:lower() == "!follow" then
-                  startFollow(player)
-              elseif msg:lower() == "!unfollow" then
-                  stopFollow()
-              end
+              handleChat(player, msg)
           end)
       end
 
-      -- Player join baru
+      -- Player baru join
       Players.PlayerAdded:Connect(function(player)
           player.Chatted:Connect(function(msg)
-              if msg:lower() == "!follow" then
-                  startFollow(player)
-              elseif msg:lower() == "!unfollow" then
-                  stopFollow()
-              end
+              handleChat(player, msg)
           end)
       end)
   end
