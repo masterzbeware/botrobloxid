@@ -1,12 +1,24 @@
 return {
     Execute = function(tab)
         local vars = _G.BotVars or {}
-        local Tabs = vars.Tabs or {}
-        local MainTab = tab or Tabs.Main
+        _G.BotVars = vars
 
-        if not MainTab then
-            warn("[ServerInfo] Tab tidak ditemukan!")
+        local Library = vars.Library
+        local Window = vars.MainWindow
+
+        if not Library or not Window then
+            warn("[ServerInfo] Library / Window belum siap")
             return
+        end
+
+        vars.Tabs = vars.Tabs or {}
+
+        local MainTab = tab
+        if not MainTab then
+            if not vars.Tabs.Main then
+                vars.Tabs.Main = Window:AddTab("Main")
+            end
+            MainTab = vars.Tabs.Main
         end
 
         local Group = (MainTab.AddRightGroupbox and MainTab:AddRightGroupbox("Server Info"))
@@ -26,11 +38,9 @@ return {
 
         task.spawn(function()
             while true do
-                local playerCount = Players.NumPlayers
-                local uptime = workspace:GetServerTimeNow()
                 ServerInfoLabel:SetText(
-                    "Player di Server : " .. playerCount ..
-                    "\nServer Aktif : " .. formatTime(uptime)
+                    "Player di Server : " .. Players.NumPlayers ..
+                    "\nServer Aktif : " .. formatTime(workspace:GetServerTimeNow())
                 )
                 task.wait(1)
             end
