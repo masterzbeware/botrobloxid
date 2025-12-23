@@ -25,7 +25,7 @@ return {
 
       local humanoid
       local myHRP
-      local adminFrontDistance = 5 -- jarak di depan Admin
+      local adminFrontDistance = 3 -- jarak di depan Admin
       local defaultBotFrontDistance = 2 -- jarak default antar bot
 
       -- Flag untuk mengirim chat sekali
