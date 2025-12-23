@@ -81,16 +81,23 @@ return {
 
               local hrp = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
               if hrp then
-                local botOrder = {
-                  "10191476366", -- Bot1
-                  "10191480511", -- Bot2
-                  "10191462654", -- Bot3
-                  "10190853828", -- Bot4
-                  "10191023081", -- Bot5
-                  "10191070611", -- Bot6
-              }
+                  local botOrder = {
+                      "10191476366", -- Bot1
+                      "10191480511", -- Bot2
+                      "10191462654", -- Bot3
+                      "10190853828", -- Bot4
+                      "10191023081", -- Bot5
+                      "10191070611"  -- Bot6
+                  }
 
-                  local myIndex = table.find(botOrder, tostring(LocalPlayer.UserId)) or 1
+                  -- Cari index bot secara manual
+                  local myIndex = 1
+                  for i, id in ipairs(botOrder) do
+                      if id == tostring(LocalPlayer.UserId) then
+                          myIndex = i
+                          break
+                      end
+                  end
 
                   -- Diamond formation offsets
                   local offsets = {
@@ -99,7 +106,7 @@ return {
                       [3] = Vector3.new(-defaultSpacing, 0, 0),                  -- L1
                       [4] = Vector3.new(defaultSpacing, 0, 0),                   -- R1
                       [5] = Vector3.new(-defaultSpacing/2, 0, -defaultSpacing),  -- B1
-                      [6] = Vector3.new(defaultSpacing/2, 0, -defaultSpacing),   -- B2
+                      [6] = Vector3.new(defaultSpacing/2, 0, -defaultSpacing)    -- B2
                   }
 
                   local offset = offsets[myIndex] or Vector3.new(0,0,0)
