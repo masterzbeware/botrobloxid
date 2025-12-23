@@ -87,13 +87,17 @@ return {
                   local myIndex = table.find(botOrder, tostring(LocalPlayer.UserId)) or 1
                   local offsetDistance = distance * myIndex
 
-                  -- Posisi target + offset di depan Admin
+                  -- Hitung posisi target
                   local targetPosition
                   if Admin:IsAdmin(targetPlayer) then
                       targetPosition = hrp.Position + hrp.CFrame.LookVector * offsetDistance
                   else
-                      -- Jika bot mengikuti bot lain, gunakan jarak default
-                      targetPosition = hrp.Position + (myHRP.Position - hrp.Position).Unit * distance
+                      -- Jika bot mengikuti bot lain, gunakan arah dari bot ke target
+                      local direction = myHRP.Position - hrp.Position
+                      if direction.Magnitude == 0 then
+                          direction = Vector3.new(0, 0, 1) -- fallback
+                      end
+                      targetPosition = hrp.Position + (direction.Unit * distance)
                   end
 
                   humanoid:MoveTo(targetPosition)
@@ -138,6 +142,6 @@ return {
           player.Chatted:Connect(function(msg)
               handleCommand(msg, player)
           end)
-      end
+      end)
   end
 }
