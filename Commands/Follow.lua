@@ -21,6 +21,7 @@ return {
 
       local humanoid
       local myHRP
+      local followDistance = 3 -- jarak 3 studs
 
       local function updateCharacter()
           local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
@@ -51,7 +52,10 @@ return {
 
               local hrp = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
               if hrp then
-                  humanoid:MoveTo(hrp.Position)
+                  -- Hitung arah dan offset agar ada jarak
+                  local direction = (hrp.Position - myHRP.Position).Unit
+                  local targetPosition = hrp.Position - direction * followDistance
+                  humanoid:MoveTo(targetPosition)
               end
           end)
       end
