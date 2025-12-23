@@ -1,10 +1,9 @@
 -- Commands/PushUp.lua
--- Bot otomatis melakukan animasi Push Up ketika admin mengetik !pushup
+-- Bot otomatis melakukan animasi Push Up ketika admin mengetik !pushup (executor)
 return {
     Execute = function()
         local Players = game:GetService("Players")
         local ReplicatedStorage = game:GetService("ReplicatedStorage")
-        local TextChatService = game:GetService("TextChatService")
 
         local LocalPlayer = Players.LocalPlayer
         if not LocalPlayer then return end
@@ -15,11 +14,11 @@ return {
         ))()
 
         local function playPushUpAnimation()
-            print("[DEBUG] Mencoba memainkan animasi Push Up")
+            print("[DEBUG] Memainkan animasi Push Up")
             local success, err = pcall(function()
-                local connections = ReplicatedStorage:WaitForChild("Connections")
-                local dataProviders = connections:WaitForChild("dataProviders")
-                local animationHandler = dataProviders:WaitForChild("animationHandler")
+                local animationHandler = ReplicatedStorage:WaitForChild("Connections")
+                    :WaitForChild("dataProviders")
+                    :WaitForChild("animationHandler")
                 animationHandler:InvokeServer("playAnimation", "Push Up")
             end)
             if success then
@@ -29,32 +28,21 @@ return {
             end
         end
 
+        -- Handle chat command
         local function handleCommand(msg, sender)
+            print("[DEBUG] Pesan chat diterima:", msg, "dari:", sender.Name, "UserId:", sender.UserId)
+            if not Admin:IsAdmin(sender) then 
+                print("[DEBUG] Player bukan admin, abaikan command:", sender.Name)
+                return 
+            end
             msg = msg:lower()
-            local isAdmin = Admin:IsAdmin(sender)
-            print("[DEBUG] Player:", sender.Name, "UserId:", sender.UserId, "IsAdmin:", tostring(isAdmin), "Command:", msg)
-            if not isAdmin then return end
-
             if msg == "!pushup" then
+                print("[DEBUG] Command !pushup diterima dari admin:", sender.Name)
                 playPushUpAnimation()
             end
         end
 
-        -- TextChatService listener
-        if TextChatService and TextChatService.TextChannels then
-            local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
-            if channel then
-                channel.OnIncomingMessage = function(message)
-                    local userId = message.TextSource and message.TextSource.UserId
-                    local sender = userId and Players:GetPlayerByUserId(userId)
-                    if sender then
-                        handleCommand(message.Text, sender)
-                    end
-                end
-            end
-        end
-
-        -- Fallback lama
+        -- Fallback lama pakai Chatted (stabil di executor)
         for _, player in ipairs(Players:GetPlayers()) do
             player.Chatted:Connect(function(msg)
                 handleCommand(msg, player)
