@@ -1,51 +1,64 @@
 return {
-    Execute = function(tab)
+    Execute = function()
         local vars = _G.BotVars or {}
         _G.BotVars = vars
 
-        local Library = vars.Library
         local Window = vars.MainWindow
-
-        if not Library or not Window then
-            warn("[ServerInfo] Library / Window belum siap")
-            return
-        end
+        if not Window then return end
 
         vars.Tabs = vars.Tabs or {}
-
-        local MainTab = tab
-        if not MainTab then
-            if not vars.Tabs.Main then
-                vars.Tabs.Main = Window:AddTab("Main")
-            end
-            MainTab = vars.Tabs.Main
+        if not vars.Tabs.Main then
+            vars.Tabs.Main = Window:AddTab("Home")
         end
 
-        local Group = (MainTab.AddRightGroupbox and MainTab:AddRightGroupbox("Server Info"))
-            or MainTab:AddLeftGroupbox("Server Info")
+        local Tab = vars.Tabs.Main
 
-        local ServerInfoLabel = Group:AddLabel("Loading...")
+        local LeftGroup = (Tab.AddLeftGroupbox and Tab:AddLeftGroupbox("Server"))
+            or Tab:AddRightGroupbox("Server")
+
+        local RightGroup = (Tab.AddRightGroupbox and Tab:AddRightGroupbox("Status"))
+            or Tab:AddLeftGroupbox("Status")
+
+        local PlayersBox = LeftGroup:AddLabel(
+            "Players\n\n0 / 0"
+        )
+
+        local TimeBox = LeftGroup:AddLabel(
+            "Server Time\n\n00h:00m:00s"
+        )
+
+        local InfoBox = RightGroup:AddLabel(
+            "Session\n\nConnected"
+        )
 
         local Players = game:GetService("Players")
 
-        local function formatTime(seconds)
-            seconds = math.floor(seconds)
-            local h = math.floor(seconds / 3600)
-            local m = math.floor((seconds % 3600) / 60)
-            local s = seconds % 60
-            return string.format("%02d:%02d:%02d", h, m, s)
+        local function formatTime(sec)
+            sec = math.floor(sec)
+            local h = math.floor(sec / 3600)
+            local m = math.floor((sec % 3600) / 60)
+            local s = sec % 60
+            return string.format("%02dh:%02dm:%02ds", h, m, s)
         end
 
         task.spawn(function()
             while true do
-                ServerInfoLabel:SetText(
-                    "Player di Server : " .. Players.NumPlayers ..
-                    "\nServer Aktif : " .. formatTime(workspace:GetServerTimeNow())
+                PlayersBox:SetText(
+                    "Players\n\n" ..
+                    Players.NumPlayers .. " / " .. Players.MaxPlayers
                 )
+
+                TimeBox:SetText(
+                    "Server Time\n\n" ..
+                    formatTime(workspace:GetServerTimeNow())
+                )
+
+                InfoBox:SetText(
+                    "Session\n\nOnline"
+                )
+
                 task.wait(1)
             end
         end)
-
-        print("[ServerInfo] Loaded ✔")
     end
 }
