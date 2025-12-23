@@ -103,6 +103,8 @@ return {
                       "10191070611", -- Bot6
                       "10191489151", -- Bot7
                       "10191571531", -- Bot8
+                      "10192469244", -- Bot9
+                      "10192474291", -- Bot10
                   }
 
                   local myIndex = table.find(botOrder, tostring(LocalPlayer.UserId)) or 1
