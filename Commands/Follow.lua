@@ -1,5 +1,5 @@
 -- Commands/Follow.lua
--- Admin-only follow system with bots lined up behind Admin
+-- Admin-only follow system with bots lined up behind Admin in correct order
 
 return {
   Execute = function()
@@ -74,15 +74,18 @@ return {
                       distance = specialDistance
                   end
 
-                  -- HITUNG OFFSET BARISAN DI BELAKANG ADMIN
-                  local botIds = {}
-                  for id,_ in pairs(Distance.Bots) do
-                      table.insert(botIds, id)
-                  end
-                  table.sort(botIds) -- urutan konsisten
+                  -- HITUNG OFFSET BARISAN DI BELAKANG ADMIN SESUAI URUTAN
+                  local botOrder = {
+                      "10191476366", -- Bot1
+                      "10191480511", -- Bot2
+                      "10191462654", -- Bot3
+                      "10190853828", -- Bot4
+                      "10191023081", -- Bot5
+                      "10191070611", -- Bot6
+                  }
 
-                  local myIndex = table.find(botIds, tostring(LocalPlayer.UserId)) or 1
-                  local offsetDistance = distance * myIndex -- jarak bertahap
+                  local myIndex = table.find(botOrder, tostring(LocalPlayer.UserId)) or 1
+                  local offsetDistance = distance * myIndex
 
                   -- Posisi target + offset di belakang Admin
                   local targetPosition
