@@ -74,7 +74,7 @@ return {
                       distance = specialDistance
                   end
 
-                  -- HITUNG OFFSET BARISAN DI DEPAN ADMIN SESUAI URUTAN
+                  -- HITUNG POSISI BARISAN DI DEPAN ADMIN
                   local botOrder = {
                       "10191476366", -- Bot1
                       "10191480511", -- Bot2
@@ -85,20 +85,17 @@ return {
                   }
 
                   local myIndex = table.find(botOrder, tostring(LocalPlayer.UserId)) or 1
-                  local offsetDistance = distance * myIndex
+                  local totalBots = #botOrder
+                  local spacing = 3 -- jarak antar bot
 
-                  -- Hitung posisi target
-                  local targetPosition
-                  if Admin:IsAdmin(targetPlayer) then
-                      targetPosition = hrp.Position + hrp.CFrame.LookVector * offsetDistance
-                  else
-                      -- Jika bot mengikuti bot lain, gunakan arah dari bot ke target
-                      local direction = myHRP.Position - hrp.Position
-                      if direction.Magnitude == 0 then
-                          direction = Vector3.new(0, 0, 1) -- fallback
-                      end
-                      targetPosition = hrp.Position + (direction.Unit * distance)
-                  end
+                  -- Bot di tengah lurus di depan admin
+                  local middleIndex = math.ceil(totalBots / 2)
+                  local horizontalOffset = (myIndex - middleIndex) * spacing
+
+                  -- Posisi akhir
+                  local targetPosition = hrp.Position
+                  targetPosition = targetPosition + hrp.CFrame.LookVector * adminFrontDistance -- maju ke depan
+                  targetPosition = targetPosition + hrp.CFrame.RightVector * horizontalOffset -- geser ke samping
 
                   humanoid:MoveTo(targetPosition)
               end
