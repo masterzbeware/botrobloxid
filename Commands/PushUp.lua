@@ -15,11 +15,11 @@ return {
         ))()
 
         local function playPushUpAnimation()
-            print("[DEBUG] Memainkan animasi Push Up")
+            print("[DEBUG] Mencoba memainkan animasi Push Up")
             local success, err = pcall(function()
-                local animationHandler = ReplicatedStorage:WaitForChild("Connections")
-                    :WaitForChild("dataProviders")
-                    :WaitForChild("animationHandler")
+                local connections = ReplicatedStorage:WaitForChild("Connections")
+                local dataProviders = connections:WaitForChild("dataProviders")
+                local animationHandler = dataProviders:WaitForChild("animationHandler")
                 animationHandler:InvokeServer("playAnimation", "Push Up")
             end)
             if success then
@@ -29,13 +29,12 @@ return {
             end
         end
 
-        -- Handle chat commands dari admin
         local function handleCommand(msg, sender)
-            if not Admin:IsAdmin(sender) then 
-                print("[DEBUG] Player bukan admin, abaikan command:", sender.Name)
-                return 
-            end
             msg = msg:lower()
+            local isAdmin = Admin:IsAdmin(sender)
+            print("[DEBUG] Player:", sender.Name, "UserId:", sender.UserId, "IsAdmin:", tostring(isAdmin), "Command:", msg)
+            if not isAdmin then return end
+
             if msg == "!pushup" then
                 playPushUpAnimation()
             end
@@ -49,7 +48,6 @@ return {
                     local userId = message.TextSource and message.TextSource.UserId
                     local sender = userId and Players:GetPlayerByUserId(userId)
                     if sender then
-                        print("[DEBUG] Pesan diterima:", message.Text, "dari:", sender.Name)
                         handleCommand(message.Text, sender)
                     end
                 end
@@ -59,14 +57,12 @@ return {
         -- Fallback lama
         for _, player in ipairs(Players:GetPlayers()) do
             player.Chatted:Connect(function(msg)
-                print("[DEBUG] Pesan chat lama diterima:", msg, "dari:", player.Name)
                 handleCommand(msg, player)
             end)
         end
 
         Players.PlayerAdded:Connect(function(player)
             player.Chatted:Connect(function(msg)
-                print("[DEBUG] Player baru chat diterima:", msg, "dari:", player.Name)
                 handleCommand(msg, player)
             end)
         end)
