@@ -50,23 +50,14 @@ for _, fileName in ipairs(commandFiles) do
     end
 end
 
-local windowTabModule = _G.BotVars.Modules.windowtab
-if windowTabModule and type(windowTabModule.Execute) == "function" then
-    windowTabModule.Execute()
-end
-
-task.wait(1)
+task.wait(0.5)
 
 local function jalankan(nama)
     local module = _G.BotVars.Modules[nama]
     if module and type(module.Execute) == "function" then
-        if _G.BotVars.Tabs and _G.BotVars.Tabs.Main then
-            module.Execute(_G.BotVars.Tabs.Main)
-        else
-            warn("[Bot.lua] Tabs.Main belum siap")
-        end
+        module.Execute()
     else
-        warn("[Bot.lua] Modul", nama, "tidak ditemukan")
+        warn("[Bot.lua] Modul", nama, "tidak ditemukan / tidak valid")
     end
 end
 
