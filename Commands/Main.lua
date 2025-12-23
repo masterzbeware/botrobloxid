@@ -13,48 +13,47 @@ return {
 
         local Tab = vars.Tabs.Main
 
-        local LeftGroup = (Tab.AddLeftGroupbox and Tab:AddLeftGroupbox("Server"))
+        -- Groupbox kiri & kanan (mirip Ronix)
+        local ServerGroup = (Tab.AddLeftGroupbox and Tab:AddLeftGroupbox("Server"))
             or Tab:AddRightGroupbox("Server")
 
-        local RightGroup = (Tab.AddRightGroupbox and Tab:AddRightGroupbox("Status"))
+        local StatusGroup = (Tab.AddRightGroupbox and Tab:AddRightGroupbox("Status"))
             or Tab:AddLeftGroupbox("Status")
 
-        local PlayersBox = LeftGroup:AddLabel(
-            "Players\n\n0 / 0"
-        )
-
-        local TimeBox = LeftGroup:AddLabel(
-            "Server Time\n\n00h:00m:00s"
-        )
-
-        local InfoBox = RightGroup:AddLabel(
-            "Session\n\nConnected"
-        )
+        -- Label ala RonixHub
+        local PlayersLabel = ServerGroup:AddLabel("Players\n0")
+        local TimeLabel = ServerGroup:AddLabel("Server Time\n0h:00m:00s")
+        local StatusLabel = StatusGroup:AddLabel("Session\nOffline")
 
         local Players = game:GetService("Players")
+        local startTime = os.clock()
 
-        local function formatTime(sec)
+        -- Format waktu seperti RonixHub
+        local function formatUptime(sec)
             sec = math.floor(sec)
             local h = math.floor(sec / 3600)
             local m = math.floor((sec % 3600) / 60)
             local s = sec % 60
-            return string.format("%02dh:%02dm:%02ds", h, m, s)
+            return string.format("%dh:%02dm:%02ds", h, m, s)
         end
 
         task.spawn(function()
             while true do
-                PlayersBox:SetText(
-                    "Players\n\n" ..
+                -- Players
+                PlayersLabel:SetText(
+                    "Players\n" ..
                     Players.NumPlayers .. " / " .. Players.MaxPlayers
                 )
 
-                TimeBox:SetText(
-                    "Server Time\n\n" ..
-                    formatTime(workspace:GetServerTimeNow())
+                -- Server Time / Uptime
+                TimeLabel:SetText(
+                    "Server Time\n" ..
+                    formatUptime(os.clock() - startTime)
                 )
 
-                InfoBox:SetText(
-                    "Session\n\nOnline"
+                -- Status
+                StatusLabel:SetText(
+                    "Session\nOnline"
                 )
 
                 task.wait(1)
