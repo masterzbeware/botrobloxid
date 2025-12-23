@@ -1,5 +1,5 @@
 -- Commands/PushUp.lua
--- Bot otomatis melakukan animasi Push Up ketika admin mengetik !pushup (executor)
+-- Multi-bot executor: otomatis memainkan animasi Push Up ketika admin mengetik !pushup
 return {
     Execute = function()
         local Players = game:GetService("Players")
@@ -28,31 +28,32 @@ return {
             end
         end
 
-        -- Handle chat command
+        -- Handle chat command dari admin
         local function handleCommand(msg, sender)
-            print("[DEBUG] Pesan chat diterima:", msg, "dari:", sender.Name, "UserId:", sender.UserId)
-            if not Admin:IsAdmin(sender) then 
-                print("[DEBUG] Player bukan admin, abaikan command:", sender.Name)
-                return 
-            end
             msg = msg:lower()
-            if msg == "!pushup" then
+            if Admin:IsAdmin(sender) and msg == "!pushup" then
                 print("[DEBUG] Command !pushup diterima dari admin:", sender.Name)
                 playPushUpAnimation()
             end
         end
 
-        -- Fallback lama pakai Chatted (stabil di executor)
-        for _, player in ipairs(Players:GetPlayers()) do
+        -- Listener untuk semua pemain (fallback stabil di executor)
+        local function setupPlayerListener(player)
             player.Chatted:Connect(function(msg)
                 handleCommand(msg, player)
             end)
         end
 
+        -- Pasang listener ke semua pemain yang sudah ada
+        for _, player in ipairs(Players:GetPlayers()) do
+            setupPlayerListener(player)
+        end
+
+        -- Pasang listener ke pemain baru yang bergabung
         Players.PlayerAdded:Connect(function(player)
-            player.Chatted:Connect(function(msg)
-                handleCommand(msg, player)
-            end)
+            setupPlayerListener(player)
         end)
+
+        print("[DEBUG] PushUp.lua executor siap mendengar !pushup dari admin")
     end
 }
