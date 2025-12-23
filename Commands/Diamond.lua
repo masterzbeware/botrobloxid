@@ -1,5 +1,5 @@
 -- Commands/Diamond.lua
--- Admin-only follow system with bots in diamond formation around Admin
+-- Admin-only follow system with bots forming a Diamond formation behind Admin
 
 return {
   Execute = function()
@@ -27,8 +27,10 @@ return {
 
       local humanoid
       local myHRP
-      local defaultBotDistance = 3 -- jarak formasi
+      local adminFollowDistance = 3 -- jarak mengikuti Admin
+      local defaultBotFollowDistance = 2 -- jarak default antar bot
 
+      -- Update references
       local function updateCharacter()
           local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
           humanoid = char:WaitForChild("Humanoid")
@@ -38,6 +40,7 @@ return {
       updateCharacter()
       LocalPlayer.CharacterAdded:Connect(updateCharacter)
 
+      -- Fungsi kirim chat satu kali
       local function sendChat(msg)
           local sent = false
           if TextChatService and TextChatService.TextChannels then
@@ -56,6 +59,7 @@ return {
           end
       end
 
+      -- Stop following
       local function stopFollow()
           following = false
           targetPlayer = nil
@@ -65,12 +69,32 @@ return {
           end
       end
 
+      -- Diamond Formation offsets
+      local function getDiamondOffset(index)
+          -- Diamond pattern:
+          --      2
+          --    1   3
+          --  0       4
+          --       5
+          local distance = defaultBotFollowDistance
+          local offsets = {
+              Vector3.new(0, 0, 2),
+              Vector3.new(-1, 0, 1),
+              Vector3.new(1, 0, 1),
+              Vector3.new(-2, 0, 0),
+              Vector3.new(2, 0, 0),
+              Vector3.new(0, 0, -1),
+          }
+          return offsets[index] or Vector3.new(0,0,0)
+      end
+
+      -- Start following target in Diamond
       local function startFollow(player)
           stopFollow()
           targetPlayer = player
           following = true
 
-          sendChat("Siap, Laksanakan!")
+          sendChat("Siap, formasi Diamond!")
 
           followConnection = RunService.Heartbeat:Connect(function()
               if not following or not humanoid or not myHRP then return end
@@ -78,35 +102,54 @@ return {
 
               local hrp = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
               if hrp then
-                  -- Formasi diamond simetris
+                  local distance = defaultBotFollowDistance
+
+                  -- Admin jarak
+                  if Admin:IsAdmin(targetPlayer) then
+                      distance = adminFollowDistance
+                  end
+
+                  -- Pasangan bot jarak khusus
+                  local specialDistance = Distance:GetDistance(tostring(LocalPlayer.UserId), tostring(targetPlayer.UserId))
+                  if specialDistance then
+                      distance = specialDistance
+                  end
+
+                  -- Bot order
                   local botOrder = {
-                      ["10191462654"] = Vector3.new(-defaultBotDistance, 0, defaultBotDistance),  -- Bot3 kiri depan
-                      ["10191476366"] = Vector3.new(0, 0, defaultBotDistance),                     -- Bot1 depan VIP
-                      ["10191480511"] = Vector3.new(defaultBotDistance, 0, defaultBotDistance),    -- Bot2 kanan depan
-                      ["10190853828"] = Vector3.new(-defaultBotDistance, 0, 0),                    -- Bot4 kiri VIP
-                      ["10191023081"] = Vector3.new(defaultBotDistance, 0, 0),                     -- Bot5 kanan VIP
-                      ["10191070611"] = Vector3.new(0, 0, -defaultBotDistance)                     -- Bot6 tepat belakang VIP
+                      "10191476366", -- Bot1
+                      "10191480511", -- Bot2
+                      "10191462654", -- Bot3
+                      "10190853828", -- Bot4
+                      "10191023081", -- Bot5
+                      "10191070611", -- Bot6
                   }
 
-                  local myOffset = botOrder[tostring(LocalPlayer.UserId)] or Vector3.new(0,0,-defaultBotDistance)
-                  local targetCFrame = hrp.CFrame
-                  local targetPosition = targetCFrame.Position + targetCFrame.RightVector * myOffset.X + targetCFrame.LookVector * myOffset.Z
+                  local myIndex = table.find(botOrder, tostring(LocalPlayer.UserId)) or 1
+                  local offset = getDiamondOffset(myIndex)
+
+                  -- Rotate offset sesuai arah Admin
+                  local cf = hrp.CFrame
+                  local targetPosition = hrp.Position + cf.RightVector * offset.X + cf.UpVector * offset.Y - cf.LookVector * offset.Z
+
                   humanoid:MoveTo(targetPosition)
               end
           end)
       end
 
+      -- Handle chat commands
       local function handleCommand(msg, sender)
           msg = msg:lower()
           if Admin:IsAdmin(sender) then
               if msg == "!diamond" then
                   startFollow(sender)
-              elseif msg == "!stop" or msg == "!unfollow" then
+              elseif msg == "!stop" or msg == "!undiamond" then
                   stopFollow()
               end
           end
       end
 
+      -- TextChatService listener
       if TextChatService and TextChatService.TextChannels then
           local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
           if channel then
@@ -120,6 +163,7 @@ return {
           end
       end
 
+      -- Fallback lama
       for _, player in ipairs(Players:GetPlayers()) do
           player.Chatted:Connect(function(msg)
               handleCommand(msg, player)
