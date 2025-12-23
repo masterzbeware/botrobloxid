@@ -1,5 +1,5 @@
 -- Commands/Sync.lua
--- Admin-only sync system (bot otomatis sync ke admin)
+-- Bot otomatis sync ke admin ketika admin mengetik !sync
 return {
   Execute = function()
       local Players = game:GetService("Players")
@@ -9,12 +9,11 @@ return {
       local LocalPlayer = Players.LocalPlayer
       if not LocalPlayer then return end
 
-      -- 🔗 LOAD ADMIN MODULE
+      -- 🔗 Load Admin module
       local Admin = loadstring(game:HttpGet(
           "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
       ))()
 
-      -- Fungsi untuk sync ke admin
       local function syncToAdmin(adminPlayer)
           local success, err = pcall(function()
               local commandHandler = ReplicatedStorage:WaitForChild("Connections")
@@ -27,7 +26,6 @@ return {
           end
       end
 
-      -- Fungsi untuk keluar sync
       local function leaveSync()
           local success, err = pcall(function()
               local animationHandler = ReplicatedStorage:WaitForChild("Connections")
@@ -40,15 +38,14 @@ return {
           end
       end
 
-      -- Handle chat commands
+      -- Handle chat commands dari admin
       local function handleCommand(msg, sender)
+          if not Admin:IsAdmin(sender) then return end
           msg = msg:lower()
-          if Admin:IsAdmin(sender) then
-              if msg == "!sync" then
-                  syncToAdmin(sender)
-              elseif msg == "!leavesync" then
-                  leaveSync()
-              end
+          if msg == "!sync" then
+              syncToAdmin(sender)
+          elseif msg == "!leavesync" then
+              leaveSync()
           end
       end
 

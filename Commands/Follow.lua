@@ -40,6 +40,21 @@ return {
       updateCharacter()
       LocalPlayer.CharacterAdded:Connect(updateCharacter)
 
+      -- Fungsi kirim chat
+      local function sendChat(msg)
+          -- TextChatService baru
+          pcall(function()
+              local channel = TextChatService.TextChannels.RBXGeneral
+              if channel then
+                  channel:SendAsync(msg)
+              end
+          end)
+          -- Fallback lama
+          pcall(function()
+              ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(msg, "All")
+          end)
+      end
+
       -- Stop following
       local function stopFollow()
           following = false
@@ -93,9 +108,11 @@ return {
                   if Admin:IsAdmin(targetPlayer) then
                       targetPosition = hrp.Position - hrp.CFrame.LookVector * offsetDistance
                   else
-                      -- Jika bot mengikuti bot lain, gunakan jarak default
                       targetPosition = hrp.Position - (hrp.Position - myHRP.Position).Unit * distance
                   end
+
+                  -- 🔹 Auto chat setiap bot bergerak
+                  sendChat("Siap, Laksanakan!")
 
                   humanoid:MoveTo(targetPosition)
               end
@@ -139,19 +156,6 @@ return {
           player.Chatted:Connect(function(msg)
               handleCommand(msg, player)
           end)
-      end)
-
-      -- 🔹 CHAT OTOMATIS SEKALI SAAT SCRIPT DIJALANKAN
-      local MESSAGE = "Hai, siapa aku"
-      pcall(function()
-          -- TextChatService
-          local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
-          if channel then
-              channel:SendAsync(MESSAGE)
-          else
-              -- Fallback lama
-              ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(MESSAGE, "All")
-          end
       end)
   end
 }
