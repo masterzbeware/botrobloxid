@@ -1,107 +1,75 @@
--- Bot.lua (versi fix AutoBucket)
-
-local repoBase     = "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Commands/"
+local repoBase = "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Commands/"
 local obsidianRepo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
 
--- =========================
--- Load Obsidian Library
--- =========================
 local success, Library = pcall(function()
     return loadstring(game:HttpGet(obsidianRepo .. "Library.lua"))()
 end)
+
 if not success or not Library then
     error("[Bot.lua] Gagal load Obsidian Library!")
 end
 
--- =========================
--- Global Variables
--- =========================
 _G.BotVars = {
     Players = game:GetService("Players"),
     TextChatService = game:GetService("TextChatService"),
     RunService = game:GetService("RunService"),
-    LocalPlayer = game:GetService("Players").LocalPlayer,
-    ToggleAktif = false,
+    LocalPlayer = game:GetService("Players").LocalPlayer
 }
 
-local player = _G.BotVars.LocalPlayer
-
--- =========================
--- Create Main Window
--- =========================
 local MainWindow = Library:CreateWindow({
     Title = "MasterZ HUB",
     Footer = "1.0.0",
-    Icon = 0,
+    Icon = 0
 })
 
 _G.BotVars.Library = Library
 _G.BotVars.MainWindow = MainWindow
 
--- =========================
--- List Modul UI
--- =========================
 local commandFiles = {
     "Main.lua"
 }
 
--- =========================
--- Load Modul dari GitHub
--- =========================
 _G.BotVars.Modules = {}
 
 for _, fileName in ipairs(commandFiles) do
     local url = repoBase .. fileName
-    local success, response = pcall(function() return game:HttpGet(url) end)
-    if success and response then
-        local func = loadstring(response)
-        if func then
-            local status, cmdTable = pcall(func)
-            if status and type(cmdTable) == "table" then
-                -- nama key convert ke lowercase
-                local nameKey = fileName:sub(1, #fileName - 4)
-                _G.BotVars.Modules[nameKey:lower()] = cmdTable
-                print("[Bot.lua] Loaded module:", nameKey)
-            else
-                warn("[Bot.lua] Module", fileName, "tidak mengembalikan table!")
+    local ok, response = pcall(function()
+        return game:HttpGet(url)
+    end)
+
+    if ok and response then
+        local loader = loadstring(response)
+        if loader then
+            local status, moduleTable = pcall(loader)
+            if status and type(moduleTable) == "table" then
+                local key = fileName:sub(1, #fileName - 4):lower()
+                _G.BotVars.Modules[key] = moduleTable
+                print("[Bot.lua] Loaded module:", key)
             end
-        else
-            warn("[Bot.lua] Loadstring gagal untuk", fileName)
         end
-    else
-        warn("[Bot.lua] Failed to load", fileName)
     end
 end
 
--- =========================
--- Jalankan WindowTab.lua
--- =========================
 local windowTabModule = _G.BotVars.Modules.windowtab
 if windowTabModule and type(windowTabModule.Execute) == "function" then
     windowTabModule.Execute()
 end
 
-task.wait(2) -- beri waktu UI ter-load
+task.wait(1)
 
--- Helper Function untuk jalanin modul (lebih clean)
 local function jalankan(nama)
     local module = _G.BotVars.Modules[nama]
     if module and type(module.Execute) == "function" then
         if _G.BotVars.Tabs and _G.BotVars.Tabs.Main then
             module.Execute(_G.BotVars.Tabs.Main)
         else
-            warn("[Bot.lua]", nama, "tidak dijalankan — Tabs.Main belum ditemukan")
+            warn("[Bot.lua] Tabs.Main belum siap")
         end
     else
-        warn("[Bot.lua] Modul", nama, "tidak ditemukan / tidak memiliki Execute")
+        warn("[Bot.lua] Modul", nama, "tidak ditemukan")
     end
 end
 
-jalankan("autoinsert")
-jalankan("autoharvest")
-jalankan("autocrop")
-jalankan("autocraft")
-jalankan("autoplant")
-jalankan("autobucket") -- FIX: nama module benar
+jalankan("main")
 
-print("✅ Bot.lua loaded — semua modul UI aktif.")
+print("✅ Bot.lua loaded — Server Info aktif.")
