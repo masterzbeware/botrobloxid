@@ -40,19 +40,23 @@ return {
       updateCharacter()
       LocalPlayer.CharacterAdded:Connect(updateCharacter)
 
-      -- Fungsi kirim chat
+      -- Fungsi kirim chat satu kali (deteksi sistem chat)
       local function sendChat(msg)
-          -- TextChatService baru
-          pcall(function()
-              local channel = TextChatService.TextChannels.RBXGeneral
+          local sent = false
+          if TextChatService and TextChatService.TextChannels then
+              local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
               if channel then
-                  channel:SendAsync(msg)
+                  pcall(function()
+                      channel:SendAsync(msg)
+                  end)
+                  sent = true
               end
-          end)
-          -- Fallback lama
-          pcall(function()
-              ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(msg, "All")
-          end)
+          end
+          if not sent then
+              pcall(function()
+                  ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(msg, "All")
+              end)
+          end
       end
 
       -- Stop following
@@ -70,6 +74,9 @@ return {
           stopFollow()
           targetPlayer = player
           following = true
+
+          -- 🔹 Chat sekali saat mulai mengikuti
+          sendChat("Siap, Laksanakan!")
 
           followConnection = RunService.Heartbeat:Connect(function()
               if not following or not humanoid or not myHRP then return end
@@ -110,9 +117,6 @@ return {
                   else
                       targetPosition = hrp.Position - (hrp.Position - myHRP.Position).Unit * distance
                   end
-
-                  -- 🔹 Auto chat setiap bot bergerak
-                  sendChat("Siap, Laksanakan!")
 
                   humanoid:MoveTo(targetPosition)
               end

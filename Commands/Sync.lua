@@ -1,5 +1,6 @@
 -- Commands/Sync.lua
 -- Bot otomatis sync ke admin ketika admin mengetik !sync
+-- Dengan debugging
 return {
   Execute = function()
       local Players = game:GetService("Players")
@@ -15,37 +16,29 @@ return {
       ))()
 
       local function syncToAdmin(adminPlayer)
+          print("[DEBUG] Menerima command sync dari admin:", adminPlayer.Name, "UserId:", adminPlayer.UserId)
           local success, err = pcall(function()
               local commandHandler = ReplicatedStorage:WaitForChild("Connections")
                   :WaitForChild("dataProviders")
                   :WaitForChild("commandHandler")
               commandHandler:InvokeServer("sync", adminPlayer.UserId)
           end)
-          if not success then
-              warn("Gagal sync ke admin: "..tostring(err))
-          end
-      end
-
-      local function leaveSync()
-          local success, err = pcall(function()
-              local animationHandler = ReplicatedStorage:WaitForChild("Connections")
-                  :WaitForChild("dataProviders")
-                  :WaitForChild("animationHandler")
-              animationHandler:InvokeServer("leaveSync")
-          end)
-          if not success then
-              warn("Gagal keluar dari sync: "..tostring(err))
+          if success then
+              print("[DEBUG] Sync berhasil dijalankan ke admin:", adminPlayer.Name)
+          else
+              warn("[DEBUG] Gagal sync ke admin:", err)
           end
       end
 
       -- Handle chat commands dari admin
       local function handleCommand(msg, sender)
-          if not Admin:IsAdmin(sender) then return end
+          if not Admin:IsAdmin(sender) then 
+              print("[DEBUG] Player bukan admin, abaikan command:", sender.Name)
+              return 
+          end
           msg = msg:lower()
           if msg == "!sync" then
               syncToAdmin(sender)
-          elseif msg == "!leavesync" then
-              leaveSync()
           end
       end
 
@@ -57,6 +50,7 @@ return {
                   local userId = message.TextSource and message.TextSource.UserId
                   local sender = userId and Players:GetPlayerByUserId(userId)
                   if sender then
+                      print("[DEBUG] Pesan diterima:", message.Text, "dari:", sender.Name)
                       handleCommand(message.Text, sender)
                   end
               end
@@ -66,12 +60,14 @@ return {
       -- Fallback lama
       for _, player in ipairs(Players:GetPlayers()) do
           player.Chatted:Connect(function(msg)
+              print("[DEBUG] Pesan chat lama diterima:", msg, "dari:", player.Name)
               handleCommand(msg, player)
           end)
       end
 
       Players.PlayerAdded:Connect(function(player)
           player.Chatted:Connect(function(msg)
+              print("[DEBUG] Player baru chat diterima:", msg, "dari:", player.Name)
               handleCommand(msg, player)
           end)
       end)
