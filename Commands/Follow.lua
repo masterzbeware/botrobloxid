@@ -1,6 +1,5 @@
 -- Commands/Follow.lua
 -- Admin-only follow system with bots lined up behind Admin in correct order
-
 return {
   Execute = function()
       local Players = game:GetService("Players")
@@ -29,6 +28,9 @@ return {
       local adminFollowDistance = 3 -- jarak mengikuti Admin
       local defaultBotFollowDistance = 2 -- jarak default antar bot
 
+      -- Flag untuk mengirim chat sekali
+      local hasChatted = false
+
       -- Update references
       local function updateCharacter()
           local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
@@ -43,9 +45,28 @@ return {
       local function stopFollow()
           following = false
           targetPlayer = nil
+          hasChatted = false
           if followConnection then
               followConnection:Disconnect()
               followConnection = nil
+          end
+      end
+
+      -- Fungsi untuk mengirim chat
+      local function sendChat(message)
+          local success, err = pcall(function()
+              local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+              if channel then
+                  channel:SendAsync(message)
+              else
+                  game:GetService("ReplicatedStorage")
+                      .DefaultChatSystemChatEvents
+                      .SayMessageRequest
+                      :FireServer(message, "All")
+              end
+          end)
+          if not success then
+              warn("Gagal mengirim chat: "..tostring(err))
           end
       end
 
@@ -63,18 +84,16 @@ return {
               if hrp then
                   local distance = defaultBotFollowDistance
 
-                  -- Admin jarak
                   if Admin:IsAdmin(targetPlayer) then
                       distance = adminFollowDistance
                   end
 
-                  -- Pasangan bot jarak khusus
                   local specialDistance = Distance:GetDistance(tostring(LocalPlayer.UserId), tostring(targetPlayer.UserId))
                   if specialDistance then
                       distance = specialDistance
                   end
 
-                  -- HITUNG OFFSET BARISAN DI BELAKANG ADMIN SESUAI URUTAN
+                  -- HITUNG OFFSET BARISAN DI BELAKANG ADMIN
                   local botOrder = {
                       "10191476366", -- Bot1
                       "10191480511", -- Bot2
@@ -85,15 +104,20 @@ return {
                   }
 
                   local myIndex = table.find(botOrder, tostring(LocalPlayer.UserId)) or 1
-                  local offsetDistance = distance * myIndex
+                  local totalBots = #botOrder
+                  local spacing = 3 -- jarak antar bot
 
-                  -- Posisi target + offset di belakang Admin
-                  local targetPosition
-                  if Admin:IsAdmin(targetPlayer) then
-                      targetPosition = hrp.Position - hrp.CFrame.LookVector * offsetDistance
-                  else
-                      -- Jika bot mengikuti bot lain, gunakan jarak default
-                      targetPosition = hrp.Position - (hrp.Position - myHRP.Position).Unit * distance
+                  local middleIndex = math.ceil(totalBots / 2)
+                  local horizontalOffset = (myIndex - middleIndex) * spacing
+
+                  -- Posisi target di belakang admin
+                  local targetPosition = hrp.Position - hrp.CFrame.LookVector * distance
+                  targetPosition = targetPosition + hrp.CFrame.RightVector * horizontalOffset
+
+                  -- Kirim chat sekali saat mulai mengikuti
+                  if not hasChatted then
+                      sendChat("Siap, Laksanakan!")
+                      hasChatted = true
                   end
 
                   humanoid:MoveTo(targetPosition)
