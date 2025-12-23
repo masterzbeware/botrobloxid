@@ -1,5 +1,5 @@
 -- Commands/Follow.lua
--- Admin-only follow system with bot spacing and pair offsets
+-- Admin-only follow system with bots lined up behind Admin
 
 return {
   Execute = function()
@@ -74,23 +74,24 @@ return {
                       distance = specialDistance
                   end
 
-                  -- HITUNG OFFSET agar bot tidak numpuk
-                  local offset = Vector3.new(0,0,0)
+                  -- HITUNG OFFSET BARISAN DI BELAKANG ADMIN
                   local botIds = {}
                   for id,_ in pairs(Distance.Bots) do
                       table.insert(botIds, id)
                   end
-                  table.sort(botIds) -- agar urutan konsisten
+                  table.sort(botIds) -- urutan konsisten
 
-                  local myIndex = table.find(botIds, tostring(LocalPlayer.UserId))
-                  if myIndex and #botIds > 1 then
-                      local side = ((myIndex % 2 == 0) and 1 or -1) -- kiri/kanan bergantian
-                      offset = hrp.CFrame.RightVector * side * distance
+                  local myIndex = table.find(botIds, tostring(LocalPlayer.UserId)) or 1
+                  local offsetDistance = distance * myIndex -- jarak bertahap
+
+                  -- Posisi target + offset di belakang Admin
+                  local targetPosition
+                  if Admin:IsAdmin(targetPlayer) then
+                      targetPosition = hrp.Position - hrp.CFrame.LookVector * offsetDistance
+                  else
+                      -- Jika bot mengikuti bot lain, gunakan jarak default
+                      targetPosition = hrp.Position - (hrp.Position - myHRP.Position).Unit * distance
                   end
-
-                  -- Hitung posisi target + offset
-                  local direction = (hrp.Position - myHRP.Position).Unit
-                  local targetPosition = hrp.Position - direction * distance + offset
 
                   humanoid:MoveTo(targetPosition)
               end
