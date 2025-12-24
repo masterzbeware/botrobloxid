@@ -105,11 +105,14 @@ return {
 
                 -- 🔹 Mapping urutan bot (termasuk Bot5)
                 local orderedBots = {
-                    "8802945328", -- B1 depan kiri
-                    "8802949363", -- B2 depan kanan
-                    "8802939883", -- B3 belakang kiri
-                    "8802998147", -- B4 belakang kanan
-                    "8802991722", -- B5 tengah belakang (baru ditambahkan)
+                    "10191476366", -- B1 depan kiri
+                    "10191480511", -- B2 depan kanan
+                    "10191462654", -- B3 belakang kiri
+                    "10190853828", -- B4 belakang kanan
+                    "10191023081", -- B5 tengah belakang (Bot5)
+                    "10191070611", -- B6 tambahan
+                    "10191489151", -- B7 tambahan
+                    "10191571531", -- B8 tambahan
                 }
 
                 local myUserId = tostring(player.UserId)

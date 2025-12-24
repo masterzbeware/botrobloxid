@@ -54,11 +54,14 @@ return {
 
         -- 🔹 Bot list diperbarui (5 bot total)
         local botMapping = vars.BotMapping or {
-            ["8802945328"] = "Bot1 - XBODYGUARDVIP01",
-            ["8802949363"] = "Bot2 - XBODYGUARDVIP02",
-            ["8802939883"] = "Bot3 - XBODYGUARDVIP03",
-            ["8802998147"] = "Bot4 - XBODYGUARDVIP04",
-            ["8802991722"] = "Bot5 - XBODYGUARDVIP05", -- ✅ Tambahan
+            ["10191476366"] = "Bot1",
+            ["10191480511"] = "Bot2",
+            ["10191462654"] = "Bot3",
+            ["10190853828"] = "Bot4",
+            ["10191023081"] = "Bot5",
+            ["10191070611"] = "Bot6",
+            ["10191489151"] = "Bot7",
+            ["10191571531"] = "Bot8",
         }
 
         local botIds = {}

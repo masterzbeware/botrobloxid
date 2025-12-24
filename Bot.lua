@@ -39,18 +39,21 @@ _G.BotVars = {
     RowSpacing = 3,
     SideSpacing = 5,
 
-    ActiveClient = "FiestaGuardShop", -- DisplayName / username
-    ActiveClientId = 9722561353,  -- UserId client
+    ActiveClient = "BODYGUARDFIESTA", -- DisplayName / username
+    ActiveClientId = 10190678566,  -- UserId client
     ClientRef = nil,
 }
 
--- Bot Mapping
+-- Bot Mapping (Updated)
 local botMapping = {
-    ["8802945328"] = "Bot1 - XBODYGUARDVIP01",
-    ["8802949363"] = "Bot2 - XBODYGUARDVIP02",
-    ["8802939883"] = "Bot3 - XBODYGUARDVIP03",
-    ["8802998147"] = "Bot4 - XBODYGUARDVIP04",
-    ["8802991722"] = "Bot5 - XBODYGUARDVIP05",
+    ["10191476366"] = "Bot1",
+    ["10191480511"] = "Bot2",
+    ["10191462654"] = "Bot3",
+    ["10190853828"] = "Bot4",
+    ["10191023081"] = "Bot5",
+    ["10191070611"] = "Bot6",
+    ["10191489151"] = "Bot7",
+    ["10191571531"] = "Bot8",
 }
 _G.BotVars.BotIdentity = botMapping[tostring(_G.BotVars.LocalPlayer.UserId)] or "Unknown Bot"
 debugPrint("Detected identity: " .. _G.BotVars.BotIdentity)

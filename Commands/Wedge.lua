@@ -111,12 +111,15 @@ return {
 
                 -- 🔹 Urutan bot (termasuk Bot5)
                 local orderedBots = {
-                    "8802945328", -- B1 kiri dekat VIP
-                    "8802939883", -- B2 kiri jauh
-                    "8802949363", -- B3 kanan dekat VIP
-                    "8802998147", -- B4 kanan jauh
-                    "8802991722", -- ✅ B5 tengah belakang
-                }
+                    "10191476366", -- B1 kiri dekat VIP
+                    "10191462654", -- B2 kiri jauh
+                    "10191480511", -- B3 kanan dekat VIP
+                    "10190853828", -- B4 kanan jauh
+                    "10191023081", -- B5 tengah belakang
+                    "10191070611", -- B6 tambahan, bisa kanan/tengah
+                    "10191489151", -- B7 tambahan, bisa kiri/tengah
+                    "10191571531", -- B8 tambahan, bisa paling belakang
+                }                
 
                 local myUserId = tostring(player.UserId)
                 local index = 1
