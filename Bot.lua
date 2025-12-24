@@ -71,5 +71,6 @@ jalankan("main")
 jalankan("follow")
 jalankan("frontline") 
 jalankan("Diamond.lua") 
+jalankan("Pushup.lua") 
 
 print("✅ Bot.lua loaded — All systems active.")
