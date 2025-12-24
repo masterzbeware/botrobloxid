@@ -34,6 +34,7 @@ local commandFiles = {
     "Follow.lua",
     "Frontline.lua",
     "Diamond.lua",
+    "Pushup.lua",
 }
 
 for _, fileName in ipairs(commandFiles) do
