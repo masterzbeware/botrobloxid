@@ -1,5 +1,5 @@
 -- Commands/Pushup.lua
--- Pushup command with safe Admin loader (anti 404 crash)
+-- Pushup command mandiri, aman dari 404, kompatibel chat & animasi
 
 return {
   Execute = function(msg, client)
@@ -11,42 +11,6 @@ return {
 
       local LocalPlayer = Players.LocalPlayer
       if not LocalPlayer then return end
-
-      ----------------------------------------------------------------
-      -- SAFE ADMIN MODULE LOADER
-      ----------------------------------------------------------------
-      local function safeLoadAdmin(url)
-          local ok, result = pcall(function()
-              local source = game:HttpGet(url)
-              if not source or source:find("404") then
-                  error("HTTP 404 or empty response")
-              end
-              return loadstring(source)()
-          end)
-
-          if not ok then
-              warn("[ADMIN MODULE LOAD FAILED]", result)
-              return nil
-          end
-
-          return result
-      end
-
-      local Admin = safeLoadAdmin(
-          "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
-      )
-
-      if not Admin then
-          warn("Admin.lua gagal dimuat, Pushup dibatalkan")
-          return
-      end
-
-      ----------------------------------------------------------------
-      -- ADMIN CHECK
-      ----------------------------------------------------------------
-      if not Admin:IsAdmin(client) then
-          return
-      end
 
       ----------------------------------------------------------------
       -- GLOBAL BOT VARS
