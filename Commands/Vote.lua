@@ -1,5 +1,5 @@
 -- Commands/Vote.lua
--- Admin-only vote skip (ONE TIME per bot)
+-- Admin-only vote skip (1x per command, can repeat)
 
 return {
   Execute = function()
@@ -26,19 +26,24 @@ return {
               :WaitForChild("musicInfo")
 
       ----------------------------------------------------------------
-      -- STATE (ANTI SPAM)
+      -- ANTI DOUBLE TRIGGER (COOLDOWN)
       ----------------------------------------------------------------
-      local hasVoted = false
+      local voting = false
+      local cooldown = 2 -- detik (aman dari spam)
 
       ----------------------------------------------------------------
       -- VOTE FUNCTION
       ----------------------------------------------------------------
       local function voteSkip()
-          if hasVoted then return end
-          hasVoted = true
+          if voting then return end
+          voting = true
 
           pcall(function()
               musicInfo:InvokeServer("voteSkip")
+          end)
+
+          task.delay(cooldown, function()
+              voting = false
           end)
       end
 
