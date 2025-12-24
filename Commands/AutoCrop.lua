@@ -6,7 +6,7 @@ return {
         -- =========================
         local vars = _G.BotVars or {}
         vars.AutoCrop      = vars.AutoCrop or false
-        vars.CropDelay     = vars.CropDelay or 5     -- jeda per cycle
+        vars.CropDelay     = vars.CropDelay or 10     -- jeda per cycle
         vars._AutoCropRun  = vars._AutoCropRun or false
         _G.BotVars = vars
 
