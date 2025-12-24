@@ -1,5 +1,6 @@
 -- Commands/Follow.lua
 -- Admin-only follow system (NORMAL MoveTo, straight line formation)
+-- Supports: !follow / !follow <username|displayname>
 
 return {
     Execute = function()
@@ -29,7 +30,9 @@ return {
         local adminFollowDistance = 3
         local defaultBotFollowDistance = 2
 
+        ----------------------------------------------------------------
         -- UPDATE CHARACTER
+        ----------------------------------------------------------------
         local function updateCharacter()
             local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
             humanoid = char:WaitForChild("Humanoid")
@@ -38,7 +41,9 @@ return {
         updateCharacter()
         LocalPlayer.CharacterAdded:Connect(updateCharacter)
 
-        -- SEND CHAT (ONCE)
+        ----------------------------------------------------------------
+        -- SEND CHAT
+        ----------------------------------------------------------------
         local function sendChat(msg)
             local ok = false
             if TextChatService and TextChatService.TextChannels then
@@ -58,7 +63,9 @@ return {
             end
         end
 
+        ----------------------------------------------------------------
         -- STOP FOLLOW
+        ----------------------------------------------------------------
         local function stopFollow()
             following = false
             targetPlayer = nil
@@ -68,8 +75,25 @@ return {
             end
         end
 
+        ----------------------------------------------------------------
+        -- FIND PLAYER BY NAME / DISPLAY NAME
+        ----------------------------------------------------------------
+        local function findPlayerByName(name)
+            name = name:lower()
+            for _, p in ipairs(Players:GetPlayers()) do
+                if p.Name:lower() == name or p.DisplayName:lower() == name then
+                    return p
+                end
+            end
+            return nil
+        end
+
+        ----------------------------------------------------------------
         -- START FOLLOW
+        ----------------------------------------------------------------
         local function startFollow(player)
+            if not player then return end
+
             stopFollow()
             following = true
             targetPlayer = player
@@ -77,16 +101,16 @@ return {
 
             -- BOT ORDER (FRONT → BACK)
             local botOrder = {
-                "10191476366", -- Bot1
-                "10191480511", -- Bot2
-                "10191462654", -- Bot3
-                "10190853828", -- Bot4
-                "10191023081", -- Bot5
-                "10191070611", -- Bot6
-                "10191489151", -- Bot7
-                "10191571531", -- Bot8
-                "10192469244", -- Bot9
-                "10192474291", -- Bot10
+                "10191476366",
+                "10191480511",
+                "10191462654",
+                "10190853828",
+                "10191023081",
+                "10191070611",
+                "10191489151",
+                "10191571531",
+                "10192469244",
+                "10192474291",
             }
 
             local myIndex = table.find(botOrder, tostring(LocalPlayer.UserId)) or 1
@@ -100,7 +124,6 @@ return {
 
                 -- FOLLOW DISTANCE
                 local distance = defaultBotFollowDistance
-
                 if Admin:IsAdmin(targetPlayer) then
                     distance = adminFollowDistance
                 end
@@ -113,28 +136,49 @@ return {
                     distance = special
                 end
 
-                -- STRAIGHT LINE POSITION (NO CFRAME SET)
+                -- STRAIGHT LINE POSITION
                 local offset = hrp.CFrame.LookVector * -(distance * myIndex)
                 local targetPosition = hrp.Position + offset
 
-                -- MOVE LIKE NORMAL PLAYER
                 humanoid:MoveTo(targetPosition)
             end)
         end
 
+        ----------------------------------------------------------------
         -- COMMAND HANDLER
+        ----------------------------------------------------------------
         local function handleCommand(msg, sender)
-            msg = msg:lower()
-            if Admin:IsAdmin(sender) then
-                if msg == "!follow" then
-                    startFollow(sender)
-                elseif msg == "!stop" or msg == "!unfollow" then
-                    stopFollow()
+            if not Admin:IsAdmin(sender) then return end
+
+            local lower = msg:lower()
+
+            -- !follow
+            if lower == "!follow" then
+                startFollow(sender)
+                return
+            end
+
+            -- !follow <name>
+            local targetName = lower:match("^!follow%s+(.+)$")
+            if targetName then
+                local target = findPlayerByName(targetName)
+                if target then
+                    startFollow(target)
+                else
+                    sendChat("Target not found.")
                 end
+                return
+            end
+
+            -- stop
+            if lower == "!stop" or lower == "!unfollow" then
+                stopFollow()
             end
         end
 
+        ----------------------------------------------------------------
         -- TEXT CHAT SERVICE
+        ----------------------------------------------------------------
         if TextChatService and TextChatService.TextChannels then
             local ch = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
             if ch then
@@ -148,7 +192,9 @@ return {
             end
         end
 
+        ----------------------------------------------------------------
         -- FALLBACK CHAT
+        ----------------------------------------------------------------
         for _, p in ipairs(Players:GetPlayers()) do
             p.Chatted:Connect(function(msg)
                 handleCommand(msg, p)
