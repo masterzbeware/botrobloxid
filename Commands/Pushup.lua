@@ -1,8 +1,20 @@
 -- Commands/Pushup.lua
--- Pushup command mandiri, aman dari nil msg, kompatibel chat & animasi
+-- Pushup command: hanya jalan via chat admin (!pushup <angka>)
 
 return {
     Execute = function(msg, client)
+
+        -- =========================
+        -- VALIDASI MESSAGE
+        -- =========================
+        if type(msg) ~= "string" then
+            return -- bukan dari chat
+        end
+
+        local jumlah = tonumber(msg:match("^!pushup%s+(%d+)$"))
+        if not jumlah then
+            return -- bukan command pushup yang valid
+        end
 
         -- =========================
         -- SERVICES
@@ -13,6 +25,18 @@ return {
 
         local LocalPlayer = Players.LocalPlayer
         if not LocalPlayer then return end
+
+        -- =========================
+        -- ADMIN CHECK
+        -- =========================
+        local Admin
+        pcall(function()
+            Admin = require(game.ReplicatedStorage:WaitForChild("Admin"))
+        end)
+
+        if Admin and not Admin:IsAdmin(LocalPlayer) then
+            return -- bukan admin
+        end
 
         -- =========================
         -- GLOBAL BOT VARS
@@ -29,7 +53,7 @@ return {
         end
 
         local function sendChat(text)
-            if channel and text then
+            if channel then
                 pcall(function()
                     channel:SendAsync(tostring(text))
                 end)
@@ -48,12 +72,6 @@ return {
         end
 
         vars.PushupActive = true
-
-        -- =========================
-        -- JUMLAH PUSHUP (AMAN DARI NIL)
-        -- =========================
-        local text = tostring(msg or "")
-        local jumlah = tonumber(text:match("!pushup%s+(%d+)")) or 3
 
         -- =========================
         -- MAIN TASK
