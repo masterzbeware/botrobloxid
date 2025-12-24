@@ -1,89 +1,105 @@
 -- Commands/Sync.lua
--- Admin-only sync command (per-client, reliable)
+-- Admin-only sync command with stop control
 
 return {
-  Execute = function()
-      -- SERVICES
-      local Players = game:GetService("Players")
-      local TextChatService = game:GetService("TextChatService")
-      local ReplicatedStorage = game:GetService("ReplicatedStorage")
+    Execute = function()
+        -- SERVICES
+        local Players = game:GetService("Players")
+        local TextChatService = game:GetService("TextChatService")
+        local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-      local LocalPlayer = Players.LocalPlayer
-      if not LocalPlayer then return end
+        local LocalPlayer = Players.LocalPlayer
+        if not LocalPlayer then return end
 
-      -- LOAD ADMIN MODULE
-      local Admin = loadstring(game:HttpGet(
-          "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
-      ))()
+        -- LOAD ADMIN MODULE
+        local Admin = loadstring(game:HttpGet(
+            "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
+        ))()
 
-      ----------------------------------------------------------------
-      -- REMOTE
-      ----------------------------------------------------------------
-      local commandHandler =
-          ReplicatedStorage
-              :WaitForChild("Connections")
-              :WaitForChild("dataProviders")
-              :WaitForChild("commandHandler")
+        ----------------------------------------------------------------
+        -- REMOTE
+        ----------------------------------------------------------------
+        local commandHandler =
+            ReplicatedStorage
+                :WaitForChild("Connections")
+                :WaitForChild("dataProviders")
+                :WaitForChild("commandHandler")
 
-      ----------------------------------------------------------------
-      -- SYNC FUNCTION
-      ----------------------------------------------------------------
-      local function doSync(targetPlayer)
-          if not targetPlayer then return end
+        ----------------------------------------------------------------
+        -- STATE
+        ----------------------------------------------------------------
+        local syncActive = false
 
-          pcall(function()
-              commandHandler:InvokeServer(
-                  "sync",
-                  targetPlayer.UserId
-              )
-          end)
-      end
+        ----------------------------------------------------------------
+        -- SYNC FUNCTION
+        ----------------------------------------------------------------
+        local function doSync(targetPlayer)
+            if not targetPlayer then return end
+            if not syncActive then return end
 
-      ----------------------------------------------------------------
-      -- COMMAND HANDLER
-      ----------------------------------------------------------------
-      local function handleCommand(msg, sender)
-          msg = msg:lower()
+            pcall(function()
+                commandHandler:InvokeServer(
+                    "sync",
+                    targetPlayer.UserId
+                )
+            end)
+        end
 
-          if not Admin:IsAdmin(sender) then
-              return
-          end
+        ----------------------------------------------------------------
+        -- STOP SYNC
+        ----------------------------------------------------------------
+        local function stopSync()
+            syncActive = false
+        end
 
-          -- !sync
-          if msg == "!sync" then
-              doSync(sender)
-          end
-      end
+        ----------------------------------------------------------------
+        -- COMMAND HANDLER
+        ----------------------------------------------------------------
+        local function handleCommand(msg, sender)
+            msg = msg:lower()
 
-      ----------------------------------------------------------------
-      -- TEXT CHAT SERVICE (NEW CHAT)
-      ----------------------------------------------------------------
-      if TextChatService and TextChatService.TextChannels then
-          local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
-          if channel then
-              channel.OnIncomingMessage = function(message)
-                  local uid = message.TextSource and message.TextSource.UserId
-                  local sender = uid and Players:GetPlayerByUserId(uid)
-                  if sender then
-                      handleCommand(message.Text, sender)
-                  end
-              end
-          end
-      end
+            if not Admin:IsAdmin(sender) then
+                return
+            end
 
-      ----------------------------------------------------------------
-      -- FALLBACK CHAT (OLD CHAT)
-      ----------------------------------------------------------------
-      for _, player in ipairs(Players:GetPlayers()) do
-          player.Chatted:Connect(function(msg)
-              handleCommand(msg, player)
-          end)
-      end
+            if msg == "!sync" then
+                syncActive = true
+                doSync(sender)
 
-      Players.PlayerAdded:Connect(function(player)
-          player.Chatted:Connect(function(msg)
-              handleCommand(msg, player)
-          end)
-      end)
-  end
+            elseif msg == "!stop" then
+                stopSync()
+            end
+        end
+
+        ----------------------------------------------------------------
+        -- TEXT CHAT SERVICE (NEW CHAT)
+        ----------------------------------------------------------------
+        if TextChatService and TextChatService.TextChannels then
+            local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+            if channel then
+                channel.OnIncomingMessage = function(message)
+                    local uid = message.TextSource and message.TextSource.UserId
+                    local sender = uid and Players:GetPlayerByUserId(uid)
+                    if sender then
+                        handleCommand(message.Text, sender)
+                    end
+                end
+            end
+        end
+
+        ----------------------------------------------------------------
+        -- FALLBACK CHAT (OLD CHAT)
+        ----------------------------------------------------------------
+        for _, player in ipairs(Players:GetPlayers()) do
+            player.Chatted:Connect(function(msg)
+                handleCommand(msg, player)
+            end)
+        end
+
+        Players.PlayerAdded:Connect(function(player)
+            player.Chatted:Connect(function(msg)
+                handleCommand(msg, player)
+            end)
+        end)
+    end
 }
