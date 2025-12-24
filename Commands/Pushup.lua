@@ -3,19 +3,39 @@
 return {
   Execute = function(msg, client)
 
+      -- SERVICES
+      local Players = game:GetService("Players")
+      local TextChatService = game:GetService("TextChatService")
+      local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+      local LocalPlayer = Players.LocalPlayer
+      if not LocalPlayer then return end
+
+      -- 🔗 LOAD ADMIN MODULE
+      local Admin = loadstring(game:HttpGet(
+          "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
+      ))()
+
+      -- 🔗 LOAD DISTANCE MODULE (tidak dipakai, tapi konsisten)
+      local Distance = loadstring(game:HttpGet(
+          "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Distance.lua"
+      ))()
+
+      -- ADMIN CHECK
+      if not Admin:IsAdmin(client) then
+          return
+      end
+
       -- GLOBAL VARS
       _G.BotVars = _G.BotVars or {}
       local vars = _G.BotVars
-
-      local TextChatService = game:GetService("TextChatService")
-      local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
       local channel
       if TextChatService.TextChannels then
           channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
       end
 
-      -- STOP PUSHUP JIKA MASIH JALAN
+      -- STOP JIKA MASIH PUSHUP
       if vars.PushupActive then
           vars.PushupActive = false
           if vars.PushupConnection then
@@ -40,9 +60,8 @@ return {
 
       vars.PushupConnection = task.spawn(function()
 
-          sendChat("Siap laksanakan!")
+          sendChat("Yes, Sir!")
           task.wait(2)
-
           if not vars.PushupActive then return end
 
           -- PLAY ANIMATION
@@ -59,7 +78,7 @@ return {
               if not vars.PushupActive then break end
 
               if i == jumlah then
-                  sendChat(i .. " push up, Komandan!")
+                  sendChat(i .. " push up, Yes, Sir!")
               else
                   sendChat(i .. " push up!")
               end
