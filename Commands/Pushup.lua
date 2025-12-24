@@ -1,61 +1,98 @@
+-- Commands/Pushup.lua
+-- Pushup command mandiri, aman dari 404, kompatibel chat & animasi
+
 return {
-    Execute = function(msg, client)
-        local vars = _G.BotVars or {}
-        local TextChatService = game:GetService("TextChatService")
-        local channel
+  Execute = function(msg, client)
 
-        if TextChatService.TextChannels then
-            channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
-        end
+      -- SERVICES
+      local Players = game:GetService("Players")
+      local TextChatService = game:GetService("TextChatService")
+      local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-        vars.PushupActive = true
+      local LocalPlayer = Players.LocalPlayer
+      if not LocalPlayer then return end
 
-        local function sendChat(text)
-            if channel then
-                pcall(function()
-                    channel:SendAsync(text)
-                end)
-            end
-        end
+      ----------------------------------------------------------------
+      -- GLOBAL BOT VARS
+      ----------------------------------------------------------------
+      _G.BotVars = _G.BotVars or {}
+      local vars = _G.BotVars
 
-        local jumlah = tonumber(msg:match("!pushup%s+(%d+)")) or 3
+      ----------------------------------------------------------------
+      -- CHAT CHANNEL
+      ----------------------------------------------------------------
+      local channel
+      if TextChatService.TextChannels then
+          channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+      end
 
-        vars.PushupConnection = task.spawn(function()
-            sendChat("Siap laksanakan!")
-            task.wait(2)
-            if not vars.PushupActive then return end
+      local function sendChat(text)
+          if channel then
+              pcall(function()
+                  channel:SendAsync(text)
+              end)
+          end
+      end
 
-            pcall(function()
-                local args = { "playAnimation", "Push Up" }
-                game:GetService("ReplicatedStorage")
-                    :WaitForChild("Connections")
-                    :WaitForChild("dataProviders")
-                    :WaitForChild("animationHandler")
-                    :InvokeServer(unpack(args))
-            end)
+      ----------------------------------------------------------------
+      -- STOP PUSHUP JIKA MASIH AKTIF
+      ----------------------------------------------------------------
+      if vars.PushupActive then
+          vars.PushupActive = false
+          if vars.PushupConnection then
+              task.cancel(vars.PushupConnection)
+              vars.PushupConnection = nil
+          end
+      end
 
-            for i = 1, jumlah do
-                task.wait(5)
-                if not vars.PushupActive then break end
+      vars.PushupActive = true
 
-                if i == jumlah then
-                    sendChat(tostring(i) .. " push up, Komandan!")
-                else
-                    sendChat(tostring(i) .. " push up!")
-                end
-            end
+      ----------------------------------------------------------------
+      -- JUMLAH PUSHUP
+      ----------------------------------------------------------------
+      local jumlah = tonumber(msg:match("!pushup%s+(%d+)")) or 3
 
-            pcall(function()
-                local args = { "stopAnimation", "Push Up" }
-                game:GetService("ReplicatedStorage")
-                    :WaitForChild("Connections")
-                    :WaitForChild("dataProviders")
-                    :WaitForChild("animationHandler")
-                    :InvokeServer(unpack(args))
-            end)
+      ----------------------------------------------------------------
+      -- MAIN TASK
+      ----------------------------------------------------------------
+      vars.PushupConnection = task.spawn(function()
 
-            vars.PushupActive = false
-            vars.PushupConnection = nil
-        end)
-    end
+          sendChat("Siap laksanakan!")
+          task.wait(2)
+
+          if not vars.PushupActive then return end
+
+          -- PLAY ANIMATION
+          pcall(function()
+              ReplicatedStorage
+                  :WaitForChild("Connections")
+                  :WaitForChild("dataProviders")
+                  :WaitForChild("animationHandler")
+                  :InvokeServer("playAnimation", "Push Up")
+          end)
+
+          for i = 1, jumlah do
+              task.wait(5)
+              if not vars.PushupActive then break end
+
+              if i == jumlah then
+                  sendChat(i .. " push up, Komandan!")
+              else
+                  sendChat(i .. " push up!")
+              end
+          end
+
+          -- STOP ANIMATION
+          pcall(function()
+              ReplicatedStorage
+                  :WaitForChild("Connections")
+                  :WaitForChild("dataProviders")
+                  :WaitForChild("animationHandler")
+                  :InvokeServer("stopAnimation", "Push Up")
+          end)
+
+          vars.PushupActive = false
+          vars.PushupConnection = nil
+      end)
+  end
 }
