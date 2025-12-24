@@ -107,7 +107,7 @@ return {
             end
 
             vars.PushupActive = true
-            sendChat("Siap laksanakan!")
+            sendChat("Yes, Sir!")
             task.wait(2)
 
             vars.PushupConnection = task.spawn(function()
@@ -121,7 +121,7 @@ return {
                     task.wait(5)
 
                     if i == jumlah then
-                        sendChat(i .. " push up, Komandan!")
+                        sendChat(i .. " push up, Sir!")
                     else
                         sendChat(i .. " push up!")
                     end
