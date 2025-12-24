@@ -74,7 +74,7 @@ return {
           stopFollow()
           following = true
           targetPlayer = player
-          sendChat("Two line formation, Sir!")
+          sendChat("Yes, Sir!")
 
           -- BOT ORDER (FIXED)
           local botOrder = {
