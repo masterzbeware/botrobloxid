@@ -22,8 +22,8 @@ DistanceModule.Pairs = {
     {["BotA"] = "10191476366", ["BotB"] = "10191480511", ["Distance"] = 3}, -- Bot1-Bot2
     {["BotA"] = "10191462654", ["BotB"] = "10190853828", ["Distance"] = 3}, -- Bot3-Bot4
     {["BotA"] = "10191023081", ["BotB"] = "10191070611", ["Distance"] = 3}, -- Bot5-Bot6
-    {["BotA"] = "10191489151", ["BotB"] = "10191571531", ["Distance"] = 3}, -- Bot5-Bot6
-    {["BotA"] = "10192469244", ["BotB"] = "10192474291", ["Distance"] = 3}, -- Bot5-Bot6
+    {["BotA"] = "10191489151", ["BotB"] = "10191571531", ["Distance"] = 3}, -- Bot7-Bot8
+    {["BotA"] = "10192469244", ["BotB"] = "10192474291", ["Distance"] = 3}, -- Bot9-Bot10
 }
 
 -- ✅ Fungsi untuk mengambil jarak pasangan

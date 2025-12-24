@@ -1,169 +1,162 @@
 -- Commands/Follow.lua
--- Admin-only follow system with bots lined up behind Admin in correct order
+-- Admin-only follow system (STRAIGHT LINE FORMATION)
 
 return {
-  Execute = function()
-      local Players = game:GetService("Players")
-      local RunService = game:GetService("RunService")
-      local TextChatService = game:GetService("TextChatService")
-      local ReplicatedStorage = game:GetService("ReplicatedStorage")
+    Execute = function()
+        local Players = game:GetService("Players")
+        local RunService = game:GetService("RunService")
+        local TextChatService = game:GetService("TextChatService")
+        local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-      local LocalPlayer = Players.LocalPlayer
-      if not LocalPlayer then return end
+        local LocalPlayer = Players.LocalPlayer
+        if not LocalPlayer then return end
 
-      -- 🔗 LOAD ADMIN MODULE
-      local Admin = loadstring(game:HttpGet(
-          "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
-      ))()
+        -- LOAD ADMIN
+        local Admin = loadstring(game:HttpGet(
+            "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
+        ))()
 
-      -- 🔗 LOAD DISTANCE MODULE
-      local Distance = loadstring(game:HttpGet(
-          "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Distance.lua"
-      ))()
+        -- LOAD DISTANCE
+        local Distance = loadstring(game:HttpGet(
+            "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Distance.lua"
+        ))()
 
-      local following = false
-      local targetPlayer
-      local followConnection
+        local humanoid, myHRP
+        local following = false
+        local targetPlayer
+        local followConnection
 
-      local humanoid
-      local myHRP
-      local adminFollowDistance = 3 -- jarak mengikuti Admin
-      local defaultBotFollowDistance = 2 -- jarak default antar bot
+        local adminFollowDistance = 3
+        local defaultBotFollowDistance = 2
 
-      -- Update references
-      local function updateCharacter()
-          local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-          humanoid = char:WaitForChild("Humanoid")
-          myHRP = char:WaitForChild("HumanoidRootPart")
-      end
+        -- UPDATE CHARACTER
+        local function updateCharacter()
+            local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+            humanoid = char:WaitForChild("Humanoid")
+            myHRP = char:WaitForChild("HumanoidRootPart")
+        end
+        updateCharacter()
+        LocalPlayer.CharacterAdded:Connect(updateCharacter)
 
-      updateCharacter()
-      LocalPlayer.CharacterAdded:Connect(updateCharacter)
+        -- CHAT SEND
+        local function sendChat(msg)
+            pcall(function()
+                if TextChatService and TextChatService.TextChannels then
+                    local ch = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+                    if ch then
+                        ch:SendAsync(msg)
+                        return
+                    end
+                end
+                ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(msg, "All")
+            end)
+        end
 
-      -- Fungsi kirim chat satu kali (deteksi sistem chat)
-      local function sendChat(msg)
-          local sent = false
-          if TextChatService and TextChatService.TextChannels then
-              local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
-              if channel then
-                  pcall(function()
-                      channel:SendAsync(msg)
-                  end)
-                  sent = true
-              end
-          end
-          if not sent then
-              pcall(function()
-                  ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(msg, "All")
-              end)
-          end
-      end
+        -- STOP FOLLOW
+        local function stopFollow()
+            following = false
+            targetPlayer = nil
+            if followConnection then
+                followConnection:Disconnect()
+                followConnection = nil
+            end
+        end
 
-      -- Stop following
-      local function stopFollow()
-          following = false
-          targetPlayer = nil
-          if followConnection then
-              followConnection:Disconnect()
-              followConnection = nil
-          end
-      end
+        -- START FOLLOW
+        local function startFollow(player)
+            stopFollow()
+            following = true
+            targetPlayer = player
+            sendChat("Yes, Sir!")
 
-      -- Start following target
-      local function startFollow(player)
-          stopFollow()
-          targetPlayer = player
-          following = true
+            -- URUTAN BOT (DEPAN → BELAKANG)
+            local botOrder = {
+                "10191476366",
+                "10191480511",
+                "10191462654",
+                "10190853828",
+                "10191023081",
+                "10191070611",
+                "10191489151",
+                "10191571531",
+                "10192469244",
+                "10192474291",
+            }
 
-          -- 🔹 Chat sekali saat mulai mengikuti
-          sendChat("Yes, Sir!")
+            local myIndex = table.find(botOrder, tostring(LocalPlayer.UserId)) or 1
 
-          followConnection = RunService.Heartbeat:Connect(function()
-              if not following or not humanoid or not myHRP then return end
-              if not targetPlayer.Character then return end
+            followConnection = RunService.Heartbeat:Connect(function()
+                if not following or not humanoid or not myHRP then return end
+                if not targetPlayer.Character then return end
 
-              local hrp = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
-              if hrp then
-                  local distance = defaultBotFollowDistance
+                local hrp = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+                if not hrp then return end
 
-                  -- Admin jarak
-                  if Admin:IsAdmin(targetPlayer) then
-                      distance = adminFollowDistance
-                  end
+                -- JARAK
+                local distance = defaultBotFollowDistance
+                if Admin:IsAdmin(targetPlayer) then
+                    distance = adminFollowDistance
+                end
 
-                  -- Pasangan bot jarak khusus
-                  local specialDistance = Distance:GetDistance(tostring(LocalPlayer.UserId), tostring(targetPlayer.UserId))
-                  if specialDistance then
-                      distance = specialDistance
-                  end
+                local special = Distance:GetDistance(
+                    tostring(LocalPlayer.UserId),
+                    tostring(targetPlayer.UserId)
+                )
+                if special then
+                    distance = special
+                end
 
-                  -- HITUNG OFFSET BARISAN DI BELAKANG ADMIN SESUAI URUTAN
-                  local botOrder = {
-                      "10191476366", -- Bot1
-                      "10191480511", -- Bot2
-                      "10191462654", -- Bot3
-                      "10190853828", -- Bot4
-                      "10191023081", -- Bot5
-                      "10191070611", -- Bot6
-                      "10191489151", -- Bot7
-                      "10191571531", -- Bot8
-                      "10192469244", -- Bot9
-                      "10192474291", -- Bot10
-                  }
+                -- === FORMASI GARIS LURUS ===
+                local adminCF = hrp.CFrame
+                local offset = adminCF.LookVector * -(distance * myIndex)
+                local targetPos = adminCF.Position + offset
 
-                  local myIndex = table.find(botOrder, tostring(LocalPlayer.UserId)) or 1
-                  local offsetDistance = distance * myIndex
+                -- HADAP DEPAN (SEARAH ADMIN)
+                local lookDir = adminCF.LookVector
+                local finalCF = CFrame.new(targetPos, targetPos + lookDir)
 
-                  -- Posisi target + offset di belakang Admin
-                  local targetPosition
-                  if Admin:IsAdmin(targetPlayer) then
-                      targetPosition = hrp.Position - hrp.CFrame.LookVector * offsetDistance
-                  else
-                      targetPosition = hrp.Position - (hrp.Position - myHRP.Position).Unit * distance
-                  end
+                humanoid:MoveTo(finalCF.Position)
+                myHRP.CFrame = myHRP.CFrame:Lerp(finalCF, 0.25)
+            end)
+        end
 
-                  humanoid:MoveTo(targetPosition)
-              end
-          end)
-      end
+        -- COMMAND HANDLER
+        local function handleCommand(msg, sender)
+            msg = msg:lower()
+            if Admin:IsAdmin(sender) then
+                if msg == "!follow" then
+                    startFollow(sender)
+                elseif msg == "!stop" or msg == "!unfollow" then
+                    stopFollow()
+                end
+            end
+        end
 
-      -- Handle chat commands
-      local function handleCommand(msg, sender)
-          msg = msg:lower()
-          if Admin:IsAdmin(sender) then
-              if msg == "!follow" then
-                  startFollow(sender)
-              elseif msg == "!stop" or msg == "!unfollow" then
-                  stopFollow()
-              end
-          end
-      end
+        -- CHAT LISTENER
+        if TextChatService and TextChatService.TextChannels then
+            local ch = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+            if ch then
+                ch.OnIncomingMessage = function(message)
+                    local uid = message.TextSource and message.TextSource.UserId
+                    local sender = uid and Players:GetPlayerByUserId(uid)
+                    if sender then
+                        handleCommand(message.Text, sender)
+                    end
+                end
+            end
+        end
 
-      -- TextChatService listener
-      if TextChatService and TextChatService.TextChannels then
-          local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
-          if channel then
-              channel.OnIncomingMessage = function(message)
-                  local userId = message.TextSource and message.TextSource.UserId
-                  local sender = userId and Players:GetPlayerByUserId(userId)
-                  if sender then
-                      handleCommand(message.Text, sender)
-                  end
-              end
-          end
-      end
+        -- FALLBACK
+        for _, p in ipairs(Players:GetPlayers()) do
+            p.Chatted:Connect(function(msg)
+                handleCommand(msg, p)
+            end)
+        end
 
-      -- Fallback lama
-      for _, player in ipairs(Players:GetPlayers()) do
-          player.Chatted:Connect(function(msg)
-              handleCommand(msg, player)
-          end)
-      end
-
-      Players.PlayerAdded:Connect(function(player)
-          player.Chatted:Connect(function(msg)
-              handleCommand(msg, player)
-          end)
-      end)
-  end
+        Players.PlayerAdded:Connect(function(p)
+            p.Chatted:Connect(function(msg)
+                handleCommand(msg, p)
+            end)
+        end)
+    end
 }
