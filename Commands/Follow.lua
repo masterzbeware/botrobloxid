@@ -1,5 +1,5 @@
 -- Commands/Follow.lua
--- Admin-only follow system (STRAIGHT LINE FORMATION)
+-- Admin-only follow system (NORMAL MoveTo, straight line formation)
 
 return {
     Execute = function()
@@ -11,12 +11,12 @@ return {
         local LocalPlayer = Players.LocalPlayer
         if not LocalPlayer then return end
 
-        -- LOAD ADMIN
+        -- LOAD ADMIN MODULE
         local Admin = loadstring(game:HttpGet(
             "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
         ))()
 
-        -- LOAD DISTANCE
+        -- LOAD DISTANCE MODULE
         local Distance = loadstring(game:HttpGet(
             "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Distance.lua"
         ))()
@@ -38,18 +38,24 @@ return {
         updateCharacter()
         LocalPlayer.CharacterAdded:Connect(updateCharacter)
 
-        -- CHAT SEND
+        -- SEND CHAT (ONCE)
         local function sendChat(msg)
-            pcall(function()
-                if TextChatService and TextChatService.TextChannels then
-                    local ch = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
-                    if ch then
+            local ok = false
+            if TextChatService and TextChatService.TextChannels then
+                local ch = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+                if ch then
+                    pcall(function()
                         ch:SendAsync(msg)
-                        return
-                    end
+                    end)
+                    ok = true
                 end
-                ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(msg, "All")
-            end)
+            end
+            if not ok then
+                pcall(function()
+                    ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest
+                        :FireServer(msg, "All")
+                end)
+            end
         end
 
         -- STOP FOLLOW
@@ -69,18 +75,18 @@ return {
             targetPlayer = player
             sendChat("Yes, Sir!")
 
-            -- URUTAN BOT (DEPAN → BELAKANG)
+            -- BOT ORDER (FRONT → BACK)
             local botOrder = {
-                "10191476366",
-                "10191480511",
-                "10191462654",
-                "10190853828",
-                "10191023081",
-                "10191070611",
-                "10191489151",
-                "10191571531",
-                "10192469244",
-                "10192474291",
+                "10191476366", -- Bot1
+                "10191480511", -- Bot2
+                "10191462654", -- Bot3
+                "10190853828", -- Bot4
+                "10191023081", -- Bot5
+                "10191070611", -- Bot6
+                "10191489151", -- Bot7
+                "10191571531", -- Bot8
+                "10192469244", -- Bot9
+                "10192474291", -- Bot10
             }
 
             local myIndex = table.find(botOrder, tostring(LocalPlayer.UserId)) or 1
@@ -92,8 +98,9 @@ return {
                 local hrp = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
                 if not hrp then return end
 
-                -- JARAK
+                -- FOLLOW DISTANCE
                 local distance = defaultBotFollowDistance
+
                 if Admin:IsAdmin(targetPlayer) then
                     distance = adminFollowDistance
                 end
@@ -106,17 +113,12 @@ return {
                     distance = special
                 end
 
-                -- === FORMASI GARIS LURUS ===
-                local adminCF = hrp.CFrame
-                local offset = adminCF.LookVector * -(distance * myIndex)
-                local targetPos = adminCF.Position + offset
+                -- STRAIGHT LINE POSITION (NO CFRAME SET)
+                local offset = hrp.CFrame.LookVector * -(distance * myIndex)
+                local targetPosition = hrp.Position + offset
 
-                -- HADAP DEPAN (SEARAH ADMIN)
-                local lookDir = adminCF.LookVector
-                local finalCF = CFrame.new(targetPos, targetPos + lookDir)
-
-                humanoid:MoveTo(finalCF.Position)
-                myHRP.CFrame = myHRP.CFrame:Lerp(finalCF, 0.25)
+                -- MOVE LIKE NORMAL PLAYER
+                humanoid:MoveTo(targetPosition)
             end)
         end
 
@@ -132,7 +134,7 @@ return {
             end
         end
 
-        -- CHAT LISTENER
+        -- TEXT CHAT SERVICE
         if TextChatService and TextChatService.TextChannels then
             local ch = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
             if ch then
@@ -146,7 +148,7 @@ return {
             end
         end
 
-        -- FALLBACK
+        -- FALLBACK CHAT
         for _, p in ipairs(Players:GetPlayers()) do
             p.Chatted:Connect(function(msg)
                 handleCommand(msg, p)
