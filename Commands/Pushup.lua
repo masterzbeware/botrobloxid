@@ -1,5 +1,5 @@
 -- Commands/Pushup.lua
--- Admin-only pushup command (chat based, safe startup)
+-- Admin-only pushup command (chat based, fixed animation invoke)
 
 return {
     Execute = function()
@@ -31,7 +31,7 @@ return {
         vars.PushupConnection = nil
 
         -- =========================
-        -- CHAT SEND
+        -- CHAT SEND (SAFE)
         -- =========================
         local function sendChat(text)
             local ok = false
@@ -55,22 +55,50 @@ return {
         end
 
         -- =========================
+        -- ANIMATION HANDLER
+        -- =========================
+        local function playAnimation()
+            pcall(function()
+                local args = {
+                    "playAnimation",
+                    "Push Up"
+                }
+
+                ReplicatedStorage
+                    :WaitForChild("Connections")
+                    :WaitForChild("dataProviders")
+                    :WaitForChild("animationHandler")
+                    :InvokeServer(unpack(args))
+            end)
+        end
+
+        local function stopAnimation()
+            pcall(function()
+                local args = {
+                    "stopAnimation",
+                    "Push Up"
+                }
+
+                ReplicatedStorage
+                    :WaitForChild("Connections")
+                    :WaitForChild("dataProviders")
+                    :WaitForChild("animationHandler")
+                    :InvokeServer(unpack(args))
+            end)
+        end
+
+        -- =========================
         -- STOP PUSHUP
         -- =========================
         local function stopPushup()
             vars.PushupActive = false
+
             if vars.PushupConnection then
                 task.cancel(vars.PushupConnection)
                 vars.PushupConnection = nil
             end
 
-            pcall(function()
-                ReplicatedStorage
-                    :WaitForChild("Connections")
-                    :WaitForChild("dataProviders")
-                    :WaitForChild("animationHandler")
-                    :InvokeServer("stopAnimation", "Push Up")
-            end)
+            stopAnimation()
         end
 
         -- =========================
@@ -85,14 +113,7 @@ return {
 
             vars.PushupConnection = task.spawn(function()
 
-                -- ▶ PLAY ANIMATION
-                pcall(function()
-                    ReplicatedStorage
-                        :WaitForChild("Connections")
-                        :WaitForChild("dataProviders")
-                        :WaitForChild("animationHandler")
-                        :InvokeServer("playAnimation", "Push Up")
-                end)
+                playAnimation()
 
                 for i = 1, jumlah do
                     if not vars.PushupActive then break end
