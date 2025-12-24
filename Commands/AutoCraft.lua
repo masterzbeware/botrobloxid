@@ -1,26 +1,29 @@
--- AutoCraft.lua (FINAL FIX)
+-- AutoCraft.lua (UI FIXED VERSION)
 return {
     Execute = function(tab)
+        -- =========================
+        -- GLOBAL VARS
+        -- =========================
         local vars = _G.BotVars or {}
+        vars.AutoCraft      = vars.AutoCraft or false
+        vars.CraftDelay     = vars.CraftDelay or 1.5
+        vars.SelectedItem   = vars.SelectedItem or "Chocolate Bar"
+        vars._AutoCraftRun  = vars._AutoCraftRun or false
+        _G.BotVars = vars
+
+        -- =========================
+        -- TAB & UI
+        -- =========================
         local Tabs = vars.Tabs or {}
         local MainTab = tab or Tabs.Main
 
         if not MainTab then
-            warn("[Auto Craft] Tab tidak ditemukan!")
+            warn("[AutoCraft] MainTab tidak ditemukan")
             return
         end
 
-        -- =========================
-        -- UI GROUP
-        -- =========================
         local Group = (MainTab.AddRightGroupbox and MainTab:AddRightGroupbox("Auto Craft"))
             or MainTab:AddLeftGroupbox("Auto Craft")
-
-        -- DEFAULTS
-        vars.AutoCraft    = vars.AutoCraft or false
-        vars.CraftDelay   = vars.CraftDelay or 1.5
-        vars.SelectedItem = vars.SelectedItem or "Chocolate Bar"
-        _G.BotVars = vars
 
         -- TOGGLE
         Group:AddToggle("ToggleAutoCraft", {
@@ -28,34 +31,38 @@ return {
             Default = vars.AutoCraft,
             Callback = function(v)
                 vars.AutoCraft = v
-                print("[Auto Craft] Toggle:", v and "ON" or "OFF")
+                print("[AutoCraft] Toggle:", v and "ON" or "OFF")
             end
         })
 
-        -- DROPDOWN (ITEM KRAFT)
-        local craftableItems = {"Chocolate Bar"}
-        task.defer(function()
-            if Group.AddDropdown then
-                local dd = Group:AddDropdown("DropdownCraftItem", {
-                    Text = "Pilih Item Craft",
-                    Values = craftableItems,
-                    Default = vars.SelectedItem,
-                    Callback = function(v)
-                        vars.SelectedItem = v
-                        print("[Auto Craft] Item berubah:", v)
-                    end
-                })
-                dd:SetValue(vars.SelectedItem)
-            end
-        end)
+        -- DROPDOWN ITEM
+        local craftableItems = {
+            "Chocolate Bar"
+        }
 
-        -- DELAY SLIDER
+        if Group.AddDropdown then
+            local dd = Group:AddDropdown("DropdownCraftItem", {
+                Text = "Pilih Item Craft",
+                Values = craftableItems,
+                Default = vars.SelectedItem,
+                Callback = function(v)
+                    vars.SelectedItem = v
+                    print("[AutoCraft] Item:", v)
+                end
+            })
+            dd:SetValue(vars.SelectedItem)
+        end
+
+        -- SLIDER DELAY
         Group:AddSlider("SliderCraftDelay", {
             Text = "Delay Craft",
-            Min = 0.3, Max = 3,
+            Min = 0.3,
+            Max = 3,
             Default = vars.CraftDelay,
             Rounding = 1,
-            Callback = function(v) vars.CraftDelay = v end
+            Callback = function(v)
+                vars.CraftDelay = v
+            end
         })
 
         -- =========================
@@ -63,53 +70,82 @@ return {
         -- =========================
         local ReplicatedStorage = game:GetService("ReplicatedStorage")
         local LoadedBlocks = workspace:WaitForChild("LoadedBlocks")
-        local CraftRemote = ReplicatedStorage:WaitForChild("Relay")
+
+        local CraftRemote = ReplicatedStorage
+            :WaitForChild("Relay")
             :WaitForChild("Inventory")
             :WaitForChild("CraftItem")
 
         -- =========================
-        -- SCAN OVEN POSITIONS
+        -- FUNCTION: SCAN OVEN
         -- =========================
-        local ovenPositions = {}
+        local function GetOvenPositions()
+            local ovens = {}
 
-        for _, block in ipairs(LoadedBlocks:GetChildren()) do
-            if block.Name == "Baker's Oven" then
-                local voxel = block:GetAttribute("VoxelPosition")
-                if voxel then
-                    table.insert(ovenPositions, voxel)
+            for _, block in ipairs(LoadedBlocks:GetChildren()) do
+                if block.Name == "Baker's Oven" then
+                    local voxel = block:GetAttribute("VoxelPosition")
+                    if voxel then
+                        table.insert(ovens, voxel)
+                    end
                 end
             end
-        end
 
-        print("[Auto Craft] Oven ditemukan:", #ovenPositions)
-
-        if #ovenPositions == 0 then
-            warn("[Auto Craft] Tidak ada Baker's Oven ditemukan!")
+            return ovens
         end
 
         -- =========================
-        -- AUTO CRAFT LOOP
+        -- AUTO CRAFT LOOP (SAFE)
         -- =========================
-        coroutine.wrap(function()
+        if vars._AutoCraftRun then
+            warn("[AutoCraft] Loop sudah berjalan, skip init")
+            return
+        end
+
+        vars._AutoCraftRun = true
+
+        task.spawn(function()
             while true do
                 if vars.AutoCraft then
+                    local ovenPositions = GetOvenPositions()
+
+                    if #ovenPositions == 0 then
+                        warn("[AutoCraft] Tidak ada Baker's Oven!")
+                        task.wait(2)
+                        continue
+                    end
+
+                    print("[AutoCraft] Oven ditemukan:", #ovenPositions)
+
                     for i, pos in ipairs(ovenPositions) do
-                        pcall(function()
-                            CraftRemote:InvokeServer("Baker's Oven", vars.SelectedItem, pos)
+                        if not vars.AutoCraft then break end
+
+                        local ok, err = pcall(function()
+                            CraftRemote:InvokeServer(
+                                "Baker's Oven",
+                                vars.SelectedItem,
+                                pos
+                            )
                         end)
 
-                        print("[Auto Craft] Craft", vars.SelectedItem, "di oven", i)
-                        task.wait(vars.CraftDelay)
+                        if ok then
+                            print(string.format(
+                                "[AutoCraft] Craft %s | Oven #%d",
+                                vars.SelectedItem,
+                                i
+                            ))
+                        else
+                            warn("[AutoCraft] Gagal craft:", err)
+                        end
 
-                        if not vars.AutoCraft then break end
+                        task.wait(vars.CraftDelay)
                     end
                 else
-                    repeat task.wait(0.5) until vars.AutoCraft
+                    task.wait(0.5)
                 end
-                task.wait()
             end
-        end)()
+        end)
 
-        print("[Auto Craft] System Loaded. Target:", vars.SelectedItem)
+        print("[AutoCraft] System Loaded")
     end
 }
