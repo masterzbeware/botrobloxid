@@ -82,7 +82,7 @@ return {
           stopFollow()
           following = true
           targetPlayer = player
-          sendChat("Diamond formation!")
+          sendChat("Yes, Sir!")
 
           local botOrder = {
               "10191476366", -- 1

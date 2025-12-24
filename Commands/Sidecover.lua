@@ -118,7 +118,7 @@ return {
 
               -- Kirim chat sekali
               if not hasChatted then
-                  sendChat("Side cover ready!")
+                  sendChat("Yes, Sir!")
                   hasChatted = true
               end
 
