@@ -1,5 +1,5 @@
 -- Commands/Sync.lua
--- Admin-only sync command with stop control
+-- Admin-only sync + real stop (leaveSync)
 
 return {
     Execute = function()
@@ -17,25 +17,25 @@ return {
         ))()
 
         ----------------------------------------------------------------
-        -- REMOTE
+        -- REMOTES
         ----------------------------------------------------------------
-        local commandHandler =
-            ReplicatedStorage
-                :WaitForChild("Connections")
-                :WaitForChild("dataProviders")
-                :WaitForChild("commandHandler")
+        local connections = ReplicatedStorage:WaitForChild("Connections")
+        local dataProviders = connections:WaitForChild("dataProviders")
+
+        local commandHandler = dataProviders:WaitForChild("commandHandler")
+        local animationHandler = dataProviders:WaitForChild("animationHandler")
 
         ----------------------------------------------------------------
-        -- STATE
+        -- SYNC STATE
         ----------------------------------------------------------------
-        local syncActive = false
+        local syncing = false
 
         ----------------------------------------------------------------
-        -- SYNC FUNCTION
+        -- SYNC
         ----------------------------------------------------------------
-        local function doSync(targetPlayer)
+        local function startSync(targetPlayer)
             if not targetPlayer then return end
-            if not syncActive then return end
+            syncing = true
 
             pcall(function()
                 commandHandler:InvokeServer(
@@ -46,10 +46,15 @@ return {
         end
 
         ----------------------------------------------------------------
-        -- STOP SYNC
+        -- STOP SYNC (REAL)
         ----------------------------------------------------------------
         local function stopSync()
-            syncActive = false
+            if not syncing then return end
+            syncing = false
+
+            pcall(function()
+                animationHandler:InvokeServer("leaveSync")
+            end)
         end
 
         ----------------------------------------------------------------
@@ -57,14 +62,10 @@ return {
         ----------------------------------------------------------------
         local function handleCommand(msg, sender)
             msg = msg:lower()
-
-            if not Admin:IsAdmin(sender) then
-                return
-            end
+            if not Admin:IsAdmin(sender) then return end
 
             if msg == "!sync" then
-                syncActive = true
-                doSync(sender)
+                startSync(sender)
 
             elseif msg == "!stop" then
                 stopSync()
@@ -72,12 +73,12 @@ return {
         end
 
         ----------------------------------------------------------------
-        -- TEXT CHAT SERVICE (NEW CHAT)
+        -- TEXT CHAT SERVICE
         ----------------------------------------------------------------
         if TextChatService and TextChatService.TextChannels then
-            local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
-            if channel then
-                channel.OnIncomingMessage = function(message)
+            local ch = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+            if ch then
+                ch.OnIncomingMessage = function(message)
                     local uid = message.TextSource and message.TextSource.UserId
                     local sender = uid and Players:GetPlayerByUserId(uid)
                     if sender then
@@ -88,17 +89,17 @@ return {
         end
 
         ----------------------------------------------------------------
-        -- FALLBACK CHAT (OLD CHAT)
+        -- FALLBACK CHAT
         ----------------------------------------------------------------
-        for _, player in ipairs(Players:GetPlayers()) do
-            player.Chatted:Connect(function(msg)
-                handleCommand(msg, player)
+        for _, p in ipairs(Players:GetPlayers()) do
+            p.Chatted:Connect(function(msg)
+                handleCommand(msg, p)
             end)
         end
 
-        Players.PlayerAdded:Connect(function(player)
-            player.Chatted:Connect(function(msg)
-                handleCommand(msg, player)
+        Players.PlayerAdded:Connect(function(p)
+            p.Chatted:Connect(function(msg)
+                handleCommand(msg, p)
             end)
         end)
     end
