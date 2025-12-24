@@ -15,6 +15,8 @@ DistanceModule.Bots = {
     ["10191571531"] = "Bot 8",
     ["10192469244"] = "Bot 9",
     ["10192474291"] = "Bot 10",
+    ["10196485340"] = "Bot 11",
+    ["10196526503"] = "Bot 12",
 }
 
 -- ✅ Pasangan Bot dan jaraknya (pastikan UserId sesuai daftar Bots)
@@ -24,6 +26,7 @@ DistanceModule.Pairs = {
     {["BotA"] = "10191023081", ["BotB"] = "10191070611", ["Distance"] = 3}, -- Bot5-Bot6
     {["BotA"] = "10191489151", ["BotB"] = "10191571531", ["Distance"] = 3}, -- Bot7-Bot8
     {["BotA"] = "10192469244", ["BotB"] = "10192474291", ["Distance"] = 3}, -- Bot9-Bot10
+    {["BotA"] = "10196485340", ["BotB"] = "10196526503", ["Distance"] = 3}, -- Bot11-Bot12
 }
 
 -- ✅ Fungsi untuk mengambil jarak pasangan
