@@ -1,5 +1,5 @@
 -- Commands/Pushup.lua
--- Admin-only pushup command (chat based, fixed animation invoke)
+-- Admin-only pushup command (chat based, fixed double trigger & animation stop)
 
 return {
     Execute = function()
@@ -31,10 +31,10 @@ return {
         vars.PushupConnection = nil
 
         -- =========================
-        -- CHAT SEND (SAFE)
+        -- CHAT SEND
         -- =========================
         local function sendChat(text)
-            local ok = false
+            if not text then return end
 
             if TextChatService and TextChatService.TextChannels then
                 local ch = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
@@ -42,55 +42,43 @@ return {
                     pcall(function()
                         ch:SendAsync(text)
                     end)
-                    ok = true
+                    return
                 end
             end
 
-            if not ok then
-                pcall(function()
-                    ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest
-                        :FireServer(text, "All")
-                end)
-            end
+            pcall(function()
+                ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest
+                    :FireServer(text, "All")
+            end)
         end
 
         -- =========================
-        -- ANIMATION HANDLER
+        -- ANIMATION
         -- =========================
         local function playAnimation()
             pcall(function()
-                local args = {
-                    "playAnimation",
-                    "Push Up"
-                }
-
                 ReplicatedStorage
                     :WaitForChild("Connections")
                     :WaitForChild("dataProviders")
                     :WaitForChild("animationHandler")
-                    :InvokeServer(unpack(args))
+                    :InvokeServer("playAnimation", "Push Up")
             end)
         end
 
         local function stopAnimation()
             pcall(function()
-                local args = {
-                    "stopAnimation",
-                    "Push Up"
-                }
-
                 ReplicatedStorage
                     :WaitForChild("Connections")
                     :WaitForChild("dataProviders")
                     :WaitForChild("animationHandler")
-                    :InvokeServer(unpack(args))
+                    :InvokeServer("stopAnimation", "Push Up")
             end)
         end
 
         -- =========================
-        -- STOP PUSHUP
+        -- FORCE STOP (ADMIN STOP)
         -- =========================
-        local function stopPushup()
+        local function forceStopPushup()
             vars.PushupActive = false
 
             if vars.PushupConnection then
@@ -102,21 +90,34 @@ return {
         end
 
         -- =========================
+        -- NORMAL FINISH
+        -- =========================
+        local function finishPushup()
+            vars.PushupActive = false
+            vars.PushupConnection = nil
+            stopAnimation()
+        end
+
+        -- =========================
         -- START PUSHUP
         -- =========================
         local function startPushup(jumlah)
-            stopPushup()
-            vars.PushupActive = true
+            if vars.PushupActive then
+                forceStopPushup()
+            end
 
+            vars.PushupActive = true
             sendChat("Siap laksanakan!")
             task.wait(2)
 
             vars.PushupConnection = task.spawn(function()
-
                 playAnimation()
 
                 for i = 1, jumlah do
-                    if not vars.PushupActive then break end
+                    if not vars.PushupActive then
+                        return
+                    end
+
                     task.wait(5)
 
                     if i == jumlah then
@@ -126,7 +127,8 @@ return {
                     end
                 end
 
-                stopPushup()
+                -- SELESAI NORMAL
+                finishPushup()
             end)
         end
 
@@ -147,12 +149,12 @@ return {
             end
 
             if msg == "!pushup stop" or msg == "!stop pushup" then
-                stopPushup()
+                forceStopPushup()
             end
         end
 
         -- =========================
-        -- TEXT CHAT SERVICE
+        -- CHAT LISTENER (SINGLE SOURCE)
         -- =========================
         if TextChatService and TextChatService.TextChannels then
             local ch = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
@@ -165,21 +167,19 @@ return {
                     end
                 end
             end
-        end
+        else
+            -- FALLBACK ONLY IF TextChatService NOT AVAILABLE
+            for _, p in ipairs(Players:GetPlayers()) do
+                p.Chatted:Connect(function(msg)
+                    handleCommand(msg, p)
+                end)
+            end
 
-        -- =========================
-        -- FALLBACK CHAT
-        -- =========================
-        for _, p in ipairs(Players:GetPlayers()) do
-            p.Chatted:Connect(function(msg)
-                handleCommand(msg, p)
+            Players.PlayerAdded:Connect(function(p)
+                p.Chatted:Connect(function(msg)
+                    handleCommand(msg, p)
+                end)
             end)
         end
-
-        Players.PlayerAdded:Connect(function(p)
-            p.Chatted:Connect(function(msg)
-                handleCommand(msg, p)
-            end)
-        end)
     end
 }
