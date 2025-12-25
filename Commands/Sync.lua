@@ -1,9 +1,13 @@
 -- Commands/Sync.lua
--- Admin-only sync + real stop (leaveSync)
+-- Admin-only sync system
+-- Supports: !sync / !sync <username|displayname>
+-- Real stop: leaveSync
 
 return {
     Execute = function()
+        ----------------------------------------------------------------
         -- SERVICES
+        ----------------------------------------------------------------
         local Players = game:GetService("Players")
         local TextChatService = game:GetService("TextChatService")
         local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -11,7 +15,9 @@ return {
         local LocalPlayer = Players.LocalPlayer
         if not LocalPlayer then return end
 
+        ----------------------------------------------------------------
         -- LOAD ADMIN MODULE
+        ----------------------------------------------------------------
         local Admin = loadstring(game:HttpGet(
             "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
         ))()
@@ -29,13 +35,34 @@ return {
         -- SYNC STATE
         ----------------------------------------------------------------
         local syncing = false
+        local currentTarget -- Player
 
         ----------------------------------------------------------------
-        -- SYNC
+        -- FIND PLAYER BY NAME / DISPLAY NAME
+        ----------------------------------------------------------------
+        local function findPlayerByName(name)
+            name = name:lower()
+            for _, p in ipairs(Players:GetPlayers()) do
+                if p.Name:lower() == name or p.DisplayName:lower() == name then
+                    return p
+                end
+            end
+            return nil
+        end
+
+        ----------------------------------------------------------------
+        -- START SYNC
         ----------------------------------------------------------------
         local function startSync(targetPlayer)
             if not targetPlayer then return end
+
+            -- prevent duplicate sync to same target
+            if syncing and currentTarget == targetPlayer then
+                return
+            end
+
             syncing = true
+            currentTarget = targetPlayer
 
             pcall(function()
                 commandHandler:InvokeServer(
@@ -51,6 +78,7 @@ return {
         local function stopSync()
             if not syncing then return end
             syncing = false
+            currentTarget = nil
 
             pcall(function()
                 animationHandler:InvokeServer("leaveSync")
@@ -58,16 +86,31 @@ return {
         end
 
         ----------------------------------------------------------------
-        -- COMMAND HANDLER
+        -- COMMAND HANDLER (ADMIN ONLY)
         ----------------------------------------------------------------
         local function handleCommand(msg, sender)
-            msg = msg:lower()
             if not Admin:IsAdmin(sender) then return end
 
-            if msg == "!sync" then
-                startSync(sender)
+            local lower = msg:lower()
 
-            elseif msg == "!stop" then
+            -- !sync
+            if lower == "!sync" then
+                startSync(sender)
+                return
+            end
+
+            -- !sync <name>
+            local targetName = lower:match("^!sync%s+(.+)$")
+            if targetName then
+                local target = findPlayerByName(targetName)
+                if target then
+                    startSync(target)
+                end
+                return
+            end
+
+            -- stop
+            if lower == "!stop" or lower == "!unsync" then
                 stopSync()
             end
         end
