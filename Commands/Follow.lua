@@ -160,14 +160,13 @@ return {
                 return
             end
 
+            
             -- !follow <name>
             local targetName = lower:match("^!follow%s+(.+)$")
             if targetName then
                 local target = findPlayerByName(targetName)
                 if target then
                     startFollow(target)
-                else
-                    sendChat("Target not found.")
                 end
                 return
             end

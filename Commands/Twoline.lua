@@ -174,11 +174,9 @@ return {
                 local target = findPlayerByName(targetName)
                 if target then
                     startFollow(target)
-                else
-                    sendChat("Target not found.")
                 end
                 return
-            end
+            end            
 
             -- stop
             if lower == "!stop" or lower == "!unfollow" then
