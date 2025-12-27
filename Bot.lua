@@ -1,84 +1,113 @@
-local repoBase = "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Commands/"
+-- Bot.lua (versi fix AutoBucket)
+
+local repoBase     = "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Commands/"
 local obsidianRepo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
 
--- Load Obsidian
+-- =========================
+-- Load Obsidian Library
+-- =========================
 local success, Library = pcall(function()
     return loadstring(game:HttpGet(obsidianRepo .. "Library.lua"))()
 end)
-
 if not success or not Library then
-    error("[Bot.lua] Gagal load Obsidian Library")
+    error("[Bot.lua] Gagal load Obsidian Library!")
 end
 
+-- =========================
+-- Global Variables
+-- =========================
 _G.BotVars = {
     Players = game:GetService("Players"),
     TextChatService = game:GetService("TextChatService"),
     RunService = game:GetService("RunService"),
     LocalPlayer = game:GetService("Players").LocalPlayer,
+    ToggleAktif = false,
 }
 
-local Window = Library:CreateWindow({
+local player = _G.BotVars.LocalPlayer
+
+-- =========================
+-- Create Main Window
+-- =========================
+local MainWindow = Library:CreateWindow({
     Title = "MasterZ HUB",
-    Footer = "1.0.4",
-    Icon = 0
+    Footer = "1.0.1",
+    Icon = 0,
 })
 
 _G.BotVars.Library = Library
-_G.BotVars.MainWindow = Window
-_G.BotVars.Modules = {}
+_G.BotVars.MainWindow = MainWindow
 
--- ✅ SEMUA COMMAND
+-- =========================
+-- List Modul UI
+-- =========================
 local commandFiles = {
-    "Perfix.lua",
-    "Main.lua",
-    "Follow.lua",
-    "Frontline.lua",
-    "Pushup.lua",
-    "Sync.lua",
-    "Twoline.lua",
-    "Vote.lua",
-    "Diamond.lua",
-    "Sidecover.lua",
+    "WindowTab.lua",
+    "AutoInsert.lua",
+    "AutoHarvest.lua",
+    "AutoCrop.lua",
+    "AutoCraft.lua",
+    "AutoPlant.lua",
+    "AutoBucket.lua" -- FIX: nama file sudah benar
 }
 
+-- =========================
+-- Load Modul dari GitHub
+-- =========================
+_G.BotVars.Modules = {}
+
 for _, fileName in ipairs(commandFiles) do
-    local ok, response = pcall(function()
-        return game:HttpGet(repoBase .. fileName)
-    end)
-
-    if ok and response then
-        local loader = loadstring(response)
-        if loader then
-            local successModule, moduleTable = pcall(loader)
-            if successModule and type(moduleTable) == "table" then
-                local key = fileName:gsub("%.lua$", ""):lower()
-                _G.BotVars.Modules[key] = moduleTable
-                print("[Bot.lua] Loaded:", key)
+    local url = repoBase .. fileName
+    local success, response = pcall(function() return game:HttpGet(url) end)
+    if success and response then
+        local func = loadstring(response)
+        if func then
+            local status, cmdTable = pcall(func)
+            if status and type(cmdTable) == "table" then
+                -- nama key convert ke lowercase
+                local nameKey = fileName:sub(1, #fileName - 4)
+                _G.BotVars.Modules[nameKey:lower()] = cmdTable
+                print("[Bot.lua] Loaded module:", nameKey)
+            else
+                warn("[Bot.lua] Module", fileName, "tidak mengembalikan table!")
             end
+        else
+            warn("[Bot.lua] Loadstring gagal untuk", fileName)
         end
+    else
+        warn("[Bot.lua] Failed to load", fileName)
     end
 end
 
-task.wait(0.3)
+-- =========================
+-- Jalankan WindowTab.lua
+-- =========================
+local windowTabModule = _G.BotVars.Modules.windowtab
+if windowTabModule and type(windowTabModule.Execute) == "function" then
+    windowTabModule.Execute()
+end
 
-local function jalankan(name)
-    local module = _G.BotVars.Modules[name]
-    if module and module.Execute then
-        module.Execute()
-        print("[Bot.lua] Executed:", name)
+task.wait(2) -- beri waktu UI ter-load
+
+-- Helper Function untuk jalanin modul (lebih clean)
+local function jalankan(nama)
+    local module = _G.BotVars.Modules[nama]
+    if module and type(module.Execute) == "function" then
+        if _G.BotVars.Tabs and _G.BotVars.Tabs.Main then
+            module.Execute(_G.BotVars.Tabs.Main)
+        else
+            warn("[Bot.lua]", nama, "tidak dijalankan — Tabs.Main belum ditemukan")
+        end
+    else
+        warn("[Bot.lua] Modul", nama, "tidak ditemukan / tidak memiliki Execute")
     end
 end
 
--- ✅ EXECUTION ORDER
-jalankan("perfix")
-jalankan("main")
-jalankan("follow")
-jalankan("frontline") 
-jalankan("pushup") 
-jalankan("sync") 
-jalankan("twoline") 
-jalankan("vote") 
-jalankan("diamond") 
-jalankan("sidecover") 
+jalankan("autoinsert")
+jalankan("autoharvest")
+jalankan("autocrop")
+jalankan("autocraft")
+jalankan("autoplant")
+jalankan("autobucket") -- FIX: nama module benar
 
-print("✅ Bot.lua loaded — All systems active.")
+print("✅ Bot.lua loaded — semua modul UI aktif.")
