@@ -43,7 +43,7 @@ _G.BotVars.MainWindow = MainWindow
 -- =========================
 local commandFiles = {
     "WindowTab.lua",
-    "M4A1_Mod.lua",
+    "M4A1.lua",
 }
 
 -- =========================
@@ -98,6 +98,6 @@ local function jalankan(nama)
     end
 end
 
-jalankan("M4A1_Mod.lua")
+jalankan("M4A1.lua")
 
 print("✅ Bot.lua loaded — semua modul UI aktif.")
