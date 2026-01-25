@@ -71,11 +71,7 @@ return {
 
                                 -- BULLET
                                 BulletRange = 5000,
-                                BulletSpeed = 5000,
-
-                                -- OPTIONAL
-                                AlwaysAiming = true,
-                                TeamKilling = true
+                                BulletSpeed = 5000
                             }, false)
                         end)
                     end
