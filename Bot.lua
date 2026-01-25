@@ -99,10 +99,5 @@ local function jalankan(nama)
 end
 
 jalankan("M4A1_Mod.lua")
-jalankan("autoharvest")
-jalankan("autocrop")
-jalankan("autocraft")
-jalankan("autoplant")
-jalankan("autobucket") -- FIX: nama module benar
 
 print("✅ Bot.lua loaded — semua modul UI aktif.")
