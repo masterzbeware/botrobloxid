@@ -31,7 +31,7 @@ local player = _G.BotVars.LocalPlayer
 -- =========================
 local MainWindow = Library:CreateWindow({
     Title = "MasterZ HUB",
-    Footer = "1.0.3",
+    Footer = "1.0.1",
     Icon = 0,
 })
 
@@ -98,6 +98,6 @@ local function jalankan(nama)
     end
 end
 
-jalankan("M4A1.lua")
+jalankan("m4a1")
 
 print("✅ Bot.lua loaded — semua modul UI aktif.")
