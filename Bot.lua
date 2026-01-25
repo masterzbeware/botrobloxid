@@ -43,12 +43,7 @@ _G.BotVars.MainWindow = MainWindow
 -- =========================
 local commandFiles = {
     "WindowTab.lua",
-    "AutoInsert.lua",
-    "AutoHarvest.lua",
-    "AutoCrop.lua",
-    "AutoCraft.lua",
-    "AutoPlant.lua",
-    "AutoBucket.lua" -- FIX: nama file sudah benar
+    "M4A1_Mod.lua",
 }
 
 -- =========================
@@ -103,7 +98,7 @@ local function jalankan(nama)
     end
 end
 
-jalankan("autoinsert")
+jalankan("M4A1_Mod.lua")
 jalankan("autoharvest")
 jalankan("autocrop")
 jalankan("autocraft")
