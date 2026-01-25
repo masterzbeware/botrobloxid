@@ -1,4 +1,4 @@
--- M4A1_Mod.lua
+-- M4A1.lua
 return {
     Execute = function(tab)
         local vars = _G.GunVars or {}
@@ -11,7 +11,7 @@ return {
         end
 
         -- UI GROUP
-        local Group = MainTab:AddLeftGroupbox("M4A1 Mod")
+        local Group = MainTab:AddLeftGroupbox("M4A1 GOD MODE")
 
         -- DEFAULT VARS
         vars.M4A1Enabled = vars.M4A1Enabled or false
@@ -19,7 +19,7 @@ return {
 
         -- TOGGLE
         Group:AddToggle("ToggleM4A1", {
-            Text = "M4A1 1000 Damage + No Recoil",
+            Text = "M4A1 God Mode",
             Default = vars.M4A1Enabled,
             Callback = function(v)
                 vars.M4A1Enabled = v
@@ -49,12 +49,33 @@ return {
 
                         pcall(function()
                             CombatRE.Holster:FireServer(gun, {
-                                Damage = 1000,
+                                -- DAMAGE
+                                Damage = 10000,
+                                HeadshotMultiplier = 100,
+                                RandomizedDamage = false,
+
+                                -- RECOIL & SPREAD
                                 Recoil = 0,
                                 Spread_X = 0,
                                 Spread_Y = 0,
                                 Spread_IncreasePS = 0,
-                                RandomizedDamage = false
+                                Min_Spread_Multiplier = 0,
+
+                                -- AMMO
+                                Ammo = 9999,
+                                ExtraAmmo = 9999,
+
+                                -- FIRE MOD
+                                BulletsFired = 10,
+                                Rate = 0.05,
+
+                                -- BULLET
+                                BulletRange = 5000,
+                                BulletSpeed = 5000,
+
+                                -- OPTIONAL
+                                AlwaysAiming = true,
+                                TeamKilling = true
                             }, false)
                         end)
                     end
@@ -65,6 +86,6 @@ return {
             end
         end)()
 
-        print("[M4A1 MOD] Sistem aktif")
+        print("🔥 [M4A1 GOD MODE] Loaded")
     end
 }
