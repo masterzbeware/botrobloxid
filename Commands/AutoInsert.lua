@@ -1,4 +1,4 @@
--- AutoInsert.lua (REFILL PER TROUGH VERSION)
+-- AutoInsert.lua (REFILL PER TROUGH - NO ERROR)
 return {
     Execute = function(tab)
         local vars = _G.BotVars or {}
@@ -115,7 +115,7 @@ return {
         local function GetNearestWell()
             local char = player.Character
             local hrp = char and char:FindFirstChild("HumanoidRootPart")
-            if not hrp then return end
+            if not hrp then return nil end
 
             local nearest, dist
             for _, block in ipairs(LoadedBlocks:GetChildren()) do
@@ -141,9 +141,12 @@ return {
                 if vars.AutoInsert then
                     local char = player.Character
                     local hrp = char and char:FindFirstChild("HumanoidRootPart")
-                    if not hrp then goto skip end
+                    if not hrp then
+                        task.wait(0.5)
+                        continue
+                    end
 
-                    -- ambil semua target
+                    -- ambil target
                     local targets = {}
                     for _, block in ipairs(LoadedBlocks:GetChildren()) do
                         if block.Name == vars.InsertTarget then
@@ -151,7 +154,6 @@ return {
                         end
                     end
 
-                    -- urutkan dari yang terdekat
                     table.sort(targets, function(a, b)
                         local pa = GetPartPos(a)
                         local pb = GetPartPos(b)
@@ -160,14 +162,12 @@ return {
                                (pb - hrp.Position).Magnitude
                     end)
 
-                    -- proses satu per satu
                     for _, block in ipairs(targets) do
-                        -- skip trough yang sudah ada air
                         if block.Name == "Small Water Trough" and HasWater(block) then
                             continue
                         end
 
-                        -- 🔹 REFILL EMBER SETIAP TROUGH
+                        -- 🔹 REFILL PER TROUGH
                         if vars.InsertTarget == "Small Water Trough" then
                             local well = GetNearestWell()
                             if well then
@@ -196,7 +196,7 @@ return {
                             task.wait(0.35)
                         end
 
-                        -- insert water
+                        -- insert
                         local voxel = block:GetAttribute("VoxelPosition")
                         if voxel then
                             pcall(function()
@@ -213,11 +213,10 @@ return {
                         task.wait(vars.InsertDelay)
                     end
                 end
-                ::skip::
                 task.wait(0.5)
             end
         end)
 
-        print("[AutoInsert] REFILL PER TROUGH AKTIF")
+        print("[AutoInsert] REFILL PER TROUGH - NO ERROR")
     end
 }
