@@ -1,13 +1,10 @@
--- AutoInsert.lua
+-- AutoInsert.lua (WITH AUTO WELL TELEPORT)
 return {
     Execute = function(tab)
         local vars = _G.BotVars or {}
         local Tabs = vars.Tabs or {}
         local MainTab = tab or Tabs.Main
-        if not MainTab then
-            warn("[Auto Insert] Tab tidak ditemukan!")
-            return
-        end
+        if not MainTab then return end
 
         -- =========================
         -- UI
@@ -20,20 +17,16 @@ return {
         vars.InsertTarget = vars.InsertTarget or "Small Water Trough"
         _G.BotVars = vars
 
-        Group:AddToggle("AutoInsertToggle", {
+        Group:AddToggle("AutoInsert", {
             Text = "Auto Insert",
             Default = vars.AutoInsert,
-            Callback = function(v)
-                vars.AutoInsert = v
-            end
+            Callback = function(v) vars.AutoInsert = v end
         })
 
-        Group:AddToggle("AutoTeleportToggle", {
+        Group:AddToggle("AutoTeleport", {
             Text = "Auto Teleport",
             Default = vars.AutoTeleport,
-            Callback = function(v)
-                vars.AutoTeleport = v
-            end
+            Callback = function(v) vars.AutoTeleport = v end
         })
 
         local allowedModels = {
@@ -47,8 +40,8 @@ return {
         }
 
         task.spawn(function()
-            task.wait(0.5)
-            local dropdown = Group:AddDropdown("InsertTarget", {
+            task.wait(0.3)
+            local dd = Group:AddDropdown("TargetBlock", {
                 Text = "Target Block",
                 Values = allowedModels,
                 Default = vars.InsertTarget,
@@ -57,18 +50,15 @@ return {
                     vars.InsertTarget = v
                 end
             })
-            dropdown:SetValue(vars.InsertTarget)
+            dd:SetValue(vars.InsertTarget)
         end)
 
-        Group:AddSlider("InsertDelay", {
+        Group:AddSlider("Delay", {
             Text = "Delay",
-            Default = vars.InsertDelay,
             Min = 0.3,
             Max = 3,
-            Rounding = 1,
-            Callback = function(v)
-                vars.InsertDelay = v
-            end
+            Default = vars.InsertDelay,
+            Callback = function(v) vars.InsertDelay = v end
         })
 
         -- =========================
@@ -77,14 +67,26 @@ return {
         local Players = game:GetService("Players")
         local ReplicatedStorage = game:GetService("ReplicatedStorage")
         local player = Players.LocalPlayer
+        local LoadedBlocks = workspace:WaitForChild("LoadedBlocks")
+
         local InsertItem = ReplicatedStorage
             :WaitForChild("Relay")
             :WaitForChild("Blocks")
             :WaitForChild("InsertItem")
 
+        local FillBucket = ReplicatedStorage
+            :WaitForChild("Relay")
+            :WaitForChild("Inventory")
+            :WaitForChild("FillBucket")
+
         -- =========================
         -- HELPERS
         -- =========================
+        local WellList = {
+            ["Brick Well"] = true,
+            ["Stone Well"] = true
+        }
+
         local function HasWater(model)
             for _, v in ipairs(model:GetChildren()) do
                 if v:IsA("MeshPart") and v.Name == "Water" then
@@ -94,95 +96,112 @@ return {
             return false
         end
 
-        local function HasCanCollideFalse(model)
-            for _, v in ipairs(model:GetChildren()) do
-                if v.Name == "CanCollideFalse" then
-                    return true
-                end
-            end
-            return false
-        end
-
-        local function GetTeleportPosition(model)
+        local function GetPartPos(model)
             for _, obj in ipairs(model:GetDescendants()) do
                 if obj:IsA("BasePart") then
                     return obj.Position
                 end
             end
-            return nil
         end
 
-        local function TeleportToModel(model)
+        local function Teleport(pos)
+            local char = player.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            if hrp and pos then
+                hrp.CFrame = CFrame.new(pos + Vector3.new(0, 4, 0))
+            end
+        end
+
+        local function GetNearestWell()
             local char = player.Character
             local hrp = char and char:FindFirstChild("HumanoidRootPart")
             if not hrp then return end
 
-            local pos = GetTeleportPosition(model)
-            if pos then
-                hrp.CFrame = CFrame.new(pos + Vector3.new(0, 4, 0))
+            local nearest, dist
+
+            for _, block in ipairs(LoadedBlocks:GetChildren()) do
+                if WellList[block.Name] then
+                    local pos = GetPartPos(block)
+                    if pos then
+                        local d = (pos - hrp.Position).Magnitude
+                        if not dist or d < dist then
+                            dist = d
+                            nearest = block
+                        end
+                    end
+                end
             end
+            return nearest
         end
 
         -- =========================
         -- MAIN LOOP
         -- =========================
-        coroutine.wrap(function()
+        task.spawn(function()
             while true do
                 if vars.AutoInsert then
-                    local LoadedBlocks = workspace:FindFirstChild("LoadedBlocks")
                     local char = player.Character
                     local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                    if not hrp then goto skip end
 
-                    if LoadedBlocks and hrp then
-                        local targets = {}
-
-                        -- ambil semua block target
-                        for _, block in ipairs(LoadedBlocks:GetChildren()) do
-                            if block.Name == vars.InsertTarget then
-                                table.insert(targets, block)
-                            end
+                    local targets = {}
+                    for _, block in ipairs(LoadedBlocks:GetChildren()) do
+                        if block.Name == vars.InsertTarget then
+                            table.insert(targets, block)
                         end
+                    end
 
-                        -- urutkan dari yang TERDEKAT
-                        table.sort(targets, function(a, b)
-                            local pa = GetTeleportPosition(a)
-                            local pb = GetTeleportPosition(b)
-                            if not pa or not pb then return false end
-                            return (pa - hrp.Position).Magnitude < (pb - hrp.Position).Magnitude
-                        end)
+                    table.sort(targets, function(a, b)
+                        return (GetPartPos(a) - hrp.Position).Magnitude <
+                               (GetPartPos(b) - hrp.Position).Magnitude
+                    end)
 
-                        -- proses satu per satu
-                        for _, block in ipairs(targets) do
-                            if block.Name == "Small Water Trough" and HasWater(block) then
-                                continue
-                            end
+                    -- 🔹 KHUSUS SMALL WATER TROUGH
+                    if vars.InsertTarget == "Small Water Trough" then
+                        local well = GetNearestWell()
+                        if well then
+                            Teleport(GetPartPos(well))
+                            task.wait(0.4)
 
-                            if block.Name == "Butter Churn" and HasCanCollideFalse(block) then
-                                continue
-                            end
-
-                            if vars.AutoTeleport then
-                                TeleportToModel(block)
-                                task.wait(0.35)
-                            end
-
-                            local voxel = block:GetAttribute("VoxelPosition")
+                            local voxel = well:GetAttribute("VoxelPosition")
                             if voxel then
                                 pcall(function()
-                                    InsertItem:InvokeServer(
+                                    FillBucket:InvokeServer(
                                         vector.create(voxel.X, voxel.Y, voxel.Z)
                                     )
                                 end)
+                                task.wait(0.3)
                             end
-
-                            task.wait(vars.InsertDelay)
                         end
                     end
+
+                    for _, block in ipairs(targets) do
+                        if block.Name == "Small Water Trough" and HasWater(block) then
+                            continue
+                        end
+
+                        if vars.AutoTeleport then
+                            Teleport(GetPartPos(block))
+                            task.wait(0.35)
+                        end
+
+                        local voxel = block:GetAttribute("VoxelPosition")
+                        if voxel then
+                            pcall(function()
+                                InsertItem:InvokeServer(
+                                    vector.create(voxel.X, voxel.Y, voxel.Z)
+                                )
+                            end)
+                        end
+
+                        task.wait(vars.InsertDelay)
+                    end
                 end
+                ::skip::
                 task.wait(0.5)
             end
-        end)()
+        end)
 
-        print("[Auto Insert] FULL FIX AKTIF")
+        print("[AutoInsert] + AutoWell + Teleport READY")
     end
 }
