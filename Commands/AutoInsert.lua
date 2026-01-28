@@ -1,4 +1,4 @@
--- AutoInsert.lua (WITH AUTO WELL TELEPORT)
+-- AutoInsert.lua (REFILL PER TROUGH VERSION)
 return {
     Execute = function(tab)
         local vars = _G.BotVars or {}
@@ -11,19 +11,19 @@ return {
         -- =========================
         local Group = MainTab:AddLeftGroupbox("Auto Insert Items")
 
-        vars.AutoInsert = vars.AutoInsert or false
+        vars.AutoInsert   = vars.AutoInsert or false
         vars.AutoTeleport = vars.AutoTeleport or false
-        vars.InsertDelay = vars.InsertDelay or 1
+        vars.InsertDelay  = vars.InsertDelay or 1
         vars.InsertTarget = vars.InsertTarget or "Small Water Trough"
         _G.BotVars = vars
 
-        Group:AddToggle("AutoInsert", {
+        Group:AddToggle("AutoInsertToggle", {
             Text = "Auto Insert",
             Default = vars.AutoInsert,
             Callback = function(v) vars.AutoInsert = v end
         })
 
-        Group:AddToggle("AutoTeleport", {
+        Group:AddToggle("AutoTeleportToggle", {
             Text = "Auto Teleport",
             Default = vars.AutoTeleport,
             Callback = function(v) vars.AutoTeleport = v end
@@ -40,8 +40,8 @@ return {
         }
 
         task.spawn(function()
-            task.wait(0.3)
-            local dd = Group:AddDropdown("TargetBlock", {
+            task.wait(0.4)
+            local dd = Group:AddDropdown("InsertTarget", {
                 Text = "Target Block",
                 Values = allowedModels,
                 Default = vars.InsertTarget,
@@ -53,7 +53,7 @@ return {
             dd:SetValue(vars.InsertTarget)
         end)
 
-        Group:AddSlider("Delay", {
+        Group:AddSlider("InsertDelay", {
             Text = "Delay",
             Min = 0.3,
             Max = 3,
@@ -118,7 +118,6 @@ return {
             if not hrp then return end
 
             local nearest, dist
-
             for _, block in ipairs(LoadedBlocks:GetChildren()) do
                 if WellList[block.Name] then
                     local pos = GetPartPos(block)
@@ -144,6 +143,7 @@ return {
                     local hrp = char and char:FindFirstChild("HumanoidRootPart")
                     if not hrp then goto skip end
 
+                    -- ambil semua target
                     local targets = {}
                     for _, block in ipairs(LoadedBlocks:GetChildren()) do
                         if block.Name == vars.InsertTarget then
@@ -151,45 +151,61 @@ return {
                         end
                     end
 
+                    -- urutkan dari yang terdekat
                     table.sort(targets, function(a, b)
-                        return (GetPartPos(a) - hrp.Position).Magnitude <
-                               (GetPartPos(b) - hrp.Position).Magnitude
+                        local pa = GetPartPos(a)
+                        local pb = GetPartPos(b)
+                        if not pa or not pb then return false end
+                        return (pa - hrp.Position).Magnitude <
+                               (pb - hrp.Position).Magnitude
                     end)
 
-                    -- 🔹 KHUSUS SMALL WATER TROUGH
-                    if vars.InsertTarget == "Small Water Trough" then
-                        local well = GetNearestWell()
-                        if well then
-                            Teleport(GetPartPos(well))
-                            task.wait(0.4)
-
-                            local voxel = well:GetAttribute("VoxelPosition")
-                            if voxel then
-                                pcall(function()
-                                    FillBucket:InvokeServer(
-                                        vector.create(voxel.X, voxel.Y, voxel.Z)
-                                    )
-                                end)
-                                task.wait(0.3)
-                            end
-                        end
-                    end
-
+                    -- proses satu per satu
                     for _, block in ipairs(targets) do
+                        -- skip trough yang sudah ada air
                         if block.Name == "Small Water Trough" and HasWater(block) then
                             continue
                         end
 
+                        -- 🔹 REFILL EMBER SETIAP TROUGH
+                        if vars.InsertTarget == "Small Water Trough" then
+                            local well = GetNearestWell()
+                            if well then
+                                Teleport(GetPartPos(well))
+                                task.wait(0.35)
+
+                                local voxelWell = well:GetAttribute("VoxelPosition")
+                                if voxelWell then
+                                    pcall(function()
+                                        FillBucket:InvokeServer(
+                                            vector.create(
+                                                voxelWell.X,
+                                                voxelWell.Y,
+                                                voxelWell.Z
+                                            )
+                                        )
+                                    end)
+                                    task.wait(0.25)
+                                end
+                            end
+                        end
+
+                        -- teleport ke trough
                         if vars.AutoTeleport then
                             Teleport(GetPartPos(block))
                             task.wait(0.35)
                         end
 
+                        -- insert water
                         local voxel = block:GetAttribute("VoxelPosition")
                         if voxel then
                             pcall(function()
                                 InsertItem:InvokeServer(
-                                    vector.create(voxel.X, voxel.Y, voxel.Z)
+                                    vector.create(
+                                        voxel.X,
+                                        voxel.Y,
+                                        voxel.Z
+                                    )
                                 )
                             end)
                         end
@@ -202,6 +218,6 @@ return {
             end
         end)
 
-        print("[AutoInsert] + AutoWell + Teleport READY")
+        print("[AutoInsert] REFILL PER TROUGH AKTIF")
     end
 }
