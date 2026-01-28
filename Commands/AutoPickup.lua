@@ -40,20 +40,33 @@ return {
       -- =========================
       local allowedItems = {
           "All",
+
+          -- Sticks
           "Oak Sticks",
           "Birch Sticks",
           "Pink Cherry Sticks",
           "Cedar Sticks",
-          "Wild Cactus",
-          "Scallop",
-          "Oyster",
-          "Conch",
+
+          -- Fruits & Plants
           "Wild Blueberry",
+          "Wild Strawberry",
+          "Wild Cactus",
+
+          -- Flowers
           "Yellow Flowers",
           "Orange Flowers",
           "Large Orange Flower",
+
+          -- Mushrooms
           "Red Mushroom Cluster",
           "Blue Mushroom Cluster",
+
+          -- Sea Items
+          "Scallop",
+          "Oyster",
+          "Conch",
+
+          -- Rare
           "Fossil"
       }
 
