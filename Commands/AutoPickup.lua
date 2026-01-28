@@ -40,20 +40,20 @@ return {
       -- =========================
       local allowedItems = {
           "All",
-
           "Oak Sticks",
           "Birch Sticks",
           "Pink Cherry Sticks",
           "Cedar Sticks",
-
+          "Wild Cactus",
+          "Scallop",
+          "Oyster",
+          "Conch",
           "Wild Blueberry",
           "Yellow Flowers",
           "Orange Flowers",
           "Large Orange Flower",
-
           "Red Mushroom Cluster",
           "Blue Mushroom Cluster",
-
           "Fossil"
       }
 
