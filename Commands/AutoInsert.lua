@@ -4,30 +4,23 @@ return {
         local vars = _G.BotVars or {}
         local Tabs = vars.Tabs or {}
         local MainTab = tab or Tabs.Main
-
         if not MainTab then
             warn("[Auto Insert] Tab tidak ditemukan!")
             return
         end
 
         -- =========================
-        -- UI GROUP
+        -- UI
         -- =========================
         local Group = MainTab:AddLeftGroupbox("Auto Insert Items")
 
-        -- =========================
-        -- DEFAULT VARS
-        -- =========================
         vars.AutoInsert = vars.AutoInsert or false
-        vars.InsertDelay = vars.InsertDelay or 1
-        vars.InsertTarget = vars.InsertTarget or "Compost Bin"
         vars.AutoTeleport = vars.AutoTeleport or false
+        vars.InsertDelay = vars.InsertDelay or 1
+        vars.InsertTarget = vars.InsertTarget or "Small Water Trough"
         _G.BotVars = vars
 
-        -- =========================
-        -- TOGGLE AUTO INSERT
-        -- =========================
-        Group:AddToggle("ToggleAutoInsert", {
+        Group:AddToggle("AutoInsertToggle", {
             Text = "Auto Insert",
             Default = vars.AutoInsert,
             Callback = function(v)
@@ -35,10 +28,7 @@ return {
             end
         })
 
-        -- =========================
-        -- TOGGLE AUTO TELEPORT
-        -- =========================
-        Group:AddToggle("ToggleAutoTeleport", {
+        Group:AddToggle("AutoTeleportToggle", {
             Text = "Auto Teleport",
             Default = vars.AutoTeleport,
             Callback = function(v)
@@ -46,23 +36,20 @@ return {
             end
         })
 
-        -- =========================
-        -- MODEL YANG DIIZINKAN
-        -- =========================
         local allowedModels = {
+            "Handmill",
+            "Preserves Barrel",
+            "Small Food Trough",
             "Butter Churn",
             "Compost Bin",
             "Large Water Trough",
             "Small Water Trough"
         }
 
-        -- =========================
-        -- DROPDOWN
-        -- =========================
         task.spawn(function()
             task.wait(0.5)
-            local dropdown = Group:AddDropdown("DropdownInsertTarget", {
-                Text = "Pilih Block",
+            local dropdown = Group:AddDropdown("InsertTarget", {
+                Text = "Target Block",
                 Values = allowedModels,
                 Default = vars.InsertTarget,
                 Multi = false,
@@ -73,10 +60,7 @@ return {
             dropdown:SetValue(vars.InsertTarget)
         end)
 
-        -- =========================
-        -- SLIDER DELAY
-        -- =========================
-        Group:AddSlider("SliderInsertDelay", {
+        Group:AddSlider("InsertDelay", {
             Text = "Delay",
             Default = vars.InsertDelay,
             Min = 0.3,
@@ -93,11 +77,13 @@ return {
         local Players = game:GetService("Players")
         local ReplicatedStorage = game:GetService("ReplicatedStorage")
         local player = Players.LocalPlayer
-        local Blocks = ReplicatedStorage:WaitForChild("Relay"):WaitForChild("Blocks")
-        local InsertItem = Blocks:WaitForChild("InsertItem")
+        local InsertItem = ReplicatedStorage
+            :WaitForChild("Relay")
+            :WaitForChild("Blocks")
+            :WaitForChild("InsertItem")
 
         -- =========================
-        -- HELPER
+        -- HELPERS
         -- =========================
         local function HasWater(model)
             for _, v in ipairs(model:GetChildren()) do
@@ -117,15 +103,28 @@ return {
             return false
         end
 
-        local function TeleportTo(position)
+        local function GetTeleportPosition(model)
+            for _, obj in ipairs(model:GetDescendants()) do
+                if obj:IsA("BasePart") then
+                    return obj.Position
+                end
+            end
+            return nil
+        end
+
+        local function TeleportToModel(model)
             local char = player.Character
-            if char and char:FindFirstChild("HumanoidRootPart") then
-                char.HumanoidRootPart.CFrame = CFrame.new(position + Vector3.new(0, 4, 0))
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            if not hrp then return end
+
+            local pos = GetTeleportPosition(model)
+            if pos then
+                hrp.CFrame = CFrame.new(pos + Vector3.new(0, 4, 0))
             end
         end
 
         -- =========================
-        -- LOOP SYSTEM
+        -- MAIN LOOP
         -- =========================
         coroutine.wrap(function()
             while true do
@@ -140,25 +139,20 @@ return {
                         -- ambil semua block target
                         for _, block in ipairs(LoadedBlocks:GetChildren()) do
                             if block.Name == vars.InsertTarget then
-                                local voxel = block:GetAttribute("VoxelPosition")
-                                if voxel then
-                                    table.insert(targets, {
-                                        block = block,
-                                        pos = Vector3.new(voxel.X, voxel.Y, voxel.Z)
-                                    })
-                                end
+                                table.insert(targets, block)
                             end
                         end
 
                         -- urutkan dari yang TERDEKAT
                         table.sort(targets, function(a, b)
-                            return (a.pos - hrp.Position).Magnitude < (b.pos - hrp.Position).Magnitude
+                            local pa = GetTeleportPosition(a)
+                            local pb = GetTeleportPosition(b)
+                            if not pa or not pb then return false end
+                            return (pa - hrp.Position).Magnitude < (pb - hrp.Position).Magnitude
                         end)
 
                         -- proses satu per satu
-                        for _, data in ipairs(targets) do
-                            local block = data.block
-
+                        for _, block in ipairs(targets) do
                             if block.Name == "Small Water Trough" and HasWater(block) then
                                 continue
                             end
@@ -168,13 +162,18 @@ return {
                             end
 
                             if vars.AutoTeleport then
-                                TeleportTo(data.pos)
-                                task.wait(0.25)
+                                TeleportToModel(block)
+                                task.wait(0.35)
                             end
 
-                            pcall(function()
-                                InsertItem:InvokeServer(data.pos)
-                            end)
+                            local voxel = block:GetAttribute("VoxelPosition")
+                            if voxel then
+                                pcall(function()
+                                    InsertItem:InvokeServer(
+                                        vector.create(voxel.X, voxel.Y, voxel.Z)
+                                    )
+                                end)
+                            end
 
                             task.wait(vars.InsertDelay)
                         end
@@ -184,6 +183,6 @@ return {
             end
         end)()
 
-        print("[Auto Insert] + Auto Teleport Aktif")
+        print("[Auto Insert] FULL FIX AKTIF")
     end
 }
