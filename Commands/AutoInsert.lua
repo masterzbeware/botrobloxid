@@ -13,7 +13,7 @@ return {
 
         vars.AutoInsert   = vars.AutoInsert or false
         vars.AutoTeleport = vars.AutoTeleport or false
-        vars.InsertDelay  = vars.InsertDelay or 0.5
+        vars.InsertDelay  = vars.InsertDelay or 0.3
         vars.InsertTarget = vars.InsertTarget or "Small Water Trough"
         _G.BotVars = vars
 
