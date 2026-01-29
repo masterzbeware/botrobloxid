@@ -49,6 +49,7 @@ local commandFiles = {
     "AutoCraft.lua",
     "AutoPlant.lua",
     "AutoPickup.lua",
+    "AutoWater.lua",
     "AutoBucket.lua" -- FIX: nama file sudah benar
 }
 
@@ -109,6 +110,8 @@ jalankan("autoharvest")
 jalankan("autocrop")
 jalankan("autocraft")
 jalankan("autoplant")
+jalankan("autoplant")
+jalankan("autowater")
 jalankan("autopickup")
 jalankan("autobucket") -- FIX: nama module benar
 
