@@ -9,7 +9,7 @@ return {
       -- =========================
       -- UI
       -- =========================
-      local Group = MainTab:AddLeftGroupbox("Auto Water")
+      local Group = MainTab:AddRightGroupbox("Auto Water")
 
       vars.AutoWater     = vars.AutoWater or false
       vars.AutoTeleport  = vars.AutoTeleport or false

@@ -17,7 +17,7 @@ return {
         local MainTab = tab or Tabs.Main
         if not MainTab then return end
 
-        local Group = MainTab:AddLeftGroupbox("Auto Bucket")
+        local Group = MainTab:AddRightGroupbox("Auto Bucket")
 
         -- TOGGLE
         Group:AddToggle("ToggleAutoBucket", {
