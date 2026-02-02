@@ -1,89 +1,111 @@
--- AutoPlanter.lua (one-by-one, batch delay)
+-- AutoPlanter.lua (one-by-one, batch delay + dropdown)
 return {
-  Execute = function(tab)
-      local vars = _G.BotVars or {}
-      local Tabs = vars.Tabs or {}
-      local MainTab = tab or Tabs.Main
+    Execute = function(tab)
+        local vars = _G.BotVars or {}
+        local Tabs = vars.Tabs or {}
+        local MainTab = tab or Tabs.Main
 
-      if not MainTab then
-          warn("[Auto Planter] Tab tidak ditemukan!")
-          return
-      end
+        if not MainTab then
+            warn("[Auto Planter] Tab tidak ditemukan!")
+            return
+        end
 
-      local Group = MainTab:AddLeftGroupbox("Auto Planter Cart")
+        local Group = MainTab:AddLeftGroupbox("Auto Planter")
 
-      vars.AutoPlanter  = vars.AutoPlanter or false
-      vars.PlanterDelay = vars.PlanterDelay or 0.5
-      _G.BotVars = vars
+        vars.AutoPlanter   = vars.AutoPlanter or false
+        vars.PlanterDelay  = vars.PlanterDelay or 0.5
+        vars.PlanterType   = vars.PlanterType or "Planter Cart" -- 🔥 default
+        _G.BotVars = vars
 
-      Group:AddToggle("ToggleAutoPlanter", {
-          Text = "Auto Planter",
-          Default = vars.AutoPlanter,
-          Callback = function(v)
-              vars.AutoPlanter = v
-              print("[Auto Planter] Toggle:", v and "ON" or "OFF")
-          end
-      })
+        -- Toggle
+        Group:AddToggle("ToggleAutoPlanter", {
+            Text = "Auto Planter",
+            Default = vars.AutoPlanter,
+            Callback = function(v)
+                vars.AutoPlanter = v
+                print("[Auto Planter] Toggle:", v and "ON" or "OFF")
+            end
+        })
 
-      Group:AddSlider("SliderPlanterDelay", {
-          Text = "Delay Antar Batch",
-          Default = vars.PlanterDelay,
-          Min = 0.5,
-          Max = 4,
-          Rounding = 1,
-          Callback = function(v)
-              vars.PlanterDelay = v
-          end
-      })
+        -- Slider Delay
+        Group:AddSlider("SliderPlanterDelay", {
+            Text = "Delay Antar Batch",
+            Default = vars.PlanterDelay,
+            Min = 0.5,
+            Max = 4,
+            Rounding = 1,
+            Callback = function(v)
+                vars.PlanterDelay = v
+            end
+        })
 
-      local ReplicatedStorage = game:GetService("ReplicatedStorage")
-      local LoadedBlocks = workspace:WaitForChild("LoadedBlocks")
-      local UsePlanterCart = ReplicatedStorage:WaitForChild("Relay")
-          :WaitForChild("Blocks")
-          :WaitForChild("UsePlanterCart")
+        -- 🔽 DROPDOWN PLANTER TYPE
+        Group:AddDropdown("DropdownPlanterType", {
+            Text = "Planter Mode",
+            Values = { "Planter Cart", "Plant" },
+            Default = vars.PlanterType,
+            Callback = function(v)
+                vars.PlanterType = v
+                print("[Auto Planter] Mode:", v)
+            end
+        })
 
-      local function isOccupied(voxel)
-          for _, block in ipairs(LoadedBlocks:GetChildren()) do
-              local v2 = block:GetAttribute("VoxelPosition")
-              if v2 and v2.X == voxel.X and v2.Y == voxel.Y and v2.Z == voxel.Z then
-                  return true
-              end
-          end
-          return false
-      end
+        -- Services
+        local ReplicatedStorage = game:GetService("ReplicatedStorage")
+        local LoadedBlocks = workspace:WaitForChild("LoadedBlocks")
+        local Relay = ReplicatedStorage:WaitForChild("Relay"):WaitForChild("Blocks")
 
-      coroutine.wrap(function()
-          while true do
-              if vars.AutoPlanter then
-                  local blocks = LoadedBlocks:GetChildren()
-                  for i, block in ipairs(blocks) do
-                      if block.Name == "Farmland" then
-                          local voxel = block:GetAttribute("VoxelPosition")
-                          if voxel then
-                              local above = Vector3.new(voxel.X, voxel.Y + 1, voxel.Z)
-                              if not isOccupied(above) then
-                                  task.spawn(function()
-                                      local success, err = pcall(function()
-                                          UsePlanterCart:InvokeServer(above)
-                                      end)
-                                      if success then
-                                          print("Planter Cart ke-", i, "berhasil")
-                                      else
-                                          warn("Gagal Planter Cart ke-", i, err)
-                                      end
-                                  end)
-                                  task.wait(0.1) -- delay antar block
-                              end
-                          end
-                      end
-                  end
-                  task.wait(vars.PlanterDelay) -- delay antar batch
-              else
-                  task.wait(1)
-              end
-          end
-      end)()
+        local UsePlanterCart = Relay:WaitForChild("UsePlanterCart")
+        local PlantCrop = Relay:WaitForChild("PlantCrop")
 
-      print("[Auto Planter] Sistem aktif.")
-  end
+        -- Cek voxel kosong
+        local function isOccupied(voxel)
+            for _, block in ipairs(LoadedBlocks:GetChildren()) do
+                local v2 = block:GetAttribute("VoxelPosition")
+                if v2 and v2.X == voxel.X and v2.Y == voxel.Y and v2.Z == voxel.Z then
+                    return true
+                end
+            end
+            return false
+        end
+
+        -- Loop utama
+        coroutine.wrap(function()
+            while true do
+                if vars.AutoPlanter then
+                    for i, block in ipairs(LoadedBlocks:GetChildren()) do
+                        if block.Name == "Farmland" then
+                            local voxel = block:GetAttribute("VoxelPosition")
+                            if voxel then
+                                local above = Vector3.new(voxel.X, voxel.Y + 1, voxel.Z)
+                                if not isOccupied(above) then
+                                    task.spawn(function()
+                                        local success, err = pcall(function()
+                                            if vars.PlanterType == "Planter Cart" then
+                                                UsePlanterCart:InvokeServer(above)
+                                            else
+                                                PlantCrop:InvokeServer(above)
+                                            end
+                                        end)
+
+                                        if success then
+                                            print(vars.PlanterType, "ke-", i, "berhasil")
+                                        else
+                                            warn("Gagal", vars.PlanterType, "ke-", i, err)
+                                        end
+                                    end)
+                                    task.wait(0.1)
+                                end
+                            end
+                        end
+                    end
+                    task.wait(vars.PlanterDelay)
+                else
+                    task.wait(1)
+                end
+            end
+        end)()
+
+        print("[Auto Planter] Sistem aktif.")
+    end
 }

@@ -76,6 +76,7 @@ end)
 -- =========================
 Tabs.Main = MainWindow:AddTab("Main", "crosshair")
 
+Tabs.Shop = MainWindow:AddTab("Shop", "Leaf")
 -- Save Tabs di global
 _G.BotVars.Tabs = Tabs
 
