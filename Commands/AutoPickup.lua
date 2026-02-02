@@ -1,4 +1,4 @@
--- AutoPickup.lua
+-- AutoPickup.lua (FINAL)
 return {
     Execute = function(tab)
         local vars = _G.BotVars or {}
@@ -20,7 +20,7 @@ return {
         -- =========================
         vars.AutoPickup   = vars.AutoPickup or false
         vars.PickupDelay  = vars.PickupDelay or 0.3
-        vars.PickupTarget = vars.PickupTarget or "Oak Sticks"
+        vars.PickupTarget = vars.PickupTarget or "All"
         _G.BotVars = vars
 
         -- =========================
@@ -36,7 +36,7 @@ return {
         })
 
         -- =========================
-        -- ITEM YANG BISA DIPICKUP
+        -- ITEM LIST
         -- =========================
         local allowedItems = {
             "All",
@@ -71,7 +71,7 @@ return {
         }
 
         -- =========================
-        -- DROPDOWN ITEM
+        -- DROPDOWN
         -- =========================
         task.defer(function()
             if Group.AddDropdown then
@@ -82,7 +82,7 @@ return {
                     Multi = false,
                     Callback = function(v)
                         vars.PickupTarget = v
-                        print("[Auto Pickup] Target diubah ke:", v)
+                        print("[Auto Pickup] Target:", v)
                     end
                 })
                 dropdown:SetValue(vars.PickupTarget)
@@ -114,21 +114,19 @@ return {
             :WaitForChild("PickupItem")
 
         -- =========================
-        -- HELPER FUNCTION
+        -- HELPER: GET VOXEL
         -- =========================
-        local function getVoxelFromInstance(inst)
-            -- Part / MeshPart / Union
+        local function getVoxel(inst)
             if inst:IsA("BasePart") then
                 return inst:GetAttribute("VoxelPosition")
             end
 
-            -- Model
             if inst:IsA("Model") then
-                for _, child in ipairs(inst:GetDescendants()) do
-                    if child:IsA("BasePart") then
-                        local voxel = child:GetAttribute("VoxelPosition")
-                        if voxel then
-                            return voxel
+                for _, d in ipairs(inst:GetDescendants()) do
+                    if d:IsA("BasePart") then
+                        local v = d:GetAttribute("VoxelPosition")
+                        if v then
+                            return v
                         end
                     end
                 end
@@ -138,27 +136,32 @@ return {
         end
 
         -- =========================
+        -- HELPER: ITEM ALLOWED
+        -- =========================
+        local function isAllowedItem(name)
+            return table.find(allowedItems, name) ~= nil and name ~= "All"
+        end
+
+        -- =========================
         -- AUTO PICKUP LOOP
         -- =========================
         coroutine.wrap(function()
             while true do
                 if vars.AutoPickup then
                     for _, block in ipairs(LoadedBlocks:GetChildren()) do
-                        local voxel = getVoxelFromInstance(block)
+                        local voxel = getVoxel(block)
                         if voxel then
                             -- MODE ALL
                             if vars.PickupTarget == "All" then
-                                for _, itemName in ipairs(allowedItems) do
-                                    if itemName ~= "All" and block.Name == itemName then
-                                        task.spawn(function()
-                                            pcall(function()
-                                                PickupItem:InvokeServer(
-                                                    itemName,
-                                                    Vector3.new(voxel.X, voxel.Y, voxel.Z)
-                                                )
-                                            end)
+                                if isAllowedItem(block.Name) then
+                                    task.spawn(function()
+                                        pcall(function()
+                                            PickupItem:InvokeServer(
+                                                block.Name,
+                                                Vector3.new(voxel.X, voxel.Y, voxel.Z)
+                                            )
                                         end)
-                                    end
+                                    end)
                                 end
 
                             -- MODE SINGLE
@@ -176,13 +179,14 @@ return {
                             task.wait(0.1)
                         end
                     end
+
                     task.wait(vars.PickupDelay)
                 else
-                    repeat task.wait(0.5) until vars.AutoPickup
+                    task.wait(0.5)
                 end
             end
         end)()
 
-        print("[Auto Pickup] Sistem aktif. Target:", vars.PickupTarget)
+        print("[Auto Pickup] Sistem aktif | Target:", vars.PickupTarget)
     end
 }
