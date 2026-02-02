@@ -50,6 +50,7 @@ local commandFiles = {
     "AutoPlant.lua",
     "AutoPickup.lua",
     "AutoWater.lua",
+    "AutoSell.lua",
     "AutoBucket.lua" -- FIX: nama file sudah benar
 }
 
@@ -108,6 +109,7 @@ end
 jalankan("autoinsert")
 jalankan("autoharvest")
 jalankan("autocrop")
+jalankan("autosell")
 jalankan("autocraft")
 jalankan("autoplant")
 jalankan("autoplant")
