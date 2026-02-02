@@ -1,4 +1,4 @@
--- AutoPickup.lua (FAST & SAFE FINAL)
+-- AutoPickup.lua (CONTINUOUS • NO LIMIT • NO CACHE)
 return {
     Execute = function(tab)
         local vars = _G.BotVars or {}
@@ -19,7 +19,7 @@ return {
         -- DEFAULT VARS
         -- =========================
         vars.AutoPickup   = vars.AutoPickup or false
-        vars.PickupDelay  = vars.PickupDelay or 0.1 -- 🔥 lebih cepat
+        vars.PickupDelay  = vars.PickupDelay or 0.03 -- ⚡ sangat cepat
         vars.PickupTarget = vars.PickupTarget or "All"
         _G.BotVars = vars
 
@@ -31,7 +31,7 @@ return {
             Default = vars.AutoPickup,
             Callback = function(v)
                 vars.AutoPickup = v
-                print("[Auto Pickup] Toggle:", v and "ON" or "OFF")
+                print("[Auto Pickup]", v and "ON" or "OFF")
             end
         })
 
@@ -96,7 +96,7 @@ return {
             Text = "Delay Pickup",
             Default = vars.PickupDelay,
             Min = 0,
-            Max = 1,
+            Max = 0.2,
             Rounding = 2,
             Callback = function(v)
                 vars.PickupDelay = v
@@ -114,20 +114,16 @@ return {
             :WaitForChild("PickupItem")
 
         -- =========================
-        -- HELPER: GET VOXEL (PART + MODEL)
+        -- GET VOXEL POSITION
         -- =========================
         local function getVoxel(inst)
             if inst:IsA("BasePart") then
                 return inst:GetAttribute("VoxelPosition")
-            end
-
-            if inst:IsA("Model") then
+            elseif inst:IsA("Model") then
                 for _, d in ipairs(inst:GetDescendants()) do
                     if d:IsA("BasePart") then
                         local v = d:GetAttribute("VoxelPosition")
-                        if v then
-                            return v
-                        end
+                        if v then return v end
                     end
                 end
             end
@@ -135,75 +131,41 @@ return {
         end
 
         -- =========================
-        -- HELPER: ITEM FILTER
+        -- ITEM FILTER
         -- =========================
         local function isAllowedItem(name)
             return name ~= "All" and table.find(allowedItems, name)
         end
 
         -- =========================
-        -- ANTI-SPAM CONFIG
-        -- =========================
-        local pickedCache = {}
-        local PICKUP_COOLDOWN = 0.4 -- detik per voxel
-        local MAX_PER_BATCH = 6     -- max pickup per loop
-
-        local function canPickup(voxel)
-            local key = voxel.X .. "," .. voxel.Y .. "," .. voxel.Z
-            local t = tick()
-
-            if pickedCache[key] and (t - pickedCache[key]) < PICKUP_COOLDOWN then
-                return false
-            end
-
-            pickedCache[key] = t
-            return true
-        end
-
-        -- =========================
-        -- FAST AUTO PICKUP LOOP
+        -- CONTINUOUS PICKUP LOOP
         -- =========================
         coroutine.wrap(function()
             while true do
                 if vars.AutoPickup then
-                    local pickedCount = 0
-
                     for _, block in ipairs(LoadedBlocks:GetChildren()) do
-                        if pickedCount >= MAX_PER_BATCH then
-                            break
-                        end
-
                         local voxel = getVoxel(block)
-                        if voxel and canPickup(voxel) then
+                        if voxel then
                             if vars.PickupTarget == "All" then
                                 if isAllowedItem(block.Name) then
-                                    local ok = pcall(function()
+                                    pcall(function()
                                         PickupItem:InvokeServer(
                                             block.Name,
                                             Vector3.new(voxel.X, voxel.Y, voxel.Z)
                                         )
                                     end)
-                                    if ok then
-                                        pickedCount += 1
-                                    end
                                 end
-
                             elseif block.Name == vars.PickupTarget then
-                                local ok = pcall(function()
+                                pcall(function()
                                     PickupItem:InvokeServer(
                                         vars.PickupTarget,
                                         Vector3.new(voxel.X, voxel.Y, voxel.Z)
                                     )
                                 end)
-                                if ok then
-                                    pickedCount += 1
-                                end
                             end
-
-                            task.wait() -- next frame (smooth, no lag)
                         end
+                        task.wait() -- 1 frame, anti lag
                     end
-
                     task.wait(vars.PickupDelay)
                 else
                     task.wait(0.2)
@@ -211,6 +173,6 @@ return {
             end
         end)()
 
-        print("[Auto Pickup] FAST mode aktif | Target:", vars.PickupTarget)
+        print("[Auto Pickup] Unlimited continuous pickup aktif 🔥")
     end
 }
