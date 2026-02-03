@@ -1,221 +1,162 @@
--- AutoWater.lua (REFILL PER TROUGH)
+-- AutoWater.lua
 return {
-  Execute = function(tab)
-      local vars = _G.BotVars or {}
-      local Tabs = vars.Tabs or {}
-      local MainTab = tab or Tabs.Main
-      if not MainTab then return end
+    Execute = function(tab)
+        local vars = _G.BotVars or {}
+        local Tabs = vars.Tabs or {}
+        local MainTab = tab or Tabs.Main
 
-      -- =========================
-      -- UI
-      -- =========================
-      local Group = MainTab:AddRightGroupbox("Auto Water")
+        if not MainTab then
+            warn("[AutoWater] MainTab tidak ditemukan!")
+            return
+        end
 
-      vars.AutoWater     = vars.AutoWater or false
-      vars.AutoTeleport  = vars.AutoTeleport or false
-      vars.WaterDelay    = vars.WaterDelay or 0.3
-      vars.WaterTarget   = vars.WaterTarget or "Small Water Trough"
-      _G.BotVars = vars
+        -- UI GROUP
+        local Group = MainTab:AddLeftGroupbox("Auto Water System")
 
-      Group:AddToggle("AutoWaterToggle", {
-          Text = "Auto Water",
-          Default = vars.AutoWater,
-          Callback = function(v)
-              vars.AutoWater = v
-              print("[AutoWater]", v and "ON" or "OFF")
-          end
-      })
+        -- DEFAULT VARS
+        vars.AutoWater = vars.AutoWater or false
+        vars.WellTarget = vars.WellTarget or "Brick Well"
+        vars.TroughTarget = vars.TroughTarget or "Small Water Trough"
+        vars.WaterDelay = vars.WaterDelay or 0.5
+        _G.BotVars = vars
 
-      Group:AddToggle("AutoTeleportToggle", {
-          Text = "Auto Teleport",
-          Default = vars.AutoTeleport,
-          Callback = function(v)
-              vars.AutoTeleport = v
-          end
-      })
+        -- TOGGLE
+        Group:AddToggle("ToggleAutoWater", {
+            Text = "Auto Water",
+            Default = vars.AutoWater,
+            Callback = function(v)
+                vars.AutoWater = v
+                print("[AutoWater] Toggle:", v and "ON" or "OFF")
+            end
+        })
 
-      local allowedModels = {
-          "Small Water Trough",
-          "Large Water Trough"
-      }
+        -- MODEL OPTIONS
+        local wellModels = {
+            "Brick Well",
+            "Stone Well"
+        }
 
-      task.spawn(function()
-          task.wait(0.4)
-          local dd = Group:AddDropdown("WaterTarget", {
-              Text = "Target Trough",
-              Values = allowedModels,
-              Default = vars.WaterTarget,
-              Multi = false,
-              Callback = function(v)
-                  vars.WaterTarget = v
-              end
-          })
-          dd:SetValue(vars.WaterTarget)
-      end)
+        local troughModels = {
+            "Small Water Trough",
+            "Large Water Trough"
+        }
 
-      Group:AddSlider("WaterDelay", {
-          Text = "Delay",
-          Min = 0.3,
-          Max = 3,
-          Default = vars.WaterDelay,
-          Callback = function(v)
-              vars.WaterDelay = v
-          end
-      })
+        -- DROPDOWN WELL
+        Group:AddDropdown("DropdownWellTarget", {
+            Text = "Pilih Well",
+            Values = wellModels,
+            Default = vars.WellTarget,
+            Multi = false,
+            Callback = function(v)
+                vars.WellTarget = v
+                print("[AutoWater] Well dipilih:", v)
+            end
+        })
 
-      -- =========================
-      -- SERVICES
-      -- =========================
-      local Players = game:GetService("Players")
-      local ReplicatedStorage = game:GetService("ReplicatedStorage")
-      local player = Players.LocalPlayer
-      local LoadedBlocks = workspace:WaitForChild("LoadedBlocks")
+        -- DROPDOWN TROUGH
+        Group:AddDropdown("DropdownTroughTarget", {
+            Text = "Pilih Water Trough",
+            Values = troughModels,
+            Default = vars.TroughTarget,
+            Multi = false,
+            Callback = function(v)
+                vars.TroughTarget = v
+                print("[AutoWater] Trough dipilih:", v)
+            end
+        })
 
-      local FillBucket = ReplicatedStorage
-          :WaitForChild("Relay")
-          :WaitForChild("Inventory")
-          :WaitForChild("FillBucket")
+        -- DELAY SLIDER
+        Group:AddSlider("SliderWaterDelay", {
+            Text = "Delay Water",
+            Default = vars.WaterDelay,
+            Min = 0.2,
+            Max = 3,
+            Rounding = 1,
+            Callback = function(v)
+                vars.WaterDelay = v
+            end
+        })
 
-      local InsertItem = ReplicatedStorage
-          :WaitForChild("Relay")
-          :WaitForChild("Blocks")
-          :WaitForChild("InsertItem")
+        -- SERVICES
+        local ReplicatedStorage = game:GetService("ReplicatedStorage")
+        local LoadedBlocks = workspace:WaitForChild("LoadedBlocks")
 
-      -- =========================
-      -- HELPERS
-      -- =========================
-      local WellList = {
-          ["Brick Well"] = true,
-          ["Stone Well"] = true
-      }
+        local FillBucket = ReplicatedStorage
+            :WaitForChild("Relay")
+            :WaitForChild("Inventory")
+            :WaitForChild("FillBucket")
 
-      local function HasWater(model)
-          for _, v in ipairs(model:GetChildren()) do
-              if v:IsA("MeshPart") and v.Name == "Water" then
-                  return true
-              end
-          end
-          return false
-      end
+        local InsertItem = ReplicatedStorage
+            :WaitForChild("Relay")
+            :WaitForChild("Blocks")
+            :WaitForChild("InsertItem")
 
-      local function GetPartPos(model)
-          for _, obj in ipairs(model:GetDescendants()) do
-              if obj:IsA("BasePart") then
-                  return obj.Position
-              end
-          end
-      end
+        -- LOOP SYSTEM
+        coroutine.wrap(function()
+            while true do
+                if vars.AutoWater then
+                    local wells = {}
+                    local troughs = {}
 
-      local function Teleport(pos)
-          local char = player.Character
-          local hrp = char and char:FindFirstChild("HumanoidRootPart")
-          if hrp and pos then
-              hrp.CFrame = CFrame.new(pos + Vector3.new(0, 4, 0))
-          end
-      end
+                    -- FILTER BERDASARKAN DROPDOWN
+                    for _, block in ipairs(LoadedBlocks:GetChildren()) do
+                        if block:IsA("Model") then
+                            if block.Name == vars.WellTarget then
+                                table.insert(wells, block)
+                            elseif block.Name == vars.TroughTarget then
+                                table.insert(troughs, block)
+                            end
+                        end
+                    end
 
-      local function GetNearestWell()
-          local char = player.Character
-          local hrp = char and char:FindFirstChild("HumanoidRootPart")
-          if not hrp then return nil end
+                    -- PAIR OTOMATIS
+                    local total = math.min(#wells, #troughs)
 
-          local nearest, dist
-          for _, block in ipairs(LoadedBlocks:GetChildren()) do
-              if WellList[block.Name] then
-                  local pos = GetPartPos(block)
-                  if pos then
-                      local d = (pos - hrp.Position).Magnitude
-                      if not dist or d < dist then
-                          dist = d
-                          nearest = block
-                      end
-                  end
-              end
-          end
-          return nearest
-      end
+                    for i = 1, total do
+                        local well = wells[i]
+                        local trough = troughs[i]
 
-      -- =========================
-      -- MAIN LOOP
-      -- =========================
-      task.spawn(function()
-          while true do
-              if vars.AutoWater then
-                  local char = player.Character
-                  local hrp = char and char:FindFirstChild("HumanoidRootPart")
-                  if not hrp then
-                      task.wait(0.5)
-                      continue
-                  end
+                        -- FILL WELL
+                        local wellVoxel = well:GetAttribute("VoxelPosition")
+                        if wellVoxel then
+                            pcall(function()
+                                FillBucket:InvokeServer(
+                                    vector.create(
+                                        wellVoxel.X,
+                                        wellVoxel.Y,
+                                        wellVoxel.Z
+                                    )
+                                )
+                            end)
+                            print("[AutoWater] Fill Well ke-", i)
+                        end
 
-                  local targets = {}
-                  for _, block in ipairs(LoadedBlocks:GetChildren()) do
-                      if block.Name == vars.WaterTarget then
-                          table.insert(targets, block)
-                      end
-                  end
+                        task.wait(vars.WaterDelay)
 
-                  table.sort(targets, function(a, b)
-                      local pa = GetPartPos(a)
-                      local pb = GetPartPos(b)
-                      if not pa or not pb then return false end
-                      return (pa - hrp.Position).Magnitude <
-                             (pb - hrp.Position).Magnitude
-                  end)
+                        -- INSERT KE TROUGH
+                        local troughVoxel = trough:GetAttribute("VoxelPosition")
+                        if troughVoxel then
+                            pcall(function()
+                                InsertItem:InvokeServer(
+                                    vector.create(
+                                        troughVoxel.X,
+                                        troughVoxel.Y,
+                                        troughVoxel.Z
+                                    )
+                                )
+                            end)
+                            print("[AutoWater] Insert Trough ke-", i)
+                        end
 
-                  for _, trough in ipairs(targets) do
-                      if HasWater(trough) then
-                          continue
-                      end
+                        task.wait(vars.WaterDelay)
+                    end
 
-                      -- 🔹 REFILL PER TROUGH
-                      local well = GetNearestWell()
-                      if well then
-                          Teleport(GetPartPos(well))
-                          task.wait(0.35)
+                else
+                    task.wait(0.5)
+                end
+            end
+        end)()
 
-                          local voxelWell = well:GetAttribute("VoxelPosition")
-                          if voxelWell then
-                              pcall(function()
-                                  FillBucket:InvokeServer(
-                                      vector.create(
-                                          voxelWell.X,
-                                          voxelWell.Y,
-                                          voxelWell.Z
-                                      )
-                                  )
-                              end)
-                              task.wait(0.25)
-                          end
-                      end
-
-                      -- teleport ke trough
-                      if vars.AutoTeleport then
-                          Teleport(GetPartPos(trough))
-                          task.wait(0.35)
-                      end
-
-                      -- isi air ke trough
-                      local voxel = trough:GetAttribute("VoxelPosition")
-                      if voxel then
-                          pcall(function()
-                              InsertItem:InvokeServer(
-                                  vector.create(
-                                      voxel.X,
-                                      voxel.Y,
-                                      voxel.Z
-                                  )
-                              )
-                          end)
-                      end
-
-                      task.wait(vars.WaterDelay)
-                  end
-              end
-              task.wait(0.5)
-          end
-      end)
-
-      print("[AutoWater] Loaded - Refill Per Trough")
-  end
+        print("[AutoWater] Sistem aktif")
+    end
 }
