@@ -1,47 +1,78 @@
--- AutoCook_Solara_Minimal.lua (SUPER SOLARA SAFE)
+-- AutoCook_Solara.lua
+-- HARD PATH | NO MODULE | SOLARA SAFE
 
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
 
-_G.AutoCookEnabled = _G.AutoCookEnabled or false
-_G.AutoCookDelay = _G.AutoCookDelay or 4
+-- =========================
+-- CONFIG
+-- =========================
+_G.AutoCookEnabled = false
+_G.AutoCookDelay = 0.6
 
-print("[AutoCook] Minimal loaded")
+-- =========================
+-- PATH
+-- =========================
+local Plot = workspace.Plots:WaitForChild("Plot_Umbralis_4")
+local House = Plot:WaitForChild("House")
+local Counters = House:WaitForChild("Counters")
 
-local function getStove()
-    for _, v in ipairs(workspace:GetDescendants()) do
-        if v:IsA("Model") and v.Name:lower():find("stove") then
-            return v
-        end
-    end
-end
+local Fridge = Counters:WaitForChild("FlexFreeze Fridge")
+local PlaceArea =
+    Counters:WaitForChild("Basic Counter")
+        :WaitForChild("ObjectModel")
+        :WaitForChild("PlaceArea")
 
-local function interact(stove)
+print("[AutoCook] Loaded (Hard Path, Solara Safe)")
+
+-- =========================
+-- UTILS
+-- =========================
+local function teleportTo(part)
     local char = LocalPlayer.Character
     if not char then return end
 
     local hrp = char:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
 
-    hrp.CFrame = stove:GetPivot() * CFrame.new(0,0,3)
+    hrp.CFrame = part.CFrame * CFrame.new(0, 0, 2)
+end
+
+local function interact(part)
+    teleportTo(part)
     task.wait(0.3)
 
-    local remote = ReplicatedStorage:FindFirstChild("CookingRemote", true)
-    if remote then
-        pcall(function()
-            remote:FireServer({ Object = stove })
-        end)
+    -- ProximityPrompt
+    for _, v in ipairs(part:GetDescendants()) do
+        if v:IsA("ProximityPrompt") then
+            fireproximityprompt(v)
+            return
+        end
+    end
+
+    -- ClickDetector fallback
+    for _, v in ipairs(part:GetDescendants()) do
+        if v:IsA("ClickDetector") then
+            fireclickdetector(v)
+            return
+        end
     end
 end
 
+-- =========================
+-- MAIN LOOP
+-- =========================
 task.spawn(function()
-    while task.wait(_G.AutoCookDelay) do
-        if not _G.AutoCookEnabled then continue end
+    while true do
+        if _G.AutoCookEnabled then
+            -- Ambil bahan
+            interact(Fridge)
+            task.wait(1)
 
-        local stove = getStove()
-        if stove then
-            interact(stove)
+            -- Mix / place
+            interact(PlaceArea)
+            task.wait(_G.AutoCookDelay)
         end
+        task.wait(1)
     end
 end)
