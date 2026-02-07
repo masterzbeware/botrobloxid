@@ -49,6 +49,7 @@ local commandFiles = {
     "AutoCraft.lua",
     "AutoPlant.lua",
     "AutoWater.lua",
+    "AutoCook.lua",
     "AutoBucket.lua" -- FIX: nama file sudah benar
 }
 
@@ -112,6 +113,7 @@ jalankan("autocraft")
 jalankan("autoplant")
 jalankan("autoplant")
 jalankan("autowater")
+jalankan("autocook")
 jalankan("autobucket") -- FIX: nama module benar
 
 print("✅ Bot.lua loaded — semua modul UI aktif.")
