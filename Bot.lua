@@ -43,14 +43,7 @@ _G.BotVars.MainWindow = MainWindow
 -- =========================
 local commandFiles = {
     "WindowTab.lua",
-    "AutoInsert.lua",
-    "AutoHarvest.lua",
-    "AutoCrop.lua",
-    "AutoCraft.lua",
-    "AutoPlant.lua",
-    "AutoWater.lua",
-    "AutoCook.lua",
-    "AutoBucket.lua" -- FIX: nama file sudah benar
+    "AutoCook.lua"
 }
 
 -- =========================
@@ -105,15 +98,6 @@ local function jalankan(nama)
     end
 end
 
-jalankan("autoinsert")
-jalankan("autoharvest")
-jalankan("autocrop")
-jalankan("autosell")
-jalankan("autocraft")
-jalankan("autoplant")
-jalankan("autoplant")
-jalankan("autowater")
 jalankan("autocook")
-jalankan("autobucket") -- FIX: nama module benar
 
 print("✅ Bot.lua loaded — semua modul UI aktif.")
