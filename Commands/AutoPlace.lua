@@ -1,4 +1,4 @@
--- AutoPlace.lua (SAFE TEMPLATE - untuk game kamu sendiri)
+-- AutoPlace.lua
 return {
 	Execute = function(tab)
 		-- =========================
@@ -8,8 +8,8 @@ return {
 		vars.AutoPlace     = vars.AutoPlace or false
 		vars.PlaceDelay    = vars.PlaceDelay or 0.3
 		vars.PlaceItemId   = vars.PlaceItemId or 1
-		vars.PlaceOffsetX  = vars.PlaceOffsetX or 1 -- slider 1..3
-		vars.PlaceOffsetY  = vars.PlaceOffsetY or 1 -- slider 1..3
+		vars.PlaceOffsetX  = vars.PlaceOffsetX or 0 -- ✅ sekarang bisa 0
+		vars.PlaceOffsetY  = vars.PlaceOffsetY or 0 -- ✅ sekarang bisa 0
 		vars._AutoPlaceRun = vars._AutoPlaceRun or false
 		_G.BotVars = vars
 
@@ -42,10 +42,10 @@ return {
 			end
 		})
 
-		-- Slider X (1..3)
+		-- ✅ Slider X (0..3)
 		Group:AddSlider("SliderPlaceOffsetX", {
 			Text = "Offset X",
-			Min = 1,
+			Min = 0,
 			Max = 3,
 			Default = vars.PlaceOffsetX,
 			Rounding = 0,
@@ -54,10 +54,10 @@ return {
 			end
 		})
 
-		-- Slider Y (1..3)
+		-- ✅ Slider Y (0..3)
 		Group:AddSlider("SliderPlaceOffsetY", {
 			Text = "Offset Y",
-			Min = 1,
+			Min = 0,
 			Max = 3,
 			Default = vars.PlaceOffsetY,
 			Rounding = 0,
@@ -84,27 +84,27 @@ return {
 		local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 		local remotesFolder = ReplicatedStorage:WaitForChild("Remotes")
-		local placeRemote = remotesFolder:WaitForChild("PlayerPlaceItem") -- RemoteEvent
+		local placeRemote = remotesFolder:WaitForChild("PlayerPlaceItem")
 
 		-- =========================
 		-- GRID HELPER
 		-- =========================
 		local function getGridPosInFrontOfPlayer()
 			local plr = Players.LocalPlayer
-			local char = plr.Character
-			local hrp = char and char:FindFirstChild("HumanoidRootPart")
+			if not plr then return nil end
+
+			local char = plr.Character or plr.CharacterAdded:Wait()
+			local hrp = char:FindFirstChild("HumanoidRootPart") or char:WaitForChild("HumanoidRootPart", 3)
 			if not hrp then return nil end
 
-			-- contoh titik target: 6 studs di depan pemain
 			local worldPos = hrp.Position + hrp.CFrame.LookVector * 6
 
-			-- contoh convert world -> grid (sesuaikan game kamu!)
 			local gx = math.floor(worldPos.X + 0.5)
 			local gy = math.floor(worldPos.Y + 0.5)
 
-			-- offset dari slider (1..3)
-			gx += vars.PlaceOffsetX
-			gy += vars.PlaceOffsetY
+			-- ✅ offset bisa 0 jadi tidak mengubah koordinat
+			gx = gx + (vars.PlaceOffsetX or 0)
+			gy = gy + (vars.PlaceOffsetY or 0)
 
 			return Vector2.new(gx, gy)
 		end
@@ -126,7 +126,6 @@ return {
 						local ok, err = pcall(function()
 							placeRemote:FireServer(gridPos, vars.PlaceItemId)
 						end)
-
 						if not ok then
 							warn("[AutoPlace] Gagal place:", err)
 						end
