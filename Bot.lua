@@ -1,8 +1,8 @@
-local Venyx = loadstring(game:HttpGet("https://raw.githubusercontent.com/Stefanuk12/Venyx-UI-Library/main/source.lua"))()
+local Venyx = loadstring(game:HttpGet("https://raw.githubusercontent.com/masterzbeware/peta-peta/refs/heads/main/petapeta"))()
 
 local UI = Venyx.new("MasterZ UX", 5013109572)
 
-local Rage = UI:addPage("RAGE", 5012544693)
+local Rage = UI:addPage("AUTO", 5012544693)
 local Section = Rage:addSection("Main")
 
 Section:addToggle("Auto Place", false, function(v)
