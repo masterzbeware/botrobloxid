@@ -1,20 +1,24 @@
--- Load Venyx
+-- Load Venyx UI library dari source2.lua
 local Venyx = loadstring(game:HttpGet(
-    "https://raw.githubusercontent.com/Stefanuk12/Venyx-UI-Library/main/source.lua"
+    "https://raw.githubusercontent.com/Stefanuk12/Venyx-UI-Library/main/source2.lua"
 ))()
 
-local venyx = Venyx.new("MasterZ UX", 5013109572)
+-- Membuat window Venyx dengan title
+local venyx = Venyx.new({
+    title = "MasterZ UX"
+})
 
--- Buat page
-local page = venyx:addPage("Auto", 5012544693)
+-- Membuat page Auto
+local page = venyx:addPage("Autos")
 
--- Section TANPA JUDUL (tampilannya bersih)
-local sec = page:addSection("")
+-- Menyembunyikan section dengan cara langsung menambahkan toggle ke page
+local autoEnabled = false
 
--- Toggle asli Venyx
-local aktif = false
-
-sec:addToggle("Auto Start", false, function(v)
-    aktif = v
-    print("Auto =", v and "ON" or "OFF")
-end)
+page:addToggle({
+    title = "Auto Start",
+    default = false,
+    callback = function(value)
+        autoEnabled = value
+        print("Auto status:", value and "ON" or "OFF")
+    end
+})
