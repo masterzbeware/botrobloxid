@@ -1,4 +1,4 @@
---// Venyx UI Simple - MasterZ UX (1 Page, 1 Toggle, Tampil Keren)
+--// Venyx UI Simple - MasterZ UX (NO SECTION, langsung toggle)
 
 local ok, Venyx = pcall(function()
 	return loadstring(game:HttpGet(
@@ -11,16 +11,14 @@ if not ok then
 	return
 end
 
--- WAJIB: Icon ID agar page tampil di sidebar (tanpa ini UI tidak muncul)
+-- Window
 local venyx = Venyx.new("MasterZ UX", 5013109572)
 
--- AUTO VARIABLE
-local autoEnabled = false
-
--- PAGE (harus ada icon biar tampil)
+-- Page tanpa section
 local page = venyx:addPage("Auto", 5012544693)
--- TOGGLE (ini akan muncul di UI)
-sec:addToggle({
+
+-- Toggle langsung ditaruh di page (bukan section)
+page:addToggle({
 	title = "Auto Start",
 	default = false,
 	callback = function(v)
@@ -29,24 +27,21 @@ sec:addToggle({
 	end
 })
 
--- Keybind untuk hide UI
-sec:addKeybind({
-	title = "Toggle UI",
-	default = Enum.KeyCode.RightControl,
-	key = Enum.KeyCode.RightControl,
-	callback = function()
-			venyx:toggle()
-	end
-})
+-- Auto variable
+local autoEnabled = false
 
--- Auto loop
+-- Loop
 task.spawn(function()
-	while task.wait(0.2) do
+	while true do
+			task.wait(0.2)
+
 			if autoEnabled then
 					for x = 0, 100 do
 							if not autoEnabled then break end
+
 							print("Auto =>", x, 37)
-							-- logic break/move taruh disini
+							-- logic kamu taruh di sini
+
 							task.wait(0.2)
 					end
 			end
