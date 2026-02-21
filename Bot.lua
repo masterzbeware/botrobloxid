@@ -10,7 +10,15 @@ local Venyx = loadstring(game:HttpGet(
 local venyx = Venyx.new("MasterZ UX", 5013109572)
 
 local selectedItem = nil
-local currentPage = nil
+local uiBuilt = false
+
+-- Simpan referensi biar bisa rebuild
+local currentPage
+local currentSection
+
+-- =========================
+-- Build list inventory
+-- =========================
 local function BuildInventoryList()
     local dropdownList = {}
     local itemMap = {}
@@ -23,10 +31,9 @@ local function BuildInventoryList()
             local info = ItemsManager.RequestItemData(id)
             local name = (info and info.Name) or ("Unknown (" .. tostring(id) .. ")")
 
-            -- label tanpa slot
             local baseLabel = string.format("%s x%d", name, amount)
 
-            -- handle duplikat (item sama + jumlah sama)
+            -- Hindari duplicate label (misal item sama & jumlah sama)
             labelCount[baseLabel] = (labelCount[baseLabel] or 0) + 1
             local label = baseLabel
             if labelCount[baseLabel] > 1 then
@@ -34,7 +41,6 @@ local function BuildInventoryList()
             end
 
             table.insert(dropdownList, label)
-
             itemMap[label] = {
                 Slot = slot,
                 Id = id,
@@ -52,31 +58,50 @@ local function BuildInventoryList()
     table.sort(dropdownList)
     return dropdownList, itemMap
 end
+
+-- =========================
+-- Render ulang UI inventory
+-- =========================
 local function RenderInventoryUI()
     local dropdownList, itemMap = BuildInventoryList()
 
-    -- Buat page baru
-    local page = venyx:addPage("Auto", 5012544693)
-    local section = page:addSection("Main")
-    section:addDropdown("Pilih Item", dropdownList, function(selectedLabel)
+    -- Bikin page/section sekali saja
+    if not uiBuilt then
+        currentPage = venyx:addPage("Auto", 5012544693)
+        currentSection = currentPage:addSection("Main")
+        uiBuilt = true
+    end
+
+    -- Dropdown BARU (hasil refresh terbaru)
+    -- IMPORTANT: addDropdown butuh defaultValue sebelum callback
+    local defaultValue = dropdownList[1]
+
+    currentSection:addDropdown("Pilih Item", dropdownList, defaultValue, function(selectedLabel)
         selectedItem = itemMap[selectedLabel]
 
         if selectedItem then
+            print("=== ITEM DIPILIH ===")
+            print("Nama  :", selectedItem.Name)
+            print("ID    :", selectedItem.Id)
+            print("Slot  :", selectedItem.Slot)
+            print("Jumlah:", selectedItem.Amount)
         else
             print("Tidak ada item valid dipilih.")
         end
     end)
-    section:addButton("Update Inventory", function()
-        pcall(function()
-            if currentPage and venyx.pages and venyx.pages[currentPage] then
-                venyx.pages[currentPage] = nil
-            end
-        end)
-        RenderInventoryUI()
-    end)
 
-    currentPage = page
-    venyx:SelectPage(page, true)
+    -- Tombol update cuma ditambah sekali
+    if not currentSection._hasRefreshButton then
+        currentSection._hasRefreshButton = true
+
+        currentSection:addButton("Update Inventory", function()
+            print("Refreshing inventory...")
+            RenderInventoryUI()
+        end)
+    end
+
+    venyx:SelectPage(currentPage, true)
 end
 
+-- Jalankan pertama kali
 RenderInventoryUI()
