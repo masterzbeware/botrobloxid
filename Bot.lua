@@ -1,37 +1,33 @@
--- Load venyx
+-- LOAD VENYX
 local Venyx = loadstring(game:HttpGet(
     "https://raw.githubusercontent.com/Stefanuk12/Venyx-UI-Library/main/source.lua"
 ))()
 
+-- WINDOW
 local venyx = Venyx.new("MasterZ UX", 5013109572)
+
+-- PAGE
 local page = venyx:addPage("Auto", 5012544693)
 
--- ====== PATCH: TAMBAHKAN FUNGSI addToggle KE PAGE ======
+-- PATCH: Buat addToggle di page, tapi format STRING, bukan TABLE
 function page:addToggle(name, default, callback)
-    local section = self:addSection("")  -- section tanpa nama
-    return section:addToggle({
-        title = name,
-        default = default,
-        callback = callback
-    })
+    local section = self:addSection("") -- section kosong, tidak terlihat
+    return section:addToggle(name, default, callback)
 end
--- ========================================================
 
--- Variable auto
-local autoEnabled = false
-
--- Sekarang addToggle DI PAGE langsung BISA ✔
+-- TOGGLE (FORMAT STRING)
+local auto = false
 page:addToggle("Auto Start", false, function(v)
-    autoEnabled = v
+    auto = v
     print("Auto:", v and "ON" or "OFF")
 end)
 
--- Auto Loop
+-- LOOP
 task.spawn(function()
     while task.wait(0.2) do
-        if autoEnabled then
+        if auto then
             for x = 0, 100 do
-                if not autoEnabled then break end
+                if not auto then break end
                 print("Auto =>", x, 37)
                 task.wait(0.2)
             end
