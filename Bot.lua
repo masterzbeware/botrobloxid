@@ -3,7 +3,7 @@ local Venyx = loadstring(game:HttpGet(
 ))()
 
 local venyx = Venyx.new("MasterZ UX", 5013109572)
-local page = venyx:addPage("Auto", 5012544693)
+local page = venyx:addPage("Autos", 5012544693)
 
 -- Wajib, tapi tidak kelihatan
 local sec = page:addSection("")
