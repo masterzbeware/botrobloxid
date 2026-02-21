@@ -8,10 +8,15 @@ local venyx = Venyx.new("MasterZ UX", 5013109572)
 -- Buat page
 local page = venyx:addPage("Auto", 5012544693)
 
--- Toggle asli Venyx
-local aktif = false
+-- Buat section dulu
+local section = page:addSection("Main")
 
-page:addToggle("Auto Start", false, function(v)
+-- Toggle
+local aktif = false
+section:addToggle("Auto Start", false, function(v)
     aktif = v
     print("Auto =", v and "ON" or "OFF")
 end)
+
+-- (opsional) buka page default
+venyx:SelectPage(page, true)
