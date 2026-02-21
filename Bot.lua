@@ -1,5 +1,30 @@
-local Venyx = loadstring(game:HttpGet("https://raw.githubusercontent.com/masterzbeware/peta-peta/main/petapeta"))()
+-- SAFE LOADER
+local url = "https://raw.githubusercontent.com/masterzbeware/peta-peta/main/petapeta"
 
+local success, source = pcall(function()
+    return game:HttpGet(url)
+end)
+
+if not success or not source then
+    warn("Gagal HttpGet:", source)
+    return
+end
+
+local func = loadstring(source)
+if not func then
+    warn("Loadstring gagal compile (cek syntax di file GitHub)")
+    return
+end
+
+local Venyx = func()
+if not Venyx then
+    warn("Library tidak return apa-apa. Pastikan ada 'return library' di paling bawah file.")
+    return
+end
+
+-- =========================
+-- BUAT UI
+-- =========================
 local UI = Venyx.new("MasterZ UX", 5013109572)
 
 -- =========================
@@ -33,7 +58,6 @@ end)
 VisualSection:addColorPicker("ESP Color", Color3.fromRGB(255,0,0), function(v)
     print("Color:", v)
 end)
-
 
 -- Pilih page pertama saat buka
 UI:SelectPage(Auto, true)
