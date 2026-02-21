@@ -48,9 +48,9 @@ local Lua = Window:AddMenu({
 })
 
 do
-	local Weapon = Rage:AddSection({
+	local Auto = Rage:AddSection({
 		Position = 'left',
-		Name = "WEAPON"
+		Name = "AUTO"
 	});
 	
 	local Extra = Rage:AddSection({
@@ -62,6 +62,16 @@ do
 		Position = 'right',
 		Name = "GENERAL"
 	});
+
+    Auto:AddToggle({
+		Name = "AUTO PLACE",
+		Risky = true
+	})
+
+    Auto:AddToggle({
+		Name = "AUTO BREAK",
+		Risky = true
+	})
 	
 	Weapon:AddSlider({
 		Name = "Hit-chance",
