@@ -33,3 +33,16 @@ end)
 VisualSection:addColorPicker("ESP Color", Color3.fromRGB(255,0,0), function(v)
     print("Color:", v)
 end)
+
+-- =========================
+-- PAGE 3
+-- =========================
+local Misc = UI:addPage("MISC", 5012544693)
+local MiscSection = Misc:addSection("Other")
+
+MiscSection:addButton("Print Hello", function()
+    print("Hello World")
+end)
+
+-- Pilih page pertama saat buka
+UI:SelectPage(Auto, true)
