@@ -25,7 +25,7 @@ for slot, stack in pairs(Inventory.Stacks) do
         local name = (info and info.Name) or ("Unknown (" .. tostring(id) .. ")")
 
         -- teks yang tampil di dropdown
-        local label = string.format("%s x%d [Slot %s]", name, amount, tostring(slot))
+        local label = string.format("%s x%d", name, amount)
 
         table.insert(dropdownList, label)
 
@@ -57,11 +57,6 @@ section:addDropdown("Pilih Item", dropdownList, function(selectedLabel)
     selectedItem = itemMap[selectedLabel]
 
     if selectedItem then
-        print("=== ITEM DIPILIH ===")
-        print("Nama  :", selectedItem.Name)
-        print("ID    :", selectedItem.Id)
-        print("Slot  :", selectedItem.Slot)
-        print("Jumlah:", selectedItem.Amount)
     else
         print("Tidak ada item valid dipilih.")
     end
