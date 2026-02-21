@@ -2,26 +2,47 @@ local Venyx = loadstring(game:HttpGet("https://raw.githubusercontent.com/masterz
 
 local UI = Venyx.new("MasterZ UX", 5013109572)
 
--- Buat Page
-local Rage = UI:addPage("AUTO", 5012544693)
+-- =========================
+-- PAGE 1
+-- =========================
+local Auto = UI:addPage("AUTO", 5012544693)
+local AutoSection = Auto:addSection("Main")
 
--- Buat Section
-local Section = Rage:addSection("Main")
-
--- Toggle
-Section:addToggle("Auto Place", false, function(v)
+AutoSection:addToggle("Auto Place", false, function(v)
     print("Auto Place:", v)
 end)
 
--- Slider (default, min, max)
-Section:addSlider("Min Damage", 50, 0, 100, function(v)
+AutoSection:addSlider("Min Damage", 50, 0, 100, function(v)
     print("Min Damage:", v)
 end)
 
--- Dropdown (judul, list, default, callback)
-Section:addDropdown("Hitbox", {"Head","Body","Legs"}, "Head", function(v)
+AutoSection:addDropdown("Hitbox", {"Head","Body","Legs"}, "Head", function(v)
     print("Selected:", v)
 end)
 
--- INI YANG PENTING
-UI:SelectPage(Rage, true)
+-- =========================
+-- PAGE 2
+-- =========================
+local Visual = UI:addPage("VISUAL", 5012544693)
+local VisualSection = Visual:addSection("ESP Settings")
+
+VisualSection:addToggle("ESP Enabled", false, function(v)
+    print("ESP:", v)
+end)
+
+VisualSection:addColorPicker("ESP Color", Color3.fromRGB(255,0,0), function(v)
+    print("Color:", v)
+end)
+
+-- =========================
+-- PAGE 3
+-- =========================
+local Misc = UI:addPage("MISC", 5012544693)
+local MiscSection = Misc:addSection("Other")
+
+MiscSection:addButton("Print Hello", function()
+    print("Hello World")
+end)
+
+-- Pilih page pertama saat buka
+UI:SelectPage(Auto, true)
