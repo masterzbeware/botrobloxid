@@ -1,19 +1,27 @@
---// Venyx UI Super Simple (1 Page, Toggle Only, No State Table) - MasterZ UX
+--// Venyx UI Simple - MasterZ UX (1 Page, 1 Toggle, Tampil Keren)
+
 local ok, Venyx = pcall(function()
-	return loadstring(game:HttpGet("https://raw.githubusercontent.com/Stefanuk12/Venyx-UI-Library/main/source.lua"))()
+	return loadstring(game:HttpGet(
+			"https://raw.githubusercontent.com/Stefanuk12/Venyx-UI-Library/main/source.lua"
+	))()
 end)
 
-if not ok or not Venyx then
+if not ok then
 	warn("Gagal load Venyx:", Venyx)
 	return
 end
 
-local venyx = Venyx.new("MasterZ UX")
+-- WAJIB: Icon ID agar page tampil di sidebar (tanpa ini UI tidak muncul)
+local venyx = Venyx.new("MasterZ UX", 5013109572)
+
+-- AUTO VARIABLE
 local autoEnabled = false
 
-local page = venyx:addPage("Auto")
+-- PAGE (harus ada icon biar tampil)
+local page = venyx:addPage("Auto", 5012544693)
 local sec = page:addSection("Controls")
 
+-- TOGGLE (ini akan muncul di UI)
 sec:addToggle({
 	title = "Auto Start",
 	default = false,
@@ -23,6 +31,7 @@ sec:addToggle({
 	end
 })
 
+-- Keybind untuk hide UI
 sec:addKeybind({
 	title = "Toggle UI",
 	default = Enum.KeyCode.RightControl,
@@ -32,18 +41,14 @@ sec:addKeybind({
 	end
 })
 
--- Auto loop (langsung jalan kalau toggle ON)
+-- Auto loop
 task.spawn(function()
-	while true do
-			task.wait(0.2)
-
+	while task.wait(0.2) do
 			if autoEnabled then
 					for x = 0, 100 do
 							if not autoEnabled then break end
-
-							print(("Auto => (%d, %d)"):format(x, 37))
-							-- taruh logic move/break kamu di sini
-
+							print("Auto =>", x, 37)
+							-- logic break/move taruh disini
 							task.wait(0.2)
 					end
 			end
