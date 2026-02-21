@@ -1,80 +1,174 @@
--- =========================
--- SAFE LOAD LIBRARY
--- =========================
+--// Venyx UI (2 Pages: Auto & Settings)
+local Venyx = loadstring(game:HttpGet("https://raw.githubusercontent.com/Stefanuk12/Venyx-UI-Library/main/source.lua"))()
 
-local url = "https://raw.githubusercontent.com/masterzbeware/peta-peta/main/petapeta"
+-- Window
+local venyx = Venyx.new("Maslini Hub", 5013109572)
+venyx:Notify("Loaded", "UI 2 page berhasil dibuka", 2)
 
-local ok, source = pcall(function()
-    return game:HttpGet(url)
-end)
+-- Default Theme
+local darkTheme = {
+    Background = Color3.fromRGB(24, 24, 24),
+    Glow = Color3.fromRGB(0, 0, 0),
+    Accent = Color3.fromRGB(10, 10, 10),
+    LightContrast = Color3.fromRGB(20, 20, 20),
+    DarkContrast = Color3.fromRGB(14, 14, 14),
+    TextColor = Color3.fromRGB(255, 255, 255)
+}
+venyx:setTheme(darkTheme)
 
-if not ok then
-    warn("HttpGet gagal:", source)
-    return
-end
+-- State
+_G.AutoEnabled = false
+_G.AutoDelay = 0.2
+_G.StartX = 0
+_G.EndX = 100
+_G.TargetY = 37
 
-local func = loadstring(source)
-if not func then
-    warn("Loadstring gagal compile. Cek syntax di file GitHub.")
-    return
-end
+-- ==================================================
+-- PAGE 1: AUTO
+-- ==================================================
+local autoPage = venyx:addPage("Auto", 5012544693)
+local autoMain = autoPage:addSection("Auto Controls")
+local autoRange = autoPage:addSection("Range Settings")
 
-local Venyx = func()
-if not Venyx then
-    warn("Library tidak return apa-apa. Pastikan ada 'return library' di paling bawah.")
-    return
-end
-
-if not Venyx.new then
-    warn("Venyx.new tidak ditemukan di library.")
-    for k,v in pairs(Venyx) do
-        print("Isi Venyx:", k, v)
+autoMain:addToggle({
+    title = "Auto Start",
+    default = false,
+    callback = function(v)
+        _G.AutoEnabled = v
+        venyx:Notify("Auto", v and "Auto ON" or "Auto OFF", 1.5)
     end
-    return
-end
+})
 
--- =========================
--- BUAT UI
--- =========================
+autoMain:addSlider({
+    title = "Delay (x10)",
+    default = 2, -- 2 = 0.2s
+    min = 1,
+    max = 20,
+    callback = function(v)
+        _G.AutoDelay = v / 10
+    end
+})
 
-local UI = Venyx.new("MasterZ UX") -- FIXED (hapus parameter icon)
+autoMain:addButton({
+    title = "Run Once",
+    callback = function()
+        print(("Run Once | X: %d -> %d | Y: %d"):format(_G.StartX, _G.EndX, _G.TargetY))
+        -- taruh logic auto kamu di sini (sekali jalan)
+    end
+})
 
--- =========================
--- PAGE 1
--- =========================
+autoRange:addSlider({
+    title = "Start X",
+    default = 0,
+    min = 0,
+    max = 200,
+    callback = function(v)
+        _G.StartX = v
+    end
+})
 
-local Auto = UI:addPage("AUTO", 5012544693)
-local AutoSection = Auto:addSection("Main")
+autoRange:addSlider({
+    title = "End X",
+    default = 100,
+    min = 0,
+    max = 200,
+    callback = function(v)
+        _G.EndX = v
+    end
+})
 
-AutoSection:addToggle("Auto Place", false, function(v)
-    print("Auto Place:", v)
+autoRange:addSlider({
+    title = "Y Tile",
+    default = 37,
+    min = 0,
+    max = 200,
+    callback = function(v)
+        _G.TargetY = v
+    end
+})
+
+-- ==================================================
+-- PAGE 2: SETTINGS
+-- ==================================================
+local settingsPage = venyx:addPage("Settings", 5012544693)
+local uiSec = settingsPage:addSection("UI")
+local miscSec = settingsPage:addSection("Misc")
+
+uiSec:addKeybind({
+    title = "Toggle UI Key",
+    default = Enum.KeyCode.RightControl,
+    key = Enum.KeyCode.RightControl,
+    callback = function()
+        venyx:toggle()
+    end
+})
+
+uiSec:addButton({
+    title = "Dark Theme",
+    callback = function()
+        venyx:setTheme({
+            Background = Color3.fromRGB(24, 24, 24),
+            Glow = Color3.fromRGB(0, 0, 0),
+            Accent = Color3.fromRGB(10, 10, 10),
+            LightContrast = Color3.fromRGB(20, 20, 20),
+            DarkContrast = Color3.fromRGB(14, 14, 14),
+            TextColor = Color3.fromRGB(255, 255, 255)
+        })
+    end
+})
+
+uiSec:addButton({
+    title = "Blue Theme",
+    callback = function()
+        venyx:setTheme({
+            Background = Color3.fromRGB(20, 24, 30),
+            Glow = Color3.fromRGB(0, 0, 0),
+            Accent = Color3.fromRGB(25, 60, 120),
+            LightContrast = Color3.fromRGB(24, 30, 40),
+            DarkContrast = Color3.fromRGB(18, 22, 30),
+            TextColor = Color3.fromRGB(255, 255, 255)
+        })
+    end
+})
+
+miscSec:addButton({
+    title = "Hide / Show UI",
+    callback = function()
+        venyx:toggle()
+    end
+})
+
+miscSec:addButton({
+    title = "Unload (Hide)",
+    callback = function()
+        venyx:toggle()
+        venyx:Notify("UI", "UI disembunyikan", 1.5)
+    end
+})
+
+-- ==================================================
+-- AUTO LOOP (edit logic kamu di sini)
+-- ==================================================
+task.spawn(function()
+    while task.wait(_G.AutoDelay) do
+        if _G.AutoEnabled then
+            -- Contoh loop range X (0,37 sampai 100,37)
+            local fromX = math.min(_G.StartX, _G.EndX)
+            local toX = math.max(_G.StartX, _G.EndX)
+
+            for x = fromX, toX do
+                if not _G.AutoEnabled then break end
+
+                -- ==================================================
+                -- TEMPATKAN LOGIC KAMU DI SINI
+                -- misalnya:
+                -- 1) move ke tile (x, _G.TargetY)
+                -- 2) punch/break tile (x, _G.TargetY)
+                -- ==================================================
+                print(("Auto Action => (%d, %d)"):format(x, _G.TargetY))
+
+                task.wait(_G.AutoDelay)
+            end
+        end
+    end
 end)
-
-AutoSection:addSlider("Min Damage", 50, 0, 100, function(v)
-    print("Min Damage:", v)
-end)
-
-AutoSection:addDropdown("Hitbox", {"Head","Body","Legs"}, "Head", function(v)
-    print("Selected:", v)
-end)
-
--- =========================
--- PAGE 2
--- =========================
-
-local Visual = UI:addPage("VISUAL", 5012544693)
-local VisualSection = Visual:addSection("ESP Settings")
-
-VisualSection:addToggle("ESP Enabled", false, function(v)
-    print("ESP:", v)
-end)
-
-VisualSection:addColorPicker("ESP Color", Color3.fromRGB(255,0,0), function(v)
-    print("Color:", v)
-end)
-
--- =========================
--- DEFAULT PAGE
--- =========================
-
-UI:SelectPage(Auto, true)
