@@ -1,4 +1,4 @@
-local Venyx = loadstring(game:HttpGet("https://raw.githubusercontent.com/masterzbeware/peta-peta/refs/heads/main/petapeta"))()
+local Venyx = loadstring(game:HttpGet("https://raw.githubusercontent.com/masterzbeware/peta-peta/main/petapeta"))()
 
 local UI = Venyx.new("MasterZ UX", 5013109572)
 
