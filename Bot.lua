@@ -19,8 +19,6 @@ local autoEnabled = false
 
 -- PAGE (harus ada icon biar tampil)
 local page = venyx:addPage("Auto", 5012544693)
-local sec = page:addSection("Controls")
-
 -- TOGGLE (ini akan muncul di UI)
 sec:addToggle({
 	title = "Auto Start",
