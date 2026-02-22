@@ -9,6 +9,7 @@ local Venyx = loadstring(game:HttpGet(
 local venyx = Venyx.new("MasterZ UX", 5013109572)
 local page = venyx:addPage("Auto", 5012544693)
 local section = page:addSection("Main")
+local inventorySection = page:addSection("Inventory")
 local tilesSection = page:addSection("Tiles")
 
 local selectedItem = nil
@@ -116,7 +117,7 @@ do
     end)
 end
 
-section:addButton("Update Inventory", function()
+inventorySection:addButton("Update Inventory", function()
     local newList, newMap = BuildInventoryList()
     itemMap = newMap
 
