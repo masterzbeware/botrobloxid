@@ -41,38 +41,11 @@ end)
 local UpdateDropdownVisibleText
 
 refreshSection:addButton("Refresh Tree", function()
-    -- Ambil semua pohon yang ada di workspace
-    local trees = FindAllTrees()
+    -- Hapus bagian pencarian pohon dan pembaruan dropdown
+    -- Local trees = FindAllTrees() -- Bagian ini dihapus
 
-    -- Cek apakah ada pohon yang ditemukan
-    if #trees == 0 then
-        warn("Tidak ada pohon ditemukan dalam game.")
-        return
-    end
-
-    -- Update daftar dropdown tree
-    local treeList = {}
-    for i, tree in ipairs(trees) do
-        -- Format label untuk setiap pohon yang ditemukan
-        local label = string.format("[%d] %s | Posisi: (%.2f, %.2f, %.2f)",
-            i, tostring(tree.Name), tree.Position.X, tree.Position.Y, tree.Position.Z)
-        table.insert(treeList, label)
-    end
-
-    -- Ganti dropdown dengan daftar pohon yang terdeteksi
-    ReplaceTableContents(harvestDropdownListRef, treeList)
-
-    -- Pilih pohon pertama sebagai default
-    local selectedLabel = treeList[1]
-    selectedHarvestTarget = trees[1]  -- Memilih pohon pertama
-    if harvestDropdownObj then
-        -- Update teks yang terlihat di dropdown
-        UpdateDropdownVisibleText(harvestDropdownObj, selectedLabel)
-    else
-        warn("harvestDropdownObj tidak ditemukan!")
-    end
-
-    print("Tree list diperbarui. Total target:", #treeList)
+    -- Cek jika tidak ada pohon, tidak perlu melakukan apa-apa
+    warn("Tidak ada fungsi pencarian pohon lagi.")
 end)
 
 growScanSection:addButton("Scan Gems", function()
