@@ -19,6 +19,10 @@ local autoPlaceSection = autoPage:addSection("Auto Place")
 local autoBreakSection = autoPage:addSection("Auto Break")
 local speedSection = autoPage:addSection("Speed")
 
+-- PAGE HARVEST (baru)
+local harvestPage = venyx:addPage("Harvest", 5012544693)
+local harvestMainSection = harvestPage:addSection("Main")
+
 -- PAGE GROWSCAN
 local growScanPage = venyx:addPage("GrowScan", 5012544693)
 local growScanSection = growScanPage:addSection("Scanner")
@@ -27,6 +31,7 @@ local gemsCountDropdownList = {"Gems : 0"}
 local gemsCountDropdown = growScanInfoSection:addDropdown("Gems Scanner", gemsCountDropdownList, gemsCountDropdownList[1], function()
     -- tidak perlu isi apa-apa
 end)
+
 
 growScanSection:addButton("Scan Gems", function()
     local gemsModel = game.Workspace:FindFirstChild("Gems")
