@@ -10,13 +10,44 @@ local Venyx = loadstring(game:HttpGet(
 ))()
 
 local venyx = Venyx.new("MasterZ UX", 5013109572)
-local page = venyx:addPage("Auto", 5012544693)
-local section = page:addSection("Main")
-local inventorySection = page:addSection("Inventory")
-local tilesSection = page:addSection("Tiles")
-local autoPlaceSection = page:addSection("Auto Place") -- tambah ini
-local autoBreakSection = page:addSection("Auto Break") -- TAMBAH INI
-local speedSection = page:addSection("Speed")
+-- PAGE AUTO
+local autoPage = venyx:addPage("Auto", 5012544693)
+local section = autoPage:addSection("Main")
+local inventorySection = autoPage:addSection("Inventory")
+local tilesSection = autoPage:addSection("Tiles")
+local autoPlaceSection = autoPage:addSection("Auto Place")
+local autoBreakSection = autoPage:addSection("Auto Break")
+local speedSection = autoPage:addSection("Speed")
+
+-- PAGE GROWSCAN
+local growScanPage = venyx:addPage("GrowScan", 5012544693)
+local growScanSection = growScanPage:addSection("Scanner")
+local growScanInfoSection = growScanPage:addSection("Info")
+
+-- =========================
+-- GROWSCAN: HITUNG PART DI MODEL GEMS
+-- =========================
+growScanSection:addButton("Scan Gems", function()
+    local gemsModel = game.Workspace:FindFirstChild("Gems")
+
+    if not gemsModel then
+        warn("Model 'Gems' tidak ditemukan di workspace")
+        return
+    end
+
+    local totalParts = 0
+
+    -- Hitung semua Part / MeshPart / Union (semua BasePart)
+    for _, obj in ipairs(gemsModel:GetDescendants()) do
+        if obj:IsA("BasePart") then
+            totalParts = totalParts + 1
+        end
+    end
+
+    print("=== GROWSCAN ===")
+    print("Model:", gemsModel:GetFullName())
+    print("Total Part di dalam Gems:", totalParts)
+end)
 
 
 -- default
@@ -55,7 +86,7 @@ updatePlaceCycle()
 updateBreakCycle()
 
 -- Textbox SPEED PLACE (hanya 0.10 - 0.15)
-speedSection:addTextbox("Speed Place (0.10-0.15)", tostring(autoPlaceDelay), function(text)
+speedSection:addTextbox("Place[0.10-0.15]", tostring(autoPlaceDelay), function(text)
     local n = parseNumber(text)
     if not n then
         warn("Speed Place harus angka. Contoh: 0.12")
@@ -70,7 +101,7 @@ speedSection:addTextbox("Speed Place (0.10-0.15)", tostring(autoPlaceDelay), fun
 end)
 
 -- Textbox SPEED BREAK (hanya 0.05 - 0.10)
-speedSection:addTextbox("Speed Break (0.05-0.10)", tostring(autoBreakDelay), function(text)
+speedSection:addTextbox("Break[0.05-0.10]", tostring(autoBreakDelay), function(text)
     local n = parseNumber(text)
     if not n then
         warn("Speed Break harus angka. Contoh: 0.08")
@@ -445,7 +476,7 @@ autoBreakSection:addToggle("Auto Break", false, function(value)
 end)
 
 
-venyx:SelectPage(page, true)
+venyx:SelectPage(autoPage, true)
 
 
 
