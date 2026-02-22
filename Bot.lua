@@ -3,7 +3,7 @@ local Inventory = require(Rep:WaitForChild("Modules"):WaitForChild("Inventory"))
 local ItemsManager = require(Rep:WaitForChild("Managers"):WaitForChild("ItemsManager"))
 
 local Venyx = loadstring(game:HttpGet(
-    "https://raw.githubusercontent.com/Stefanuk12/Venyx-UI-Library/main/source.lua"
+    "https://raw.githubusercontent.com/masterzbeware/peta-peta/refs/heads/main/petapeta"
 ))()
 
 local venyx = Venyx.new("MasterZ UX", 5013109572)
