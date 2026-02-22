@@ -148,9 +148,137 @@ section:addButton("Update Inventory", function()
     end
 end)
 
-section:addButton("Tiles Selector", function()
-    print("Tiles Selector diklik")
-    -- logic tiles selector nanti taruh di sini
-end)
-
 venyx:SelectPage(page, true)
+
+-- =========================
+-- GRID KOTAK (PLAYER CENTER)
+-- =========================
+local Players = game:GetService("Players")
+local lp = Players.LocalPlayer
+local PlayerGui = lp:WaitForChild("PlayerGui")
+
+-- hapus UI lama kalau sudah ada
+local oldGui = PlayerGui:FindFirstChild("InventoryGridUI")
+if oldGui then
+    oldGui:Destroy()
+end
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "InventoryGridUI"
+gui.ResetOnSpawn = false
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+gui.Parent = PlayerGui
+
+-- frame utama
+local main = Instance.new("Frame")
+main.Name = "MainGrid"
+main.Size = UDim2.new(0, 360, 0, 180)
+main.Position = UDim2.new(0.5, -180, 0.65, 0) -- agak bawah tengah
+main.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+main.BackgroundTransparency = 0.1
+main.BorderSizePixel = 0
+main.Parent = gui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 10)
+corner.Parent = main
+
+local stroke = Instance.new("UIStroke")
+stroke.Color = Color3.fromRGB(80, 80, 80)
+stroke.Thickness = 1
+stroke.Parent = main
+
+-- judul kecil
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 24)
+title.Position = UDim2.new(0, 0, 0, 4)
+title.BackgroundTransparency = 1
+title.Text = "Grid Posisi Item / Player"
+title.Font = Enum.Font.GothamBold
+title.TextSize = 14
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.Parent = main
+
+-- helper bikin kotak
+local function CreateBox(parent, text, x, y, isPlayer)
+    local box = Instance.new("TextButton")
+    box.Name = text
+    box.Size = UDim2.new(0, 60, 0, 45)
+    box.Position = UDim2.new(0, x, 0, y)
+    box.Text = text
+    box.Font = Enum.Font.GothamSemibold
+    box.TextSize = 12
+    box.AutoButtonColor = true
+    box.BorderSizePixel = 0
+    box.Parent = parent
+
+    if isPlayer then
+        box.BackgroundColor3 = Color3.fromRGB(65, 130, 255) -- biru utk player
+        box.TextColor3 = Color3.fromRGB(255,255,255)
+    else
+        box.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+        box.TextColor3 = Color3.fromRGB(230,230,230)
+    end
+
+    local c = Instance.new("UICorner")
+    c.CornerRadius = UDim.new(0, 8)
+    c.Parent = box
+
+    local s = Instance.new("UIStroke")
+    s.Thickness = 1
+    s.Color = isPlayer and Color3.fromRGB(120, 180, 255) or Color3.fromRGB(90, 90, 90)
+    s.Parent = box
+
+    return box
+end
+
+-- koordinat layout (5 kotak baris tengah, 3 kotak baris bawah)
+-- susunan tengah: [L2][L1][PLAYER][R1][R2]
+local startX = 15
+local gap = 8
+local boxW = 60
+local row1Y = 35
+local row2Y = 95
+
+local function X(index) -- index mulai 0
+    return startX + (boxW + gap) * index
+end
+
+local gridButtons = {}
+
+-- baris tengah (5)
+gridButtons.L2     = CreateBox(main, "L2",     X(0), row1Y, false)
+gridButtons.L1     = CreateBox(main, "L1",     X(1), row1Y, false)
+gridButtons.Player = CreateBox(main, "PLAYER", X(2), row1Y, true)
+gridButtons.R1     = CreateBox(main, "R1",     X(3), row1Y, false)
+gridButtons.R2     = CreateBox(main, "R2",     X(4), row1Y, false)
+
+-- baris bawah (3) ditengahin
+-- pakai posisi kolom 1,2,3 biar center di bawah PLAYER
+gridButtons.B1     = CreateBox(main, "B1",     X(1), row2Y, false)
+gridButtons.B2     = CreateBox(main, "B2",     X(2), row2Y, false)
+gridButtons.B3     = CreateBox(main, "B3",     X(3), row2Y, false)
+
+-- contoh klik kotak (bisa kamu isi logic item placement nanti)
+for key, btn in pairs(gridButtons) do
+    btn.MouseButton1Click:Connect(function()
+        print("Klik kotak:", key)
+
+        if key == "Player" then
+            print("Ini posisi player (tengah)")
+            return
+        end
+
+        if selectedItem then
+            print(string.format(
+                "Akan pakai item '%s' (ID:%s, Slot:%s) ke kotak %s",
+                tostring(selectedItem.Name),
+                tostring(selectedItem.Id),
+                tostring(selectedItem.Slot),
+                key
+            ))
+        else
+            print("Belum ada item dipilih dari dropdown.")
+        end
+    end)
+end
