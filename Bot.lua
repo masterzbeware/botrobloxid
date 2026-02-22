@@ -203,16 +203,50 @@ local function StartAutoPlaceLoop()
     autoPlaceThread = task.spawn(function()
         while autoPlaceEnabled do
             if selectedItem then
+                -- urutan stabil (biar rapi, ga random dari pairs)
+                local keys = {}
                 for gridKey in pairs(selectedGridKeys) do
-                    AutoPlaceToGridKey(gridKey)
+                    table.insert(keys, gridKey)
+                end
+                table.sort(keys)
+
+                for _, gridKey in ipairs(keys) do
+                    if not autoPlaceEnabled then break end
+                    if selectedGridKeys[gridKey] then
+                        AutoPlaceToGridKey(gridKey)
+                        task.wait(0.1) -- << penting: jeda antar grid
+                    end
                 end
             end
-            task.wait(autoPlaceDelay)
+
+            task.wait(autoPlaceDelay) -- jeda antar siklus
         end
 
         autoPlaceThread = nil
     end)
 end
+
+local function IsGridSelected(key)
+    return selectedGridKeys[key] == true
+end
+
+local function ToggleGridSelection(key)
+    if selectedGridKeys[key] then
+        selectedGridKeys[key] = nil
+        print("Grid unselected:", key)
+    else
+        selectedGridKeys[key] = true
+        print("Grid selected:", key)
+    end
+end
+
+local function HasAnyGridSelected()
+    for _ in pairs(selectedGridKeys) do
+        return true
+    end
+    return false
+end
+
 
 tilesSection:addButton("Tiles Selector", function()
     if main then
@@ -284,7 +318,7 @@ task.spawn(function()
     versionLabel.Size = UDim2.new(0, 90, 0, 16)
     versionLabel.ZIndex = 6
     versionLabel.Font = Enum.Font.Gotham
-    versionLabel.Text = "Version 1.0.1"
+    versionLabel.Text = "Version 1.0.3"
     versionLabel.TextSize = 12
     versionLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     versionLabel.TextTransparency = 0.2
@@ -448,27 +482,6 @@ gridButtons.B1     = CreateBox(main, "8",     X(1), row2Y, false)
 gridButtons.B2     = CreateBox(main, "9",     X(2), row2Y, false)
 gridButtons.B3     = CreateBox(main, "10",     X(3), row2Y, false)
 
-
-local function IsGridSelected(key)
-    return selectedGridKeys[key] == true
-end
-
-local function ToggleGridSelection(key)
-    if selectedGridKeys[key] then
-        selectedGridKeys[key] = nil
-        print("Grid unselected:", key)
-    else
-        selectedGridKeys[key] = true
-        print("Grid selected:", key)
-    end
-end
-
-local function HasAnyGridSelected()
-    for _ in pairs(selectedGridKeys) do
-        return true
-    end
-    return false
-end
 
 for key, btn in pairs(gridButtons) do
     btn.MouseButton1Click:Connect(function()
