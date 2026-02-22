@@ -202,7 +202,7 @@ task.spawn(function()
 versionLabel.TextSize = 11
     versionLabel.ZIndex = 6
     versionLabel.Font = Enum.Font.Gotham
-    versionLabel.Text = "Version 1.0.0"
+    versionLabel.Text = "Version 1.0.1"
     versionLabel.TextSize = 12
     versionLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     versionLabel.TextTransparency = 0.2
