@@ -2,6 +2,7 @@ local Rep = game:GetService("ReplicatedStorage")
 local Inventory = require(Rep:WaitForChild("Modules"):WaitForChild("Inventory"))
 local ItemsManager = require(Rep:WaitForChild("Managers"):WaitForChild("ItemsManager"))
 local placeRemote = Rep:WaitForChild("Remotes"):WaitForChild("PlayerPlaceItem")
+local fistRemote = Rep:WaitForChild("Remotes"):WaitForChild("PlayerFist") -- TAMBAH INI
 local TILE = 4.5
 
 local Venyx = loadstring(game:HttpGet(
@@ -13,6 +14,8 @@ local page = venyx:addPage("Auto", 5012544693)
 local section = page:addSection("Main")
 local inventorySection = page:addSection("Inventory")
 local tilesSection = page:addSection("Tiles")
+local autoPlaceSection = page:addSection("Auto Place") -- tambah ini
+local autoBreakSection = page:addSection("Auto Break") -- TAMBAH INI
 local speedSection = page:addSection("Speed")
 
 
@@ -167,9 +170,14 @@ end)
 
 local main = nil
 local autoPlaceEnabled = false
+local autoBreakEnabled = false -- TAMBAH
 local selectedGridKeys = {}
 local autoPlaceThread = nil
-local gridButtons = {} -- pindah ke sini
+local autoBreakThread = nil -- TAMBAH
+local gridButtons = {}
+
+local autoBreakDelay = 0.10 -- TAMBAH
+local autoBreakCycleDelay = 0.05 -- TAMBAH
 
 local gridOffsets = {
     T1 = Vector2.new(-1,  1), -- tombol 1
@@ -204,6 +212,19 @@ local function AutoPlaceToGridKey(gridKey, basePx, basePy)
     print("Auto Place ke:", gridKey, "Target:", target, "Slot:", selectedItem.Slot)
 end
 
+local function AutoBreakToGridKey(gridKey, basePx, basePy)
+    local offset = gridOffsets[gridKey]
+    if not offset then
+        warn("Offset grid tidak ada:", gridKey)
+        return
+    end
+
+    local target = Vector2.new(basePx + offset.X, basePy + offset.Y)
+    fistRemote:FireServer(target)
+
+    print("Auto Break ke:", gridKey, "Target:", target)
+end
+
 local function StartAutoPlaceLoop()
     if autoPlaceThread then return end
 
@@ -235,6 +256,37 @@ local function StartAutoPlaceLoop()
         end
 
         autoPlaceThread = nil
+    end)
+end
+
+local function StartAutoBreakLoop()
+    if autoBreakThread then return end
+
+    autoBreakThread = task.spawn(function()
+        while autoBreakEnabled do
+            local player = game.Players.LocalPlayer
+            local handler = require(player.PlayerScripts.PlayerMovement.PlayerMovementHandler.Parent)
+            local basePx = math.floor(handler.Position.X / TILE + 0.5)
+            local basePy = math.floor(handler.Position.Y / TILE + 0.5)
+
+            local keys = {}
+            for gridKey in pairs(selectedGridKeys) do
+                table.insert(keys, gridKey)
+            end
+            table.sort(keys)
+
+            for _, gridKey in ipairs(keys) do
+                if not autoBreakEnabled then break end
+                if selectedGridKeys[gridKey] then
+                    AutoBreakToGridKey(gridKey, basePx, basePy)
+                    task.wait(autoBreakDelay)
+                end
+            end
+
+            task.wait(autoBreakCycleDelay)
+        end
+
+        autoBreakThread = nil
     end)
 end
 
@@ -303,7 +355,7 @@ tilesSection:addButton("Tiles Selector", function()
     end
 end)
 
-tilesSection:addToggle("Auto Place", false, function(value)
+autoPlaceSection:addToggle("Auto Place", false, function(value)
     autoPlaceEnabled = value
     print("Auto Place:", autoPlaceEnabled and "ON" or "OFF")
 
@@ -321,6 +373,21 @@ tilesSection:addToggle("Auto Place", false, function(value)
         end
 
         StartAutoPlaceLoop()
+    end
+end)
+
+autoBreakSection:addToggle("Auto Break", false, function(value)
+    autoBreakEnabled = value
+    print("Auto Break:", autoBreakEnabled and "ON" or "OFF")
+
+    if autoBreakEnabled then
+        if not HasAnyGridSelected() then
+            warn("Klik minimal 1 grid dulu.")
+            autoBreakEnabled = false
+            return
+        end
+
+        StartAutoBreakLoop()
     end
 end)
 
@@ -530,16 +597,33 @@ gridButtons.B3     = CreateBox(main, "10",     X(3), row2Y, false)
 for key, btn in pairs(gridButtons) do
     btn.MouseButton1Click:Connect(function()
         print("Klik kotak:", key)
-    
+
         if key == "Player" then
             print("Ini posisi player (tengah)")
             return
         end
-    
+
         ToggleGridSelection(key)
         UpdateGridButtonVisual(key)
         print("Grid toggle:", key, IsGridSelected(key) and "ON" or "OFF")
-    
+
+        -- =========================
+        -- AUTO BREAK (tidak butuh item)
+        -- =========================
+        if autoBreakEnabled then
+            if IsGridSelected(key) then
+                local px, py = GetPlayerTilePos()
+                AutoBreakToGridKey(key, px, py)
+            end
+
+            StartAutoBreakLoop()
+        else
+            print("Auto Break OFF")
+        end
+
+        -- =========================
+        -- AUTO PLACE (butuh item)
+        -- =========================
         if selectedItem then
             print(string.format(
                 "Akan pakai item '%s' (ID:%s, Slot:%s) ke kotak %s",
@@ -548,14 +632,13 @@ for key, btn in pairs(gridButtons) do
                 tostring(selectedItem.Slot),
                 key
             ))
-    
+
             if autoPlaceEnabled then
-                -- place sekali langsung ke grid yang baru diklik (opsional)
                 if IsGridSelected(key) then
                     local px, py = GetPlayerTilePos()
                     AutoPlaceToGridKey(key, px, py)
                 end
-    
+
                 StartAutoPlaceLoop()
             else
                 print("Auto Place OFF")
