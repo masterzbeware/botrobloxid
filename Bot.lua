@@ -148,4 +148,9 @@ section:addButton("Update Inventory", function()
     end
 end)
 
+section:addButton("Tiles Selector", function()
+    print("Tiles Selector diklik")
+    -- logic tiles selector nanti taruh di sini
+end)
+
 venyx:SelectPage(page, true)
