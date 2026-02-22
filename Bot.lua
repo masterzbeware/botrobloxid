@@ -26,20 +26,62 @@ local autoPlaceCycleDelay = 0.05
 local autoBreakDelay = 0.10
 local autoBreakCycleDelay = 0.05
 
--- Slider Auto Place (0.05s - 1.00s)
-speedSection:addSlider("Delay Auto Place (x0.01s)", 5, 100, 15, function(value)
-    autoPlaceDelay = value / 100
-    autoPlaceCycleDelay = math.max(0.03, autoPlaceDelay * 0.35)
+-- =========================
+-- SPEED INPUT (TEXTBOX)
+-- =========================
 
-    print(string.format("Auto Place Delay: %.2f", autoPlaceDelay))
+local function clamp(n, min, max)
+    if n < min then return min end
+    if n > max then return max end
+    return n
+end
+
+local function parseNumber(text)
+    if typeof(text) ~= "string" then return nil end
+    text = text:gsub(",", ".") -- biar 0,12 juga bisa
+    return tonumber(text)
+end
+
+local function updatePlaceCycle()
+    autoPlaceCycleDelay = math.max(0.03, autoPlaceDelay * 0.35)
+end
+
+local function updateBreakCycle()
+    autoBreakCycleDelay = math.max(0.03, autoBreakDelay * 0.35)
+end
+
+-- sinkron default
+updatePlaceCycle()
+updateBreakCycle()
+
+-- Textbox SPEED PLACE (hanya 0.10 - 0.15)
+speedSection:addTextBox("Speed Place (0.10-0.15)", tostring(autoPlaceDelay), function(text)
+    local n = parseNumber(text)
+    if not n then
+        warn("Speed Place harus angka. Contoh: 0.12")
+        return
+    end
+
+    n = clamp(n, 0.10, 0.15)
+    autoPlaceDelay = n
+    updatePlaceCycle()
+
+    print(string.format("Speed Place diset ke: %.2f", autoPlaceDelay))
 end)
 
--- Slider Auto Break (0.05s - 1.00s)
-speedSection:addSlider("Delay Auto Break (x0.01s)", 5, 100, 10, function(value)
-    autoBreakDelay = value / 100
-    autoBreakCycleDelay = math.max(0.03, autoBreakDelay * 0.35)
+-- Textbox SPEED BREAK (hanya 0.05 - 0.10)
+speedSection:addTextBox("Speed Break (0.05-0.10)", tostring(autoBreakDelay), function(text)
+    local n = parseNumber(text)
+    if not n then
+        warn("Speed Break harus angka. Contoh: 0.08")
+        return
+    end
 
-    print(string.format("Auto Break Delay: %.2f", autoBreakDelay))
+    n = clamp(n, 0.05, 0.10)
+    autoBreakDelay = n
+    updateBreakCycle()
+
+    print(string.format("Speed Break diset ke: %.2f", autoBreakDelay))
 end)
 
 local selectedItem = nil
