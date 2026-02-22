@@ -275,6 +275,32 @@ UpdateDropdownVisibleText = function(dropdown, text)
     scan(dropdown)
 end
 
+-- INIT HARVEST DROPDOWN
+do
+    local firstHarvestList, firstHarvestMap = BuildHarvestList()
+    harvestMap = firstHarvestMap
+    ReplaceTableContents(harvestDropdownListRef, firstHarvestList)
+
+    harvestDropdownObj = harvestMainSection:addDropdown("Target Tree", harvestDropdownListRef, harvestDropdownListRef[1], function(selectedLabel)
+        selectedHarvestTarget = harvestMap[selectedLabel]
+
+        if selectedHarvestTarget then
+            print("=== HARVEST TARGET DIPILIH ===")
+            print("Nama :", selectedHarvestTarget.Name)
+
+            if selectedHarvestTarget.Position then
+                local tx = math.floor(selectedHarvestTarget.Position.X / TILE + 0.5)
+                local ty = math.floor(selectedHarvestTarget.Position.Y / TILE + 0.5)
+                print("Tile :", tx, ty)
+            end
+        else
+            print("Target harvest tidak valid / tidak ada.")
+        end
+    end)
+
+    selectedHarvestTarget = harvestMap[harvestDropdownListRef[1]]
+end
+
 -- init pertama
 do
     local firstList, firstMap = BuildInventoryList()
