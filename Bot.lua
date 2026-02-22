@@ -22,6 +22,7 @@ local speedSection = autoPage:addSection("Speed")
 -- PAGE HARVEST (baru)
 local harvestPage = venyx:addPage("Harvest", 5012544693)
 local harvestMainSection = harvestPage:addSection("Main")
+local refreshSection = harvestPage:addSection("Refresh")
 -- HARVEST DROPDOWN DATA
 local selectedHarvestTarget = nil
 local harvestDropdownObj = nil
@@ -37,6 +38,39 @@ local gemsCountDropdown = growScanInfoSection:addDropdown("Gems Scanner", gemsCo
     -- tidak perlu isi apa-apa
 end)
 local UpdateDropdownVisibleText
+
+-- Button untuk Refresh Tree List
+refreshSection:addButton("Refresh Tree", function()
+    -- Update daftar Tree
+    local newList, newMap = BuildHarvestList()
+    harvestMap = newMap
+
+    -- Update dropdown list
+    ReplaceTableContents(harvestDropdownListRef, newList)
+
+    -- Cek dan update selectedLabel berdasarkan tree yang baru
+    local selectedLabel = nil
+    if selectedHarvestTarget and selectedHarvestTarget.Object then
+        for _, label in ipairs(harvestDropdownListRef) do
+            local data = harvestMap[label]
+            if data and data.Object == selectedHarvestTarget.Object then
+                selectedLabel = label
+                break
+            end
+        end
+    end
+
+    -- Kalau tidak ada, pilih yang pertama
+    if not selectedLabel then
+        selectedLabel = harvestDropdownListRef[1]
+        selectedHarvestTarget = harvestMap[selectedLabel]
+    end
+
+    -- Update teks dropdown yang terlihat
+    UpdateDropdownVisibleText(harvestDropdownObj, selectedLabel or "Target Tree")
+
+    print("Tree list diperbarui. Total target:", #harvestDropdownListRef)
+end)
 
 growScanSection:addButton("Scan Gems", function()
     local gemsModel = game.Workspace:FindFirstChild("Gems")
