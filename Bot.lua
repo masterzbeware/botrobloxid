@@ -117,6 +117,8 @@ do
             print("Tidak ada item valid dipilih.")
         end
     end)
+
+    selectedItem = itemMap[dropdownListRef[1]]
 end
 
 inventorySection:addButton("Update Inventory", function()
@@ -154,9 +156,10 @@ end)
 
 local main = nil
 local autoPlaceEnabled = false
-local selectedGridKeys = {} -- multi select
+local selectedGridKeys = {}
 local autoPlaceThread = nil
 local autoPlaceDelay = 0.15
+local gridButtons = {} -- pindah ke sini
 
 local gridOffsets = {
     T1 = Vector2.new(-1,  1), -- tombol 1
@@ -173,7 +176,7 @@ local gridOffsets = {
     B3 = Vector2.new( 1, -1), -- tombol 10
 }
 
-local function AutoPlaceToGridKey(gridKey)
+local function AutoPlaceToGridKey(gridKey, basePx, basePy)
     if not selectedItem then
         warn("Belum ada item dipilih.")
         return
@@ -185,25 +188,24 @@ local function AutoPlaceToGridKey(gridKey)
         return
     end
 
-    local player = game.Players.LocalPlayer
-    local handler = require(player.PlayerScripts.PlayerMovement.PlayerMovementHandler.Parent)
-
-    local px = math.floor(handler.Position.X / TILE + 0.5)
-    local py = math.floor(handler.Position.Y / TILE + 0.5)
-
-    local target = Vector2.new(px + offset.X, py + offset.Y)
-
+    local target = Vector2.new(basePx + offset.X, basePy + offset.Y)
     placeRemote:FireServer(target, selectedItem.Slot)
-    print("Auto Place ke:", gridKey, "Target:", target)
+
+    print("Auto Place ke:", gridKey, "Target:", target, "Slot:", selectedItem.Slot)
 end
 
 local function StartAutoPlaceLoop()
-    if autoPlaceThread then return end -- biar ga dobel
+    if autoPlaceThread then return end
 
     autoPlaceThread = task.spawn(function()
         while autoPlaceEnabled do
             if selectedItem then
-                -- urutan stabil (biar rapi, ga random dari pairs)
+                -- ambil posisi player SEKALI per siklus
+                local player = game.Players.LocalPlayer
+                local handler = require(player.PlayerScripts.PlayerMovement.PlayerMovementHandler.Parent)
+                local basePx = math.floor(handler.Position.X / TILE + 0.5)
+                local basePy = math.floor(handler.Position.Y / TILE + 0.5)
+
                 local keys = {}
                 for gridKey in pairs(selectedGridKeys) do
                     table.insert(keys, gridKey)
@@ -213,13 +215,13 @@ local function StartAutoPlaceLoop()
                 for _, gridKey in ipairs(keys) do
                     if not autoPlaceEnabled then break end
                     if selectedGridKeys[gridKey] then
-                        AutoPlaceToGridKey(gridKey)
-                        task.wait(0.1) -- << penting: jeda antar grid
+                        AutoPlaceToGridKey(gridKey, basePx, basePy)
+                        task.wait(0.3) -- naikin dikit (0.2 - 0.3 biasanya lebih stabil)
                     end
                 end
             end
 
-            task.wait(autoPlaceDelay) -- jeda antar siklus
+            task.wait(0.35) -- siklus antar putaran
         end
 
         autoPlaceThread = nil
@@ -245,6 +247,40 @@ local function HasAnyGridSelected()
         return true
     end
     return false
+end
+
+local function GetPlayerTilePos()
+    local player = game.Players.LocalPlayer
+    local handler = require(player.PlayerScripts.PlayerMovement.PlayerMovementHandler.Parent)
+
+    local px = math.floor(handler.Position.X / TILE + 0.5)
+    local py = math.floor(handler.Position.Y / TILE + 0.5)
+
+    return px, py
+end
+
+local function UpdateGridButtonVisual(key)
+    local btn = gridButtons[key]
+    if not btn then return end
+
+    local stroke = btn:FindFirstChildOfClass("UIStroke")
+    local selected = IsGridSelected(key)
+
+    if selected then
+        -- WARNA SAAT DIPILIH (hijau)
+        btn.BackgroundColor3 = Color3.fromRGB(35, 120, 65)
+        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        if stroke then
+            stroke.Color = Color3.fromRGB(90, 255, 150)
+        end
+    else
+        -- WARNA NORMAL (abu)
+        btn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+        btn.TextColor3 = Color3.fromRGB(230, 230, 230)
+        if stroke then
+            stroke.Color = Color3.fromRGB(90, 90, 90)
+        end
+    end
 end
 
 
@@ -463,8 +499,6 @@ local function X(index)
     return startX + (boxW + gap) * index
 end
 
-local gridButtons = {}
-
 -- baris atas (3)
 gridButtons.T1     = CreateBox(main, "1",     X(1), row0Y, false)
 gridButtons.T2     = CreateBox(main, "2",     X(2), row0Y, false)
@@ -486,15 +520,16 @@ gridButtons.B3     = CreateBox(main, "10",     X(3), row2Y, false)
 for key, btn in pairs(gridButtons) do
     btn.MouseButton1Click:Connect(function()
         print("Klik kotak:", key)
-
+    
         if key == "Player" then
             print("Ini posisi player (tengah)")
             return
         end
-
+    
         ToggleGridSelection(key)
+        UpdateGridButtonVisual(key)
         print("Grid toggle:", key, IsGridSelected(key) and "ON" or "OFF")
-
+    
         if selectedItem then
             print(string.format(
                 "Akan pakai item '%s' (ID:%s, Slot:%s) ke kotak %s",
@@ -503,13 +538,14 @@ for key, btn in pairs(gridButtons) do
                 tostring(selectedItem.Slot),
                 key
             ))
-        
+    
             if autoPlaceEnabled then
                 -- place sekali langsung ke grid yang baru diklik (opsional)
                 if IsGridSelected(key) then
-                    AutoPlaceToGridKey(key)
+                    local px, py = GetPlayerTilePos()
+                    AutoPlaceToGridKey(key, px, py)
                 end
-            
+    
                 StartAutoPlaceLoop()
             else
                 print("Auto Place OFF")
