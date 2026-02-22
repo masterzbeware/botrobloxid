@@ -252,7 +252,7 @@ title.Position = UDim2.new(0, 0, 0, 6)
 title.BackgroundTransparency = 1
 title.Text = "Grid Posisi Item / Player"
 title.Font = Enum.Font.GothamBold
-title.TextSize = 14
+title.TextSize = 12
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
 title.Parent = main
 
@@ -335,12 +335,12 @@ local function CreateBox(parent, text, x, y, isPlayer)
     return box
 end
 
-local startX = 15
-local gap = 8
-local boxW = 60
-local row0Y = 35   -- atas
-local row1Y = 95   -- tengah
-local row2Y = 155  -- bawah
+local startX = 12
+local gap = 6
+local boxW = 48
+local row0Y = 34
+local row1Y = 82
+local row2Y = 130
 
 local function X(index)
     return startX + (boxW + gap) * index
