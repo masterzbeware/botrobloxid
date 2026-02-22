@@ -19,13 +19,27 @@ local autoBreakSection = page:addSection("Auto Break") -- TAMBAH INI
 local speedSection = page:addSection("Speed")
 
 
-local autoPlaceDelay = 0.15 -- delay antar tile place (detik)
-local autoPlaceCycleDelay = 0.05 -- delay antar siklus loop (detik)
+-- default
+local autoPlaceDelay = 0.15
+local autoPlaceCycleDelay = 0.05
 
-speedSection:addSlider("Delay Auto Place", 10, 20, 10, function(value)
+local autoBreakDelay = 0.10
+local autoBreakCycleDelay = 0.05
+
+-- Slider Auto Place (0.05s - 1.00s)
+speedSection:addSlider("Delay Auto Place (x0.01s)", 5, 100, 15, function(value)
     autoPlaceDelay = value / 100
     autoPlaceCycleDelay = math.max(0.03, autoPlaceDelay * 0.35)
-    print("Delay sekarang:", autoPlaceDelay)
+
+    print(string.format("Auto Place Delay: %.2f", autoPlaceDelay))
+end)
+
+-- Slider Auto Break (0.05s - 1.00s)
+speedSection:addSlider("Delay Auto Break (x0.01s)", 5, 100, 10, function(value)
+    autoBreakDelay = value / 100
+    autoBreakCycleDelay = math.max(0.03, autoBreakDelay * 0.35)
+
+    print(string.format("Auto Break Delay: %.2f", autoBreakDelay))
 end)
 
 local selectedItem = nil
@@ -175,9 +189,6 @@ local selectedGridKeys = {}
 local autoPlaceThread = nil
 local autoBreakThread = nil -- TAMBAH
 local gridButtons = {}
-
-local autoBreakDelay = 0.10 -- TAMBAH
-local autoBreakCycleDelay = 0.05 -- TAMBAH
 
 local gridOffsets = {
     T1 = Vector2.new(-1,  1), -- tombol 1
@@ -431,7 +442,7 @@ task.spawn(function()
     versionLabel.Size = UDim2.new(0, 90, 0, 16)
     versionLabel.ZIndex = 6
     versionLabel.Font = Enum.Font.Gotham
-    versionLabel.Text = "Version 1.0.1"
+    versionLabel.Text = "Version 1.0.2"
     versionLabel.TextSize = 12
     versionLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     versionLabel.TextTransparency = 0.2
