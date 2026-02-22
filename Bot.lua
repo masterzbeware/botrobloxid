@@ -154,6 +154,9 @@ end)
 
 local main = nil
 local autoPlaceEnabled = false
+local selectedGridKey = nil
+local autoPlaceThread = nil
+local autoPlaceDelay = 0.15
 
 local gridOffsets = {
     T1 = Vector2.new(-1,  1), -- tombol 1
@@ -191,8 +194,22 @@ local function AutoPlaceToGridKey(gridKey)
     local target = Vector2.new(px + offset.X, py + offset.Y)
 
     placeRemote:FireServer(target, selectedItem.Slot)
-
     print("Auto Place ke:", gridKey, "Target:", target)
+end
+
+local function StartAutoPlaceLoop()
+    if autoPlaceThread then return end -- biar ga dobel
+
+    autoPlaceThread = task.spawn(function()
+        while autoPlaceEnabled do
+            if selectedGridKey and selectedItem then
+                AutoPlaceToGridKey(selectedGridKey)
+            end
+            task.wait(autoPlaceDelay)
+        end
+
+        autoPlaceThread = nil
+    end)
 end
 
 tilesSection:addButton("Tiles Selector", function()
@@ -207,6 +224,22 @@ end)
 tilesSection:addToggle("Auto Place", false, function(value)
     autoPlaceEnabled = value
     print("Auto Place:", autoPlaceEnabled and "ON" or "OFF")
+
+    if autoPlaceEnabled then
+        if not selectedItem then
+            warn("Pilih item dulu.")
+            autoPlaceEnabled = false
+            return
+        end
+
+        if not selectedGridKey then
+            warn("Klik grid dulu.")
+            autoPlaceEnabled = false
+            return
+        end
+
+        StartAutoPlaceLoop()
+    end
 end)
 
 
@@ -422,6 +455,9 @@ for key, btn in pairs(gridButtons) do
             return
         end
 
+        selectedGridKey = key
+print("Grid dipilih:", selectedGridKey)
+
         if selectedItem then
             print(string.format(
                 "Akan pakai item '%s' (ID:%s, Slot:%s) ke kotak %s",
@@ -432,7 +468,8 @@ for key, btn in pairs(gridButtons) do
             ))
         
             if autoPlaceEnabled then
-                AutoPlaceToGridKey(key)
+                AutoPlaceToGridKey(key) -- place sekali langsung
+                StartAutoPlaceLoop()    -- lanjut loop terus
             else
                 print("Auto Place OFF")
             end
