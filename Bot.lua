@@ -154,7 +154,7 @@ end)
 
 local main = nil
 local autoPlaceEnabled = false
-local selectedGridKey = nil
+local selectedGridKeys = {} -- multi select
 local autoPlaceThread = nil
 local autoPlaceDelay = 0.15
 
@@ -202,8 +202,10 @@ local function StartAutoPlaceLoop()
 
     autoPlaceThread = task.spawn(function()
         while autoPlaceEnabled do
-            if selectedGridKey and selectedItem then
-                AutoPlaceToGridKey(selectedGridKey)
+            if selectedItem then
+                for gridKey in pairs(selectedGridKeys) do
+                    AutoPlaceToGridKey(gridKey)
+                end
             end
             task.wait(autoPlaceDelay)
         end
@@ -232,8 +234,8 @@ tilesSection:addToggle("Auto Place", false, function(value)
             return
         end
 
-        if not selectedGridKey then
-            warn("Klik grid dulu.")
+        if not HasAnyGridSelected() then
+            warn("Klik minimal 1 grid dulu.")
             autoPlaceEnabled = false
             return
         end
@@ -446,6 +448,28 @@ gridButtons.B1     = CreateBox(main, "8",     X(1), row2Y, false)
 gridButtons.B2     = CreateBox(main, "9",     X(2), row2Y, false)
 gridButtons.B3     = CreateBox(main, "10",     X(3), row2Y, false)
 
+
+local function IsGridSelected(key)
+    return selectedGridKeys[key] == true
+end
+
+local function ToggleGridSelection(key)
+    if selectedGridKeys[key] then
+        selectedGridKeys[key] = nil
+        print("Grid unselected:", key)
+    else
+        selectedGridKeys[key] = true
+        print("Grid selected:", key)
+    end
+end
+
+local function HasAnyGridSelected()
+    for _ in pairs(selectedGridKeys) do
+        return true
+    end
+    return false
+end
+
 for key, btn in pairs(gridButtons) do
     btn.MouseButton1Click:Connect(function()
         print("Klik kotak:", key)
@@ -455,8 +479,8 @@ for key, btn in pairs(gridButtons) do
             return
         end
 
-        selectedGridKey = key
-print("Grid dipilih:", selectedGridKey)
+        ToggleGridSelection(key)
+        print("Grid toggle:", key, IsGridSelected(key) and "ON" or "OFF")
 
         if selectedItem then
             print(string.format(
@@ -468,8 +492,12 @@ print("Grid dipilih:", selectedGridKey)
             ))
         
             if autoPlaceEnabled then
-                AutoPlaceToGridKey(key) -- place sekali langsung
-                StartAutoPlaceLoop()    -- lanjut loop terus
+                -- place sekali langsung ke grid yang baru diklik (opsional)
+                if IsGridSelected(key) then
+                    AutoPlaceToGridKey(key)
+                end
+            
+                StartAutoPlaceLoop()
             else
                 print("Auto Place OFF")
             end
