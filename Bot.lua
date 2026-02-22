@@ -1,6 +1,8 @@
 local Rep = game:GetService("ReplicatedStorage")
 local Inventory = require(Rep:WaitForChild("Modules"):WaitForChild("Inventory"))
 local ItemsManager = require(Rep:WaitForChild("Managers"):WaitForChild("ItemsManager"))
+local placeRemote = Rep:WaitForChild("Remotes"):WaitForChild("PlayerPlaceItem")
+local TILE = 4.5
 
 local Venyx = loadstring(game:HttpGet(
     "https://raw.githubusercontent.com/masterzbeware/peta-peta/refs/heads/main/petapeta"
@@ -153,6 +155,46 @@ end)
 local main = nil
 local autoPlaceEnabled = false
 
+local gridOffsets = {
+    T1 = Vector2.new(-1,  1), -- tombol 1
+    T2 = Vector2.new( 0,  1), -- tombol 2
+    T3 = Vector2.new( 1,  1), -- tombol 3
+
+    L2 = Vector2.new(-2,  0), -- tombol 4
+    L1 = Vector2.new(-1,  0), -- tombol 5
+    R1 = Vector2.new( 1,  0), -- tombol 6
+    R2 = Vector2.new( 2,  0), -- tombol 7
+
+    B1 = Vector2.new(-1, -1), -- tombol 8
+    B2 = Vector2.new( 0, -1), -- tombol 9
+    B3 = Vector2.new( 1, -1), -- tombol 10
+}
+
+local function AutoPlaceToGridKey(gridKey)
+    if not selectedItem then
+        warn("Belum ada item dipilih.")
+        return
+    end
+
+    local offset = gridOffsets[gridKey]
+    if not offset then
+        warn("Offset grid tidak ada:", gridKey)
+        return
+    end
+
+    local player = game.Players.LocalPlayer
+    local handler = require(player.PlayerScripts.PlayerMovement.PlayerMovementHandler.Parent)
+
+    local px = math.floor(handler.Position.X / TILE + 0.5)
+    local py = math.floor(handler.Position.Y / TILE + 0.5)
+
+    local target = Vector2.new(px + offset.X, py + offset.Y)
+
+    placeRemote:FireServer(target, selectedItem.Slot)
+
+    print("Auto Place ke:", gridKey, "Target:", target)
+end
+
 tilesSection:addButton("Tiles Selector", function()
     if main then
         main.Visible = not main.Visible
@@ -205,7 +247,6 @@ task.spawn(function()
     versionLabel.AnchorPoint = Vector2.new(1, 0.5)
     versionLabel.Position = UDim2.new(1, -12, 0, 19) -- kanan, sejajar title
     versionLabel.Size = UDim2.new(0, 90, 0, 16)
-versionLabel.TextSize = 12
     versionLabel.ZIndex = 6
     versionLabel.Font = Enum.Font.Gotham
     versionLabel.Text = "Version 1.0.1"
@@ -389,21 +430,12 @@ for key, btn in pairs(gridButtons) do
                 tostring(selectedItem.Slot),
                 key
             ))
-
-            -- TAMBAHAN DI SINI (cek toggle Auto Place)
+        
             if autoPlaceEnabled then
-                print("Auto Place: ON -> jalankan place item ke kotak", key)
-
-                -- nanti di sini isi logic place item beneran
-                -- contoh:
-                -- local tilePos = ...
-                -- placeRemote:FireServer(...)
-
+                AutoPlaceToGridKey(key)
             else
-                print("Auto Place: OFF -> hanya pilih kotak")
+                print("Auto Place OFF")
             end
-            -- END TAMBAHAN
-
         else
             print("Belum ada item dipilih dari dropdown.")
         end
