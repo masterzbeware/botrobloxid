@@ -31,7 +31,7 @@ local gemsCountDropdownList = {"Gems : 0"}
 local gemsCountDropdown = growScanInfoSection:addDropdown("Gems Scanner", gemsCountDropdownList, gemsCountDropdownList[1], function()
     -- tidak perlu isi apa-apa
 end)
-
+local UpdateDropdownVisibleText
 
 growScanSection:addButton("Scan Gems", function()
     local gemsModel = game.Workspace:FindFirstChild("Gems")
@@ -181,7 +181,7 @@ local function ReplaceTableContents(target, source)
 end
 
 -- helper: coba update teks dropdown yang terlihat
-local function UpdateDropdownVisibleText(dropdown, text)
+UpdateDropdownVisibleText = function(dropdown, text)
     if not dropdown or not text then return end
 
     -- scan semua object yg mungkin
