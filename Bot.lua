@@ -19,7 +19,7 @@ local speedSection = page:addSection("Speed")
 local autoPlaceDelay = 0.15 -- delay antar tile place (detik)
 local autoPlaceCycleDelay = 0.05 -- delay antar siklus loop (detik)
 
-speedSection:addSlider("Delay Auto Place", 5, 50, 15, function(value)
+speedSection:addSlider("Delay Auto Place", 10, 20, 10, function(value)
     autoPlaceDelay = value / 100
     autoPlaceCycleDelay = math.max(0.03, autoPlaceDelay * 0.35)
     print("Delay sekarang:", autoPlaceDelay)
