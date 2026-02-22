@@ -22,8 +22,6 @@ local speedSection = autoPage:addSection("Speed")
 -- PAGE HARVEST (baru)
 local harvestPage = venyx:addPage("Harvest", 5012544693)
 local harvestMainSection = harvestPage:addSection("Main")
-local refreshSection = harvestPage:addSection("Refresh")
-local autoHarvestSection = harvestPage:addSection("Auto Harvest")
 
 local selectedHarvestTarget = nil
 local harvestDropdownObj = nil
@@ -40,13 +38,6 @@ local gemsCountDropdown = growScanInfoSection:addDropdown("Gems Scanner", gemsCo
 end)
 local UpdateDropdownVisibleText
 
-refreshSection:addButton("Refresh Tree", function()
-    -- Hapus bagian pencarian pohon dan pembaruan dropdown
-    -- Local trees = FindAllTrees() -- Bagian ini dihapus
-
-    -- Cek jika tidak ada pohon, tidak perlu melakukan apa-apa
-    warn("Tidak ada fungsi pencarian pohon lagi.")
-end)
 
 growScanSection:addButton("Scan Gems", function()
     local gemsModel = game.Workspace:FindFirstChild("Gems")
@@ -284,33 +275,6 @@ UpdateDropdownVisibleText = function(dropdown, text)
 
     scan(dropdown)
 end
-
--- INIT HARVEST DROPDOWN
-do
-    local firstHarvestList, firstHarvestMap = BuildHarvestList()
-    harvestMap = firstHarvestMap
-    ReplaceTableContents(harvestDropdownListRef, firstHarvestList)
-
-    harvestDropdownObj = harvestMainSection:addDropdown("Target Tree", harvestDropdownListRef, harvestDropdownListRef[1], function(selectedLabel)
-        selectedHarvestTarget = harvestMap[selectedLabel]
-
-        if selectedHarvestTarget then
-            print("=== HARVEST TARGET DIPILIH ===")
-            print("Nama :", selectedHarvestTarget.Name)
-
-            if selectedHarvestTarget.Position then
-                local tx = math.floor(selectedHarvestTarget.Position.X / TILE + 0.5)
-                local ty = math.floor(selectedHarvestTarget.Position.Y / TILE + 0.5)
-                print("Tile :", tx, ty)
-            end
-        else
-            print("Target harvest tidak valid / tidak ada.")
-        end
-    end)
-
-    selectedHarvestTarget = harvestMap[harvestDropdownListRef[1]]
-end
-
 -- init pertama
 do
     local firstList, firstMap = BuildInventoryList()
