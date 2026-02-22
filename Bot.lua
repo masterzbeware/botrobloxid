@@ -40,34 +40,38 @@ local gemsCountDropdown = growScanInfoSection:addDropdown("Gems Scanner", gemsCo
 end)
 local UpdateDropdownVisibleText
 
--- Button untuk Refresh Tree List
+-- Tombol untuk Refresh Tree List
 refreshSection:addButton("Refresh Tree", function()
-    -- Update daftar Tree
-    local trees = FindAllTrees(20)  -- Menyesuaikan radius pencarian sesuai keinginan
+    -- Ambil semua pohon yang ada di workspace
+    local trees = FindAllTrees()
 
+    -- Cek apakah ada pohon yang ditemukan
     if #trees == 0 then
-        warn("Tidak ada tree terdeteksi dalam radius.")
+        warn("Tidak ada pohon ditemukan dalam game.")
         return
     end
-
-    print("=== SEMUA TREE TERDETEKSI ===")
-    print("Total Tree:", #trees)
 
     -- Update daftar dropdown tree
     local treeList = {}
     for i, tree in ipairs(trees) do
-        local label = string.format("[%d] %s | (%d,%d) | Layer: %s | Distance: %.2f",
-            i, tostring(tree.id), tree.x, tree.y, tostring(tree.layer), tree.distance)
+        -- Format label untuk setiap pohon yang ditemukan
+        local label = string.format("[%d] %s | Posisi: (%.2f, %.2f, %.2f)",
+            i, tostring(tree.Object.Name), tree.Position.X, tree.Position.Y, tree.Position.Z)
         table.insert(treeList, label)
     end
 
-    -- Ganti dropdown dengan daftar tree yang terdeteksi
+    -- Ganti dropdown dengan daftar pohon yang terdeteksi
     ReplaceTableContents(harvestDropdownListRef, treeList)
 
-    -- Update dropdown yang tampil (Visual)
-    local selectedLabel = treeList[1]  -- Memilih tree pertama yang ditemukan
-    selectedHarvestTarget = trees[1]  -- Memilih target pertama di array pohon
-    UpdateDropdownVisibleText(harvestDropdownObj, selectedLabel)
+    -- Pilih pohon pertama sebagai default
+    local selectedLabel = treeList[1]
+    selectedHarvestTarget = trees[1]  -- Memilih pohon pertama
+    if harvestDropdownObj then
+        -- Update teks yang terlihat di dropdown
+        UpdateDropdownVisibleText(harvestDropdownObj, selectedLabel)
+    else
+        warn("harvestDropdownObj tidak ditemukan!")
+    end
 
     print("Tree list diperbarui. Total target:", #treeList)
 end)
