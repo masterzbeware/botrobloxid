@@ -9,6 +9,7 @@ local Venyx = loadstring(game:HttpGet(
 local venyx = Venyx.new("MasterZ UX", 5013109572)
 local page = venyx:addPage("Auto", 5012544693)
 local section = page:addSection("Main")
+local tilesSection = page:addSection("Tiles")
 
 local selectedItem = nil
 local itemMap = {}
@@ -150,7 +151,7 @@ end)
 
 local main = nil
 
-section:addButton("Tiles Selector", function()
+tilesSection:addButton("Tiles Selector", function()
     if main then
         main.Visible = not main.Visible
         print("Tiles Selector:", main.Visible and "OPEN" or "CLOSE")
@@ -159,7 +160,10 @@ section:addButton("Tiles Selector", function()
     end
 end)
 
+
 venyx:SelectPage(page, true)
+
+
 
 -- =========================
 -- VERSION LABEL (KANAN TOPBAR Venyx)
@@ -193,7 +197,8 @@ task.spawn(function()
     versionLabel.BackgroundTransparency = 1
     versionLabel.AnchorPoint = Vector2.new(1, 0.5)
     versionLabel.Position = UDim2.new(1, -12, 0, 19) -- kanan, sejajar title
-    versionLabel.Size = UDim2.new(0, 120, 0, 16)
+    versionLabel.Size = UDim2.new(0, 90, 0, 16)
+versionLabel.TextSize = 11
     versionLabel.ZIndex = 6
     versionLabel.Font = Enum.Font.Gotham
     versionLabel.Text = "Version 1.0.0"
