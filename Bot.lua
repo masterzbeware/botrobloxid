@@ -157,7 +157,6 @@ local Players = game:GetService("Players")
 local lp = Players.LocalPlayer
 local PlayerGui = lp:WaitForChild("PlayerGui")
 
--- hapus UI lama kalau sudah ada
 local oldGui = PlayerGui:FindFirstChild("InventoryGridUI")
 if oldGui then
     oldGui:Destroy()
@@ -169,11 +168,10 @@ gui.ResetOnSpawn = false
 gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.Parent = PlayerGui
 
--- frame utama
 local main = Instance.new("Frame")
 main.Name = "MainGrid"
-main.Size = UDim2.new(0, 360, 0, 180)
-main.Position = UDim2.new(0.5, -180, 0.65, 0) -- agak bawah tengah
+main.Size = UDim2.new(0, 360, 0, 235)
+main.Position = UDim2.new(0.5, -180, 0.62, 0)
 main.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 main.BackgroundTransparency = 0.1
 main.BorderSizePixel = 0
@@ -188,10 +186,9 @@ stroke.Color = Color3.fromRGB(80, 80, 80)
 stroke.Thickness = 1
 stroke.Parent = main
 
--- judul kecil
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, 0, 0, 24)
-title.Position = UDim2.new(0, 0, 0, 4)
+title.Position = UDim2.new(0, 0, 0, 6)
 title.BackgroundTransparency = 1
 title.Text = "Grid Posisi Item / Player"
 title.Font = Enum.Font.GothamBold
@@ -199,7 +196,6 @@ title.TextSize = 14
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
 title.Parent = main
 
--- helper bikin kotak
 local function CreateBox(parent, text, x, y, isPlayer)
     local box = Instance.new("TextButton")
     box.Name = text
@@ -213,7 +209,7 @@ local function CreateBox(parent, text, x, y, isPlayer)
     box.Parent = parent
 
     if isPlayer then
-        box.BackgroundColor3 = Color3.fromRGB(65, 130, 255) -- biru utk player
+        box.BackgroundColor3 = Color3.fromRGB(65, 130, 255)
         box.TextColor3 = Color3.fromRGB(255,255,255)
     else
         box.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
@@ -232,19 +228,23 @@ local function CreateBox(parent, text, x, y, isPlayer)
     return box
 end
 
--- koordinat layout (5 kotak baris tengah, 3 kotak baris bawah)
--- susunan tengah: [L2][L1][PLAYER][R1][R2]
 local startX = 15
 local gap = 8
 local boxW = 60
-local row1Y = 35
-local row2Y = 95
+local row0Y = 35   -- atas
+local row1Y = 95   -- tengah
+local row2Y = 155  -- bawah
 
-local function X(index) -- index mulai 0
+local function X(index)
     return startX + (boxW + gap) * index
 end
 
 local gridButtons = {}
+
+-- baris atas (3)
+gridButtons.T1     = CreateBox(main, "T1",     X(1), row0Y, false)
+gridButtons.T2     = CreateBox(main, "T2",     X(2), row0Y, false)
+gridButtons.T3     = CreateBox(main, "T3",     X(3), row0Y, false)
 
 -- baris tengah (5)
 gridButtons.L2     = CreateBox(main, "L2",     X(0), row1Y, false)
@@ -253,13 +253,11 @@ gridButtons.Player = CreateBox(main, "PLAYER", X(2), row1Y, true)
 gridButtons.R1     = CreateBox(main, "R1",     X(3), row1Y, false)
 gridButtons.R2     = CreateBox(main, "R2",     X(4), row1Y, false)
 
--- baris bawah (3) ditengahin
--- pakai posisi kolom 1,2,3 biar center di bawah PLAYER
+-- baris bawah (3)
 gridButtons.B1     = CreateBox(main, "B1",     X(1), row2Y, false)
 gridButtons.B2     = CreateBox(main, "B2",     X(2), row2Y, false)
 gridButtons.B3     = CreateBox(main, "B3",     X(3), row2Y, false)
 
--- contoh klik kotak (bisa kamu isi logic item placement nanti)
 for key, btn in pairs(gridButtons) do
     btn.MouseButton1Click:Connect(function()
         print("Klik kotak:", key)
