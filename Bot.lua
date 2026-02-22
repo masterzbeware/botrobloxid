@@ -162,6 +162,49 @@ end)
 venyx:SelectPage(page, true)
 
 -- =========================
+-- VERSION LABEL (KANAN TOPBAR Venyx)
+-- =========================
+task.spawn(function()
+    local pgui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+
+    -- cari UI Venyx berdasarkan nama title
+    local venyxGui = pgui:FindFirstChild("MasterZ UX")
+    if not venyxGui then
+        warn("UI Venyx 'MasterZ UX' tidak ketemu")
+        return
+    end
+
+    -- ambil TopBar
+    local topBar = venyxGui:FindFirstChild("Main") and venyxGui.Main:FindFirstChild("TopBar")
+    if not topBar then
+        warn("TopBar Venyx tidak ketemu")
+        return
+    end
+
+    -- hapus label lama kalau ada (biar gak dobel kalau script dijalankan ulang)
+    local old = topBar:FindFirstChild("VersionLabel")
+    if old then
+        old:Destroy()
+    end
+
+    -- bikin text versi di kanan
+    local versionLabel = Instance.new("TextLabel")
+    versionLabel.Name = "VersionLabel"
+    versionLabel.BackgroundTransparency = 1
+    versionLabel.AnchorPoint = Vector2.new(1, 0.5)
+    versionLabel.Position = UDim2.new(1, -12, 0, 19) -- kanan, sejajar title
+    versionLabel.Size = UDim2.new(0, 120, 0, 16)
+    versionLabel.ZIndex = 6
+    versionLabel.Font = Enum.Font.Gotham
+    versionLabel.Text = "Version 1.0.0"
+    versionLabel.TextSize = 12
+    versionLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    versionLabel.TextTransparency = 0.2
+    versionLabel.TextXAlignment = Enum.TextXAlignment.Right
+    versionLabel.Parent = topBar
+end)
+
+-- =========================
 -- GRID KOTAK (PLAYER CENTER)
 -- =========================
 local Players = game:GetService("Players")
