@@ -229,7 +229,7 @@ gui.Parent = PlayerGui
 
 main = Instance.new("Frame")
 main.Name = "MainGrid"
-main.Size = UDim2.new(0, 360, 0, 235)
+main.Size = UDim2.new(0, 300, 0, 200)
 main.Position = UDim2.new(0.5, -180, 0.5, -117)
 main.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 main.BackgroundTransparency = 0.1
@@ -306,11 +306,11 @@ end)
 local function CreateBox(parent, text, x, y, isPlayer)
     local box = Instance.new("TextButton")
     box.Name = text
-    box.Size = UDim2.new(0, 60, 0, 45)
+    box.Size = UDim2.new(0, 48, 0, 36)
     box.Position = UDim2.new(0, x, 0, y)
     box.Text = text
     box.Font = Enum.Font.GothamSemibold
-    box.TextSize = 12
+    box.TextSize = 10
     box.AutoButtonColor = true
     box.BorderSizePixel = 0
     box.Parent = parent
