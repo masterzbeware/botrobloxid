@@ -29,7 +29,7 @@ local function BuildInventoryList()
             local info = ItemsManager.RequestItemData(id)
             local name = (info and info.Name) or ("Unknown (" .. tostring(id) .. ")")
 
-            local baseLabel = string.format("%s x%d", name, amount)
+            local baseLabel = string.format("%s [%s] x%d", name, tostring(id), amount)
             labelCount[baseLabel] = (labelCount[baseLabel] or 0) + 1
 
             local label = baseLabel
