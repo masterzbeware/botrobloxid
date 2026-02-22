@@ -23,38 +23,39 @@ local speedSection = autoPage:addSection("Speed")
 local growScanPage = venyx:addPage("GrowScan", 5012544693)
 local growScanSection = growScanPage:addSection("Scanner")
 local growScanInfoSection = growScanPage:addSection("Info")
-local gemsCountLabel = growScanInfoSection:addLabel("Gems : 0")
+local gemsCountDropdownList = {"Gems : 0"}
+local gemsCountDropdown = growScanInfoSection:addDropdown("Gems Scanner", gemsCountDropdownList, gemsCountDropdownList[1], function()
+    -- tidak perlu isi apa-apa
+end)
 
--- =========================
--- GROWSCAN: HITUNG PART DI MODEL GEMS
--- =========================
 growScanSection:addButton("Scan Gems", function()
     local gemsModel = game.Workspace:FindFirstChild("Gems")
 
     if not gemsModel then
         warn("Model 'Gems' tidak ditemukan di workspace")
-        -- update label juga kalau tidak ada
-        if gemsCountLabel and gemsCountLabel.update then
-            gemsCountLabel:update("Gems : 0")
-        end
+
+        -- update isi dropdown jadi 0
+        gemsCountDropdownList[1] = "Gems : 0"
+        UpdateDropdownVisibleText(gemsCountDropdown, "Gems : 0")
         return
     end
 
     local totalParts = 0
-
     for _, obj in ipairs(gemsModel:GetDescendants()) do
         if obj:IsA("BasePart") then
             totalParts = totalParts + 1
         end
     end
 
-    -- tampilkan ke UI
-    if gemsCountLabel and gemsCountLabel.update then
-        gemsCountLabel:update("Gems : " .. tostring(totalParts))
-    end
+    local resultText = "Gems : " .. tostring(totalParts)
 
-    -- optional: tetap print ke console
-    print("Gems :", totalParts)
+    -- update item dropdown (biar datanya juga ikut berubah)
+    gemsCountDropdownList[1] = resultText
+
+    -- update teks yang tampil di UI
+    UpdateDropdownVisibleText(gemsCountDropdown, resultText)
+
+    print(resultText)
 end)
 
 -- default
