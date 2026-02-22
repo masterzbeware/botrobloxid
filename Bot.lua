@@ -148,6 +148,17 @@ section:addButton("Update Inventory", function()
     end
 end)
 
+local main = nil
+
+section:addButton("Tiles Selector", function()
+    if main then
+        main.Visible = not main.Visible
+        print("Tiles Selector:", main.Visible and "OPEN" or "CLOSE")
+    else
+        print("Grid belum dibuat.")
+    end
+end)
+
 venyx:SelectPage(page, true)
 
 -- =========================
@@ -168,7 +179,7 @@ gui.ResetOnSpawn = false
 gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.Parent = PlayerGui
 
-local main = Instance.new("Frame")
+main = Instance.new("Frame")
 main.Name = "MainGrid"
 main.Size = UDim2.new(0, 360, 0, 235)
 main.Position = UDim2.new(0.5, -180, 0.62, 0)
@@ -176,6 +187,7 @@ main.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 main.BackgroundTransparency = 0.1
 main.BorderSizePixel = 0
 main.Parent = gui
+main.Visible = false
 
 local corner = Instance.new("UICorner")
 corner.CornerRadius = UDim.new(0, 10)
