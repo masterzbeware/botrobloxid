@@ -40,7 +40,6 @@ local gemsCountDropdown = growScanInfoSection:addDropdown("Gems Scanner", gemsCo
 end)
 local UpdateDropdownVisibleText
 
--- Tombol untuk Refresh Tree List
 refreshSection:addButton("Refresh Tree", function()
     -- Ambil semua pohon yang ada di workspace
     local trees = FindAllTrees()
@@ -56,7 +55,7 @@ refreshSection:addButton("Refresh Tree", function()
     for i, tree in ipairs(trees) do
         -- Format label untuk setiap pohon yang ditemukan
         local label = string.format("[%d] %s | Posisi: (%.2f, %.2f, %.2f)",
-            i, tostring(tree.Object.Name), tree.Position.X, tree.Position.Y, tree.Position.Z)
+            i, tostring(tree.Name), tree.Position.X, tree.Position.Y, tree.Position.Z)
         table.insert(treeList, label)
     end
 
