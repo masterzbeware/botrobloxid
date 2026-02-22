@@ -23,7 +23,8 @@ local speedSection = autoPage:addSection("Speed")
 local harvestPage = venyx:addPage("Harvest", 5012544693)
 local harvestMainSection = harvestPage:addSection("Main")
 local refreshSection = harvestPage:addSection("Refresh")
--- HARVEST DROPDOWN DATA
+local autoHarvestSection = harvestPage:addSection("Auto Harvest")
+
 local selectedHarvestTarget = nil
 local harvestDropdownObj = nil
 local harvestDropdownListRef = {}
@@ -572,6 +573,19 @@ tilesSection:addButton("Tiles Selector", function()
         print("Tiles Selector:", main.Visible and "OPEN" or "CLOSE")
     else
         print("Grid belum dibuat.")
+    end
+end)
+
+-- Toggle untuk Auto Harvest
+autoHarvestSection:addToggle("Auto Harvest", false, function(value)
+    if value then
+        print("Auto Harvest: ON")
+        -- Logika untuk mulai Auto Harvest, misalnya mulai mengambil target tree
+        StartAutoHarvest()
+    else
+        print("Auto Harvest: OFF")
+        -- Logika untuk menghentikan Auto Harvest
+        StopAutoHarvest()
     end
 end)
 
