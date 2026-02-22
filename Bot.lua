@@ -55,7 +55,7 @@ updatePlaceCycle()
 updateBreakCycle()
 
 -- Textbox SPEED PLACE (hanya 0.10 - 0.15)
-speedSection:addTextBox("Speed Place (0.10-0.15)", tostring(autoPlaceDelay), function(text)
+speedSection:addTextbox("Speed Place (0.10-0.15)", tostring(autoPlaceDelay), function(text)
     local n = parseNumber(text)
     if not n then
         warn("Speed Place harus angka. Contoh: 0.12")
@@ -70,7 +70,7 @@ speedSection:addTextBox("Speed Place (0.10-0.15)", tostring(autoPlaceDelay), fun
 end)
 
 -- Textbox SPEED BREAK (hanya 0.05 - 0.10)
-speedSection:addTextBox("Speed Break (0.05-0.10)", tostring(autoBreakDelay), function(text)
+speedSection:addTextbox("Speed Break (0.05-0.10)", tostring(autoBreakDelay), function(text)
     local n = parseNumber(text)
     if not n then
         warn("Speed Break harus angka. Contoh: 0.08")
