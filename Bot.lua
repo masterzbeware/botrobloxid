@@ -23,6 +23,7 @@ local speedSection = autoPage:addSection("Speed")
 local growScanPage = venyx:addPage("GrowScan", 5012544693)
 local growScanSection = growScanPage:addSection("Scanner")
 local growScanInfoSection = growScanPage:addSection("Info")
+local gemsCountLabel = growScanInfoSection:addLabel("Gems : 0")
 
 -- =========================
 -- GROWSCAN: HITUNG PART DI MODEL GEMS
@@ -32,23 +33,29 @@ growScanSection:addButton("Scan Gems", function()
 
     if not gemsModel then
         warn("Model 'Gems' tidak ditemukan di workspace")
+        -- update label juga kalau tidak ada
+        if gemsCountLabel and gemsCountLabel.update then
+            gemsCountLabel:update("Gems : 0")
+        end
         return
     end
 
     local totalParts = 0
 
-    -- Hitung semua Part / MeshPart / Union (semua BasePart)
     for _, obj in ipairs(gemsModel:GetDescendants()) do
         if obj:IsA("BasePart") then
             totalParts = totalParts + 1
         end
     end
 
-    print("=== GROWSCAN ===")
-    print("Model:", gemsModel:GetFullName())
-    print("Total Part di dalam Gems:", totalParts)
-end)
+    -- tampilkan ke UI
+    if gemsCountLabel and gemsCountLabel.update then
+        gemsCountLabel:update("Gems : " .. tostring(totalParts))
+    end
 
+    -- optional: tetap print ke console
+    print("Gems :", totalParts)
+end)
 
 -- default
 local autoPlaceDelay = 0.15
