@@ -43,34 +43,33 @@ local UpdateDropdownVisibleText
 -- Button untuk Refresh Tree List
 refreshSection:addButton("Refresh Tree", function()
     -- Update daftar Tree
-    local newList, newMap = BuildHarvestList()
-    harvestMap = newMap
+    local trees = FindAllTrees(20)  -- Menyesuaikan radius pencarian sesuai keinginan
 
-    -- Update dropdown list
-    ReplaceTableContents(harvestDropdownListRef, newList)
-
-    -- Cek dan update selectedLabel berdasarkan tree yang baru
-    local selectedLabel = nil
-    if selectedHarvestTarget and selectedHarvestTarget.Object then
-        for _, label in ipairs(harvestDropdownListRef) do
-            local data = harvestMap[label]
-            if data and data.Object == selectedHarvestTarget.Object then
-                selectedLabel = label
-                break
-            end
-        end
+    if #trees == 0 then
+        warn("Tidak ada tree terdeteksi dalam radius.")
+        return
     end
 
-    -- Kalau tidak ada, pilih yang pertama
-    if not selectedLabel then
-        selectedLabel = harvestDropdownListRef[1]
-        selectedHarvestTarget = harvestMap[selectedLabel]
+    print("=== SEMUA TREE TERDETEKSI ===")
+    print("Total Tree:", #trees)
+
+    -- Update daftar dropdown tree
+    local treeList = {}
+    for i, tree in ipairs(trees) do
+        local label = string.format("[%d] %s | (%d,%d) | Layer: %s | Distance: %.2f",
+            i, tostring(tree.id), tree.x, tree.y, tostring(tree.layer), tree.distance)
+        table.insert(treeList, label)
     end
 
-    -- Update teks dropdown yang terlihat
-    UpdateDropdownVisibleText(harvestDropdownObj, selectedLabel or "Target Tree")
+    -- Ganti dropdown dengan daftar tree yang terdeteksi
+    ReplaceTableContents(harvestDropdownListRef, treeList)
 
-    print("Tree list diperbarui. Total target:", #harvestDropdownListRef)
+    -- Update dropdown yang tampil (Visual)
+    local selectedLabel = treeList[1]  -- Memilih tree pertama yang ditemukan
+    selectedHarvestTarget = trees[1]  -- Memilih target pertama di array pohon
+    UpdateDropdownVisibleText(harvestDropdownObj, selectedLabel)
+
+    print("Tree list diperbarui. Total target:", #treeList)
 end)
 
 growScanSection:addButton("Scan Gems", function()
