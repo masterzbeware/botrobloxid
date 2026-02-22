@@ -22,6 +22,11 @@ local speedSection = autoPage:addSection("Speed")
 -- PAGE HARVEST (baru)
 local harvestPage = venyx:addPage("Harvest", 5012544693)
 local harvestMainSection = harvestPage:addSection("Main")
+-- HARVEST DROPDOWN DATA
+local selectedHarvestTarget = nil
+local harvestDropdownObj = nil
+local harvestDropdownListRef = {}
+local harvestMap = {}
 
 -- PAGE GROWSCAN
 local growScanPage = venyx:addPage("GrowScan", 5012544693)
@@ -178,6 +183,64 @@ local function ReplaceTableContents(target, source)
     for i, v in ipairs(source) do
         target[i] = v
     end
+end
+
+local function BuildHarvestList()
+    local dropdownList = {}
+    local newHarvestMap = {}
+    local labelCount = {}
+
+    -- scan semua object di workspace
+    for _, obj in ipairs(game.Workspace:GetDescendants()) do
+        if (obj:IsA("Model") or obj:IsA("BasePart")) and obj.Name then
+            local lowerName = string.lower(obj.Name)
+
+            -- filter: nama object mengandung "tree"
+            if string.find(lowerName, "tree") then
+                local pos = nil
+                local posText = ""
+
+                -- ambil posisi object
+                if obj:IsA("Model") then
+                    local pp = obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
+                    if pp then
+                        pos = pp.Position
+                    end
+                elseif obj:IsA("BasePart") then
+                    pos = obj.Position
+                end
+
+                -- ubah jadi tile biar enak dibaca
+                if pos then
+                    local tx = math.floor(pos.X / TILE + 0.5)
+                    local ty = math.floor(pos.Y / TILE + 0.5)
+                    posText = string.format(" (%d,%d)", tx, ty)
+                end
+
+                local baseLabel = obj.Name .. posText
+                labelCount[baseLabel] = (labelCount[baseLabel] or 0) + 1
+
+                local label = baseLabel
+                if labelCount[baseLabel] > 1 then
+                    label = string.format("%s (%d)", baseLabel, labelCount[baseLabel])
+                end
+
+                table.insert(dropdownList, label)
+                newHarvestMap[label] = {
+                    Object = obj,
+                    Name = obj.Name,
+                    Position = pos
+                }
+            end
+        end
+    end
+
+    if #dropdownList == 0 then
+        table.insert(dropdownList, "Tidak ada Tree")
+    end
+
+    table.sort(dropdownList)
+    return dropdownList, newHarvestMap
 end
 
 -- helper: coba update teks dropdown yang terlihat
