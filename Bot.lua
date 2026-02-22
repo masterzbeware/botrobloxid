@@ -151,6 +151,7 @@ inventorySection:addButton("Update Inventory", function()
 end)
 
 local main = nil
+local autoPlaceEnabled = false
 
 tilesSection:addButton("Tiles Selector", function()
     if main then
@@ -159,6 +160,11 @@ tilesSection:addButton("Tiles Selector", function()
     else
         print("Grid belum dibuat.")
     end
+end)
+
+tilesSection:addToggle("Auto Place", false, function(value)
+    autoPlaceEnabled = value
+    print("Auto Place:", autoPlaceEnabled and "ON" or "OFF")
 end)
 
 
@@ -199,7 +205,7 @@ task.spawn(function()
     versionLabel.AnchorPoint = Vector2.new(1, 0.5)
     versionLabel.Position = UDim2.new(1, -12, 0, 19) -- kanan, sejajar title
     versionLabel.Size = UDim2.new(0, 90, 0, 16)
-versionLabel.TextSize = 11
+versionLabel.TextSize = 12
     versionLabel.ZIndex = 6
     versionLabel.Font = Enum.Font.Gotham
     versionLabel.Text = "Version 1.0.1"
@@ -383,6 +389,21 @@ for key, btn in pairs(gridButtons) do
                 tostring(selectedItem.Slot),
                 key
             ))
+
+            -- TAMBAHAN DI SINI (cek toggle Auto Place)
+            if autoPlaceEnabled then
+                print("Auto Place: ON -> jalankan place item ke kotak", key)
+
+                -- nanti di sini isi logic place item beneran
+                -- contoh:
+                -- local tilePos = ...
+                -- placeRemote:FireServer(...)
+
+            else
+                print("Auto Place: OFF -> hanya pilih kotak")
+            end
+            -- END TAMBAHAN
+
         else
             print("Belum ada item dipilih dari dropdown.")
         end
