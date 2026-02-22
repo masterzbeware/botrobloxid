@@ -13,6 +13,17 @@ local page = venyx:addPage("Auto", 5012544693)
 local section = page:addSection("Main")
 local inventorySection = page:addSection("Inventory")
 local tilesSection = page:addSection("Tiles")
+local speedSection = page:addSection("Speed")
+
+
+local autoPlaceDelay = 0.15 -- delay antar tile place (detik)
+local autoPlaceCycleDelay = 0.05 -- delay antar siklus loop (detik)
+
+speedSection:addSlider("Delay Auto Place", 5, 50, 15, function(value)
+    autoPlaceDelay = value / 100
+    autoPlaceCycleDelay = math.max(0.03, autoPlaceDelay * 0.35)
+    print("Delay sekarang:", autoPlaceDelay)
+end)
 
 local selectedItem = nil
 local itemMap = {}
@@ -158,7 +169,6 @@ local main = nil
 local autoPlaceEnabled = false
 local selectedGridKeys = {}
 local autoPlaceThread = nil
-local autoPlaceDelay = 0.15
 local gridButtons = {} -- pindah ke sini
 
 local gridOffsets = {
@@ -216,12 +226,12 @@ local function StartAutoPlaceLoop()
                     if not autoPlaceEnabled then break end
                     if selectedGridKeys[gridKey] then
                         AutoPlaceToGridKey(gridKey, basePx, basePy)
-                        task.wait(0.3) -- naikin dikit (0.2 - 0.3 biasanya lebih stabil)
+                        task.wait(autoPlaceDelay) -- delay dari slider
                     end
                 end
             end
 
-            task.wait(0.35) -- siklus antar putaran
+            task.wait(autoPlaceCycleDelay)
         end
 
         autoPlaceThread = nil
