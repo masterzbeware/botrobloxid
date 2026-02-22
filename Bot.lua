@@ -242,21 +242,21 @@ end
 local gridButtons = {}
 
 -- baris atas (3)
-gridButtons.T1     = CreateBox(main, "T1",     X(1), row0Y, false)
-gridButtons.T2     = CreateBox(main, "T2",     X(2), row0Y, false)
-gridButtons.T3     = CreateBox(main, "T3",     X(3), row0Y, false)
+gridButtons.T1     = CreateBox(main, "1",     X(1), row0Y, false)
+gridButtons.T2     = CreateBox(main, "2",     X(2), row0Y, false)
+gridButtons.T3     = CreateBox(main, "3",     X(3), row0Y, false)
 
 -- baris tengah (5)
-gridButtons.L2     = CreateBox(main, "L2",     X(0), row1Y, false)
-gridButtons.L1     = CreateBox(main, "L1",     X(1), row1Y, false)
+gridButtons.L2     = CreateBox(main, "4",     X(0), row1Y, false)
+gridButtons.L1     = CreateBox(main, "5",     X(1), row1Y, false)
 gridButtons.Player = CreateBox(main, "PLAYER", X(2), row1Y, true)
-gridButtons.R1     = CreateBox(main, "R1",     X(3), row1Y, false)
-gridButtons.R2     = CreateBox(main, "R2",     X(4), row1Y, false)
+gridButtons.R1     = CreateBox(main, "6",     X(3), row1Y, false)
+gridButtons.R2     = CreateBox(main, "7",     X(4), row1Y, false)
 
 -- baris bawah (3)
-gridButtons.B1     = CreateBox(main, "B1",     X(1), row2Y, false)
-gridButtons.B2     = CreateBox(main, "B2",     X(2), row2Y, false)
-gridButtons.B3     = CreateBox(main, "B3",     X(3), row2Y, false)
+gridButtons.B1     = CreateBox(main, "8",     X(1), row2Y, false)
+gridButtons.B2     = CreateBox(main, "9",     X(2), row2Y, false)
+gridButtons.B3     = CreateBox(main, "10",     X(3), row2Y, false)
 
 for key, btn in pairs(gridButtons) do
     btn.MouseButton1Click:Connect(function()
