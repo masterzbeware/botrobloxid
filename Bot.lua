@@ -229,8 +229,8 @@ gui.Parent = PlayerGui
 
 main = Instance.new("Frame")
 main.Name = "MainGrid"
-main.Size = UDim2.new(0, 300, 0, 200)
-main.Position = UDim2.new(0.5, -180, 0.5, -117)
+main.Size = UDim2.new(0, 235, 0, 150)
+main.Position = UDim2.new(0.5, -117, 0.5, -75)
 main.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 main.BackgroundTransparency = 0.1
 main.BorderSizePixel = 0
@@ -306,11 +306,11 @@ end)
 local function CreateBox(parent, text, x, y, isPlayer)
     local box = Instance.new("TextButton")
     box.Name = text
-    box.Size = UDim2.new(0, 48, 0, 36)
+    box.Size = UDim2.new(0, 42, 0, 30)
     box.Position = UDim2.new(0, x, 0, y)
     box.Text = text
     box.Font = Enum.Font.GothamSemibold
-    box.TextSize = 10
+    box.TextSize = 9
     box.AutoButtonColor = true
     box.BorderSizePixel = 0
     box.Parent = parent
@@ -335,12 +335,12 @@ local function CreateBox(parent, text, x, y, isPlayer)
     return box
 end
 
-local startX = 12
-local gap = 6
-local boxW = 48
-local row0Y = 34
-local row1Y = 82
-local row2Y = 130
+local startX = 9
+local gap = 4
+local boxW = 42
+local row0Y = 32
+local row1Y = 72
+local row2Y = 112
 
 local function X(index)
     return startX + (boxW + gap) * index
