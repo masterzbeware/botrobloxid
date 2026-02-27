@@ -345,6 +345,46 @@ local autoPlaceThread = nil
 local autoBreakThread = nil -- TAMBAH
 local gridButtons = {}
 
+
+local function IsGridSelected(key)
+    return selectedGridKeys[key] == true
+end
+
+local function ToggleGridSelection(key)
+    if selectedGridKeys[key] then
+        selectedGridKeys[key] = nil
+        print("Grid unselected:", key)
+    else
+        selectedGridKeys[key] = true
+        print("Grid selected:", key)
+    end
+end
+
+local function HasAnyGridSelected()
+    for _ in pairs(selectedGridKeys) do
+        return true
+    end
+    return false
+end
+
+local function UpdateGridButtonVisual(key)
+    local btn = gridButtons[key]
+    if not btn then return end
+
+    local stroke = btn:FindFirstChildOfClass("UIStroke")
+    local selected = IsGridSelected(key)
+
+    if selected then
+        btn.BackgroundColor3 = Color3.fromRGB(35, 120, 65)
+        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        if stroke then stroke.Color = Color3.fromRGB(90, 255, 150) end
+    else
+        btn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+        btn.TextColor3 = Color3.fromRGB(230, 230, 230)
+        if stroke then stroke.Color = Color3.fromRGB(90, 90, 90) end
+    end
+end
+
 local gridOffsets = {
     T1 = Vector2.new(-1,  1), -- tombol 1
     T2 = Vector2.new( 0,  1), -- tombol 2
@@ -624,45 +664,6 @@ local function GetPlayerTilePos()
     return px, py
 end
 
-local function IsGridSelected(key)
-    return selectedGridKeys[key] == true
-end
-
-local function ToggleGridSelection(key)
-    if selectedGridKeys[key] then
-        selectedGridKeys[key] = nil
-        print("Grid unselected:", key)
-    else
-        selectedGridKeys[key] = true
-        print("Grid selected:", key)
-    end
-end
-
-local function HasAnyGridSelected()
-    for _ in pairs(selectedGridKeys) do
-        return true
-    end
-    return false
-end
-
-local function UpdateGridButtonVisual(key)
-    local btn = gridButtons[key]
-    if not btn then return end
-
-    local stroke = btn:FindFirstChildOfClass("UIStroke")
-    local selected = IsGridSelected(key)
-
-    if selected then
-        btn.BackgroundColor3 = Color3.fromRGB(35, 120, 65)
-        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        if stroke then stroke.Color = Color3.fromRGB(90, 255, 150) end
-    else
-        btn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-        btn.TextColor3 = Color3.fromRGB(230, 230, 230)
-        if stroke then stroke.Color = Color3.fromRGB(90, 90, 90) end
-    end
-end
-
 
 
 tilesSection:addButton("Tiles Selector", function()
@@ -764,7 +765,7 @@ task.spawn(function()
     versionLabel.Size = UDim2.new(0, 90, 0, 16)
     versionLabel.ZIndex = 6
     versionLabel.Font = Enum.Font.Gotham
-    versionLabel.Text = "Version 1.0.0"
+    versionLabel.Text = "Version 1.0.4"
     versionLabel.TextSize = 12
     versionLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     versionLabel.TextTransparency = 0.2
@@ -948,20 +949,6 @@ if combinedMode then
 end
 
         -- =========================
-        -- AUTO BREAK (tidak butuh item)
-        -- =========================
-        if autoBreakEnabled then
-            if IsGridSelected(key) then
-                local px, py = GetPlayerTilePos()
-                AutoBreakToGridKey(key, px, py)
-            end
-
-            StartAutoBreakLoop()
-        else
-            print("Auto Break OFF")
-        end
-
-        -- =========================
         -- AUTO PLACE (butuh item)
         -- =========================
         if selectedItem then
@@ -972,19 +959,6 @@ end
                 tostring(selectedItem.Slot),
                 key
             ))
-
-            if autoPlaceEnabled then
-                if IsGridSelected(key) then
-                    local px, py = GetPlayerTilePos()
-                    AutoPlaceToGridKey(key, px, py)
-                end
-
-                StartAutoPlaceLoop()
-            else
-                print("Auto Place OFF")
-            end
-        else
-            print("Belum ada item dipilih dari dropdown.")
         end
     end)
 end
