@@ -416,11 +416,66 @@ local function AutoBreakToGridKey(gridKey, basePx, basePy)
     print("Auto Break ke:", gridKey, "Target:", target)
 end
 
+
+-- =========================
+-- TILE DETECTOR (biar tau kapan tile udah hancur)
+-- =========================
+local function FindTileInstanceAt(tx, ty)
+    -- Coba beberapa container umum
+    local roots = {
+        workspace:FindFirstChild("WorldTiles"),
+        workspace:FindFirstChild("Tiles"),
+        workspace:FindFirstChild("Map"),
+        workspace
+    }
+
+    local patterns = {
+        tostring(tx) .. "_" .. tostring(ty),
+        tostring(tx) .. "," .. tostring(ty),
+        "X" .. tostring(tx) .. "Y" .. tostring(ty),
+        "[" .. tostring(tx) .. "," .. tostring(ty) .. "]",
+    }
+
+    for _, root in ipairs(roots) do
+        if root then
+            -- Cari berdasarkan nama (lebih cepat)
+            for _, name in ipairs(patterns) do
+                local inst = root:FindFirstChild(name, true)
+                if inst then
+                    if inst:IsA("BasePart") then
+                        return inst
+                    elseif inst:IsA("Model") then
+                        return inst.PrimaryPart or inst:FindFirstChildWhichIsA("BasePart")
+                    end
+                end
+            end
+
+            -- Fallback: cari berdasarkan attribute (lebih berat, tapi universal)
+            for _, inst in ipairs(root:GetDescendants()) do
+                if inst:IsA("BasePart") then
+                    local ax = inst:GetAttribute("X") or inst:GetAttribute("TileX") or inst:GetAttribute("tx")
+                    local ay = inst:GetAttribute("Y") or inst:GetAttribute("TileY") or inst:GetAttribute("ty")
+                    if ax == tx and ay == ty then
+                        return inst
+                    end
+                end
+            end
+        end
+    end
+
+    return nil
+end
+
+local function IsTileDestroyed(tx, ty)
+    local inst = FindTileInstanceAt(tx, ty)
+    return (inst == nil) or (inst.Parent == nil)
+end
+
 local function StartAutoPlaceLoop()
     if autoPlaceThread then return end
 
     autoPlaceThread = task.spawn(function()
-        while autoPlaceEnabled do
+        while autoPlaceEnabled and not combinedMode do
             if selectedItem then
                 local player = game.Players.LocalPlayer
                 local handler = require(player.PlayerScripts.PlayerMovement.PlayerMovementHandler.Parent)
@@ -447,7 +502,7 @@ local function StartAutoBreakLoop()
     if autoBreakThread then return end
 
     autoBreakThread = task.spawn(function()
-        while autoBreakEnabled do
+        while autoBreakEnabled and not combinedMode do
             local player = game.Players.LocalPlayer
             local handler = require(player.PlayerScripts.PlayerMovement.PlayerMovementHandler.Parent)
             local basePx = math.floor(handler.Position.X / TILE + 0.5)
@@ -466,6 +521,91 @@ local function StartAutoBreakLoop()
 
         autoBreakThread = nil
     end)
+end
+
+-- =========================
+-- COMBINED LOOP: PLACE -> BREAK SAMPAI HANCUR -> NEXT TILE
+-- =========================
+local combinedMode = false
+local autoPBThread = nil
+
+-- Batas maksimal waktu memukul 1 tile (biar gak nyangkut kalau detector gagal)
+local breakTimeoutSec = 6  -- kamu bisa ubah (misal 10)
+
+local function StartAutoPlaceBreakLoop()
+    if autoPBThread then return end
+
+    autoPBThread = task.spawn(function()
+        while combinedMode and autoPlaceEnabled and autoBreakEnabled do
+            if not selectedItem then
+                warn("Auto PB stop: item belum dipilih.")
+                break
+            end
+
+            if not HasAnyGridSelected() then
+                warn("Auto PB stop: belum pilih grid.")
+                break
+            end
+
+            local keys = GetSelectedGridKeysInOrder()
+            for _, gridKey in ipairs(keys) do
+                if not (combinedMode and autoPlaceEnabled and autoBreakEnabled) then break end
+
+                -- update base tile tiap target (biar kalau player geser dikit tetap akurat)
+                local basePx, basePy = GetPlayerTilePos()
+                local offset = gridOffsets[gridKey]
+                local tx = basePx + offset.X
+                local ty = basePy + offset.Y
+                local targetVec2 = Vector2.new(tx, ty)
+
+                -- 1) PLACE dulu
+                placeRemote:FireServer(targetVec2, selectedItem.Slot)
+                -- jeda place
+                task.wait(autoPlaceDelay)
+
+                -- 2) BREAK pelan2 sampai hancur
+                local t0 = os.clock()
+                while combinedMode and autoPlaceEnabled and autoBreakEnabled do
+                    fistRemote:FireServer(targetVec2)
+                    task.wait(autoBreakDelay)
+
+                    -- kalau tile udah hilang, lanjut tile berikutnya
+                    if IsTileDestroyed(tx, ty) then
+                        break
+                    end
+
+                    -- safety timeout biar gak loop selamanya
+                    if os.clock() - t0 >= breakTimeoutSec then
+                        -- kalau detector gak cocok sama gamenya, ini mencegah nyangkut
+                        warn(("Break timeout di tile (%d,%d). Lanjut tile berikutnya."):format(tx, ty))
+                        break
+                    end
+                end
+
+                task.wait(autoBreakCycleDelay)
+            end
+
+            -- setelah semua tile selesai -> ulang lagi dari place
+            task.wait(autoPlaceCycleDelay)
+        end
+
+        autoPBThread = nil
+    end)
+end
+
+local function RefreshAutomationMode()
+    combinedMode = (autoPlaceEnabled and autoBreakEnabled)
+
+    -- kalau mode gabungan aktif, pastikan loop lama gak jalan “barengan”
+    -- caranya: loop lama dikasih guard (lihat step 3)
+    if combinedMode then
+        StartAutoPlaceBreakLoop()
+    else
+        -- kalau salah satu OFF, stop PB thread otomatis karena combinedMode false
+        -- lalu jalankan loop masing2 kalau togglenya masih ON
+        if autoPlaceEnabled then StartAutoPlaceLoop() end
+        if autoBreakEnabled then StartAutoBreakLoop() end
+    end
 end
 
 local function IsGridSelected(key)
@@ -552,17 +692,18 @@ autoPlaceSection:addToggle("Auto Place", false, function(value)
         if not selectedItem then
             warn("Pilih item dulu.")
             autoPlaceEnabled = false
+            RefreshAutomationMode()
             return
         end
-
         if not HasAnyGridSelected() then
             warn("Klik minimal 1 grid dulu.")
             autoPlaceEnabled = false
+            RefreshAutomationMode()
             return
         end
-
-        StartAutoPlaceLoop()
     end
+
+    RefreshAutomationMode()
 end)
 
 autoBreakSection:addToggle("Auto Break", false, function(value)
@@ -573,11 +714,12 @@ autoBreakSection:addToggle("Auto Break", false, function(value)
         if not HasAnyGridSelected() then
             warn("Klik minimal 1 grid dulu.")
             autoBreakEnabled = false
+            RefreshAutomationMode()
             return
         end
-
-        StartAutoBreakLoop()
     end
+
+    RefreshAutomationMode()
 end)
 
 
@@ -620,7 +762,7 @@ task.spawn(function()
     versionLabel.Size = UDim2.new(0, 90, 0, 16)
     versionLabel.ZIndex = 6
     versionLabel.Font = Enum.Font.Gotham
-    versionLabel.Text = "Version 1.0.0"
+    versionLabel.Text = "Version 1.0.2"
     versionLabel.TextSize = 12
     versionLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     versionLabel.TextTransparency = 0.2
