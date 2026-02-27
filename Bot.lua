@@ -606,32 +606,6 @@ local function RefreshAutomationMode()
     end
 end
 
-local function IsGridSelected(key)
-    return selectedGridKeys[key] == true
-end
-
-local function ToggleGridSelection(key)
-    ToggleGridSelection(key)
-    UpdateGridButtonVisual(key)
-    print("Grid toggle:", key, IsGridSelected(key) and "ON" or "OFF")
-    
-    -- refresh supaya mode & thread pakai grid terbaru
-    if autoPlaceEnabled or autoBreakEnabled then
-        RefreshAutomationMode()
-    end
-    
-    -- kalau mode gabungan aktif, jangan jalankan loop lama dari klik grid
-    if combinedMode then
-        return
-    end
-
-local function HasAnyGridSelected()
-    for _ in pairs(selectedGridKeys) do
-        return true
-    end
-    return false
-end
-
 local function GetPlayerTilePos()
     local player = game.Players.LocalPlayer
     local handler = require(player.PlayerScripts.PlayerMovement.PlayerMovementHandler.Parent)
@@ -642,6 +616,27 @@ local function GetPlayerTilePos()
     return px, py
 end
 
+local function IsGridSelected(key)
+    return selectedGridKeys[key] == true
+end
+
+local function ToggleGridSelection(key)
+    if selectedGridKeys[key] then
+        selectedGridKeys[key] = nil
+        print("Grid unselected:", key)
+    else
+        selectedGridKeys[key] = true
+        print("Grid selected:", key)
+    end
+end
+
+local function HasAnyGridSelected()
+    for _ in pairs(selectedGridKeys) do
+        return true
+    end
+    return false
+end
+
 local function UpdateGridButtonVisual(key)
     local btn = gridButtons[key]
     if not btn then return end
@@ -650,21 +645,16 @@ local function UpdateGridButtonVisual(key)
     local selected = IsGridSelected(key)
 
     if selected then
-        -- WARNA SAAT DIPILIH (hijau)
         btn.BackgroundColor3 = Color3.fromRGB(35, 120, 65)
         btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        if stroke then
-            stroke.Color = Color3.fromRGB(90, 255, 150)
-        end
+        if stroke then stroke.Color = Color3.fromRGB(90, 255, 150) end
     else
-        -- WARNA NORMAL (abu)
         btn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
         btn.TextColor3 = Color3.fromRGB(230, 230, 230)
-        if stroke then
-            stroke.Color = Color3.fromRGB(90, 90, 90)
-        end
+        if stroke then stroke.Color = Color3.fromRGB(90, 90, 90) end
     end
 end
+
 
 
 tilesSection:addButton("Tiles Selector", function()
@@ -867,9 +857,9 @@ UIS.InputChanged:Connect(function(input)
     end
 end)
 
-local function CreateBox(parent, text, x, y, isPlayer)
+local function CreateBox(parent, key, text, x, y, isPlayer)
     local box = Instance.new("TextButton")
-    box.Name = text
+    box.Name = key
     box.Size = UDim2.new(0, 42, 0, 30)
     box.Position = UDim2.new(0, x, 0, y)
     box.Text = text
@@ -910,22 +900,19 @@ local function X(index)
     return startX + (boxW + gap) * index
 end
 
--- baris atas (3)
-gridButtons.T1     = CreateBox(main, "1",     X(1), row0Y, false)
-gridButtons.T2     = CreateBox(main, "2",     X(2), row0Y, false)
-gridButtons.T3     = CreateBox(main, "3",     X(3), row0Y, false)
+gridButtons.T1     = CreateBox(main, "T1", "1",  X(1), row0Y, false)
+gridButtons.T2     = CreateBox(main, "T2", "2",  X(2), row0Y, false)
+gridButtons.T3     = CreateBox(main, "T3", "3",  X(3), row0Y, false)
 
--- baris tengah (5)
-gridButtons.L2     = CreateBox(main, "4",     X(0), row1Y, false)
-gridButtons.L1     = CreateBox(main, "5",     X(1), row1Y, false)
-gridButtons.Player = CreateBox(main, "PLAYER", X(2), row1Y, true)
-gridButtons.R1     = CreateBox(main, "6",     X(3), row1Y, false)
-gridButtons.R2     = CreateBox(main, "7",     X(4), row1Y, false)
+gridButtons.L2     = CreateBox(main, "L2", "4",  X(0), row1Y, false)
+gridButtons.L1     = CreateBox(main, "L1", "5",  X(1), row1Y, false)
+gridButtons.Player = CreateBox(main, "Player", "PLAYER", X(2), row1Y, true)
+gridButtons.R1     = CreateBox(main, "R1", "6",  X(3), row1Y, false)
+gridButtons.R2     = CreateBox(main, "R2", "7",  X(4), row1Y, false)
 
--- baris bawah (3)
-gridButtons.B1     = CreateBox(main, "8",     X(1), row2Y, false)
-gridButtons.B2     = CreateBox(main, "9",     X(2), row2Y, false)
-gridButtons.B3     = CreateBox(main, "10",     X(3), row2Y, false)
+gridButtons.B1     = CreateBox(main, "B1", "8",  X(1), row2Y, false)
+gridButtons.B2     = CreateBox(main, "B2", "9",  X(2), row2Y, false)
+gridButtons.B3     = CreateBox(main, "B3", "10", X(3), row2Y, false)
 
 
 for key, btn in pairs(gridButtons) do
@@ -940,6 +927,16 @@ for key, btn in pairs(gridButtons) do
         ToggleGridSelection(key)
         UpdateGridButtonVisual(key)
         print("Grid toggle:", key, IsGridSelected(key) and "ON" or "OFF")
+
+-- refresh supaya mode pakai grid terbaru
+if autoPlaceEnabled or autoBreakEnabled then
+    RefreshAutomationMode()
+end
+
+-- kalau mode gabungan aktif, stop jalur lama
+if combinedMode then
+    return
+end
 
         -- =========================
         -- AUTO BREAK (tidak butuh item)
