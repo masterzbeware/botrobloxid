@@ -1,6 +1,7 @@
 local Rep = game:GetService("ReplicatedStorage")
 local Inventory = require(Rep:WaitForChild("Modules"):WaitForChild("Inventory"))
 local ItemsManager = require(Rep:WaitForChild("Managers"):WaitForChild("ItemsManager"))
+local remotesFolder = Rep:WaitForChild("Remotes")
 local placeRemote = Rep:WaitForChild("Remotes"):WaitForChild("PlayerPlaceItem")
 local fistRemote = Rep:WaitForChild("Remotes"):WaitForChild("PlayerFist") -- TAMBAH INI
 local TILE = 4.5
