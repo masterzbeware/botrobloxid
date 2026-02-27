@@ -711,34 +711,28 @@ local autoPlantThread = nil
 
 local function StartAutoPlant()
     if autoPlantThread then return end
+    if not plantItem then
+        warn("Plant item belum dipilih.")
+        return
+    end
 
     autoPlantEnabled = true
 
     autoPlantThread = task.spawn(function()
+        while autoPlantEnabled do
 
-        local goRightToLeft = true
-        local currentY = PLANT_Y_START
-
-        while autoPlantEnabled and currentY >= PLANT_Y_MIN do
-
-            if goRightToLeft then
-                for x = PLANT_X_MAX, PLANT_X_MIN, -1 do
-                    if not autoPlantEnabled then break end
-                    placeRemote:FireServer(Vector2.new(x, currentY), plantItem.Slot)
-                    task.wait(autoPlaceDelay)
-                end
-            else
-                for x = PLANT_X_MIN, PLANT_X_MAX do
-                    if not autoPlantEnabled then break end
-                    placeRemote:FireServer(Vector2.new(x, currentY), plantItem.Slot)
-                    task.wait(autoPlaceDelay)
-                end
+            local px, py = GetPlayerTilePos()
+            if not px then
+                task.wait(0.2)
+                continue
             end
 
-            goRightToLeft = not goRightToLeft
-            currentY = currentY - PLANT_Y_STEP
+            -- Plant tepat di posisi player berdiri
+            placeRemote:FireServer(Vector2.new(px, py), plantItem.Slot)
 
-            task.wait(autoPlaceCycleDelay)
+            print("Plant di:", px, py)
+
+            task.wait(autoPlaceDelay)
         end
 
         autoPlantThread = nil
@@ -841,7 +835,7 @@ task.spawn(function()
     versionLabel.Size = UDim2.new(0, 90, 0, 16)
     versionLabel.ZIndex = 6
     versionLabel.Font = Enum.Font.Gotham
-    versionLabel.Text = "Version 1.0.0"
+    versionLabel.Text = "Version 1.1.0"
     versionLabel.TextSize = 12
     versionLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     versionLabel.TextTransparency = 0.2
