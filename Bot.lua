@@ -416,12 +416,12 @@ local function StartAutoPlaceLoop()
                 local basePx = math.floor(handler.Position.X / TILE + 0.5)
                 local basePy = math.floor(handler.Position.Y / TILE + 0.5)
 
-                for _, gridKey in ipairs(gridOrder) do
+                local keys = GetSelectedGridKeysInOrder()
+
+                for _, gridKey in ipairs(keys) do
                     if not autoPlaceEnabled then break end
-                    if selectedGridKeys[gridKey] then
-                        AutoPlaceToGridKey(gridKey, basePx, basePy)
-                        task.wait(autoPlaceDelay)
-                    end
+                    AutoPlaceToGridKey(gridKey, basePx, basePy)
+                    task.wait(autoPlaceDelay)
                 end
             end
 
@@ -442,12 +442,12 @@ local function StartAutoBreakLoop()
             local basePx = math.floor(handler.Position.X / TILE + 0.5)
             local basePy = math.floor(handler.Position.Y / TILE + 0.5)
 
-            for _, gridKey in ipairs(gridOrder) do
+            local keys = GetSelectedGridKeysInOrder()
+
+            for _, gridKey in ipairs(keys) do
                 if not autoBreakEnabled then break end
-                if selectedGridKeys[gridKey] then
-                    AutoBreakToGridKey(gridKey, basePx, basePy)
-                    task.wait(autoBreakDelay)
-                end
+                AutoBreakToGridKey(gridKey, basePx, basePy)
+                task.wait(autoBreakDelay)
             end
 
             task.wait(autoBreakCycleDelay)
