@@ -43,14 +43,14 @@ local autoPlaceSection = autoPage:addSection("Auto Place")
 local autoBreakSection = autoPage:addSection("Auto Break")
 local speedSection = autoPage:addSection("Speed")
 
--- PAGE HARVEST (baru)
-local harvestPage = venyx:addPage("Harvest", 5012544693)
-local harvestMainSection = harvestPage:addSection("Main")
+-- PAGE plant (baru)
+local plantPage = venyx:addPage("Plant", 5012544693)
+local plantMainSection = plantPage:addSection("Main")
 
-local selectedHarvestTarget = nil
-local harvestDropdownObj = nil
-local harvestDropdownListRef = {}
-local harvestMap = {}
+local selectedPlantTarget = nil
+local plantDropdownObj = nil
+local plantDropdownListRef = {}
+local plantMap = {}
 
 -- PAGE GROWSCAN
 local growScanPage = venyx:addPage("GrowScan", 5012544693)
@@ -209,64 +209,6 @@ local function ReplaceTableContents(target, source)
     for i, v in ipairs(source) do
         target[i] = v
     end
-end
-
-local function BuildHarvestList()
-    local dropdownList = {}
-    local newHarvestMap = {}
-    local labelCount = {}
-
-    -- scan semua object di workspace
-    for _, obj in ipairs(game.Workspace:GetDescendants()) do
-        if (obj:IsA("Model") or obj:IsA("BasePart")) and obj.Name then
-            local lowerName = string.lower(obj.Name)
-
-            -- filter: nama object mengandung "tree"
-            if string.find(lowerName, "tree") then
-                local pos = nil
-                local posText = ""
-
-                -- ambil posisi object
-                if obj:IsA("Model") then
-                    local pp = obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
-                    if pp then
-                        pos = pp.Position
-                    end
-                elseif obj:IsA("BasePart") then
-                    pos = obj.Position
-                end
-
-                -- ubah jadi tile biar enak dibaca
-                if pos then
-                    local tx = math.floor(pos.X / TILE + 0.5)
-                    local ty = math.floor(pos.Y / TILE + 0.5)
-                    posText = string.format(" (%d,%d)", tx, ty)
-                end
-
-                local baseLabel = obj.Name .. posText
-                labelCount[baseLabel] = (labelCount[baseLabel] or 0) + 1
-
-                local label = baseLabel
-                if labelCount[baseLabel] > 1 then
-                    label = string.format("%s (%d)", baseLabel, labelCount[baseLabel])
-                end
-
-                table.insert(dropdownList, label)
-                newHarvestMap[label] = {
-                    Object = obj,
-                    Name = obj.Name,
-                    Position = pos
-                }
-            end
-        end
-    end
-
-    if #dropdownList == 0 then
-        table.insert(dropdownList, "Tidak ada Tree")
-    end
-
-    table.sort(dropdownList)
-    return dropdownList, newHarvestMap
 end
 
 -- helper: coba update teks dropdown yang terlihat
@@ -697,17 +639,65 @@ tilesSection:addButton("Tiles Selector", function()
     end
 end)
 
---[[
-harvestMainSection:addToggle("Auto Harvest", false, function(value)
+-- =========================
+-- AUTO PLANT ZIG-ZAG
+-- =========================
+local autoPlantEnabled = false
+local autoPlantThread = nil
+
+local function StartAutoPlant()
+    if autoPlantThread then return end
+
+    autoPlantEnabled = true
+
+    autoPlantThread = task.spawn(function()
+
+        local goRightToLeft = true
+        local currentY = PLANT_Y_START
+
+        while autoPlantEnabled and currentY >= PLANT_Y_MIN do
+
+            if goRightToLeft then
+                for x = PLANT_X_MAX, PLANT_X_MIN, -1 do
+                    if not autoPlantEnabled then break end
+                    placeRemote:FireServer(Vector2.new(x, currentY), selectedItem.Slot)
+                    task.wait(autoPlaceDelay)
+                end
+            else
+                for x = PLANT_X_MIN, PLANT_X_MAX do
+                    if not autoPlantEnabled then break end
+                    placeRemote:FireServer(Vector2.new(x, currentY), selectedItem.Slot)
+                    task.wait(autoPlaceDelay)
+                end
+            end
+
+            goRightToLeft = not goRightToLeft
+            currentY = currentY - PLANT_Y_STEP
+
+            task.wait(autoPlaceCycleDelay)
+        end
+
+        autoPlantThread = nil
+    end)
+end
+
+local function StopAutoPlant()
+    autoPlantEnabled = false
+end
+
+plantMainSection:addToggle("Auto Plant", false, function(value)
+    print("Auto Plant:", value and "ON" or "OFF")
+
     if value then
-        print("Auto Harvest: ON")
-        StartAutoHarvest()
+        if not selectedItem then
+            warn("Pilih item dulu.")
+            return
+        end
+        StartAutoPlant()
     else
-        print("Auto Harvest: OFF")
-        StopAutoHarvest()
+        StopAutoPlant()
     end
 end)
-]]
 
 autoPlaceSection:addToggle("Auto Place", false, function(value)
     autoPlaceEnabled = value
@@ -787,7 +777,7 @@ task.spawn(function()
     versionLabel.Size = UDim2.new(0, 90, 0, 16)
     versionLabel.ZIndex = 6
     versionLabel.Font = Enum.Font.Gotham
-    versionLabel.Text = "Version 1.0.1"
+    versionLabel.Text = "Version 1.0.5"
     versionLabel.TextSize = 12
     versionLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     versionLabel.TextTransparency = 0.2
