@@ -374,6 +374,17 @@ local gridOrder = {
     "B3", -- 10
 }
 
+-- ambil grid yang dipilih, sudah urut sesuai nomor
+local function GetSelectedGridKeysInOrder()
+    local ordered = {}
+    for _, gridKey in ipairs(gridOrder) do
+        if selectedGridKeys[gridKey] then
+            table.insert(ordered, gridKey)
+        end
+    end
+    return ordered
+end
+
 local function AutoPlaceToGridKey(gridKey, basePx, basePy)
     if not selectedItem then
         warn("Belum ada item dipilih.")
@@ -609,7 +620,7 @@ task.spawn(function()
     versionLabel.Size = UDim2.new(0, 90, 0, 16)
     versionLabel.ZIndex = 6
     versionLabel.Font = Enum.Font.Gotham
-    versionLabel.Text = "Version 1.0.1"
+    versionLabel.Text = "Version 1.0.0"
     versionLabel.TextSize = 12
     versionLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     versionLabel.TextTransparency = 0.2
