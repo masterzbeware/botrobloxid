@@ -484,11 +484,11 @@ local function StartAutoPlaceLoop()
     autoPlaceThread = task.spawn(function()
         while autoPlaceEnabled and not combinedMode do
             if selectedItem then
-                local player = game.Players.LocalPlayer
-                local handler = require(player.PlayerScripts.PlayerMovement.PlayerMovementHandler.Parent)
-                local basePx = math.floor(handler.Position.X / TILE + 0.5)
-                local basePy = math.floor(handler.Position.Y / TILE + 0.5)
-
+                local basePx, basePy = GetPlayerTilePos()
+                if not basePx then
+                    task.wait(0.2)
+                    continue
+                end
                 local keys = GetSelectedGridKeysInOrder()
 
                 for _, gridKey in ipairs(keys) do
@@ -510,10 +510,12 @@ local function StartAutoBreakLoop()
 
     autoBreakThread = task.spawn(function()
         while autoBreakEnabled and not combinedMode do
-            local player = game.Players.LocalPlayer
-            local handler = require(player.PlayerScripts.PlayerMovement.PlayerMovementHandler.Parent)
-            local basePx = math.floor(handler.Position.X / TILE + 0.5)
-            local basePy = math.floor(handler.Position.Y / TILE + 0.5)
+            local basePx, basePy = GetPlayerTilePos()
+            if not basePx then
+                warn("Gagal ambil posisi player.")
+                task.wait(0.2)
+                continue
+            end
 
             local keys = GetSelectedGridKeysInOrder()
 
@@ -608,10 +610,16 @@ end
 
 local function GetPlayerTilePos()
     local player = game.Players.LocalPlayer
-    local handler = require(player.PlayerScripts.PlayerMovement.PlayerMovementHandler.Parent)
+    if not player then return nil end
 
-    local px = math.floor(handler.Position.X / TILE + 0.5)
-    local py = math.floor(handler.Position.Y / TILE + 0.5)
+    local char = player.Character
+    if not char then return nil end
+
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return nil end
+
+    local px = math.floor(hrp.Position.X / TILE + 0.5)
+    local py = math.floor(hrp.Position.Y / TILE + 0.5)
 
     return px, py
 end
