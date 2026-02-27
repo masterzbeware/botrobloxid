@@ -666,7 +666,7 @@ tilesSection:addButton("Tiles Selector", function()
     end
 end)
 
--- Toggle untuk Auto Harvest
+--[[
 harvestMainSection:addToggle("Auto Harvest", false, function(value)
     if value then
         print("Auto Harvest: ON")
@@ -676,6 +676,7 @@ harvestMainSection:addToggle("Auto Harvest", false, function(value)
         StopAutoHarvest()
     end
 end)
+]]
 
 autoPlaceSection:addToggle("Auto Place", false, function(value)
     autoPlaceEnabled = value
@@ -755,7 +756,7 @@ task.spawn(function()
     versionLabel.Size = UDim2.new(0, 90, 0, 16)
     versionLabel.ZIndex = 6
     versionLabel.Font = Enum.Font.Gotham
-    versionLabel.Text = "Version 1.0.0"
+    versionLabel.Text = "Version 1.0.3"
     versionLabel.TextSize = 12
     versionLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     versionLabel.TextTransparency = 0.2
