@@ -2,9 +2,27 @@ local Rep = game:GetService("ReplicatedStorage")
 local Inventory = require(Rep:WaitForChild("Modules"):WaitForChild("Inventory"))
 local ItemsManager = require(Rep:WaitForChild("Managers"):WaitForChild("ItemsManager"))
 local remotesFolder = Rep:WaitForChild("Remotes")
-local placeRemote = Rep:WaitForChild("Remotes"):WaitForChild("PlayerPlaceItem")
+local placeRemote = Rep:WaitForChild("Remotes"):FindFirstChild("PlayerPlaceItem")
 local fistRemote = Rep:WaitForChild("Remotes"):WaitForChild("PlayerFist") -- TAMBAH INI
 local TILE = 4.5
+
+local function GetPlayerTilePos()
+    local player = game.Players.LocalPlayer
+    if not player then return nil end
+
+    local char = player.Character
+    if not char then return nil end
+
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return nil end
+
+    local px = math.floor(hrp.Position.X / TILE + 0.5)
+    local py = math.floor(hrp.Position.Y / TILE + 0.5)
+
+    return px, py
+end
+
+
 
 local Venyx = loadstring(game:HttpGet(
     "https://raw.githubusercontent.com/masterzbeware/peta-peta/refs/heads/main/petapeta"
@@ -432,6 +450,11 @@ local function AutoPlaceToGridKey(gridKey, basePx, basePy)
         return
     end
 
+    if not placeRemote then
+        warn("placeRemote nil")
+        return
+    end
+
     local offset = gridOffsets[gridKey]
     if not offset then
         warn("Offset grid tidak ada:", gridKey)
@@ -664,23 +687,6 @@ local function RefreshAutomationMode()
     end
 end
 
-local function GetPlayerTilePos()
-    local player = game.Players.LocalPlayer
-    if not player then return nil end
-
-    local char = player.Character
-    if not char then return nil end
-
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return nil end
-
-    local px = math.floor(hrp.Position.X / TILE + 0.5)
-    local py = math.floor(hrp.Position.Y / TILE + 0.5)
-
-    return px, py
-end
-
-
 
 tilesSection:addButton("Tiles Selector", function()
     if main then
@@ -781,7 +787,7 @@ task.spawn(function()
     versionLabel.Size = UDim2.new(0, 90, 0, 16)
     versionLabel.ZIndex = 6
     versionLabel.Font = Enum.Font.Gotham
-    versionLabel.Text = "Version 1.0.0"
+    versionLabel.Text = "Version 1.0.1"
     versionLabel.TextSize = 12
     versionLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     versionLabel.TextTransparency = 0.2
