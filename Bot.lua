@@ -64,6 +64,60 @@ end)
 local UpdateDropdownVisibleText
 
 
+-- =========================
+-- DROPDOWN ITEM AUTO PLANT
+-- =========================
+local plantItem = nil
+local plantItemMap = {}
+local plantDropdownList = {}
+
+local function BuildPlantDropdown()
+    local list = {}
+    local map = {}
+
+    for slot, stack in pairs(Inventory.Stacks) do
+        if stack and next(stack) then
+            local id = stack.Id
+            local amount = stack.Amount or 1
+            local info = ItemsManager.RequestItemData(id)
+            local name = (info and info.Name) or ("Unknown")
+
+            local label = string.format("%s [%s] x%d", name, id, amount)
+            table.insert(list, label)
+
+            map[label] = {
+                Slot = slot,
+                Id = id,
+                Name = name
+            }
+        end
+    end
+
+    if #list == 0 then
+        table.insert(list, "Inventory kosong")
+    end
+
+    table.sort(list)
+    return list, map
+end
+
+do
+    local list, map = BuildPlantDropdown()
+    plantItemMap = map
+    plantDropdownList = list
+
+    plantMainSection:addDropdown("Pilih Item Plant", plantDropdownList, plantDropdownList[1], function(selected)
+        plantItem = plantItemMap[selected]
+
+        if plantItem then
+            print("Plant item dipilih:", plantItem.Name)
+        end
+    end)
+
+    plantItem = plantItemMap[plantDropdownList[1]]
+end
+
+
 growScanSection:addButton("Scan Gems", function()
     local gemsModel = game.Workspace:FindFirstChild("Gems")
 
@@ -640,6 +694,16 @@ tilesSection:addButton("Tiles Selector", function()
 end)
 
 -- =========================
+-- BATAS AREA AUTO PLANT
+-- =========================
+local PLANT_X_MIN = 1
+local PLANT_X_MAX = 99
+
+local PLANT_Y_START = 59
+local PLANT_Y_MIN = 7
+local PLANT_Y_STEP = 2
+
+-- =========================
 -- AUTO PLANT ZIG-ZAG
 -- =========================
 local autoPlantEnabled = false
@@ -660,13 +724,13 @@ local function StartAutoPlant()
             if goRightToLeft then
                 for x = PLANT_X_MAX, PLANT_X_MIN, -1 do
                     if not autoPlantEnabled then break end
-                    placeRemote:FireServer(Vector2.new(x, currentY), selectedItem.Slot)
+                    placeRemote:FireServer(Vector2.new(x, currentY), plantItem.Slot)
                     task.wait(autoPlaceDelay)
                 end
             else
                 for x = PLANT_X_MIN, PLANT_X_MAX do
                     if not autoPlantEnabled then break end
-                    placeRemote:FireServer(Vector2.new(x, currentY), selectedItem.Slot)
+                    placeRemote:FireServer(Vector2.new(x, currentY), plantItem.Slot)
                     task.wait(autoPlaceDelay)
                 end
             end
