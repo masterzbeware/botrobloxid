@@ -360,6 +360,20 @@ local gridOffsets = {
     B3 = Vector2.new( 1, -1), -- tombol 10
 }
 
+-- urutan sesuai nomor di UI (1 s/d 10)
+local gridOrder = {
+    "T1", -- 1
+    "T2", -- 2
+    "T3", -- 3
+    "L2", -- 4
+    "L1", -- 5
+    "R1", -- 6
+    "R2", -- 7
+    "B1", -- 8
+    "B2", -- 9
+    "B3", -- 10
+}
+
 local function AutoPlaceToGridKey(gridKey, basePx, basePy)
     if not selectedItem then
         warn("Belum ada item dipilih.")
@@ -397,23 +411,16 @@ local function StartAutoPlaceLoop()
     autoPlaceThread = task.spawn(function()
         while autoPlaceEnabled do
             if selectedItem then
-                -- ambil posisi player SEKALI per siklus
                 local player = game.Players.LocalPlayer
                 local handler = require(player.PlayerScripts.PlayerMovement.PlayerMovementHandler.Parent)
                 local basePx = math.floor(handler.Position.X / TILE + 0.5)
                 local basePy = math.floor(handler.Position.Y / TILE + 0.5)
 
-                local keys = {}
-                for gridKey in pairs(selectedGridKeys) do
-                    table.insert(keys, gridKey)
-                end
-                table.sort(keys)
-
-                for _, gridKey in ipairs(keys) do
+                for _, gridKey in ipairs(gridOrder) do
                     if not autoPlaceEnabled then break end
                     if selectedGridKeys[gridKey] then
                         AutoPlaceToGridKey(gridKey, basePx, basePy)
-                        task.wait(autoPlaceDelay) -- delay dari slider
+                        task.wait(autoPlaceDelay)
                     end
                 end
             end
@@ -435,13 +442,7 @@ local function StartAutoBreakLoop()
             local basePx = math.floor(handler.Position.X / TILE + 0.5)
             local basePy = math.floor(handler.Position.Y / TILE + 0.5)
 
-            local keys = {}
-            for gridKey in pairs(selectedGridKeys) do
-                table.insert(keys, gridKey)
-            end
-            table.sort(keys)
-
-            for _, gridKey in ipairs(keys) do
+            for _, gridKey in ipairs(gridOrder) do
                 if not autoBreakEnabled then break end
                 if selectedGridKeys[gridKey] then
                     AutoBreakToGridKey(gridKey, basePx, basePy)
