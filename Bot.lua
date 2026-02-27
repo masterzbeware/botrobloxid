@@ -471,6 +471,13 @@ local function IsTileDestroyed(tx, ty)
     return (inst == nil) or (inst.Parent == nil)
 end
 
+-- =========================
+-- MODE GABUNGAN (HARUS DI ATAS)
+-- =========================
+local combinedMode = false
+local autoPBThread = nil
+local breakTimeoutSec = 3
+
 local function StartAutoPlaceLoop()
     if autoPlaceThread then return end
 
@@ -522,15 +529,6 @@ local function StartAutoBreakLoop()
         autoBreakThread = nil
     end)
 end
-
--- =========================
--- COMBINED LOOP: PLACE -> BREAK SAMPAI HANCUR -> NEXT TILE
--- =========================
-local combinedMode = false
-local autoPBThread = nil
-
--- Batas maksimal waktu memukul 1 tile (biar gak nyangkut kalau detector gagal)
-local breakTimeoutSec = 6  -- kamu bisa ubah (misal 10)
 
 local function StartAutoPlaceBreakLoop()
     if autoPBThread then return end
@@ -613,14 +611,19 @@ local function IsGridSelected(key)
 end
 
 local function ToggleGridSelection(key)
-    if selectedGridKeys[key] then
-        selectedGridKeys[key] = nil
-        print("Grid unselected:", key)
-    else
-        selectedGridKeys[key] = true
-        print("Grid selected:", key)
+    ToggleGridSelection(key)
+    UpdateGridButtonVisual(key)
+    print("Grid toggle:", key, IsGridSelected(key) and "ON" or "OFF")
+    
+    -- refresh supaya mode & thread pakai grid terbaru
+    if autoPlaceEnabled or autoBreakEnabled then
+        RefreshAutomationMode()
     end
-end
+    
+    -- kalau mode gabungan aktif, jangan jalankan loop lama dari klik grid
+    if combinedMode then
+        return
+    end
 
 local function HasAnyGridSelected()
     for _ in pairs(selectedGridKeys) do
@@ -762,7 +765,7 @@ task.spawn(function()
     versionLabel.Size = UDim2.new(0, 90, 0, 16)
     versionLabel.ZIndex = 6
     versionLabel.Font = Enum.Font.Gotham
-    versionLabel.Text = "Version 1.0.2"
+    versionLabel.Text = "Version 1.0.0"
     versionLabel.TextSize = 12
     versionLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     versionLabel.TextTransparency = 0.2
