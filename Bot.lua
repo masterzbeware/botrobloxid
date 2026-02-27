@@ -39,8 +39,6 @@ local growScanSection = growScanPage:addSection("Scanner")
 local growScanInfoSection = growScanPage:addSection("Info")
 
 
-
-
 local gemsCountDropdownList = {"Gems : 0"}
 local gemsCountDropdown = growScanInfoSection:addDropdown("Gems Scanner", gemsCountDropdownList, gemsCountDropdownList[1], function()
 end)
@@ -524,14 +522,12 @@ tilesSection:addButton("Tiles Selector", function()
 end)
 
 -- Toggle untuk Auto Harvest
-autoHarvestSection:addToggle("Auto Harvest", false, function(value)
+harvestMainSection:addToggle("Auto Harvest", false, function(value)
     if value then
         print("Auto Harvest: ON")
-        -- Logika untuk mulai Auto Harvest, misalnya mulai mengambil target tree
         StartAutoHarvest()
     else
         print("Auto Harvest: OFF")
-        -- Logika untuk menghentikan Auto Harvest
         StopAutoHarvest()
     end
 end)
