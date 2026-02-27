@@ -636,13 +636,28 @@ end
 local function RefreshAutomationMode()
     combinedMode = (autoPlaceEnabled and autoBreakEnabled)
 
-    -- kalau mode gabungan aktif, pastikan loop lama gak jalan “barengan”
-    -- caranya: loop lama dikasih guard (lihat step 3)
+    -- STOP semua thread lama dulu
+    autoPlaceEnabled = autoPlaceEnabled
+    autoBreakEnabled = autoBreakEnabled
+
+    -- force stop individual threads
+    if autoPlaceThread then
+        autoPlaceEnabled = false
+        task.wait()
+        autoPlaceThread = nil
+        autoPlaceEnabled = true
+    end
+
+    if autoBreakThread then
+        autoBreakEnabled = false
+        task.wait()
+        autoBreakThread = nil
+        autoBreakEnabled = true
+    end
+
     if combinedMode then
         StartAutoPlaceBreakLoop()
     else
-        -- kalau salah satu OFF, stop PB thread otomatis karena combinedMode false
-        -- lalu jalankan loop masing2 kalau togglenya masih ON
         if autoPlaceEnabled then StartAutoPlaceLoop() end
         if autoBreakEnabled then StartAutoBreakLoop() end
     end
@@ -765,7 +780,7 @@ task.spawn(function()
     versionLabel.Size = UDim2.new(0, 90, 0, 16)
     versionLabel.ZIndex = 6
     versionLabel.Font = Enum.Font.Gotham
-    versionLabel.Text = "Version 1.0.4"
+    versionLabel.Text = "Version 1.0.6"
     versionLabel.TextSize = 12
     versionLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     versionLabel.TextTransparency = 0.2
