@@ -710,56 +710,104 @@ local PLANT_Y_MIN = 7
 local PLANT_Y_STEP = 2
 
 -- =========================
--- AUTO PLANT ZIG-ZAG
+-- AUTO FARM (MOVE + PLANT) ZIGZAG
 -- =========================
-local autoPlantEnabled = false
-local autoPlantThread = nil
+local autoFarmEnabled = false
+local autoFarmThread = nil
 
-local function StartAutoPlant()
-    if autoPlantThread then return end
+-- pakai remote move yang sama seperti auto move kamu
+local moveRemote = Rep:WaitForChild("Remotes")
+    :WaitForChild("PlayerMovementPackets")
+    :WaitForChild(game.Players.LocalPlayer.Name)
+
+local function MoveToTile(tx, ty)
+    local wx = tx * TILE
+    local wy = ty * TILE
+    moveRemote:FireServer(Vector2.new(wx, wy))
+    moveRemote:FireServer(Vector2.new(wx, wy))
+end
+
+local function WaitUntilReached(tx, ty)
+    while autoFarmEnabled do
+        local px, py = GetPlayerTilePos()
+        if px == tx and py == ty then
+            return true
+        end
+        task.wait(0.03)
+    end
+    return false
+end
+
+local function StartAutoFarmZigZag()
+    if autoFarmThread then return end
     if not plantItem then
-        warn("Plant item belum dipilih.")
+        warn("Pilih item plant dulu di dropdown Plant!")
         return
     end
 
-    autoPlantEnabled = true
+    autoFarmEnabled = true
 
-    autoPlantThread = task.spawn(function()
-        while autoPlantEnabled do
+    autoFarmThread = task.spawn(function()
+        local y = 59
+        local goLeft = true  -- mulai dari 99 -> 1
 
-            local px, py = GetPlayerTilePos()
-            if not px then
-                task.wait(0.2)
-                continue
+        -- (opsional) paksa start dulu ke 99,59
+        MoveToTile(99, 59)
+        WaitUntilReached(99, 59)
+
+        while autoFarmEnabled and y >= 7 do
+            if goLeft then
+                -- 99 -> 1
+                for x = 99, 1, -1 do
+                    if not autoFarmEnabled then break end
+                    MoveToTile(x, y)
+                    WaitUntilReached(x, y)
+
+                    -- plant di tile yang sedang diinjak
+                    placeRemote:FireServer(Vector2.new(x, y), plantItem.Slot)
+                    task.wait(autoPlaceDelay)
+                end
+            else
+                -- 1 -> 99
+                for x = 1, 99 do
+                    if not autoFarmEnabled then break end
+                    MoveToTile(x, y)
+                    WaitUntilReached(x, y)
+
+                    placeRemote:FireServer(Vector2.new(x, y), plantItem.Slot)
+                    task.wait(autoPlaceDelay)
+                end
             end
 
-            -- Plant tepat di posisi player berdiri
-            placeRemote:FireServer(Vector2.new(px, py), plantItem.Slot)
+            -- turun 2 tile: 59 -> 57 -> 55 ...
+            y = y - 2
+            goLeft = not goLeft
 
-            print("Plant di:", px, py)
-
-            task.wait(autoPlaceDelay)
+            -- pindah ke ujung baris baru (biar rapi)
+            if autoFarmEnabled and y >= 7 then
+                local startX = goLeft and 99 or 1
+                MoveToTile(startX, y)
+                WaitUntilReached(startX, y)
+            end
         end
 
-        autoPlantThread = nil
+        autoFarmThread = nil
+        autoFarmEnabled = false
+        print("Auto Farm ZigZag selesai!")
     end)
 end
 
-local function StopAutoPlant()
-    autoPlantEnabled = false
+local function StopAutoFarmZigZag()
+    autoFarmEnabled = false
 end
 
-plantMainSection:addToggle("Auto Plant", false, function(value)
-    print("Auto Plant:", value and "ON" or "OFF")
+plantMainSection:addToggle("Auto Farm ZigZag", false, function(value)
+    print("Auto Farm ZigZag:", value and "ON" or "OFF")
 
     if value then
-        if not selectedItem then
-            warn("Pilih item dulu.")
-            return
-        end
-        StartAutoPlant()
+        StartAutoFarmZigZag()
     else
-        StopAutoPlant()
+        StopAutoFarmZigZag()
     end
 end)
 
