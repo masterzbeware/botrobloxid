@@ -3,7 +3,7 @@ local Inventory = require(Rep:WaitForChild("Modules"):WaitForChild("Inventory"))
 local ItemsManager = require(Rep:WaitForChild("Managers"):WaitForChild("ItemsManager"))
 local remotesFolder = Rep:WaitForChild("Remotes")
 local placeRemote = Rep:WaitForChild("Remotes"):FindFirstChild("PlayerPlaceItem")
-local fistRemote = Rep:WaitForChild("Remotes"):WaitForChild("PlayerFist") -- TAMBAH INI
+local fistRemote = Rep:WaitForChild("Remotes"):WaitForChild("PlayerFist")
 local TILE = 4.5
 
 local function GetPlayerTilePos()
@@ -21,8 +21,6 @@ local function GetPlayerTilePos()
 
     return px, py
 end
-
-
 
 local Venyx = loadstring(game:HttpGet(
     "https://raw.githubusercontent.com/masterzbeware/peta-peta/refs/heads/main/petapeta"
