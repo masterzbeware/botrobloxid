@@ -653,20 +653,36 @@ local function StartAutoPlaceBreakLoop()
     end)
 end
 
+local function StopAutoPlace()
+    autoPlaceEnabled = false
+end
+
+local function StopAutoBreak()
+    autoBreakEnabled = false
+end
+
+local function StopAutoPB()
+    combinedMode = false
+end
+
 local function RefreshAutomationMode()
-    combinedMode = (autoPlaceEnabled and autoBreakEnabled)
+    -- simpan status sebelum direset
+    local wantPlace = autoPlaceEnabled
+    local wantBreak = autoBreakEnabled
 
-    -- MATIKAN SEMUA THREAD DULU
-    autoPlaceEnabled = autoPlaceEnabled
-    autoBreakEnabled = autoBreakEnabled
-
-    StopAutoPlace()
-    StopAutoBreak()
-    StopAutoPB()
+    -- stop semua loop
+    autoPlaceEnabled  = false
+    autoBreakEnabled  = false
+    combinedMode      = false
 
     task.wait(0.05)
 
-    -- HIDUPKAN MODE YANG DIPILIH
+    -- restore status
+    autoPlaceEnabled = wantPlace
+    autoBreakEnabled = wantBreak
+    combinedMode = (wantPlace and wantBreak)
+
+    -- jalankan mode yang benar
     if combinedMode then
         StartAutoPlaceBreakLoop()
     else
@@ -827,7 +843,7 @@ task.spawn(function()
     versionLabel.Size = UDim2.new(0, 90, 0, 16)
     versionLabel.ZIndex = 6
     versionLabel.Font = Enum.Font.Gotham
-    versionLabel.Text = "Version 1.1.1"
+    versionLabel.Text = "Version 1.1.2"
     versionLabel.TextSize = 12
     versionLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     versionLabel.TextTransparency = 0.2
