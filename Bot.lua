@@ -542,7 +542,7 @@ local function StartAutoPlaceLoop()
     if autoPlaceThread then return end
 
     autoPlaceThread = task.spawn(function()
-        while autoPlaceEnabled and not combinedMode do
+        while task.wait() and autoPlaceEnabled and not combinedMode do
             if selectedItem then
                 local basePx, basePy = GetPlayerTilePos()
                 if not basePx then
@@ -656,25 +656,17 @@ end
 local function RefreshAutomationMode()
     combinedMode = (autoPlaceEnabled and autoBreakEnabled)
 
-    -- STOP semua thread lama dulu
+    -- MATIKAN SEMUA THREAD DULU
     autoPlaceEnabled = autoPlaceEnabled
     autoBreakEnabled = autoBreakEnabled
 
-    -- force stop individual threads
-    if autoPlaceThread then
-        autoPlaceEnabled = false
-        task.wait()
-        autoPlaceThread = nil
-        autoPlaceEnabled = true
-    end
+    StopAutoPlace()
+    StopAutoBreak()
+    StopAutoPB()
 
-    if autoBreakThread then
-        autoBreakEnabled = false
-        task.wait()
-        autoBreakThread = nil
-        autoBreakEnabled = true
-    end
+    task.wait(0.05)
 
+    -- HIDUPKAN MODE YANG DIPILIH
     if combinedMode then
         StartAutoPlaceBreakLoop()
     else
@@ -835,7 +827,7 @@ task.spawn(function()
     versionLabel.Size = UDim2.new(0, 90, 0, 16)
     versionLabel.ZIndex = 6
     versionLabel.Font = Enum.Font.Gotham
-    versionLabel.Text = "Version 1.1.0"
+    versionLabel.Text = "Version 1.1.1"
     versionLabel.TextSize = 12
     versionLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     versionLabel.TextTransparency = 0.2
