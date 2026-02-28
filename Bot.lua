@@ -738,6 +738,40 @@ local function WaitUntilReached(tx, ty)
     return false
 end
 
+local function MoveUntilReached(tx, ty)
+    while autoFarmEnabled do
+        local px, py = GetPlayerTilePos()
+        if not px then
+            task.wait(0.05)
+            continue
+        end
+
+        if px == tx and py == ty then
+            return
+        end
+
+        local nextX, nextY = px, py
+
+        if px < tx then
+            nextX = px + 1
+        elseif px > tx then
+            nextX = px - 1
+        elseif py < ty then
+            nextY = py + 1
+        elseif py > ty then
+            nextY = py - 1
+        end
+
+        local wx = nextX * TILE
+        local wy = nextY * TILE
+
+        moveRemote:FireServer(Vector2.new(wx, wy))
+        moveRemote:FireServer(Vector2.new(wx, wy))
+
+        task.wait(0.03)
+    end
+end
+
 local function StartAutoFarmZigZag()
     if autoFarmThread then return end
     if not plantItem then
@@ -751,19 +785,16 @@ local function StartAutoFarmZigZag()
         local y = 59
         local goLeft = true  -- mulai dari 99 -> 1
 
-        -- (opsional) paksa start dulu ke 99,59
-        MoveToTile(99, 59)
-        WaitUntilReached(99, 59)
+        MoveUntilReached(99, 59)
 
         while autoFarmEnabled and y >= 7 do
             if goLeft then
                 -- 99 -> 1
                 for x = 99, 1, -1 do
                     if not autoFarmEnabled then break end
-                    MoveToTile(x, y)
-                    WaitUntilReached(x, y)
-
-                    -- plant di tile yang sedang diinjak
+                
+                    MoveUntilReached(x, y) -- <<< INI PENTING
+                
                     placeRemote:FireServer(Vector2.new(x, y), plantItem.Slot)
                     task.wait(autoPlaceDelay)
                 end
@@ -771,9 +802,9 @@ local function StartAutoFarmZigZag()
                 -- 1 -> 99
                 for x = 1, 99 do
                     if not autoFarmEnabled then break end
-                    MoveToTile(x, y)
-                    WaitUntilReached(x, y)
-
+                
+                    MoveUntilReached(x, y) -- <<< INI PENTING
+                
                     placeRemote:FireServer(Vector2.new(x, y), plantItem.Slot)
                     task.wait(autoPlaceDelay)
                 end
@@ -786,8 +817,7 @@ local function StartAutoFarmZigZag()
             -- pindah ke ujung baris baru (biar rapi)
             if autoFarmEnabled and y >= 7 then
                 local startX = goLeft and 99 or 1
-                MoveToTile(startX, y)
-                WaitUntilReached(startX, y)
+                MoveUntilReached(startX, y)
             end
         end
 
@@ -889,7 +919,7 @@ task.spawn(function()
     versionLabel.Size = UDim2.new(0, 90, 0, 16)
     versionLabel.ZIndex = 6
     versionLabel.Font = Enum.Font.Gotham
-    versionLabel.Text = "Version 1.1.2"
+    versionLabel.Text = "Version 1.1.0"
     versionLabel.TextSize = 12
     versionLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     versionLabel.TextTransparency = 0.2
