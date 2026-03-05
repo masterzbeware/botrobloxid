@@ -26,31 +26,38 @@ return {
         local InventoryLabels = {}
 
         -- FUNCTION
-        local function ScanInventory()
+local function ScanInventory()
 
-            local data = SessionData[player]
-            if not data then return end
+    local data = SessionData[player]
+    if not data then return end
 
-            local inv = data.Inventory
+    local inv = data.Inventory
+    local line = 1
 
-            for i = 1,36 do
+    -- kosongkan dulu semua label
+    for i = 1,36 do
+        InventoryLabels[i]:SetText("")
+    end
 
-                local item = inv[i]
+    for i = 1,36 do
 
-                if item and next(item) then
+        local item = inv[i]
 
-                    local id = item[1]
-                    local qty = item[2] or 1
-                    local name = ItemData.IDLookup[id] or ("ID "..id)
+        if item and next(item) then
 
-                    InventoryLabels[i]:SetText(name.." x"..qty)
+            local id = item[1]
+            local qty = item[2] or 1
+            local name = ItemData.IDLookup[id] or ("ID "..id)
 
-                else
-                    InventoryLabels[i]:SetText("")
-                end
+            InventoryLabels[line]:SetText(name.." x"..qty)
 
-            end
+            line = line + 1
+
         end
+
+    end
+
+end
 
         -- BUTTON
         Group:AddButton({
