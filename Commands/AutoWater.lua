@@ -14,7 +14,7 @@ return {
         -- =========================
         -- UI
         -- =========================
-        local Group = AnimalsTab:AddRightGroupbox("Auto Water")
+        local Group = AnimalsTab:AddLeftGroupbox("Auto Water")
 
         vars.AutoWater    = vars.AutoWater or false
         vars.AutoTeleport = vars.AutoTeleport or false
