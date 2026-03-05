@@ -51,12 +51,14 @@ end
 -- In Server Time (Auto Detect)
 local timeLabel = ServerGroup:AddLabel("In Server: ...")
 local startTime = os.time()
+
 local function updateTime()
     local currentTime = os.time()
     local timeInServer = currentTime - startTime
     local hours = math.floor(timeInServer / 3600)
     local minutes = math.floor((timeInServer % 3600) / 60)
     local seconds = timeInServer % 60
+
     timeLabel:SetText(string.format("In Server: %02d:%02d:%02d", hours, minutes, seconds))
 end
 
@@ -72,11 +74,25 @@ task.spawn(function()
 end)
 
 -- =========================
--- Oven Tab
+-- Harvest Tab (Ganti Main)
 -- =========================
-Tabs.Main = MainWindow:AddTab("Main", "crosshair")
+Tabs.Harvest = MainWindow:AddTab("Main", "crosshair")
 
+-- =========================
+-- Plant Tab
+-- =========================
+Tabs.Plant = MainWindow:AddTab("Plant", "sprout")
+
+-- =========================
+-- Inventory Tab
+-- =========================
+Tabs.Inventory = MainWindow:AddTab("Inventory", "box")
+
+-- =========================
+-- Shop Tab
+-- =========================
 Tabs.Shop = MainWindow:AddTab("Shop", "Leaf")
+
 -- Save Tabs di global
 _G.BotVars.Tabs = Tabs
 
