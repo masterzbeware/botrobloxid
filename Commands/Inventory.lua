@@ -2,15 +2,9 @@
 return {
     Execute = function(tab)
 
-        -- =========================
-        -- GLOBAL VARS
-        -- =========================
         local vars = _G.BotVars or {}
         _G.BotVars = vars
 
-        -- =========================
-        -- TAB UI
-        -- =========================
         local Tabs = vars.Tabs or {}
         local InventoryTab = tab or Tabs.Inventory
 
@@ -21,9 +15,6 @@ return {
 
         local Group = InventoryTab:AddLeftGroupbox("Inventory Viewer")
 
-        -- =========================
-        -- SERVICES
-        -- =========================
         local Players = game:GetService("Players")
         local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -32,22 +23,13 @@ return {
 
         local player = Players.LocalPlayer
 
-        -- =========================
-        -- LABEL STORAGE
-        -- =========================
         local InventoryLabels = {}
 
-        -- =========================
-        -- INVENTORY SCAN
-        -- =========================
+        -- FUNCTION
         local function ScanInventory()
 
             local data = SessionData[player]
-
-            if not data then
-                InventoryLabels[1]:SetText("SessionData belum load")
-                return
-            end
+            if not data then return end
 
             local inv = data.Inventory
 
@@ -61,17 +43,16 @@ return {
                     local qty = item[2] or 1
                     local name = ItemData.IDLookup[id] or ("ID "..id)
 
-                    InventoryLabels[i]:SetText("Slot "..i.." : "..name.." x"..qty)
+                    InventoryLabels[i]:SetText(name.." x"..qty)
 
                 else
                     InventoryLabels[i]:SetText("")
                 end
+
             end
         end
 
-        -- =========================
-        -- BUTTON REFRESH (DI ATAS)
-        -- =========================
+        -- BUTTON
         Group:AddButton({
             Text = "Refresh Inventory",
             Func = function()
@@ -79,22 +60,15 @@ return {
             end
         })
 
-        -- =========================
-        -- CREATE LABEL
-        -- =========================
+        -- LABEL
         for i = 1,36 do
             InventoryLabels[i] = Group:AddLabel("")
         end
 
-        -- =========================
         -- AUTO LOAD
-        -- =========================
         task.spawn(function()
-
             repeat task.wait() until SessionData[player]
-
             ScanInventory()
-
         end)
 
         print("[Inventory] Viewer Loaded")
