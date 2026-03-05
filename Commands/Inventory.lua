@@ -33,7 +33,7 @@ return {
         local player = Players.LocalPlayer
 
         -- =========================
-        -- LABEL INVENTORY
+        -- INVENTORY LABEL
         -- =========================
         local InventoryLabel = Group:AddLabel("Loading inventory...")
 
@@ -57,14 +57,13 @@ return {
                 local item = inv[i]
 
                 if item and next(item) then
-
                     local id = item[1]
                     local qty = item[2] or 1
                     local name = ItemData.IDLookup[id] or ("ID "..id)
 
                     text = text .. name.." x"..qty.."\n"
-
                 end
+
             end
 
             if text == "" then
@@ -81,11 +80,8 @@ return {
         Group:AddButton({
             Text = "Refresh Inventory",
             Func = function()
-
                 print("[Inventory] Refresh")
-
                 ScanInventory()
-
             end
         })
 
