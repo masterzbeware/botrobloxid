@@ -19,9 +19,11 @@ return {
 
         vars.AutoPlanter  = vars.AutoPlanter or false
         vars.PlanterDelay = vars.PlanterDelay or 0.3
+        vars.PlanterMode  = vars.PlanterMode or "Planter Cart"
 
         _G.BotVars = vars
 
+        -- Toggle
         Group:AddToggle("ToggleAutoPlanter", {
             Text = "Auto Planter",
             Default = vars.AutoPlanter,
@@ -31,6 +33,19 @@ return {
             end
         })
 
+        -- Dropdown mode
+        Group:AddDropdown("DropdownPlanterMode", {
+            Text = "Mode",
+            Values = {"Planter Cart","Plant"},
+            Default = vars.PlanterMode,
+            Multi = false,
+            Callback = function(v)
+                vars.PlanterMode = v
+                print("[Auto Planter] Mode:", v)
+            end
+        })
+
+        -- Slider delay
         Group:AddSlider("SliderPlanterDelay", {
             Text = "Delay Tanam",
             Default = vars.PlanterDelay,
@@ -49,10 +64,12 @@ return {
         local ReplicatedStorage = game:GetService("ReplicatedStorage")
         local LoadedBlocks = workspace:WaitForChild("LoadedBlocks")
 
-        local UsePlanterCart = ReplicatedStorage
+        local Relay = ReplicatedStorage
         :WaitForChild("Relay")
         :WaitForChild("Blocks")
-        :WaitForChild("UsePlanterCart")
+
+        local UsePlanterCart = Relay:WaitForChild("UsePlanterCart")
+        local PlantCrop = Relay:WaitForChild("PlantCrop")
 
         ---------------------------------
         -- LOOP
@@ -76,13 +93,17 @@ return {
 
                                     pcall(function()
 
-                                        UsePlanterCart:InvokeServer(
-                                            vector.create(
-                                                voxel.X,
-                                                voxel.Y + 1,
-                                                voxel.Z
-                                            )
+                                        local pos = vector.create(
+                                            voxel.X,
+                                            voxel.Y + 1,
+                                            voxel.Z
                                         )
+
+                                        if vars.PlanterMode == "Planter Cart" then
+                                            UsePlanterCart:InvokeServer(pos)
+                                        else
+                                            PlantCrop:InvokeServer(pos)
+                                        end
 
                                     end)
 
@@ -99,7 +120,7 @@ return {
                     task.wait(vars.PlanterDelay)
 
                 else
-                    repeat task.wait(0.5) until vars.AutoPlanter
+                    task.wait(0.5)
                 end
 
             end
