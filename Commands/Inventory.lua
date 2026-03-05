@@ -38,10 +38,10 @@ return {
         local InventoryLabels = {}
 
         -- =========================
-        -- CREATE LABEL ONCE
+        -- CREATE LABEL
         -- =========================
         for i = 1,36 do
-            InventoryLabels[i] = Group:AddLabel("Slot "..i.." : Loading...")
+            InventoryLabels[i] = Group:AddLabel("")
         end
 
         -- =========================
@@ -71,9 +71,7 @@ return {
                     InventoryLabels[i]:SetText("Slot "..i.." : "..name.." x"..qty)
 
                 else
-
-                    InventoryLabels[i]:SetText("Slot "..i.." : Empty")
-
+                    InventoryLabels[i]:SetText("") -- kosongkan
                 end
             end
 
