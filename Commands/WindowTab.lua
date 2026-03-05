@@ -74,9 +74,9 @@ task.spawn(function()
 end)
 
 -- =========================
--- Harvest Tab (Ganti Main)
+-- Harvest Tab
 -- =========================
-Tabs.Harvest = MainWindow:AddTab("Main", "crosshair")
+Tabs.Harvest = MainWindow:AddTab("Harvest", "crosshair")
 
 -- =========================
 -- Plant Tab
@@ -84,14 +84,19 @@ Tabs.Harvest = MainWindow:AddTab("Main", "crosshair")
 Tabs.Plant = MainWindow:AddTab("Plant", "sprout")
 
 -- =========================
+-- Craft Tab
+-- =========================
+Tabs.Craft = MainWindow:AddTab("Craft", "hammer")
+
+-- =========================
 -- Inventory Tab
 -- =========================
 Tabs.Inventory = MainWindow:AddTab("Inventory", "box")
 
 -- =========================
--- Shop Tab
+-- Animals Tab (BARU)
 -- =========================
-Tabs.Shop = MainWindow:AddTab("Shop", "Leaf")
+Tabs.Animals = MainWindow:AddTab("Animals", "paw-print")
 
 -- Save Tabs di global
 _G.BotVars.Tabs = Tabs

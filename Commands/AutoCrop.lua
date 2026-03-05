@@ -3,17 +3,19 @@ return {
     Execute = function(tab)
         local vars = _G.BotVars or {}
         local Tabs = vars.Tabs or {}
-        local MainTab = tab or Tabs.Main
 
-        if not MainTab then
-            warn("[Auto Crop] Tab tidak ditemukan!")
+        -- gunakan Tab Harvest
+        local HarvestTab = tab or Tabs.Harvest
+
+        if not HarvestTab then
+            warn("[Auto Crop] Tab Harvest tidak ditemukan!")
             return
         end
 
         -- =========================
         -- UI GROUP
         -- =========================
-        local Group = MainTab:AddLeftGroupbox("Auto Crop")
+        local Group = HarvestTab:AddLeftGroupbox("Auto Crop")
 
         -- =========================
         -- DEFAULT VARS

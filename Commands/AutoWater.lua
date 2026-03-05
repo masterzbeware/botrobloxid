@@ -3,13 +3,18 @@ return {
     Execute = function(tab)
         local vars = _G.BotVars or {}
         local Tabs = vars.Tabs or {}
-        local MainTab = tab or Tabs.Main
-        if not MainTab then return end
+
+        -- gunakan tab Animals
+        local AnimalsTab = tab or Tabs.Animals
+        if not AnimalsTab then
+            warn("[AutoWater] Tab Animals tidak ditemukan!")
+            return
+        end
 
         -- =========================
         -- UI
         -- =========================
-        local Group = MainTab:AddRightGroupbox("Auto Water")
+        local Group = AnimalsTab:AddRightGroupbox("Auto Water")
 
         vars.AutoWater    = vars.AutoWater or false
         vars.AutoTeleport = vars.AutoTeleport or false
@@ -160,7 +165,7 @@ return {
                             continue
                         end
 
-                        -- === ISI AIR DARI WELL ===
+                        -- isi air dari well
                         local well = GetNearestWell()
                         if well then
                             TeleportToModel(well)
@@ -181,11 +186,11 @@ return {
                             end
                         end
 
-                        -- === TELEPORT KE TROUGH ===
+                        -- teleport ke trough
                         TeleportToModel(trough)
                         task.wait(0.4)
 
-                        -- === INSERT AIR ===
+                        -- insert air
                         local voxel = trough:GetAttribute("VoxelPosition")
                         if voxel then
                             pcall(function()

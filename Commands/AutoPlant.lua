@@ -3,17 +3,19 @@ return {
     Execute = function(tab)
         local vars = _G.BotVars or {}
         local Tabs = vars.Tabs or {}
-        local MainTab = tab or Tabs.Main
 
-        if not MainTab then
-            warn("[Auto Planter] Tab tidak ditemukan!")
+        -- gunakan tab Plant
+        local PlantTab = tab or Tabs.Plant
+
+        if not PlantTab then
+            warn("[Auto Planter] Tab Plant tidak ditemukan!")
             return
         end
 
         -- =========================
         -- UI GROUP
         -- =========================
-        local Group = MainTab:AddLeftGroupbox("Auto Planter")
+        local Group = PlantTab:AddLeftGroupbox("Auto Planter")
 
         -- =========================
         -- DEFAULT VARS

@@ -1,12 +1,13 @@
 -- AutoBucket.lua (ANTI LAG VERSION)
 return {
     Execute = function(tab)
+
         -- =========================
         -- GLOBAL VARS
         -- =========================
         local vars = _G.BotVars or {}
         vars.AutoBucket     = vars.AutoBucket or false
-        vars.BucketDelay    = vars.BucketDelay or 0.3     -- delay per cycle
+        vars.BucketDelay    = vars.BucketDelay or 0.3
         vars._AutoBucketRun = vars._AutoBucketRun or false
         _G.BotVars = vars
 
@@ -14,10 +15,13 @@ return {
         -- TAB & UI
         -- =========================
         local Tabs = vars.Tabs or {}
-        local MainTab = tab or Tabs.Main
-        if not MainTab then return end
+        local AnimalsTab = tab or Tabs.Animals
+        if not AnimalsTab then
+            warn("[AutoBucket] Tab Animals tidak ditemukan!")
+            return
+        end
 
-        local Group = MainTab:AddRightGroupbox("Auto Bucket")
+        local Group = AnimalsTab:AddRightGroupbox("Auto Bucket")
 
         -- TOGGLE
         Group:AddToggle("ToggleAutoBucket", {
@@ -69,6 +73,7 @@ return {
             for _, block in ipairs(LoadedBlocks:GetChildren()) do
                 if block:IsA("Model") and WellList[block.Name] then
                     local voxel = block:GetAttribute("VoxelPosition")
+
                     if voxel then
                         table.insert(wells, {
                             name = block.Name,
@@ -91,8 +96,11 @@ return {
         vars._AutoBucketRun = true
 
         task.spawn(function()
+
             while true do
+
                 if vars.AutoBucket then
+
                     local wells = ScanWells()
 
                     if #wells > 0 then
@@ -100,7 +108,10 @@ return {
                     end
 
                     for i, data in ipairs(wells) do
-                        if not vars.AutoBucket then break end
+
+                        if not vars.AutoBucket then
+                            break
+                        end
 
                         local pos = vector.create(
                             data.voxel.X,
@@ -118,12 +129,14 @@ return {
                             warn("[AutoBucket] Gagal fill:", err)
                         end
 
-                        task.wait(0.2) -- jeda kecil antar well (ANTI LAG)
+                        task.wait(0.2)
                     end
                 end
 
                 task.wait(vars.BucketDelay)
+
             end
+
         end)
 
         print("[AutoBucket] System Loaded (ANTI LAG)")

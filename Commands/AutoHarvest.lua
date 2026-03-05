@@ -3,20 +3,22 @@ return {
   Execute = function(tab)
       local vars = _G.BotVars or {}
       local Tabs = vars.Tabs or {}
-      local MainTab = tab or Tabs.Main
 
-      if not MainTab then
-          warn("[Auto Harvest] Tab tidak ditemukan!")
+      -- gunakan tab Harvest
+      local HarvestTab = tab or Tabs.Harvest
+
+      if not HarvestTab then
+          warn("[Auto Harvest] Tab Harvest tidak ditemukan!")
           return
       end
 
       -- UI GROUP
       local Group
-      if MainTab.AddRightGroupbox then
-          Group = MainTab:AddRightGroupbox("Auto Harvest")
+      if HarvestTab.AddRightGroupbox then
+          Group = HarvestTab:AddRightGroupbox("Auto Harvest")
       else
           warn("[Auto Harvest] AddRightGroupbox tidak tersedia, menggunakan AddLeftGroupbox")
-          Group = MainTab:AddLeftGroupbox("Auto Harvest")
+          Group = HarvestTab:AddLeftGroupbox("Auto Harvest")
       end
 
       -- DEFAULT VARS
@@ -86,7 +88,7 @@ return {
       local HarvestCrop = Blocks:WaitForChild("HarvestCrop")
       local LoadedBlocks = workspace:WaitForChild("LoadedBlocks")
 
-      -- LOOP HARVEST (toggle OFF benar-benar menghentikan proses)
+      -- LOOP HARVEST
       coroutine.wrap(function()
           while true do
               if vars.AutoHarvest then
@@ -94,7 +96,6 @@ return {
                       if block.Name == vars.HarvestTarget then
                           local voxel = block:GetAttribute("VoxelPosition")
                           if voxel then
-                              -- spawn per block biar tidak lag
                               task.spawn(function()
                                   local success, err = pcall(function()
                                       HarvestCrop:InvokeServer(vector.create(voxel.X, voxel.Y, voxel.Z))
@@ -103,13 +104,12 @@ return {
                                       warn("Gagal harvest", block.Name, err)
                                   end
                               end)
-                              task.wait(0.1) -- delay mini antar block untuk mencegah lag
+                              task.wait(0.1)
                           end
                       end
                   end
                   task.wait(vars.HarvestDelay)
               else
-                  -- toggle OFF → tunggu sampai toggle ON, tidak looping sia-sia
                   repeat task.wait(0.5) until vars.AutoHarvest
               end
           end

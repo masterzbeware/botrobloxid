@@ -3,21 +3,23 @@ return {
     Execute = function(tab)
         local vars = _G.BotVars or {}
         local Tabs = vars.Tabs or {}
-        local MainTab = tab or Tabs.Main
 
-        if not MainTab then
-            warn("[Auto Insert] Tab tidak ditemukan!")
+        -- gunakan tab Craft
+        local CraftTab = tab or Tabs.Craft
+
+        if not CraftTab then
+            warn("[Auto Insert] Tab Craft tidak ditemukan!")
             return
         end
 
         -- UI GROUP
-        local Group = MainTab:AddLeftGroupbox("Auto Insert Items")
+        local Group = CraftTab:AddLeftGroupbox("Auto Insert Items")
 
         -- DEFAULT VARS
         vars.AutoInsert = vars.AutoInsert or false
         vars.InsertDelay = vars.InsertDelay or 1
         vars.InsertTarget = vars.InsertTarget or "Compost Bin"
-        _G.BotVars = vars -- simpan global
+        _G.BotVars = vars
 
         -- TOGGLE
         Group:AddToggle("ToggleAutoInsert", {
@@ -30,7 +32,15 @@ return {
         })
 
         -- MODEL YANG DIIZINKAN
-        local allowedModels = {"Handmill","Preserves Barrel","Small Food Trough","Butter Churn","Compost Bin", "Large Water Trough", "Small Water Trough"}
+        local allowedModels = {
+            "Handmill",
+            "Preserves Barrel",
+            "Small Food Trough",
+            "Butter Churn",
+            "Compost Bin",
+            "Large Water Trough",
+            "Small Water Trough"
+        }
 
         -- DROPDOWN PILIH BLOCK
         task.spawn(function()
@@ -70,7 +80,7 @@ return {
         local Blocks = ReplicatedStorage:WaitForChild("Relay"):WaitForChild("Blocks")
         local InsertItem = Blocks:WaitForChild("InsertItem")
 
-        -- LOOP SYSTEM (hanya insert jika toggle ON)
+        -- LOOP SYSTEM
         coroutine.wrap(function()
             while true do
                 if vars.AutoInsert then
@@ -81,8 +91,11 @@ return {
                                 local voxel = block:GetAttribute("VoxelPosition")
                                 if voxel then
                                     local success, err = pcall(function()
-                                        InsertItem:InvokeServer(vector.create(voxel.X, voxel.Y, voxel.Z))
+                                        InsertItem:InvokeServer(
+                                            vector.create(voxel.X, voxel.Y, voxel.Z)
+                                        )
                                     end)
+
                                     if success then
                                         print("Berhasil insert ke:", block.Name)
                                     else
@@ -94,7 +107,6 @@ return {
                     end
                     task.wait(vars.InsertDelay)
                 else
-                    -- toggle OFF → tunggu lebih lama supaya CPU tidak terbebani
                     task.wait(0.5)
                 end
             end

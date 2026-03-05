@@ -16,10 +16,13 @@ return {
         -- TAB UI
         -- =========================
         local Tabs = vars.Tabs or {}
-        local MainTab = tab or Tabs.Main
-        if not MainTab then return end
+        local InventoryTab = tab or Tabs.Inventory
+        if not InventoryTab then
+            warn("[AutoDrop] Tab Inventory tidak ditemukan!")
+            return
+        end
 
-        local Group = MainTab:AddRightGroupbox("Auto Drop")
+        local Group = InventoryTab:AddRightGroupbox("Auto Drop")
 
         -- =========================
         -- TOGGLE
@@ -100,7 +103,6 @@ return {
 
             for i = 1,36 do
 
-                -- STOP LANGSUNG JIKA TOGGLE OFF
                 if not vars.AutoDrop then
                     return
                 end
@@ -161,6 +163,6 @@ return {
             end
         end)
 
-        print("[AutoDrop] System Loaded (Fixed)")
+        print("[AutoDrop] System Loaded")
     end
 }

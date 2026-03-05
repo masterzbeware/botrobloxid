@@ -16,15 +16,15 @@ return {
         -- TAB & UI
         -- =========================
         local Tabs = vars.Tabs or {}
-        local MainTab = tab or Tabs.Main
+        local CraftTab = tab or Tabs.Craft
 
-        if not MainTab then
-            warn("[AutoCraft] MainTab tidak ditemukan")
+        if not CraftTab then
+            warn("[AutoCraft] Tab Craft tidak ditemukan")
             return
         end
 
-        local Group = (MainTab.AddRightGroupbox and MainTab:AddRightGroupbox("Auto Craft"))
-            or MainTab:AddLeftGroupbox("Auto Craft")
+        local Group = (CraftTab.AddRightGroupbox and CraftTab:AddRightGroupbox("Auto Craft"))
+            or CraftTab:AddLeftGroupbox("Auto Craft")
 
         -- =========================
         -- TOGGLE
