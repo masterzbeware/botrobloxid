@@ -30,40 +30,44 @@ return {
         local SessionData = require(ReplicatedStorage.Modules.SessionData)
         local ItemData = require(ReplicatedStorage.Modules.Databanks.ItemData)
 
-        -- =========================
-        -- PLAYER LIST
-        -- =========================
-        local function GetPlayers()
+        local player = Players.LocalPlayer
 
-            local list = {}
+        -- =========================
+        -- LABEL STORAGE
+        -- =========================
+        local InventoryLabels = {}
 
-            for _,plr in ipairs(Players:GetPlayers()) do
-                table.insert(list, plr.Name)
+        -- =========================
+        -- FUNCTION CLEAR LABEL
+        -- =========================
+        local function ClearLabels()
+
+            for _,label in ipairs(InventoryLabels) do
+                pcall(function()
+                    label:Destroy()
+                end)
             end
 
-            table.sort(list)
+            InventoryLabels = {}
 
-            return list
         end
 
         -- =========================
         -- INVENTORY SCAN
         -- =========================
-        local function GetInventory(playerName)
+        local function ScanInventory()
 
-            local plr = Players:FindFirstChild(playerName)
-            if not plr then
-                return {}
-            end
+            ClearLabels()
 
-            local data = SessionData[plr]
+            local data = SessionData[player]
+
             if not data then
-                return {}
+                table.insert(InventoryLabels,
+                    Group:AddLabel("SessionData belum load"))
+                return
             end
 
             local inv = data.Inventory
-
-            local items = {}
 
             for i = 1,36 do
 
@@ -73,69 +77,41 @@ return {
 
                     local id = item[1]
                     local qty = item[2] or 1
-
                     local name = ItemData.IDLookup[id] or ("ID "..id)
 
-                    table.insert(items, name.." x"..qty)
+                    table.insert(InventoryLabels,
+                        Group:AddLabel("Slot "..i.." : "..name.." x"..qty))
+
+                else
+
+                    table.insert(InventoryLabels,
+                        Group:AddLabel("Slot "..i.." : Empty"))
 
                 end
             end
 
-            if #items == 0 then
-                table.insert(items,"Inventory Kosong")
-            end
-
-            return items
-
         end
 
         -- =========================
-        -- DROPDOWN PLAYER
+        -- BUTTON REFRESH
         -- =========================
-        local PlayerDropdown
-        local ItemDropdown
-
-        PlayerDropdown = Group:AddDropdown("InventoryPlayer", {
-            Text = "Pilih Player",
-            Values = GetPlayers(),
-            Multi = false,
-            Default = 1,
-
-            Callback = function(playerName)
-
-                print("[Inventory] Player dipilih:",playerName)
-
-                local items = GetInventory(playerName)
-
-                if ItemDropdown then
-                    ItemDropdown:SetValues(items)
-                end
-
+        Group:AddButton({
+            Text = "Refresh Inventory",
+            Func = function()
+                ScanInventory()
             end
         })
 
         -- =========================
-        -- DROPDOWN INVENTORY
+        -- AUTO LOAD
         -- =========================
-        ItemDropdown = Group:AddDropdown("InventoryItems", {
-            Text = "Inventory Player",
-            Values = {"Pilih player dulu"},
-            Multi = false
-        })
+        task.spawn(function()
 
-        -- =========================
-        -- UPDATE PLAYER LIST
-        -- =========================
-        local function RefreshPlayers()
+            repeat task.wait() until SessionData[player]
 
-            local list = GetPlayers()
+            ScanInventory()
 
-            PlayerDropdown:SetValues(list)
-
-        end
-
-        Players.PlayerAdded:Connect(RefreshPlayers)
-        Players.PlayerRemoving:Connect(RefreshPlayers)
+        end)
 
         print("[Inventory] Viewer Loaded")
 
