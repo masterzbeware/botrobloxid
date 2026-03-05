@@ -33,44 +33,49 @@ return {
         local player = Players.LocalPlayer
 
         -- =========================
-        -- INVENTORY LABEL
+        -- LABEL STORAGE
         -- =========================
-        local InventoryLabel = Group:AddLabel("Loading inventory...")
+        local InventoryLabels = {}
 
         -- =========================
-        -- SCAN INVENTORY
+        -- CREATE LABEL ONCE
+        -- =========================
+        for i = 1,36 do
+            InventoryLabels[i] = Group:AddLabel("Slot "..i.." : Loading...")
+        end
+
+        -- =========================
+        -- INVENTORY SCAN
         -- =========================
         local function ScanInventory()
 
             local data = SessionData[player]
 
             if not data then
-                InventoryLabel:SetText("SessionData belum load")
+                InventoryLabels[1]:SetText("SessionData belum load")
                 return
             end
 
             local inv = data.Inventory
-            local text = ""
 
             for i = 1,36 do
 
                 local item = inv[i]
 
                 if item and next(item) then
+
                     local id = item[1]
                     local qty = item[2] or 1
                     local name = ItemData.IDLookup[id] or ("ID "..id)
 
-                    text = text .. name.." x"..qty.."\n"
+                    InventoryLabels[i]:SetText("Slot "..i.." : "..name.." x"..qty)
+
+                else
+
+                    InventoryLabels[i]:SetText("Slot "..i.." : Empty")
+
                 end
-
             end
-
-            if text == "" then
-                text = "Inventory kosong"
-            end
-
-            InventoryLabel:SetText(text)
 
         end
 
@@ -80,7 +85,6 @@ return {
         Group:AddButton({
             Text = "Refresh Inventory",
             Func = function()
-                print("[Inventory] Refresh")
                 ScanInventory()
             end
         })
