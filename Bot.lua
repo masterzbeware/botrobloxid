@@ -91,18 +91,24 @@ end
 
 task.wait(2) -- beri waktu UI ter-load
 
--- Helper Function untuk jalanin modul (lebih clean)
 local function jalankan(nama)
+
     local module = _G.BotVars.Modules[nama]
+
     if module and type(module.Execute) == "function" then
-        if _G.BotVars.Tabs and _G.BotVars.Tabs.Main then
-            module.Execute(_G.BotVars.Tabs.Main)
-        else
-            warn("[Bot.lua]", nama, "tidak dijalankan — Tabs.Main belum ditemukan")
+
+        local ok, err = pcall(function()
+            module.Execute()
+        end)
+
+        if not ok then
+            warn("[Bot.lua] Error menjalankan", nama, err)
         end
+
     else
         warn("[Bot.lua] Modul", nama, "tidak ditemukan / tidak memiliki Execute")
     end
+
 end
 
 jalankan("autoinsert")
