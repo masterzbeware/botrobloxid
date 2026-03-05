@@ -33,7 +33,7 @@ return {
         local player = Players.LocalPlayer
 
         -- =========================
-        -- INVENTORY LABEL
+        -- LABEL INVENTORY
         -- =========================
         local InventoryLabel = Group:AddLabel("Loading inventory...")
 
