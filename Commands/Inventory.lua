@@ -33,42 +33,24 @@ return {
         local player = Players.LocalPlayer
 
         -- =========================
-        -- LABEL STORAGE
+        -- INVENTORY LABEL
         -- =========================
-        local InventoryLabels = {}
-
-        -- =========================
-        -- CLEAR LABELS
-        -- =========================
-        local function ClearLabels()
-
-            for _,label in ipairs(InventoryLabels) do
-                pcall(function()
-                    label:Destroy()
-                end)
-            end
-
-            table.clear(InventoryLabels)
-
-        end
+        local InventoryLabel = Group:AddLabel("Loading inventory...")
 
         -- =========================
         -- SCAN INVENTORY
         -- =========================
         local function ScanInventory()
 
-            ClearLabels()
-
             local data = SessionData[player]
 
             if not data then
-                table.insert(InventoryLabels,
-                    Group:AddLabel("SessionData belum load"))
+                InventoryLabel:SetText("SessionData belum load")
                 return
             end
 
             local inv = data.Inventory
-            local foundItem = false
+            local text = ""
 
             for i = 1,36 do
 
@@ -78,25 +60,18 @@ return {
 
                     local id = item[1]
                     local qty = item[2] or 1
-
                     local name = ItemData.IDLookup[id] or ("ID "..id)
 
-                    local label = Group:AddLabel(name.." x"..qty)
-
-                    table.insert(InventoryLabels,label)
-
-                    foundItem = true
+                    text = text .. name.." x"..qty.."\n"
 
                 end
             end
 
-            if not foundItem then
-
-                local label = Group:AddLabel("Inventory kosong")
-
-                table.insert(InventoryLabels,label)
-
+            if text == "" then
+                text = "Inventory kosong"
             end
+
+            InventoryLabel:SetText(text)
 
         end
 
