@@ -38,13 +38,6 @@ return {
         local InventoryLabels = {}
 
         -- =========================
-        -- CREATE LABEL
-        -- =========================
-        for i = 1,36 do
-            InventoryLabels[i] = Group:AddLabel("")
-        end
-
-        -- =========================
         -- INVENTORY SCAN
         -- =========================
         local function ScanInventory()
@@ -71,14 +64,13 @@ return {
                     InventoryLabels[i]:SetText("Slot "..i.." : "..name.." x"..qty)
 
                 else
-                    InventoryLabels[i]:SetText("") -- kosongkan
+                    InventoryLabels[i]:SetText("")
                 end
             end
-
         end
 
         -- =========================
-        -- BUTTON REFRESH
+        -- BUTTON REFRESH (DI ATAS)
         -- =========================
         Group:AddButton({
             Text = "Refresh Inventory",
@@ -86,6 +78,13 @@ return {
                 ScanInventory()
             end
         })
+
+        -- =========================
+        -- CREATE LABEL
+        -- =========================
+        for i = 1,36 do
+            InventoryLabels[i] = Group:AddLabel("")
+        end
 
         -- =========================
         -- AUTO LOAD
