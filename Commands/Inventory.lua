@@ -38,7 +38,7 @@ return {
         local InventoryLabels = {}
 
         -- =========================
-        -- FUNCTION CLEAR LABEL
+        -- CLEAR LABELS
         -- =========================
         local function ClearLabels()
 
@@ -48,12 +48,12 @@ return {
                 end)
             end
 
-            InventoryLabels = {}
+            table.clear(InventoryLabels)
 
         end
 
         -- =========================
-        -- INVENTORY SCAN
+        -- SCAN INVENTORY
         -- =========================
         local function ScanInventory()
 
@@ -68,6 +68,7 @@ return {
             end
 
             local inv = data.Inventory
+            local foundItem = false
 
             for i = 1,36 do
 
@@ -77,17 +78,24 @@ return {
 
                     local id = item[1]
                     local qty = item[2] or 1
+
                     local name = ItemData.IDLookup[id] or ("ID "..id)
 
-                    table.insert(InventoryLabels,
-                        Group:AddLabel("Slot "..i.." : "..name.." x"..qty))
+                    local label = Group:AddLabel(name.." x"..qty)
 
-                else
+                    table.insert(InventoryLabels,label)
 
-                    table.insert(InventoryLabels,
-                        Group:AddLabel("Slot "..i.." : Empty"))
+                    foundItem = true
 
                 end
+            end
+
+            if not foundItem then
+
+                local label = Group:AddLabel("Inventory kosong")
+
+                table.insert(InventoryLabels,label)
+
             end
 
         end
@@ -98,7 +106,11 @@ return {
         Group:AddButton({
             Text = "Refresh Inventory",
             Func = function()
+
+                print("[Inventory] Refresh")
+
                 ScanInventory()
+
             end
         })
 
