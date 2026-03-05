@@ -1,4 +1,4 @@
--- AutoCrop.lua
+-- AutoCrop.lua (FAST VERSION)
 return {
     Execute = function(tab)
 
@@ -24,9 +24,7 @@ return {
         -- =========================
         local Group = MainTab:AddLeftGroupbox("Auto Crop")
 
-        -- =========================
         -- TOGGLE
-        -- =========================
         Group:AddToggle("ToggleAutoCrop", {
             Text = "Auto Crop",
             Default = vars.AutoCrop,
@@ -37,13 +35,10 @@ return {
         })
 
         -- =========================
-        -- ALLOWED CROPS
+        -- CROPS
         -- =========================
         local allowedCrops = {"Cacao","Cranberry","Wheat","Grass"}
 
-        -- =========================
-        -- DROPDOWN
-        -- =========================
         Group:AddDropdown("DropdownCropTarget", {
             Text = "Pilih Crop",
             Values = allowedCrops,
@@ -55,13 +50,11 @@ return {
             end
         })
 
-        -- =========================
-        -- SLIDER DELAY
-        -- =========================
+        -- DELAY
         Group:AddSlider("SliderCropDelay", {
             Text = "Delay Panen",
             Default = vars.CropDelay,
-            Min = 0.3,
+            Min = 0.1,
             Max = 4,
             Rounding = 1,
             Callback = function(v)
@@ -81,29 +74,36 @@ return {
             :WaitForChild("HarvestCrop")
 
         -- =========================
-        -- HARVEST FUNCTION
+        -- FAST HARVEST
         -- =========================
         local function ScanAndHarvest()
 
+            local crops = {}
+
+            -- scan sekali
             for _, block in ipairs(LoadedBlocks:GetChildren()) do
+                if block:IsA("MeshPart") and block.Name == vars.CropTarget then
+                    local voxel = block:GetAttribute("VoxelPosition")
+                    if voxel then
+                        table.insert(crops, voxel)
+                    end
+                end
+            end
+
+            -- harvest paralel
+            for _, voxel in ipairs(crops) do
 
                 if not vars.AutoCrop then
                     return
                 end
 
-                if block:IsA("MeshPart") and block.Name == vars.CropTarget then
-                    local voxel = block:GetAttribute("VoxelPosition")
-
-                    if voxel then
-                        pcall(function()
-                            HarvestCrop:InvokeServer(
-                                vector.create(voxel.X, voxel.Y, voxel.Z)
-                            )
-                        end)
-
-                        task.wait(0.1)
-                    end
-                end
+                task.spawn(function()
+                    pcall(function()
+                        HarvestCrop:InvokeServer(
+                            vector.create(voxel.X, voxel.Y, voxel.Z)
+                        )
+                    end)
+                end)
             end
         end
 
@@ -114,9 +114,11 @@ return {
             warn("[Auto Crop] Loop sudah berjalan")
             return
         end
+
         vars._AutoCropRun = true
 
         task.spawn(function()
+
             while true do
 
                 if vars.AutoCrop then
@@ -124,9 +126,11 @@ return {
                 end
 
                 task.wait(vars.CropDelay)
+
             end
+
         end)
 
-        print("[Auto Crop] System Loaded (Fixed)")
+        print("[Auto Crop] System Loaded (FAST)")
     end
 }
