@@ -31,7 +31,7 @@ local player = _G.BotVars.LocalPlayer
 -- =========================
 local MainWindow = Library:CreateWindow({
     Title = "MasterZ HUB",
-    Footer = "1.0.1",
+    Footer = "1.0.2",
     Icon = 0,
 })
 
@@ -110,7 +110,6 @@ jalankan("autoharvest")
 jalankan("autocrop")
 jalankan("autosell")
 jalankan("autocraft")
-jalankan("autoplant")
 jalankan("autoplant")
 jalankan("autowater")
 jalankan("autodrop")
