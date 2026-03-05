@@ -21,7 +21,9 @@ return {
 
         local Group = MainTab:AddRightGroupbox("Auto Drop")
 
+        -- =========================
         -- TOGGLE
+        -- =========================
         Group:AddToggle("ToggleAutoDrop", {
             Text = "Auto Drop",
             Default = vars.AutoDrop,
@@ -44,7 +46,9 @@ return {
             table.insert(dropdownValues, name)
         end
 
+        -- =========================
         -- DROPDOWN
+        -- =========================
         Group:AddDropdown("DropdownDropItem", {
             Values = dropdownValues,
             Default = 1,
@@ -56,7 +60,9 @@ return {
             end
         })
 
+        -- =========================
         -- SLIDER DELAY
+        -- =========================
         Group:AddSlider("SliderDropDelay", {
             Text = "Delay Scan (detik)",
             Min = 0.3,
@@ -93,6 +99,12 @@ return {
             if not targetID then return end
 
             for i = 1,36 do
+
+                -- STOP LANGSUNG JIKA TOGGLE OFF
+                if not vars.AutoDrop then
+                    return
+                end
+
                 local slot = invGui:FindFirstChild(tostring(i), true)
 
                 if slot then
@@ -107,6 +119,7 @@ return {
                     end
 
                     if foundID == targetID then
+
                         local ok, err = pcall(function()
                             DropItem:InvokeServer(
                                 i,
@@ -139,6 +152,7 @@ return {
 
         task.spawn(function()
             while true do
+
                 if vars.AutoDrop then
                     ScanAndDrop()
                 end
@@ -147,6 +161,6 @@ return {
             end
         end)
 
-        print("[AutoDrop] System Loaded")
+        print("[AutoDrop] System Loaded (Fixed)")
     end
 }
