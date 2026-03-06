@@ -13,86 +13,69 @@ return {
             return
         end
 
-        local Players = game:GetService("Players")
-        local player = Players.LocalPlayer
-
         local Group = InventoryTab:AddLeftGroupbox("Inventory Viewer")
+
+        local Players = game:GetService("Players")
+        local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+        local SessionData = require(ReplicatedStorage.Modules.SessionData)
+        local ItemData = require(ReplicatedStorage.Modules.Databanks.ItemData)
+
+        local player = Players.LocalPlayer
 
         local InventoryLabels = {}
 
-        -- =========================
-        -- SCAN INVENTORY (UI BASED)
-        -- =========================
-        local function ScanInventory()
+        -- FUNCTION
+local function ScanInventory()
 
-            local gui = player:FindFirstChild("PlayerGui")
-            if not gui then return end
+    local data = SessionData[player]
+    if not data then return end
 
-            local invGui = gui:FindFirstChild("Inventory")
-            if not invGui then return end
+    local inv = data.Inventory
+    local line = 1
 
-            local backpack = invGui:FindFirstChild("Backpack")
-            if not backpack then return end
+    -- kosongkan dulu semua label
+    for i = 1,36 do
+        InventoryLabels[i]:SetText("")
+    end
 
-            local slots = backpack:FindFirstChild("Slots")
-            if not slots then return end
+    for i = 1,36 do
 
-            local line = 1
+        local item = inv[i]
 
-            -- clear label
-            for i = 1,36 do
-                if InventoryLabels[i] then
-                    InventoryLabels[i]:SetText("")
-                end
-            end
+        if item and next(item) then
 
-            -- scan slot
-            for i = 1,36 do
+            local id = item[1]
+            local qty = item[2] or 1
+            local name = ItemData.IDLookup[id] or ("ID "..id)
 
-                local slot = slots:FindFirstChild(tostring(i))
+            InventoryLabels[line]:SetText(name.." x"..qty)
 
-                if slot then
-                    local qty = slot:FindFirstChild("Quantity")
-
-                    if qty and qty:IsA("TextLabel") then
-                        local amount = tonumber(qty.Text)
-
-                        if amount and amount > 0 then
-                            InventoryLabels[line]:SetText("Slot "..i.." x"..amount)
-                            line += 1
-                        end
-                    end
-                end
-
-            end
+            line = line + 1
 
         end
 
-        -- =========================
+    end
+
+end
+
         -- BUTTON
-        -- =========================
         Group:AddButton({
             Text = "Refresh Inventory",
-            Func = ScanInventory
+            Func = function()
+                ScanInventory()
+            end
         })
 
-        -- =========================
-        -- LABELS
-        -- =========================
+        -- LABEL
         for i = 1,36 do
             InventoryLabels[i] = Group:AddLabel("")
         end
 
-        -- =========================
         -- AUTO LOAD
-        -- =========================
         task.spawn(function()
-
-            repeat task.wait()
-            until player:FindFirstChild("PlayerGui")
-
+            repeat task.wait() until SessionData[player]
             ScanInventory()
-
         end)
 
         print("[Inventory] Viewer Loaded")
