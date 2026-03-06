@@ -2,9 +2,6 @@
 return {
     Execute = function(tab)
 
-        -- =========================
-        -- GLOBAL VARS
-        -- =========================
         local vars = _G.BotVars or {}
         local Tabs = vars.Tabs or {}
 
@@ -14,18 +11,12 @@ return {
             return
         end
 
-        -- =========================
-        -- UI GROUP
-        -- =========================
         local Group = PlantTab:AddLeftGroupbox("Auto Planter")
 
-        vars.AutoPlanter = vars.AutoPlanter or false
-        vars.PlanterDelay = vars.PlanterDelay or 0.25
+        vars.AutoPlanter  = vars.AutoPlanter or false
+        vars.PlanterDelay = vars.PlanterDelay or 0.3
         _G.BotVars = vars
 
-        -- =========================
-        -- TOGGLE
-        -- =========================
         Group:AddToggle("ToggleAutoPlanter", {
             Text = "Auto Planter",
             Default = vars.AutoPlanter,
@@ -35,23 +26,17 @@ return {
             end
         })
 
-        -- =========================
-        -- DELAY SLIDER
-        -- =========================
         Group:AddSlider("SliderPlanterDelay", {
             Text = "Delay Tanam",
             Default = vars.PlanterDelay,
-            Min = 0.05,
+            Min = 0.1,
             Max = 3,
-            Rounding = 2,
+            Rounding = 1,
             Callback = function(v)
                 vars.PlanterDelay = v
             end
         })
 
-        -- =========================
-        -- SERVICES
-        -- =========================
         local ReplicatedStorage = game:GetService("ReplicatedStorage")
         local LoadedBlocks = workspace:WaitForChild("LoadedBlocks")
 
@@ -60,59 +45,28 @@ return {
             :WaitForChild("Blocks")
             :WaitForChild("UsePlanterCart")
 
-        -- =========================
-        -- FUNCTION CEK TANAMAN
-        -- =========================
-        local function hasCrop(voxel, blocks)
-
-            for _, block in ipairs(blocks) do
-
-                local id = block:GetAttribute("ID")
-                local otherVoxel = block:GetAttribute("VoxelPosition")
-
-                if id and id ~= 1 and otherVoxel then
-                    if otherVoxel.X == voxel.X
-                    and otherVoxel.Y == voxel.Y
-                    and otherVoxel.Z == voxel.Z then
-                        return true
-                    end
-                end
-
-            end
-
-            return false
-        end
-
-        -- =========================
-        -- AUTO PLANT LOOP
-        -- =========================
         coroutine.wrap(function()
 
             while true do
 
                 if vars.AutoPlanter then
 
-                    local blocks = LoadedBlocks:GetChildren()
-
-                    for _, farmland in ipairs(blocks) do
+                    for _, block in ipairs(LoadedBlocks:GetChildren()) do
 
                         if not vars.AutoPlanter then break end
 
-                        local id = farmland:GetAttribute("ID")
+                        if block.Name == "Farmland" then
 
-                        -- hanya farmland
-                        if id == 1 then
+                            local voxel = block:GetAttribute("VoxelPosition")
 
-                            local voxel = farmland:GetAttribute("VoxelPosition")
-
-                            if voxel and not hasCrop(voxel, blocks) then
+                            if voxel then
 
                                 pcall(function()
 
                                     UsePlanterCart:InvokeServer(
                                         vector.create(
                                             voxel.X,
-                                            voxel.Y,
+                                            voxel.Y + 1,
                                             voxel.Z
                                         )
                                     )
@@ -122,12 +76,8 @@ return {
                                 task.wait(vars.PlanterDelay)
 
                             end
-
                         end
-
                     end
-
-                    task.wait(0.2)
 
                 else
                     repeat task.wait(0.5) until vars.AutoPlanter
