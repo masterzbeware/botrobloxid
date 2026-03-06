@@ -1,129 +1,143 @@
 -- AutoPlanter.lua
 return {
-Execute = function(tab)
+    Execute = function(tab)
 
-local vars = _G.BotVars or {}
-local Tabs = vars.Tabs or {}
+        -- =========================
+        -- GLOBAL VARS
+        -- =========================
+        local vars = _G.BotVars or {}
+        local Tabs = vars.Tabs or {}
 
-local PlantTab = tab or Tabs.Plant
+        local PlantTab = tab or Tabs.Plant
+        if not PlantTab then
+            warn("[Auto Planter] Tab Plant tidak ditemukan!")
+            return
+        end
 
-if not PlantTab then
-warn("[Auto Planter] Tab Plant tidak ditemukan!")
-return
-end
+        -- =========================
+        -- UI GROUP
+        -- =========================
+        local Group = PlantTab:AddLeftGroupbox("Auto Planter")
 
-local Group = PlantTab:AddLeftGroupbox("Auto Planter")
+        vars.AutoPlanter = vars.AutoPlanter or false
+        vars.PlanterDelay = vars.PlanterDelay or 0.25
+        _G.BotVars = vars
 
-vars.AutoPlanter = vars.AutoPlanter or false
-vars.PlanterDelay = vars.PlanterDelay or 0.25
+        -- =========================
+        -- TOGGLE
+        -- =========================
+        Group:AddToggle("ToggleAutoPlanter", {
+            Text = "Auto Planter",
+            Default = vars.AutoPlanter,
+            Callback = function(v)
+                vars.AutoPlanter = v
+                print("[Auto Planter]", v and "ON" or "OFF")
+            end
+        })
 
-_G.BotVars = vars
+        -- =========================
+        -- DELAY SLIDER
+        -- =========================
+        Group:AddSlider("SliderPlanterDelay", {
+            Text = "Delay Tanam",
+            Default = vars.PlanterDelay,
+            Min = 0.05,
+            Max = 3,
+            Rounding = 2,
+            Callback = function(v)
+                vars.PlanterDelay = v
+            end
+        })
 
-Group:AddToggle("ToggleAutoPlanter", {
-Text = "Auto Planter",
-Default = vars.AutoPlanter,
-Callback = function(v)
-vars.AutoPlanter = v
-end
-})
+        -- =========================
+        -- SERVICES
+        -- =========================
+        local ReplicatedStorage = game:GetService("ReplicatedStorage")
+        local LoadedBlocks = workspace:WaitForChild("LoadedBlocks")
 
-Group:AddSlider("SliderPlanterDelay", {
-Text = "Delay Tanam",
-Default = vars.PlanterDelay,
-Min = 0.05,
-Max = 3,
-Rounding = 2,
-Callback = function(v)
-vars.PlanterDelay = v
-end
-})
+        local UsePlanterCart = ReplicatedStorage
+            :WaitForChild("Relay")
+            :WaitForChild("Blocks")
+            :WaitForChild("UsePlanterCart")
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local LoadedBlocks = workspace:WaitForChild("LoadedBlocks")
+        -- =========================
+        -- FUNCTION CEK TANAMAN
+        -- =========================
+        local function hasCrop(voxel, blocks)
 
-local UsePlanterCart = ReplicatedStorage
-:WaitForChild("Relay")
-:WaitForChild("Blocks")
-:WaitForChild("UsePlanterCart")
+            for _, block in ipairs(blocks) do
 
-coroutine.wrap(function()
+                local id = block:GetAttribute("ID")
+                local otherVoxel = block:GetAttribute("VoxelPosition")
 
-while true do
+                if id and id ~= 1 and otherVoxel then
+                    if otherVoxel.X == voxel.X
+                    and otherVoxel.Y == voxel.Y
+                    and otherVoxel.Z == voxel.Z then
+                        return true
+                    end
+                end
 
-if vars.AutoPlanter then
+            end
 
-local blocks = LoadedBlocks:GetChildren()
+            return false
+        end
 
-for _, farmland in ipairs(blocks) do
+        -- =========================
+        -- AUTO PLANT LOOP
+        -- =========================
+        coroutine.wrap(function()
 
-if not vars.AutoPlanter then break end
+            while true do
 
-local id = farmland:GetAttribute("ID")
+                if vars.AutoPlanter then
 
--- hanya farmland
-if id == 1 then
+                    local blocks = LoadedBlocks:GetChildren()
 
-local voxel = farmland:GetAttribute("VoxelPosition")
+                    for _, farmland in ipairs(blocks) do
 
-if voxel then
+                        if not vars.AutoPlanter then break end
 
-local planted = false
+                        local id = farmland:GetAttribute("ID")
 
--- cek apakah ada tanaman di voxel yang sama
-for _, block in ipairs(blocks) do
+                        -- hanya farmland
+                        if id == 1 then
 
-local otherVoxel = block:GetAttribute("VoxelPosition")
-local otherID = block:GetAttribute("ID")
+                            local voxel = farmland:GetAttribute("VoxelPosition")
 
-if otherVoxel
-and otherVoxel.X == voxel.X
-and otherVoxel.Y == voxel.Y
-and otherVoxel.Z == voxel.Z
-and otherID ~= 1 then
+                            if voxel and not hasCrop(voxel, blocks) then
 
-planted = true
-break
+                                pcall(function()
 
-end
+                                    UsePlanterCart:InvokeServer(
+                                        vector.create(
+                                            voxel.X,
+                                            voxel.Y,
+                                            voxel.Z
+                                        )
+                                    )
 
-end
+                                end)
 
--- jika belum ada tanaman
-if not planted then
+                                task.wait(vars.PlanterDelay)
 
-pcall(function()
+                            end
 
-UsePlanterCart:InvokeServer(
-vector.create(
-voxel.X,
-voxel.Y,
-voxel.Z
-)
-)
+                        end
 
-end)
+                    end
 
-task.wait(vars.PlanterDelay)
+                    task.wait(0.2)
 
-end
+                else
+                    repeat task.wait(0.5) until vars.AutoPlanter
+                end
 
-end
+            end
 
-end
+        end)()
 
-end
+        print("[Auto Planter] Sistem aktif")
 
-task.wait(0.2)
-
-else
-repeat task.wait(0.5) until vars.AutoPlanter
-end
-
-end
-
-end)()
-
-print("[Auto Planter] Sistem aktif")
-
-end
+    end
 }
