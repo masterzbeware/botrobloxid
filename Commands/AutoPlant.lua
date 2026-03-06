@@ -1,10 +1,13 @@
 -- AutoPlanter.lua
 return {
     Execute = function(tab)
+
+        -- =========================
+        -- GLOBAL VARS
+        -- =========================
         local vars = _G.BotVars or {}
         local Tabs = vars.Tabs or {}
 
-        -- gunakan tab Plant
         local PlantTab = tab or Tabs.Plant
 
         if not PlantTab then
@@ -20,8 +23,9 @@ return {
         -- =========================
         -- DEFAULT VARS
         -- =========================
-        vars.AutoPlanter  = vars.AutoPlanter or false
-        vars.PlanterDelay = vars.PlanterDelay or 0.3
+        vars.AutoPlanter = vars.AutoPlanter or false
+        vars.PlanterDelay = vars.PlanterDelay or 0.4
+
         _G.BotVars = vars
 
         -- =========================
@@ -32,12 +36,12 @@ return {
             Default = vars.AutoPlanter,
             Callback = function(v)
                 vars.AutoPlanter = v
-                print("[Auto Planter] Toggle:", v and "ON" or "OFF")
+                print("[Auto Planter]", v and "ON" or "OFF")
             end
         })
 
         -- =========================
-        -- SLIDER DELAY
+        -- DELAY SLIDER
         -- =========================
         Group:AddSlider("SliderPlanterDelay", {
             Text = "Delay Tanam",
@@ -65,43 +69,61 @@ return {
         -- AUTO PLANT LOOP
         -- =========================
         coroutine.wrap(function()
+
             while true do
+
                 if vars.AutoPlanter then
 
                     for _, block in ipairs(LoadedBlocks:GetChildren()) do
 
+                        if not vars.AutoPlanter then
+                            break
+                        end
+
+                        -- hanya farmland
                         if block.Name == "Farmland" then
 
                             local voxel = block:GetAttribute("VoxelPosition")
 
                             if voxel then
-                                task.spawn(function()
-                                    pcall(function()
-                                        UsePlanterCart:InvokeServer(
-                                            vector.create(
-                                                voxel.X,
-                                                voxel.Y + 1,
-                                                voxel.Z
-                                            )
+
+                                local success, err = pcall(function()
+
+                                    UsePlanterCart:InvokeServer(
+                                        vector.create(
+                                            voxel.X,
+                                            voxel.Y,
+                                            voxel.Z
                                         )
-                                    end)
+                                    )
+
                                 end)
 
-                                task.wait(0.1)
+                                if not success then
+                                    warn("[AutoPlanter Error]", err)
+                                end
+
+                                -- delay agar tidak spam server
+                                task.wait(vars.PlanterDelay)
+
                             end
 
                         end
 
                     end
 
-                    task.wait(vars.PlanterDelay)
+                    -- jeda sebelum scan ulang
+                    task.wait(0.2)
 
                 else
                     repeat task.wait(0.5) until vars.AutoPlanter
                 end
+
             end
+
         end)()
 
         print("[Auto Planter] Sistem aktif")
+
     end
 }
