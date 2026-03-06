@@ -47,7 +47,6 @@ return {
             Default = vars.AutoPickup,
             Callback = function(v)
                 vars.AutoPickup = v
-                print("[Auto Pickup] Selected:", v and "ON" or "OFF")
             end
         })
 
@@ -57,31 +56,21 @@ return {
             Default = vars.PickupAll,
             Callback = function(v)
                 vars.PickupAll = v
-                print("[Auto Pickup] All Items:", v and "ON" or "OFF")
             end
         })
 
-        -- DROPDOWN ITEM
-        task.spawn(function()
-            task.wait(0.5)
-
-            if Group.AddDropdown then
-                local dropdown = Group:AddDropdown("DropdownPickupTarget", {
-                    Text = "Select Item",
-                    Values = pickupItems,
-                    Default = vars.PickupTarget,
-                    Multi = false,
-                    Callback = function(v)
-                        vars.PickupTarget = v
-                        print("[Auto Pickup] Target:", v)
-                    end
-                })
-
-                dropdown:SetValue(vars.PickupTarget)
-            else
-                warn("[Auto Pickup] AddDropdown tidak tersedia!")
+        -- DROPDOWN
+        local dropdown = Group:AddDropdown("DropdownPickupTarget", {
+            Text = "Select Item",
+            Values = pickupItems,
+            Default = vars.PickupTarget,
+            Multi = false,
+            Callback = function(v)
+                vars.PickupTarget = v
             end
-        end)
+        })
+
+        dropdown:SetValue(vars.PickupTarget)
 
         -- SLIDER DELAY
         Group:AddSlider("SliderPickupDelay", {
@@ -89,7 +78,7 @@ return {
             Default = vars.PickupDelay,
             Min = 0.1,
             Max = 2,
-            Rounding = 1,
+            Rounding = 2,
             Callback = function(v)
                 vars.PickupDelay = v
             end
@@ -99,50 +88,61 @@ return {
         local ReplicatedStorage = game:GetService("ReplicatedStorage")
         local PickupRemote = ReplicatedStorage:WaitForChild("Relay"):WaitForChild("Server"):WaitForChild("PickupItem")
 
-        -- SCAN ITEM DI MAP
+        local LoadedBlocks = workspace:WaitForChild("LoadedBlocks")
+
+        -- SCAN ITEM
         local function scanAndPickup()
-            local dropped = workspace:FindFirstChild("Dropped")
-            if not dropped then return end
 
-            for _, item in ipairs(dropped:GetChildren()) do
+            for _, block in ipairs(LoadedBlocks:GetChildren()) do
 
-                local itemName = item.Name
-                local pos = item:GetAttribute("VoxelPosition")
+                local name = block.Name
+                local voxel = block:GetAttribute("VoxelPosition")
 
-                if pos then
+                if voxel then
 
-                    if vars.PickupAll and table.find(pickupItems, itemName) then
+                    if vars.PickupAll and table.find(pickupItems, name) then
 
                         pcall(function()
-                            PickupRemote:InvokeServer(itemName, vector.create(pos.X, pos.Y, pos.Z))
+                            PickupRemote:InvokeServer(
+                                name,
+                                vector.create(voxel.X, voxel.Y, voxel.Z)
+                            )
                         end)
 
-                    elseif vars.AutoPickup and itemName == vars.PickupTarget then
+                    elseif vars.AutoPickup and name == vars.PickupTarget then
 
                         pcall(function()
-                            PickupRemote:InvokeServer(itemName, vector.create(pos.X, pos.Y, pos.Z))
+                            PickupRemote:InvokeServer(
+                                name,
+                                vector.create(voxel.X, voxel.Y, voxel.Z)
+                            )
                         end)
 
                     end
+
                 end
+
             end
+
         end
 
-        -- LOOP SYSTEM
-        coroutine.wrap(function()
+        -- LOOP
+        task.spawn(function()
+
             while true do
 
                 if vars.AutoPickup or vars.PickupAll then
-                    pcall(scanAndPickup)
+                    scanAndPickup()
                     task.wait(vars.PickupDelay)
                 else
                     task.wait(0.5)
                 end
 
             end
-        end)()
 
-        print("[Auto Pickup] System Loaded")
+        end)
+
+        print("[Auto Pickup] Loaded")
 
     end
 }
