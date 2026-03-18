@@ -30,6 +30,7 @@ return {
             "Birch Sticks",
             "Blue Mushroom Cluster",
             "Red Mushroom Cluster",
+            "Cave Mushroom Cluster",
             "Purple Mushroom Cluster",
             "Wild Blueberry",
             "Wild Strawberry",
