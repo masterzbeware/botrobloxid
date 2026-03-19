@@ -22,7 +22,7 @@ return {
         -- =========================
         vars.AutoCrop   = vars.AutoCrop or false
         vars.CropDelay  = vars.CropDelay or 0.3
-        vars.CropTarget = vars.CropTarget or "Cacao"
+        vars.CropTarget = vars.CropTarget or {"Cacao"}
         _G.BotVars = vars
 
         -- =========================
@@ -51,11 +51,15 @@ return {
                     Text = "Pilih Crop",
                     Values = allowedCrops,
                     Default = vars.CropTarget,
-                    Multi = false,
-                    Callback = function(v)
-                        vars.CropTarget = v
-                        print("[Auto Crop] Target diubah ke:", v)
-                    end
+                    Multi = true,
+Callback = function(v)
+    vars.CropTarget = v
+
+    print("[Auto Crop] Target dipilih:")
+    for _, crop in pairs(v) do
+        print("-", crop)
+    end
+end
                 })
                 dropdown:SetValue(vars.CropTarget)
             else
@@ -84,6 +88,15 @@ return {
         local LoadedBlocks = workspace:WaitForChild("LoadedBlocks")
         local HarvestCrop = ReplicatedStorage:WaitForChild("Relay"):WaitForChild("Blocks"):WaitForChild("HarvestCrop")
 
+        local function isTargetCrop(name)
+    for _, crop in pairs(vars.CropTarget) do
+        if name == crop then
+            return true
+        end
+    end
+    return false
+end
+
         -- =========================
         -- AUTO CROP LOOP
         -- =========================
@@ -91,7 +104,7 @@ return {
             while true do
                 if vars.AutoCrop then
                     for _, block in ipairs(LoadedBlocks:GetChildren()) do
-                        if block:IsA("MeshPart") and block.Name == vars.CropTarget then
+                        if block:IsA("MeshPart") and isTargetCrop(block.Name) then
                             local voxel = block:GetAttribute("VoxelPosition")
                             if voxel then
                                 task.spawn(function()
