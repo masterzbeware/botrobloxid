@@ -139,20 +139,36 @@ end
 
                     if isTargetItem(foundID) then
 
-                        local ok, err = pcall(function()
-                            DropItem:InvokeServer(
-                                i,
-                                99,
-                                char.PrimaryPart.CFrame.LookVector,
-                                i
-                            )
-                        end)
+local ok, err = pcall(function()
+    DropItem:InvokeServer(
+        i,
+        99,
+        char.PrimaryPart.CFrame.LookVector,
+        i
+    )
+end)
 
-                        if ok then
-                            print("[AutoDrop] Dropped:", table.concat(vars.DropItem, ", "), "slot", i)
-                        else
-                            warn("[AutoDrop] Error:", err)
-                        end
+if ok then
+    local selected = {}
+    for name, state in pairs(vars.DropItem) do
+        if state then
+            table.insert(selected, name)
+        end
+    end
+
+    print("[AutoDrop] Dropped:", table.concat(selected, ", "), "slot", i)
+else
+    warn("[AutoDrop] Error:", err)
+end
+
+local selected = {}
+for name, state in pairs(vars.DropItem) do
+    if state then
+        table.insert(selected, name)
+    end
+end
+
+print("[AutoDrop] Dropped:", table.concat(selected, ", "), "slot", i)
 
                         task.wait(0.3)
                     end

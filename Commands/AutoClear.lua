@@ -53,9 +53,9 @@ return {
                     pcall(function()
                         CleanupItems:InvokeServer()
                     end)
-                    task.wait(5) -- delay biar ga spam
+                    task.wait(8) -- delay biar ga spam
                 else
-                    repeat task.wait(0.5) until vars.AutoClear
+                    repeat task.wait(1) until vars.AutoClear
                 end
             end
         end)()
