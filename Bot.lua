@@ -31,7 +31,7 @@ local player = _G.BotVars.LocalPlayer
 -- =========================
 local MainWindow = Library:CreateWindow({
     Title = "MasterZ HUB",
-    Footer = "1.0.1",
+    Footer = "1.0.2",
     Icon = 0,
 })
 
@@ -53,6 +53,7 @@ local commandFiles = {
     "AutoWater.lua",
     "AutoMine.lua",
     "AutoPickup.lua",
+    "AutoClear.lua",
     "AutoBucket.lua" -- FIX: nama file sudah benar
 }
 
@@ -123,6 +124,7 @@ jalankan("autoplant")
 jalankan("autowater")
 jalankan("autodrop")
 jalankan("automine")
+jalankan("autoclear")
 jalankan("inventory")
 jalankan("autobucket") -- FIX: nama module benar
 
