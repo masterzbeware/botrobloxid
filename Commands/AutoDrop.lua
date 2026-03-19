@@ -63,8 +63,9 @@ Callback = function(v)
     vars.DropItem = v
 
     print("[AutoDrop] Selected:")
-    for _, item in pairs(v) do
-        print("-", item)
+for name, state in pairs(v) do
+    if state then
+        print("-", name)
     end
 end
         })
@@ -107,11 +108,12 @@ end
 local function isTargetItem(id)
     if not id then return false end
 
-    for _, itemName in pairs(vars.DropItem) do
-        if tostring(ItemIDs[itemName]) == tostring(id) then
+    for itemName, enabled in pairs(vars.DropItem) do
+        if enabled and tostring(ItemIDs[itemName]) == tostring(id) then
             return true
         end
     end
+
     return false
 end
 
