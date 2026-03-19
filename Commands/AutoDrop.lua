@@ -8,7 +8,7 @@ return {
         local vars = _G.BotVars or {}
         vars.AutoDrop      = vars.AutoDrop or false
         vars.DropDelay     = vars.DropDelay or 0.5
-        vars.DropItem      = vars.DropItem or "Cacao"
+        vars.DropItem = vars.DropItem or {"Cacao"}
         vars._AutoDropRun  = vars._AutoDropRun or false
         _G.BotVars = vars
 
@@ -42,7 +42,6 @@ return {
         local ItemIDs = {
             ["Cacao"] = 336,
             ["Cacao Seeds"] = 242,
-            ["Cacao Seeds"] = 242,
             ["Red Mushroom"] = 2011,
             ["Blue Mushroom"] = 2009
         }
@@ -57,13 +56,17 @@ return {
         -- =========================
         Group:AddDropdown("DropdownDropItem", {
             Values = dropdownValues,
-            Default = 1,
-            Multi = false,
+            Default = vars.DropItem,
+            Multi = true,
             Text = "Item",
-            Callback = function(v)
-                vars.DropItem = v
-                print("[AutoDrop] Selected:", v)
-            end
+Callback = function(v)
+    vars.DropItem = v
+
+    print("[AutoDrop] Selected:")
+    for _, item in pairs(v) do
+        print("-", item)
+    end
+end
         })
 
         -- =========================
@@ -101,8 +104,14 @@ return {
         -- =========================
         local function ScanAndDrop()
 
-            local targetID = ItemIDs[vars.DropItem]
-            if not targetID then return end
+local function isTargetItem(id)
+    for _, itemName in pairs(vars.DropItem) do
+        if ItemIDs[itemName] == id then
+            return true
+        end
+    end
+    return false
+end
 
             for i = 1,36 do
 
@@ -123,7 +132,7 @@ return {
                         end
                     end
 
-                    if foundID == targetID then
+                    if isTargetItem(foundID) then
 
                         local ok, err = pcall(function()
                             DropItem:InvokeServer(
@@ -135,7 +144,7 @@ return {
                         end)
 
                         if ok then
-                            print("[AutoDrop] Dropped", vars.DropItem, "slot", i)
+                            print("[AutoDrop] Dropped:", table.concat(vars.DropItem, ", "), "slot", i)
                         else
                             warn("[AutoDrop] Error:", err)
                         end
