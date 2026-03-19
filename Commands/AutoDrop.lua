@@ -54,21 +54,22 @@ return {
         -- =========================
         -- DROPDOWN
         -- =========================
-        Group:AddDropdown("DropdownDropItem", {
-            Values = dropdownValues,
-            Default = vars.DropItem,
-            Multi = true,
-            Text = "Item",
-Callback = function(v)
-    vars.DropItem = v
+Group:AddDropdown("DropdownDropItem", {
+    Values = dropdownValues,
+    Default = vars.DropItem,
+    Multi = true,
+    Text = "Item",
+    Callback = function(v)
+        vars.DropItem = v
 
-    print("[AutoDrop] Selected:")
-for name, state in pairs(v) do
-    if state then
-        print("-", name)
-    end
-end
-        })
+        print("[AutoDrop] Selected:")
+        for name, state in pairs(v) do
+            if state then
+                print("-", name)
+            end
+        end
+    end -- ← INI YANG KAMU KURANGIN
+})
 
         -- =========================
         -- SLIDER DELAY
