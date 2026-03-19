@@ -42,6 +42,7 @@ return {
         local ItemIDs = {
             ["Cacao"] = 336,
             ["Cacao Seeds"] = 242,
+            ["Cacao Seeds"] = 242,
             ["Red Mushroom"] = 2011,
             ["Blue Mushroom"] = 2009
         }
