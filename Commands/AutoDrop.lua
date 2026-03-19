@@ -105,8 +105,10 @@ end
         local function ScanAndDrop()
 
 local function isTargetItem(id)
+    if not id then return false end
+
     for _, itemName in pairs(vars.DropItem) do
-        if ItemIDs[itemName] == id then
+        if tostring(ItemIDs[itemName]) == tostring(id) then
             return true
         end
     end
