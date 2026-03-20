@@ -50,6 +50,7 @@ local commandFiles = {
     "AutoPlant.lua",
     "AutoDrop.lua",
     "Inventory.lua",
+    "AutoFishing.lua",
     "AutoWater.lua",
     "AutoMine.lua",
     "AutoPickup.lua",
