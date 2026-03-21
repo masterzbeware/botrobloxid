@@ -1,7 +1,8 @@
--- AutoFeed.lua (AUTO HAY FEED - 9 HAYSTACK PER TROUGH)
+-- AutoFeed.lua (AUTO HAY FEED - FIXED REAL COUNT SYSTEM)
 
 return {
     Execute = function(tab)
+
         local vars = _G.BotVars or {}
         local Tabs = vars.Tabs or {}
 
@@ -41,7 +42,7 @@ return {
 
         Group:AddSlider("FeedDelay", {
             Text = "Delay",
-            Min = 0.3,
+            Min = 0.2,
             Max = 3,
             Default = vars.FeedDelay,
             Callback = function(v)
@@ -54,6 +55,7 @@ return {
         -- =========================
         local Players = game:GetService("Players")
         local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
         local player = Players.LocalPlayer
         local LoadedBlocks = workspace:WaitForChild("LoadedBlocks")
 
@@ -74,20 +76,27 @@ return {
 
         local function TeleportToModel(model)
             if not vars.AutoTeleport then return end
+
             local char = player.Character
             local hrp = char and char:FindFirstChild("HumanoidRootPart")
-            if not hrp or not model then return end
+            if not hrp then return end
 
             hrp.CFrame = GetModelCFrame(model) + Vector3.new(0, 5, 0)
         end
 
+        -- Hitung HayStack REAL (recount setiap kali)
         local function CountHayStack(model)
             local count = 0
+
             for _, obj in ipairs(model:GetDescendants()) do
                 if obj:IsA("MeshPart") and obj.Name == "HayStack" then
-                    count += 1
+                    -- hanya hitung yang benar-benar aktif
+                    if obj.Parent and obj.Transparency < 1 then
+                        count += 1
+                    end
                 end
             end
+
             return count
         end
 
@@ -95,10 +104,14 @@ return {
         -- MAIN LOOP
         -- =========================
         task.spawn(function()
+
             while true do
+
                 if vars.AutoFeed then
+
                     local char = player.Character
                     local hrp = char and char:FindFirstChild("HumanoidRootPart")
+
                     if not hrp then
                         task.wait(0.5)
                         continue
@@ -113,7 +126,7 @@ return {
                         end
                     end
 
-                    -- urutkan berdasarkan jarak
+                    -- urutkan berdasarkan jarak terdekat
                     table.sort(targets, function(a, b)
                         local pa = GetModelCFrame(a).Position
                         local pb = GetModelCFrame(b).Position
@@ -121,35 +134,46 @@ return {
                                (pb - hrp.Position).Magnitude
                     end)
 
+                    -- proses satu per satu trough
                     for _, trough in ipairs(targets) do
+
+                        if not vars.AutoFeed then break end
+
+                        local voxel = trough:GetAttribute("VoxelPosition")
+                        if not voxel then continue end
+
+                        -- hitung kondisi real sebelum isi
                         local hayCount = CountHayStack(trough)
 
-                        -- jika sudah 9 haystack, skip
+                        -- jika sudah 9, skip ke trough berikutnya
                         if hayCount >= 9 then
                             continue
                         end
 
-                        -- teleport ke trough
+                        -- teleport jika aktif
                         TeleportToModel(trough)
-                        task.wait(0.4)
+                        task.wait(0.3)
 
-                        local voxel = trough:GetAttribute("VoxelPosition")
-                        if voxel then
-                            -- isi sampai 9
-                            while hayCount < 9 and vars.AutoFeed do
-                                pcall(function()
-                                    InsertItem:InvokeServer(
-                                        vector.create(
-                                            voxel.X,
-                                            voxel.Y,
-                                            voxel.Z
-                                        )
-                                    )
-                                end)
+                        -- isi sampai benar-benar 9 (real count)
+                        while vars.AutoFeed do
 
-                                hayCount += 1
-                                task.wait(vars.FeedDelay)
+                            hayCount = CountHayStack(trough)
+
+                            if hayCount >= 9 then
+                                break
                             end
+
+                            pcall(function()
+                                InsertItem:InvokeServer(
+                                    vector.create(
+                                        voxel.X,
+                                        voxel.Y,
+                                        voxel.Z
+                                    )
+                                )
+                            end)
+
+                            task.wait(vars.FeedDelay)
                         end
                     end
                 end
@@ -158,6 +182,6 @@ return {
             end
         end)
 
-        print("[AutoFeed] Loaded - 9 HayStack System Active")
+        print("[AutoFeed] Loaded - Real Count System Active")
     end
 }
