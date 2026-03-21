@@ -45,23 +45,34 @@ return {
             :WaitForChild("Server")
             :WaitForChild("CastBobber")
 
+        -- Helper: ambil fish
+        local function getFish()
+            return workspace:FindFirstChild("Fish")
+        end
+
         -- Fishing Loop
         task.spawn(function()
             while true do
 
                 if vars.AutoFishing then
 
-                    -- CAST
-                    pcall(function()
-                        CastRemote:InvokeServer(false)
-                    end)
+                    local fish = getFish()
 
-                    task.wait(2)
+                    if fish then
+                        -- CAST (pakai args dari remotespy)
+                        pcall(function()
+                            CastRemote:InvokeServer(false, nil, true, fish)
+                        end)
 
-                    -- REEL
-                    pcall(function()
-                        CastRemote:InvokeServer(true)
-                    end)
+                        task.wait(2)
+
+                        -- REEL / CATCH
+                        pcall(function()
+                            CastRemote:InvokeServer(true)
+                        end)
+                    else
+                        warn("[Auto Fishing] Fish tidak ditemukan")
+                    end
 
                     task.wait(vars.FishingDelay)
 
