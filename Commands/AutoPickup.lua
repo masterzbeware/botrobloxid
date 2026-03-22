@@ -39,6 +39,7 @@ return {
             "Scallop",
             "Oyster",
             "Wild Cactus",
+            "Large Yellow Flower"
             "Sand Dollar",
             "Fossil"
         }
