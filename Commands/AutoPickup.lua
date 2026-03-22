@@ -35,6 +35,7 @@ return {
             "Wild Blueberry",
             "Wild Strawberry",
             "Yellow Flowers",
+            "Egg",
             "Conch",
             "Scallop",
             "Oyster",
