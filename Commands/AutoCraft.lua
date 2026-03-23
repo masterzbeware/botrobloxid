@@ -14,6 +14,25 @@ return {
         _G.BotVars = vars
 
         -- =========================
+        -- SERVICES
+        -- =========================
+        local Players = game:GetService("Players")
+        local ReplicatedStorage = game:GetService("ReplicatedStorage")
+        local LoadedBlocks = workspace:WaitForChild("LoadedBlocks")
+
+        local LocalPlayer = Players.LocalPlayer
+
+        local CraftRemote = ReplicatedStorage
+            :WaitForChild("Relay")
+            :WaitForChild("Inventory")
+            :WaitForChild("CraftItem")
+
+        local HarvestRemote = ReplicatedStorage
+            :WaitForChild("Relay")
+            :WaitForChild("Blocks")
+            :WaitForChild("HarvestCrop")
+
+        -- =========================
         -- TAB & UI
         -- =========================
         local Tabs = vars.Tabs or {}
@@ -31,7 +50,7 @@ return {
         -- TOGGLES
         -- =========================
         Group:AddToggle("ToggleAutoCraft", {
-            Text = "Auto Craft",
+            Text = "Auto Craft (Sequential)",
             Default = vars.AutoCraft,
             Callback = function(v)
                 vars.AutoCraft = v
@@ -44,25 +63,19 @@ return {
             Default = vars.AutoHarvestBaker,
             Callback = function(v)
                 vars.AutoHarvestBaker = v
-                print("[AutoHarvestBaker] Toggle:", v and "ON" or "OFF")
             end
         })
 
         -- =========================
-        -- ITEM LIST
+        -- DROPDOWN ITEM
         -- =========================
-        local craftableItems = {
-            "Chocolate Bar"
-        }
-
         Group:AddDropdown("DropdownCraftItem", {
             Text = "Pilih Item Craft",
-            Values = craftableItems,
+            Values = {"Chocolate Bar"},
             Default = vars.SelectedItem,
             Multi = false,
             Callback = function(v)
                 vars.SelectedItem = v
-                print("[AutoCraft] Item:", v)
             end
         })
 
@@ -81,105 +94,100 @@ return {
         })
 
         -- =========================
-        -- SERVICES
+        -- TELEPORT FUNCTION
         -- =========================
-        local ReplicatedStorage = game:GetService("ReplicatedStorage")
-        local LoadedBlocks = workspace:WaitForChild("LoadedBlocks")
+        local function TeleportToOven(oven)
+            local char = LocalPlayer.Character
+            if not char then return end
 
-        local CraftRemote = ReplicatedStorage
-            :WaitForChild("Relay")
-            :WaitForChild("Inventory")
-            :WaitForChild("CraftItem")
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            local root = oven:FindFirstChild("Root")
 
-        local HarvestRemote = ReplicatedStorage
-            :WaitForChild("Relay")
-            :WaitForChild("Blocks")
-            :WaitForChild("HarvestCrop")
-
-        -- =========================
-        -- GET IDLE OVENS
-        -- =========================
-        local function GetIdleOvens()
-            local ovens = {}
-            local seen = {}
-
-            for _, obj in ipairs(LoadedBlocks:GetDescendants()) do
-                if obj.Name == "Baker's Oven" then
-                    
-                    -- cek apakah sedang masak
-                    local isBusy = obj:FindFirstChild("baked", true)
-
-                    if not isBusy then
-                        local voxel = obj:GetAttribute("VoxelPosition")
-
-                        if not voxel and obj.Parent then
-                            voxel = obj.Parent:GetAttribute("VoxelPosition")
-                        end
-
-                        if voxel then
-                            local key = tostring(voxel)
-                            if not seen[key] then
-                                seen[key] = true
-                                table.insert(ovens, voxel)
-                            end
-                        end
-                    end
-                end
+            if hrp and root then
+                hrp.CFrame = root.CFrame + Vector3.new(0, 3, 0)
             end
-
-            return ovens
         end
 
         -- =========================
-        -- AUTO CRAFT
+        -- HIGHLIGHT SYSTEM
         -- =========================
-        local function ScanAndCraft()
-            local ovens = GetIdleOvens()
+        local currentHighlight
 
-            for _, pos in ipairs(ovens) do
+        local function HighlightOven(oven)
+            if currentHighlight then
+                currentHighlight:Destroy()
+                currentHighlight = nil
+            end
+
+            local hl = Instance.new("Highlight")
+            hl.FillColor = Color3.fromRGB(255, 170, 0)
+            hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+            hl.FillTransparency = 0.5
+            hl.OutlineTransparency = 0
+            hl.Parent = oven
+
+            currentHighlight = hl
+        end
+
+        local function RemoveHighlight()
+            if currentHighlight then
+                currentHighlight:Destroy()
+                currentHighlight = nil
+            end
+        end
+
+        -- =========================
+        -- SEQUENTIAL CRAFT SYSTEM
+        -- =========================
+        local function SequentialCraft()
+            for _, oven in ipairs(LoadedBlocks:GetDescendants()) do
                 if not vars.AutoCraft then break end
+                if oven.Name == "Baker's Oven" then
 
-                pcall(function()
-                    CraftRemote:InvokeServer(
-                        "Baker's Oven",
-                        vars.SelectedItem,
-                        pos
-                    )
-                end)
+                    local voxel = oven:GetAttribute("VoxelPosition")
+                    if not voxel and oven.Parent then
+                        voxel = oven.Parent:GetAttribute("VoxelPosition")
+                    end
 
-                print("[AutoCraft] Craft:", vars.SelectedItem, pos)
-                task.wait(vars.CraftDelay)
-            end
-        end
+                    if voxel then
 
-        -- =========================
-        -- AUTO HARVEST BAKER
-        -- =========================
-        local function HarvestBakerOvens()
-            for _, obj in ipairs(LoadedBlocks:GetDescendants()) do
-                if obj.Name == "Baker's Oven" then
+                        -- TELEPORT
+                        TeleportToOven(oven)
+                        task.wait(0.5)
 
-                    local isCooking = obj:FindFirstChild("baked", true)
-                    local prompt = obj:FindFirstChild("ProximityPrompt", true)
+                        -- HIGHLIGHT
+                        HighlightOven(oven)
 
-                    -- harvest hanya jika selesai masak
-                    if not isCooking and prompt and prompt.Enabled then
-                        
-                        local voxel = obj:GetAttribute("VoxelPosition")
-                        if not voxel and obj.Parent then
-                            voxel = obj.Parent:GetAttribute("VoxelPosition")
-                        end
+                        -- CRAFT
+                        pcall(function()
+                            CraftRemote:InvokeServer(
+                                "Baker's Oven",
+                                vars.SelectedItem,
+                                voxel
+                            )
+                        end)
 
-                        if voxel then
+                        print("[Sequential] Craft:", voxel)
+
+                        -- TUNGGU SAMPAI SELESAI
+                        repeat
+                            task.wait(1)
+                        until not oven:FindFirstChild("baked", true) or not vars.AutoCraft
+
+                        -- HARVEST
+                        if vars.AutoHarvestBaker and vars.AutoCraft then
                             pcall(function()
                                 HarvestRemote:InvokeServer(
                                     vector.create(voxel.X, voxel.Y, voxel.Z)
                                 )
                             end)
-
-                            print("[AutoHarvestBaker] Harvest:", voxel)
-                            task.wait(0.2)
+                            print("[Sequential] Harvest:", voxel)
                         end
+
+                        task.wait(vars.CraftDelay)
+
+                        -- HAPUS HIGHLIGHT SEBELUM PINDAH
+                        RemoveHighlight()
                     end
                 end
             end
@@ -189,7 +197,6 @@ return {
         -- MAIN LOOP
         -- =========================
         if vars._AutoCraftRun then
-            warn("[AutoCraft] Loop sudah berjalan")
             return
         end
 
@@ -197,19 +204,16 @@ return {
 
         task.spawn(function()
             while true do
-
-                if vars.AutoHarvestBaker then
-                    HarvestBakerOvens()
-                end
-
                 if vars.AutoCraft then
-                    ScanAndCraft()
+                    SequentialCraft()
+                else
+                    RemoveHighlight()
+                    task.wait(0.5)
                 end
-
                 task.wait(0.2)
             end
         end)
 
-        print("[AutoCraft] System Loaded (Craft + Harvest)")
+        print("[AutoCraft] Sequential System Loaded")
     end
 }
