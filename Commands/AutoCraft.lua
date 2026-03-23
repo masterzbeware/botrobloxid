@@ -6,10 +6,11 @@ return {
         -- GLOBAL VARS
         -- =========================
         local vars = _G.BotVars or {}
-        vars.AutoCraft      = vars.AutoCraft or false
-        vars.CraftDelay     = vars.CraftDelay or 1.5
-        vars.SelectedItem   = vars.SelectedItem or "Chocolate Bar"
-        vars._AutoCraftRun  = vars._AutoCraftRun or false
+        vars.AutoCraft        = vars.AutoCraft or false
+        vars.AutoHarvestBaker = vars.AutoHarvestBaker or false
+        vars.CraftDelay       = vars.CraftDelay or 1.5
+        vars.SelectedItem     = vars.SelectedItem or "Chocolate Bar"
+        vars._AutoCraftRun    = vars._AutoCraftRun or false
         _G.BotVars = vars
 
         -- =========================
@@ -27,7 +28,7 @@ return {
             or CraftTab:AddLeftGroupbox("Auto Craft")
 
         -- =========================
-        -- TOGGLE
+        -- TOGGLES
         -- =========================
         Group:AddToggle("ToggleAutoCraft", {
             Text = "Auto Craft",
@@ -38,6 +39,15 @@ return {
             end
         })
 
+        Group:AddToggle("ToggleAutoHarvestBaker", {
+            Text = "Auto Harvest Baker",
+            Default = vars.AutoHarvestBaker,
+            Callback = function(v)
+                vars.AutoHarvestBaker = v
+                print("[AutoHarvestBaker] Toggle:", v and "ON" or "OFF")
+            end
+        })
+
         -- =========================
         -- ITEM LIST
         -- =========================
@@ -45,9 +55,6 @@ return {
             "Chocolate Bar"
         }
 
-        -- =========================
-        -- DROPDOWN
-        -- =========================
         Group:AddDropdown("DropdownCraftItem", {
             Text = "Pilih Item Craft",
             Values = craftableItems,
@@ -84,78 +91,102 @@ return {
             :WaitForChild("Inventory")
             :WaitForChild("CraftItem")
 
+        local HarvestRemote = ReplicatedStorage
+            :WaitForChild("Relay")
+            :WaitForChild("Blocks")
+            :WaitForChild("HarvestCrop")
+
         -- =========================
-        -- FUNCTION SCAN OVEN
+        -- GET IDLE OVENS
         -- =========================
-local function GetOvenPositions()
-    local ovens = {}
-    local seen = {}
+        local function GetIdleOvens()
+            local ovens = {}
+            local seen = {}
 
-    for _, obj in ipairs(LoadedBlocks:GetDescendants()) do
-        if obj.Name == "Baker's Oven" then
-            local voxel = obj:GetAttribute("VoxelPosition")
+            for _, obj in ipairs(LoadedBlocks:GetDescendants()) do
+                if obj.Name == "Baker's Oven" then
+                    
+                    -- cek apakah sedang masak
+                    local isBusy = obj:FindFirstChild("baked", true)
 
-            if not voxel and obj.Parent then
-                voxel = obj.Parent:GetAttribute("VoxelPosition")
-            end
+                    if not isBusy then
+                        local voxel = obj:GetAttribute("VoxelPosition")
 
-            if voxel then
-                local key = tostring(voxel)
-                if not seen[key] then
-                    seen[key] = true
-                    table.insert(ovens, voxel)
+                        if not voxel and obj.Parent then
+                            voxel = obj.Parent:GetAttribute("VoxelPosition")
+                        end
+
+                        if voxel then
+                            local key = tostring(voxel)
+                            if not seen[key] then
+                                seen[key] = true
+                                table.insert(ovens, voxel)
+                            end
+                        end
+                    end
                 end
-            else
-                warn("[AutoCraft] Oven tanpa VoxelPosition:", obj:GetFullName())
+            end
+
+            return ovens
+        end
+
+        -- =========================
+        -- AUTO CRAFT
+        -- =========================
+        local function ScanAndCraft()
+            local ovens = GetIdleOvens()
+
+            for _, pos in ipairs(ovens) do
+                if not vars.AutoCraft then break end
+
+                pcall(function()
+                    CraftRemote:InvokeServer(
+                        "Baker's Oven",
+                        vars.SelectedItem,
+                        pos
+                    )
+                end)
+
+                print("[AutoCraft] Craft:", vars.SelectedItem, pos)
+                task.wait(vars.CraftDelay)
             end
         end
-    end
-
-    return ovens
-end
 
         -- =========================
-        -- CRAFT FUNCTION
+        -- AUTO HARVEST BAKER
         -- =========================
-local function ScanAndCraft()
-    local ovens = GetOvenPositions()
+        local function HarvestBakerOvens()
+            for _, obj in ipairs(LoadedBlocks:GetDescendants()) do
+                if obj.Name == "Baker's Oven" then
 
-    if #ovens == 0 then
-        warn("[AutoCraft] Tidak ada Baker's Oven!")
-        return
-    end
+                    local isCooking = obj:FindFirstChild("baked", true)
+                    local prompt = obj:FindFirstChild("ProximityPrompt", true)
 
-    print("[AutoCraft] Oven ditemukan:", #ovens)
+                    -- harvest hanya jika selesai masak
+                    if not isCooking and prompt and prompt.Enabled then
+                        
+                        local voxel = obj:GetAttribute("VoxelPosition")
+                        if not voxel and obj.Parent then
+                            voxel = obj.Parent:GetAttribute("VoxelPosition")
+                        end
 
-    for i, pos in ipairs(ovens) do
-        if not vars.AutoCraft then
-            break
+                        if voxel then
+                            pcall(function()
+                                HarvestRemote:InvokeServer(
+                                    vector.create(voxel.X, voxel.Y, voxel.Z)
+                                )
+                            end)
+
+                            print("[AutoHarvestBaker] Harvest:", voxel)
+                            task.wait(0.2)
+                        end
+                    end
+                end
+            end
         end
 
-        local ok, err = pcall(function()
-            CraftRemote:InvokeServer(
-                "Baker's Oven",
-                vars.SelectedItem,
-                pos
-            )
-        end)
-
-        if ok then
-            print(("[AutoCraft] Craft %s | Oven %d | Pos %s"):format(
-                vars.SelectedItem,
-                i,
-                tostring(pos)
-            ))
-        else
-            warn("[AutoCraft] Gagal craft:", err)
-        end
-
-        task.wait(vars.CraftDelay)
-    end
-end
-
         -- =========================
-        -- AUTO LOOP
+        -- MAIN LOOP
         -- =========================
         if vars._AutoCraftRun then
             warn("[AutoCraft] Loop sudah berjalan")
@@ -164,17 +195,21 @@ end
 
         vars._AutoCraftRun = true
 
-task.spawn(function()
-    while true do
-        if vars.AutoCraft then
-            ScanAndCraft()
-            task.wait(0.2)
-        else
-            task.wait(0.2)
-        end
-    end
-end)
+        task.spawn(function()
+            while true do
 
-        print("[AutoCraft] System Loaded (Fixed)")
+                if vars.AutoHarvestBaker then
+                    HarvestBakerOvens()
+                end
+
+                if vars.AutoCraft then
+                    ScanAndCraft()
+                end
+
+                task.wait(0.2)
+            end
+        end)
+
+        print("[AutoCraft] System Loaded (Craft + Harvest)")
     end
 }
