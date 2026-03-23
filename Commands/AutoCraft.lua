@@ -85,121 +85,43 @@ return {
 
         -- =========================
         -- LIST POSITION FIXED
-        -- URUTAN: BARIS 1 -> BARIS 14
+        -- DIRAPIHKAN AGAR TIDAK KEPANJANGAN
         -- =========================
-        local ovenPositions = {
-            -- Baris 1
-            Vector3.new(-14, 1, -1), Vector3.new(-14, 1, 0), Vector3.new(-14, 1, 1),
-            Vector3.new(-14, 1, 2), Vector3.new(-14, 1, 3), Vector3.new(-14, 1, 4),
-            Vector3.new(-14, 1, 5), Vector3.new(-14, 1, 6), Vector3.new(-14, 1, 7),
-            Vector3.new(-14, 1, 8), Vector3.new(-14, 1, 9), Vector3.new(-14, 1, 10),
-            Vector3.new(-14, 1, 11), Vector3.new(-14, 1, 12),
+        local ovenPositions = {}
 
-            -- Baris 2
-            Vector3.new(-15, 1, -1), Vector3.new(-15, 1, 0), Vector3.new(-15, 1, 1),
-            Vector3.new(-15, 1, 2), Vector3.new(-15, 1, 3), Vector3.new(-15, 1, 4),
-            Vector3.new(-15, 1, 5), Vector3.new(-15, 1, 6), Vector3.new(-15, 1, 7),
-            Vector3.new(-15, 1, 8), Vector3.new(-15, 1, 9), Vector3.new(-15, 1, 10),
-            Vector3.new(-15, 1, 11), Vector3.new(-15, 1, 12),
+        local function addRange(x, y, zStart, zEnd)
+            for z = zStart, zEnd do
+                table.insert(ovenPositions, Vector3.new(x, y, z))
+            end
+        end
 
-            -- Baris 3
-            Vector3.new(-16, 1, -1), Vector3.new(-16, 1, 0), Vector3.new(-16, 1, 1),
-            Vector3.new(-16, 1, 2), Vector3.new(-16, 1, 3), Vector3.new(-16, 1, 4),
-            Vector3.new(-16, 1, 5), Vector3.new(-16, 1, 6), Vector3.new(-16, 1, 7),
-            Vector3.new(-16, 1, 8), Vector3.new(-16, 1, 9), Vector3.new(-16, 1, 10),
-            Vector3.new(-16, 1, 11), Vector3.new(-16, 1, 12),
+        -- Baris 1 - 6 lama
+        addRange(-14, 1, -1, 12)
+        addRange(-15, 1, -1, 12)
+        addRange(-16, 1, -1, 12)
+        addRange(-17, 1, -1, 12)
+        addRange(-18, 1, -1, 12)
+        addRange(-19, 1, -1, 12)
 
-            -- Baris 4
-            Vector3.new(-17, 1, -1), Vector3.new(-17, 1, 0), Vector3.new(-17, 1, 1),
-            Vector3.new(-17, 1, 2), Vector3.new(-17, 1, 3), Vector3.new(-17, 1, 4),
-            Vector3.new(-17, 1, 5), Vector3.new(-17, 1, 6), Vector3.new(-17, 1, 7),
-            Vector3.new(-17, 1, 8), Vector3.new(-17, 1, 9), Vector3.new(-17, 1, 10),
-            Vector3.new(-17, 1, 11), Vector3.new(-17, 1, 12),
+        -- Tambahan list baru
+        addRange(-14, 1, 21, 36)
+        addRange(-15, 1, 21, 36)
+        addRange(-16, 1, 21, 36)
+        addRange(-17, 1, 21, 36)
+        addRange(-18, 1, 21, 36)
+        addRange(-19, 1, 21, 36)
 
-            -- Baris 5
-            Vector3.new(-18, 1, -1), Vector3.new(-18, 1, 0), Vector3.new(-18, 1, 1),
-            Vector3.new(-18, 1, 2), Vector3.new(-18, 1, 3), Vector3.new(-18, 1, 4),
-            Vector3.new(-18, 1, 5), Vector3.new(-18, 1, 6), Vector3.new(-18, 1, 7),
-            Vector3.new(-18, 1, 8), Vector3.new(-18, 1, 9), Vector3.new(-18, 1, 10),
-            Vector3.new(-18, 1, 11), Vector3.new(-18, 1, 12),
+        -- Baris 7
+        addRange(-20, 1, -1, 12)
 
-            -- Baris 6
-            Vector3.new(-19, 1, -1), Vector3.new(-19, 1, 0), Vector3.new(-19, 1, 1),
-            Vector3.new(-19, 1, 2), Vector3.new(-19, 1, 3), Vector3.new(-19, 1, 4),
-            Vector3.new(-19, 1, 5), Vector3.new(-19, 1, 6), Vector3.new(-19, 1, 7),
-            Vector3.new(-19, 1, 8), Vector3.new(-19, 1, 9), Vector3.new(-19, 1, 10),
-            Vector3.new(-19, 1, 11), Vector3.new(-19, 1, 12),
-
-            -- Baris 7
-            Vector3.new(-20, 1, -1), Vector3.new(-20, 1, 0), Vector3.new(-20, 1, 1),
-            Vector3.new(-20, 1, 2), Vector3.new(-20, 1, 3), Vector3.new(-20, 1, 4),
-            Vector3.new(-20, 1, 5), Vector3.new(-20, 1, 6), Vector3.new(-20, 1, 7),
-            Vector3.new(-20, 1, 8), Vector3.new(-20, 1, 9), Vector3.new(-20, 1, 10),
-            Vector3.new(-20, 1, 11), Vector3.new(-20, 1, 12),
-
-            -- Baris 8
-            Vector3.new(-5, 1, -1), Vector3.new(-5, 1, 0), Vector3.new(-5, 1, 1),
-            Vector3.new(-5, 1, 2), Vector3.new(-5, 1, 3), Vector3.new(-5, 1, 4),
-            Vector3.new(-5, 1, 5), Vector3.new(-5, 1, 6), Vector3.new(-5, 1, 7),
-            Vector3.new(-5, 1, 8), Vector3.new(-5, 1, 9), Vector3.new(-5, 1, 10),
-            Vector3.new(-5, 1, 11), Vector3.new(-5, 1, 12), Vector3.new(-5, 1, 13),
-            Vector3.new(-5, 1, 14), Vector3.new(-5, 1, 15), Vector3.new(-5, 1, 16),
-            Vector3.new(-5, 1, 17),
-
-            -- Baris 9
-            Vector3.new(-4, 1, -1), Vector3.new(-4, 1, 0), Vector3.new(-4, 1, 1),
-            Vector3.new(-4, 1, 2), Vector3.new(-4, 1, 3), Vector3.new(-4, 1, 4),
-            Vector3.new(-4, 1, 5), Vector3.new(-4, 1, 6), Vector3.new(-4, 1, 7),
-            Vector3.new(-4, 1, 8), Vector3.new(-4, 1, 9), Vector3.new(-4, 1, 10),
-            Vector3.new(-4, 1, 11), Vector3.new(-4, 1, 12), Vector3.new(-4, 1, 13),
-            Vector3.new(-4, 1, 14), Vector3.new(-4, 1, 15), Vector3.new(-4, 1, 16),
-            Vector3.new(-4, 1, 17),
-
-            -- Baris 10
-            Vector3.new(-3, 1, -1), Vector3.new(-3, 1, 0), Vector3.new(-3, 1, 1),
-            Vector3.new(-3, 1, 2), Vector3.new(-3, 1, 3), Vector3.new(-3, 1, 4),
-            Vector3.new(-3, 1, 5), Vector3.new(-3, 1, 6), Vector3.new(-3, 1, 7),
-            Vector3.new(-3, 1, 8), Vector3.new(-3, 1, 9), Vector3.new(-3, 1, 10),
-            Vector3.new(-3, 1, 11), Vector3.new(-3, 1, 12), Vector3.new(-3, 1, 13),
-            Vector3.new(-3, 1, 14), Vector3.new(-3, 1, 15), Vector3.new(-3, 1, 16),
-            Vector3.new(-3, 1, 17),
-
-            -- Baris 11
-            Vector3.new(-2, 1, -1), Vector3.new(-2, 1, 0), Vector3.new(-2, 1, 1),
-            Vector3.new(-2, 1, 2), Vector3.new(-2, 1, 3), Vector3.new(-2, 1, 4),
-            Vector3.new(-2, 1, 5), Vector3.new(-2, 1, 6), Vector3.new(-2, 1, 7),
-            Vector3.new(-2, 1, 8), Vector3.new(-2, 1, 9), Vector3.new(-2, 1, 10),
-            Vector3.new(-2, 1, 11), Vector3.new(-2, 1, 12), Vector3.new(-2, 1, 13),
-            Vector3.new(-2, 1, 14), Vector3.new(-2, 1, 15), Vector3.new(-2, 1, 16),
-            Vector3.new(-2, 1, 17),
-
-            -- Baris 12
-            Vector3.new(-1, 1, -1), Vector3.new(-1, 1, 0), Vector3.new(-1, 1, 1),
-            Vector3.new(-1, 1, 2), Vector3.new(-1, 1, 3), Vector3.new(-1, 1, 4),
-            Vector3.new(-1, 1, 5), Vector3.new(-1, 1, 6), Vector3.new(-1, 1, 7),
-            Vector3.new(-1, 1, 8), Vector3.new(-1, 1, 9), Vector3.new(-1, 1, 10),
-            Vector3.new(-1, 1, 11), Vector3.new(-1, 1, 12), Vector3.new(-1, 1, 13),
-            Vector3.new(-1, 1, 14), Vector3.new(-1, 1, 15), Vector3.new(-1, 1, 16),
-            Vector3.new(-1, 1, 17),
-
-            -- Baris 13
-            Vector3.new(0, 1, -1), Vector3.new(0, 1, 0), Vector3.new(0, 1, 1),
-            Vector3.new(0, 1, 2), Vector3.new(0, 1, 3), Vector3.new(0, 1, 4),
-            Vector3.new(0, 1, 5), Vector3.new(0, 1, 6), Vector3.new(0, 1, 7),
-            Vector3.new(0, 1, 8), Vector3.new(0, 1, 9), Vector3.new(0, 1, 10),
-            Vector3.new(0, 1, 11), Vector3.new(0, 1, 12), Vector3.new(0, 1, 13),
-            Vector3.new(0, 1, 14), Vector3.new(0, 1, 15), Vector3.new(0, 1, 16),
-            Vector3.new(0, 1, 17),
-
-            -- Baris 14
-            Vector3.new(1, 1, -1), Vector3.new(1, 1, 0), Vector3.new(1, 1, 1),
-            Vector3.new(1, 1, 2), Vector3.new(1, 1, 3), Vector3.new(1, 1, 4),
-            Vector3.new(1, 1, 5), Vector3.new(1, 1, 6), Vector3.new(1, 1, 7),
-            Vector3.new(1, 1, 8), Vector3.new(1, 1, 9), Vector3.new(1, 1, 10),
-            Vector3.new(1, 1, 11), Vector3.new(1, 1, 12), Vector3.new(1, 1, 13),
-            Vector3.new(1, 1, 14), Vector3.new(1, 1, 15), Vector3.new(1, 1, 16),
-            Vector3.new(1, 1, 17),
-        }
+        -- Baris 8 - 14
+        addRange(-5, 1, -1, 17)
+        addRange(-4, 1, -1, 17)
+        addRange(-3, 1, -1, 17)
+        addRange(-2, 1, -1, 17)
+        addRange(-1, 1, -1, 17)
+        addRange(0, 1, -1, 17)
+        addRange(1, 1, -1, 17)
 
         -- =========================
         -- CRAFT FUNCTION
@@ -252,6 +174,6 @@ return {
             end
         end)
 
-        print("[AutoCraft] System Loaded (Row Order 1 -> 14)")
+        print("[AutoCraft] System Loaded (Clean List + Extra Range Added)")
     end
 }
