@@ -6,31 +6,11 @@ return {
         -- GLOBAL VARS
         -- =========================
         local vars = _G.BotVars or {}
-        vars.AutoCraft        = vars.AutoCraft or false
-        vars.AutoHarvestBaker = vars.AutoHarvestBaker or false
-        vars.CraftDelay       = vars.CraftDelay or 1.5
-        vars.SelectedItem     = vars.SelectedItem or "Chocolate Bar"
-        vars._AutoCraftRun    = vars._AutoCraftRun or false
+        vars.AutoCraft      = vars.AutoCraft or false
+        vars.CraftDelay     = vars.CraftDelay or 1.5
+        vars.SelectedItem   = vars.SelectedItem or "Chocolate Bar"
+        vars._AutoCraftRun  = vars._AutoCraftRun or false
         _G.BotVars = vars
-
-        -- =========================
-        -- SERVICES
-        -- =========================
-        local Players = game:GetService("Players")
-        local ReplicatedStorage = game:GetService("ReplicatedStorage")
-        local LoadedBlocks = workspace:WaitForChild("LoadedBlocks")
-
-        local LocalPlayer = Players.LocalPlayer
-
-        local CraftRemote = ReplicatedStorage
-            :WaitForChild("Relay")
-            :WaitForChild("Inventory")
-            :WaitForChild("CraftItem")
-
-        local HarvestRemote = ReplicatedStorage
-            :WaitForChild("Relay")
-            :WaitForChild("Blocks")
-            :WaitForChild("HarvestCrop")
 
         -- =========================
         -- TAB & UI
@@ -47,10 +27,10 @@ return {
             or CraftTab:AddLeftGroupbox("Auto Craft")
 
         -- =========================
-        -- TOGGLES
+        -- TOGGLE
         -- =========================
         Group:AddToggle("ToggleAutoCraft", {
-            Text = "Auto Craft (Sequential)",
+            Text = "Auto Craft",
             Default = vars.AutoCraft,
             Callback = function(v)
                 vars.AutoCraft = v
@@ -58,24 +38,24 @@ return {
             end
         })
 
-        Group:AddToggle("ToggleAutoHarvestBaker", {
-            Text = "Auto Harvest Baker",
-            Default = vars.AutoHarvestBaker,
-            Callback = function(v)
-                vars.AutoHarvestBaker = v
-            end
-        })
+        -- =========================
+        -- ITEM LIST
+        -- =========================
+        local craftableItems = {
+            "Chocolate Bar"
+        }
 
         -- =========================
-        -- DROPDOWN ITEM
+        -- DROPDOWN
         -- =========================
         Group:AddDropdown("DropdownCraftItem", {
             Text = "Pilih Item Craft",
-            Values = {"Chocolate Bar"},
+            Values = craftableItems,
             Default = vars.SelectedItem,
             Multi = false,
             Callback = function(v)
                 vars.SelectedItem = v
+                print("[AutoCraft] Item:", v)
             end
         })
 
@@ -94,109 +74,276 @@ return {
         })
 
         -- =========================
-        -- TELEPORT FUNCTION
+        -- SERVICES
         -- =========================
-        local function TeleportToOven(oven)
-            local char = LocalPlayer.Character
-            if not char then return end
+        local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-            local hrp = char:FindFirstChild("HumanoidRootPart")
-            local root = oven:FindFirstChild("Root")
+        local CraftRemote = ReplicatedStorage
+            :WaitForChild("Relay")
+            :WaitForChild("Inventory")
+            :WaitForChild("CraftItem")
 
-            if hrp and root then
-                hrp.CFrame = root.CFrame + Vector3.new(0, 3, 0)
+        -- =========================
+        -- LIST POSITION FIXED
+        -- URUTAN: BARIS 1 -> BARIS 12
+        -- =========================
+        local ovenPositions = {
+            -- Baris 1
+            Vector3.new(-14, 1, -1),
+            Vector3.new(-14, 1, 0),
+            Vector3.new(-14, 1, 1),
+            Vector3.new(-14, 1, 2),
+            Vector3.new(-14, 1, 3),
+            Vector3.new(-14, 1, 4),
+            Vector3.new(-14, 1, 5),
+            Vector3.new(-14, 1, 6),
+            Vector3.new(-14, 1, 7),
+            Vector3.new(-14, 1, 8),
+            Vector3.new(-14, 1, 9),
+            Vector3.new(-14, 1, 10),
+            Vector3.new(-14, 1, 11),
+            Vector3.new(-14, 1, 12),
+
+            -- Baris 2
+            Vector3.new(-15, 1, -1),
+            Vector3.new(-15, 1, 0),
+            Vector3.new(-15, 1, 1),
+            Vector3.new(-15, 1, 2),
+            Vector3.new(-15, 1, 3),
+            Vector3.new(-15, 1, 4),
+            Vector3.new(-15, 1, 5),
+            Vector3.new(-15, 1, 6),
+            Vector3.new(-15, 1, 7),
+            Vector3.new(-15, 1, 8),
+            Vector3.new(-15, 1, 9),
+            Vector3.new(-15, 1, 10),
+            Vector3.new(-15, 1, 11),
+            Vector3.new(-15, 1, 12),
+
+            -- Baris 3
+            Vector3.new(-16, 1, -1),
+            Vector3.new(-16, 1, 0),
+            Vector3.new(-16, 1, 1),
+            Vector3.new(-16, 1, 2),
+            Vector3.new(-16, 1, 3),
+            Vector3.new(-16, 1, 4),
+            Vector3.new(-16, 1, 5),
+            Vector3.new(-16, 1, 6),
+            Vector3.new(-16, 1, 7),
+            Vector3.new(-16, 1, 8),
+            Vector3.new(-16, 1, 9),
+            Vector3.new(-16, 1, 10),
+            Vector3.new(-16, 1, 11),
+            Vector3.new(-16, 1, 12),
+
+            -- Baris 4
+            Vector3.new(-17, 1, -1),
+            Vector3.new(-17, 1, 0),
+            Vector3.new(-17, 1, 1),
+            Vector3.new(-17, 1, 2),
+            Vector3.new(-17, 1, 3),
+            Vector3.new(-17, 1, 4),
+            Vector3.new(-17, 1, 5),
+            Vector3.new(-17, 1, 6),
+            Vector3.new(-17, 1, 7),
+            Vector3.new(-17, 1, 8),
+            Vector3.new(-17, 1, 9),
+            Vector3.new(-17, 1, 10),
+            Vector3.new(-17, 1, 11),
+            Vector3.new(-17, 1, 12),
+
+            -- Baris 5
+            Vector3.new(-18, 1, -1),
+            Vector3.new(-18, 1, 0),
+            Vector3.new(-18, 1, 1),
+            Vector3.new(-18, 1, 2),
+            Vector3.new(-18, 1, 3),
+            Vector3.new(-18, 1, 4),
+            Vector3.new(-18, 1, 5),
+            Vector3.new(-18, 1, 6),
+            Vector3.new(-18, 1, 7),
+            Vector3.new(-18, 1, 8),
+            Vector3.new(-18, 1, 9),
+            Vector3.new(-18, 1, 10),
+            Vector3.new(-18, 1, 11),
+            Vector3.new(-18, 1, 12),
+
+            -- Baris 6
+            Vector3.new(-19, 1, -1),
+            Vector3.new(-19, 1, 0),
+            Vector3.new(-19, 1, 1),
+            Vector3.new(-19, 1, 2),
+            Vector3.new(-19, 1, 3),
+            Vector3.new(-19, 1, 4),
+            Vector3.new(-19, 1, 5),
+            Vector3.new(-19, 1, 6),
+            Vector3.new(-19, 1, 7),
+            Vector3.new(-19, 1, 8),
+            Vector3.new(-19, 1, 9),
+            Vector3.new(-19, 1, 10),
+            Vector3.new(-19, 1, 11),
+            Vector3.new(-19, 1, 12),
+
+            -- Baris 7
+            Vector3.new(-20, 1, -1),
+            Vector3.new(-20, 1, 0),
+            Vector3.new(-20, 1, 1),
+            Vector3.new(-20, 1, 2),
+            Vector3.new(-20, 1, 3),
+            Vector3.new(-20, 1, 4),
+            Vector3.new(-20, 1, 5),
+            Vector3.new(-20, 1, 6),
+            Vector3.new(-20, 1, 7),
+            Vector3.new(-20, 1, 8),
+            Vector3.new(-20, 1, 9),
+            Vector3.new(-20, 1, 10),
+            Vector3.new(-20, 1, 11),
+            Vector3.new(-20, 1, 12),
+
+            -- Baris 8
+            Vector3.new(-4, 1, -1),
+            Vector3.new(-4, 1, 0),
+            Vector3.new(-4, 1, 1),
+            Vector3.new(-4, 1, 2),
+            Vector3.new(-4, 1, 3),
+            Vector3.new(-4, 1, 4),
+            Vector3.new(-4, 1, 5),
+            Vector3.new(-4, 1, 6),
+            Vector3.new(-4, 1, 7),
+            Vector3.new(-4, 1, 8),
+            Vector3.new(-4, 1, 9),
+            Vector3.new(-4, 1, 10),
+            Vector3.new(-4, 1, 11),
+            Vector3.new(-4, 1, 12),
+            Vector3.new(-4, 1, 13),
+            Vector3.new(-4, 1, 14),
+            Vector3.new(-4, 1, 15),
+            Vector3.new(-4, 1, 16),
+            Vector3.new(-4, 1, 17),
+
+            -- Baris 9
+            Vector3.new(-3, 1, -1),
+            Vector3.new(-3, 1, 0),
+            Vector3.new(-3, 1, 1),
+            Vector3.new(-3, 1, 2),
+            Vector3.new(-3, 1, 3),
+            Vector3.new(-3, 1, 4),
+            Vector3.new(-3, 1, 5),
+            Vector3.new(-3, 1, 6),
+            Vector3.new(-3, 1, 7),
+            Vector3.new(-3, 1, 8),
+            Vector3.new(-3, 1, 9),
+            Vector3.new(-3, 1, 10),
+            Vector3.new(-3, 1, 11),
+            Vector3.new(-3, 1, 12),
+            Vector3.new(-3, 1, 13),
+            Vector3.new(-3, 1, 14),
+            Vector3.new(-3, 1, 15),
+            Vector3.new(-3, 1, 16),
+            Vector3.new(-3, 1, 17),
+
+            -- Baris 10
+            Vector3.new(-2, 1, -1),
+            Vector3.new(-2, 1, 0),
+            Vector3.new(-2, 1, 1),
+            Vector3.new(-2, 1, 2),
+            Vector3.new(-2, 1, 3),
+            Vector3.new(-2, 1, 4),
+            Vector3.new(-2, 1, 5),
+            Vector3.new(-2, 1, 6),
+            Vector3.new(-2, 1, 7),
+            Vector3.new(-2, 1, 8),
+            Vector3.new(-2, 1, 9),
+            Vector3.new(-2, 1, 10),
+            Vector3.new(-2, 1, 11),
+            Vector3.new(-2, 1, 12),
+            Vector3.new(-2, 1, 13),
+            Vector3.new(-2, 1, 14),
+            Vector3.new(-2, 1, 15),
+            Vector3.new(-2, 1, 16),
+            Vector3.new(-2, 1, 17),
+
+            -- Baris 11
+            Vector3.new(-1, 1, -1),
+            Vector3.new(-1, 1, 0),
+            Vector3.new(-1, 1, 1),
+            Vector3.new(-1, 1, 2),
+            Vector3.new(-1, 1, 3),
+            Vector3.new(-1, 1, 4),
+            Vector3.new(-1, 1, 5),
+            Vector3.new(-1, 1, 6),
+            Vector3.new(-1, 1, 7),
+            Vector3.new(-1, 1, 8),
+            Vector3.new(-1, 1, 9),
+            Vector3.new(-1, 1, 10),
+            Vector3.new(-1, 1, 11),
+            Vector3.new(-1, 1, 12),
+            Vector3.new(-1, 1, 13),
+            Vector3.new(-1, 1, 14),
+            Vector3.new(-1, 1, 15),
+            Vector3.new(-1, 1, 16),
+            Vector3.new(-1, 1, 17),
+
+            -- Baris 12
+            Vector3.new(1, 1, -1),
+            Vector3.new(1, 1, 0),
+            Vector3.new(1, 1, 1),
+            Vector3.new(1, 1, 2),
+            Vector3.new(1, 1, 3),
+            Vector3.new(1, 1, 4),
+            Vector3.new(1, 1, 5),
+            Vector3.new(1, 1, 6),
+            Vector3.new(1, 1, 7),
+            Vector3.new(1, 1, 8),
+            Vector3.new(1, 1, 9),
+            Vector3.new(1, 1, 10),
+            Vector3.new(1, 1, 11),
+            Vector3.new(1, 1, 12),
+            Vector3.new(1, 1, 13),
+            Vector3.new(1, 1, 14),
+            Vector3.new(1, 1, 15),
+            Vector3.new(1, 1, 16),
+            Vector3.new(1, 1, 17),
+        }
+
+        -- =========================
+        -- CRAFT FUNCTION
+        -- =========================
+        local function ScanAndCraft()
+
+            if #ovenPositions == 0 then
+                warn("[AutoCraft] List oven kosong!")
+                return
             end
-        end
 
-        -- =========================
-        -- HIGHLIGHT SYSTEM
-        -- =========================
-        local currentHighlight
-
-        local function HighlightOven(oven)
-            if currentHighlight then
-                currentHighlight:Destroy()
-                currentHighlight = nil
-            end
-
-            local hl = Instance.new("Highlight")
-            hl.FillColor = Color3.fromRGB(255, 170, 0)
-            hl.OutlineColor = Color3.fromRGB(255, 255, 255)
-            hl.FillTransparency = 0.5
-            hl.OutlineTransparency = 0
-            hl.Parent = oven
-
-            currentHighlight = hl
-        end
-
-        local function RemoveHighlight()
-            if currentHighlight then
-                currentHighlight:Destroy()
-                currentHighlight = nil
-            end
-        end
-
-        -- =========================
-        -- SEQUENTIAL CRAFT SYSTEM
-        -- =========================
-        local function SequentialCraft()
-            for _, oven in ipairs(LoadedBlocks:GetDescendants()) do
-                if not vars.AutoCraft then break end
-                if oven.Name == "Baker's Oven" then
-
-                    local voxel = oven:GetAttribute("VoxelPosition")
-                    if not voxel and oven.Parent then
-                        voxel = oven.Parent:GetAttribute("VoxelPosition")
-                    end
-
-                    if voxel then
-
-                        -- TELEPORT
-                        TeleportToOven(oven)
-                        task.wait(0.5)
-
-                        -- HIGHLIGHT
-                        HighlightOven(oven)
-
-                        -- CRAFT
-                        pcall(function()
-                            CraftRemote:InvokeServer(
-                                "Baker's Oven",
-                                vars.SelectedItem,
-                                voxel
-                            )
-                        end)
-
-                        print("[Sequential] Craft:", voxel)
-
-                        -- TUNGGU SAMPAI SELESAI
-                        repeat
-                            task.wait(1)
-                        until not oven:FindFirstChild("baked", true) or not vars.AutoCraft
-
-                        -- HARVEST
-                        if vars.AutoHarvestBaker and vars.AutoCraft then
-                            pcall(function()
-                                HarvestRemote:InvokeServer(
-                                    vector.create(voxel.X, voxel.Y, voxel.Z)
-                                )
-                            end)
-                            print("[Sequential] Harvest:", voxel)
-                        end
-
-                        task.wait(vars.CraftDelay)
-
-                        -- HAPUS HIGHLIGHT SEBELUM PINDAH
-                        RemoveHighlight()
-                    end
+            for i, pos in ipairs(ovenPositions) do
+                if not vars.AutoCraft then
+                    return
                 end
+
+                local ok, err = pcall(function()
+                    CraftRemote:InvokeServer(
+                        "Baker's Oven",
+                        vars.SelectedItem,
+                        pos
+                    )
+                end)
+
+                if ok then
+                    print("[AutoCraft] Craft", vars.SelectedItem, "| Posisi", i, "|", pos)
+                else
+                    warn("[AutoCraft] Gagal craft:", err)
+                end
+
+                task.wait(vars.CraftDelay)
             end
         end
 
         -- =========================
-        -- MAIN LOOP
+        -- AUTO LOOP
         -- =========================
         if vars._AutoCraftRun then
+            warn("[AutoCraft] Loop sudah berjalan")
             return
         end
 
@@ -205,15 +352,12 @@ return {
         task.spawn(function()
             while true do
                 if vars.AutoCraft then
-                    SequentialCraft()
-                else
-                    RemoveHighlight()
-                    task.wait(0.5)
+                    ScanAndCraft()
                 end
-                task.wait(0.2)
+                task.wait(vars.CraftDelay)
             end
         end)
 
-        print("[AutoCraft] Sequential System Loaded")
+        print("[AutoCraft] System Loaded (Row Order 1 -> 12)")
     end
 }
