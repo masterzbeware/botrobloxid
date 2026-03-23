@@ -87,59 +87,72 @@ return {
         -- =========================
         -- FUNCTION SCAN OVEN
         -- =========================
-        local function GetOvenPositions()
+local function GetOvenPositions()
+    local ovens = {}
+    local seen = {}
 
-            local ovens = {}
+    for _, obj in ipairs(LoadedBlocks:GetDescendants()) do
+        if obj.Name == "Baker's Oven" then
+            local voxel = obj:GetAttribute("VoxelPosition")
 
-            for _, block in ipairs(LoadedBlocks:GetChildren()) do
-
-                if block.Name == "Baker's Oven" then
-                    local voxel = block:GetAttribute("VoxelPosition")
-
-                    if voxel then
-                        table.insert(ovens, voxel)
-                    end
-                end
+            if not voxel and obj.Parent then
+                voxel = obj.Parent:GetAttribute("VoxelPosition")
             end
 
-            return ovens
+            if voxel then
+                local key = tostring(voxel)
+                if not seen[key] then
+                    seen[key] = true
+                    table.insert(ovens, voxel)
+                end
+            else
+                warn("[AutoCraft] Oven tanpa VoxelPosition:", obj:GetFullName())
+            end
         end
+    end
+
+    return ovens
+end
 
         -- =========================
         -- CRAFT FUNCTION
         -- =========================
-        local function ScanAndCraft()
+local function ScanAndCraft()
+    local ovens = GetOvenPositions()
 
-            local ovens = GetOvenPositions()
+    if #ovens == 0 then
+        warn("[AutoCraft] Tidak ada Baker's Oven!")
+        return
+    end
 
-            if #ovens == 0 then
-                warn("[AutoCraft] Tidak ada Baker's Oven!")
-                return
-            end
+    print("[AutoCraft] Oven ditemukan:", #ovens)
 
-            for i, pos in ipairs(ovens) do
-
-                if not vars.AutoCraft then
-                    return
-                end
-
-                local ok, err = pcall(function()
-                    CraftRemote:InvokeServer(
-                        "Baker's Oven",
-                        vars.SelectedItem,
-                        pos
-                    )
-                end)
-
-                if ok then
-                    print("[AutoCraft] Craft", vars.SelectedItem, "| Oven", i)
-                else
-                    warn("[AutoCraft] Gagal craft:", err)
-                end
-
-                task.wait(vars.CraftDelay)
-            end
+    for i, pos in ipairs(ovens) do
+        if not vars.AutoCraft then
+            break
         end
+
+        local ok, err = pcall(function()
+            CraftRemote:InvokeServer(
+                "Baker's Oven",
+                vars.SelectedItem,
+                pos
+            )
+        end)
+
+        if ok then
+            print(("[AutoCraft] Craft %s | Oven %d | Pos %s"):format(
+                vars.SelectedItem,
+                i,
+                tostring(pos)
+            ))
+        else
+            warn("[AutoCraft] Gagal craft:", err)
+        end
+
+        task.wait(vars.CraftDelay)
+    end
+end
 
         -- =========================
         -- AUTO LOOP
@@ -151,18 +164,16 @@ return {
 
         vars._AutoCraftRun = true
 
-        task.spawn(function()
-
-            while true do
-
-                if vars.AutoCraft then
-                    ScanAndCraft()
-                end
-
-                task.wait(vars.CraftDelay)
-            end
-
-        end)
+task.spawn(function()
+    while true do
+        if vars.AutoCraft then
+            ScanAndCraft()
+            task.wait(0.2)
+        else
+            task.wait(0.2)
+        end
+    end
+end)
 
         print("[AutoCraft] System Loaded (Fixed)")
     end
