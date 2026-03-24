@@ -85,12 +85,12 @@ return {
 
         -- =========================
         -- LIST POSITION FIXED
-        -- DIRAPIHKAN AGAR TIDAK KEPANJANGAN
         -- =========================
         local ovenPositions = {}
 
         local function addRange(x, y, zStart, zEnd)
-            for z = zStart, zEnd do
+            local step = (zStart <= zEnd) and 1 or -1
+            for z = zStart, zEnd, step do
                 table.insert(ovenPositions, Vector3.new(x, y, z))
             end
         end
@@ -103,7 +103,7 @@ return {
         addRange(-18, 1, -1, 12)
         addRange(-19, 1, -1, 12)
 
-        -- Tambahan list baru
+        -- Tambahan list lama
         addRange(-14, 1, 21, 36)
         addRange(-15, 1, 21, 36)
         addRange(-16, 1, 21, 36)
@@ -122,6 +122,18 @@ return {
         addRange(-1, 1, -1, 17)
         addRange(0, 1, -1, 17)
         addRange(1, 1, -1, 17)
+
+        -- =========================
+        -- TAMBAHAN POSITION BARU
+        -- =========================
+        addRange(-6, 1, 32, 24)
+        addRange(-5, 1, 32, 24)
+        addRange(-4, 1, 32, 24)
+        addRange(-3, 1, 32, 24)
+        addRange(-2, 1, 32, 24)
+        addRange(-1, 1, 32, 24)
+        addRange(0, 1, 32, 24)
+        addRange(1, 1, 32, 42)
 
         -- =========================
         -- CRAFT FUNCTION
