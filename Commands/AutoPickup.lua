@@ -28,6 +28,7 @@ return {
         local pickupItems = {
             "Oak Sticks",
             "Birch Sticks",
+            "Fir Sticks"
             "Blue Mushroom Cluster",
             "Red Mushroom Cluster",
             "Cave Mushroom Cluster",
@@ -35,6 +36,8 @@ return {
             "Wild Blueberry",
             "Wild Strawberry",
             "Yellow Flowers",
+            "Wild Cranberry",
+            "Blue Flowers",
             "Egg",
             "Conch",
             "Scallop",
