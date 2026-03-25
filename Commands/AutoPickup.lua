@@ -35,6 +35,7 @@ return {
             "Purple Mushroom Cluster",
             "Wild Blueberry",
             "Wild Strawberry",
+            "Large Blue Flower",
             "Yellow Flowers",
             "Wild Cranberry",
             "Blue Flowers",
