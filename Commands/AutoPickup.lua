@@ -28,7 +28,7 @@ return {
         local pickupItems = {
             "Oak Sticks",
             "Birch Sticks",
-            "Fir Sticks"
+            "Fir Sticks",
             "Blue Mushroom Cluster",
             "Red Mushroom Cluster",
             "Cave Mushroom Cluster",
