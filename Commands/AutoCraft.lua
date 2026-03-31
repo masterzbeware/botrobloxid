@@ -6,10 +6,13 @@ return {
         -- GLOBAL VARS
         -- =========================
         local vars = _G.BotVars or {}
-        vars.AutoCraft      = vars.AutoCraft or false
-        vars.CraftDelay     = vars.CraftDelay or 1.5
-        vars.SelectedItem   = vars.SelectedItem or "Chocolate Bar"
-        vars._AutoCraftRun  = vars._AutoCraftRun or false
+        vars.AutoCraft       = vars.AutoCraft or false
+        vars.AutoHarvest     = vars.AutoHarvest or false
+        vars.CraftDelay      = vars.CraftDelay or 1.5
+        vars.HarvestDelay    = vars.HarvestDelay or 1.5
+        vars.SelectedItem    = vars.SelectedItem or "Chocolate Bar"
+        vars._AutoCraftRun   = vars._AutoCraftRun or false
+        vars._AutoHarvestRun = vars._AutoHarvestRun or false
         _G.BotVars = vars
 
         -- =========================
@@ -23,11 +26,11 @@ return {
             return
         end
 
-        local Group = (CraftTab.AddRightGroupbox and CraftTab:AddRightGroupbox("Auto Craft"))
-            or CraftTab:AddLeftGroupbox("Auto Craft")
+        local Group = (CraftTab.AddRightGroupbox and CraftTab:AddRightGroupbox("Auto Craft / Harvest"))
+            or CraftTab:AddLeftGroupbox("Auto Craft / Harvest")
 
         -- =========================
-        -- TOGGLE
+        -- TOGGLE CRAFT
         -- =========================
         Group:AddToggle("ToggleAutoCraft", {
             Text = "Auto Craft",
@@ -35,6 +38,18 @@ return {
             Callback = function(v)
                 vars.AutoCraft = v
                 print("[AutoCraft] Toggle:", v and "ON" or "OFF")
+            end
+        })
+
+        -- =========================
+        -- TOGGLE HARVEST
+        -- =========================
+        Group:AddToggle("ToggleAutoHarvest", {
+            Text = "Auto Harvest",
+            Default = vars.AutoHarvest,
+            Callback = function(v)
+                vars.AutoHarvest = v
+                print("[AutoHarvest] Toggle:", v and "ON" or "OFF")
             end
         })
 
@@ -60,7 +75,7 @@ return {
         })
 
         -- =========================
-        -- SLIDER DELAY
+        -- SLIDER CRAFT DELAY
         -- =========================
         Group:AddSlider("SliderCraftDelay", {
             Text = "Delay Craft",
@@ -74,14 +89,36 @@ return {
         })
 
         -- =========================
+        -- SLIDER HARVEST DELAY
+        -- =========================
+        Group:AddSlider("SliderHarvestDelay", {
+            Text = "Delay Harvest",
+            Min = 0.3,
+            Max = 3,
+            Default = vars.HarvestDelay,
+            Rounding = 1,
+            Callback = function(v)
+                vars.HarvestDelay = v
+            end
+        })
+
+        -- =========================
         -- SERVICES
         -- =========================
         local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-        local CraftRemote = ReplicatedStorage
+        local Relay = ReplicatedStorage
             :WaitForChild("Relay")
             :WaitForChild("Inventory")
-            :WaitForChild("CraftItem")
+
+        local CraftRemote = Relay:WaitForChild("CraftItem")
+
+        -- =========================
+        -- HARVEST REMOTE
+        -- GANTI JIKA NAMA REMOTE BERBEDA
+        -- contoh: HarvestItem / CollectItem / ClaimItem / dll
+        -- =========================
+        local HarvestRemote = Relay:WaitForChild("HarvestItem")
 
         -- =========================
         -- LIST POSITION BARU
@@ -135,24 +172,69 @@ return {
         end
 
         -- =========================
-        -- AUTO LOOP
+        -- HARVEST FUNCTION
+        -- SESUAIKAN ARGUMEN JIKA BERBEDA
         -- =========================
-        if vars._AutoCraftRun then
-            warn("[AutoCraft] Loop sudah berjalan")
-            return
+        local function ScanAndHarvest()
+            if #ovenPositions == 0 then
+                warn("[AutoHarvest] List oven kosong!")
+                return
+            end
+
+            for i, pos in ipairs(ovenPositions) do
+                if not vars.AutoHarvest then
+                    return
+                end
+
+                local ok, err = pcall(function()
+                    HarvestRemote:InvokeServer(
+                        "Baker's Oven",
+                        pos
+                    )
+                end)
+
+                if ok then
+                    print("[AutoHarvest] Harvest | Posisi", i, "|", pos)
+                else
+                    warn("[AutoHarvest] Gagal harvest:", err)
+                end
+
+                task.wait(vars.HarvestDelay)
+            end
         end
 
-        vars._AutoCraftRun = true
+        -- =========================
+        -- AUTO CRAFT LOOP
+        -- =========================
+        if not vars._AutoCraftRun then
+            vars._AutoCraftRun = true
 
-        task.spawn(function()
-            while true do
-                if vars.AutoCraft then
-                    ScanAndCraft()
+            task.spawn(function()
+                while true do
+                    if vars.AutoCraft then
+                        ScanAndCraft()
+                    end
+                    task.wait(vars.CraftDelay)
                 end
-                task.wait(vars.CraftDelay)
-            end
-        end)
+            end)
+        end
 
-        print("[AutoCraft] System Loaded (New Position Range Applied)")
+        -- =========================
+        -- AUTO HARVEST LOOP
+        -- =========================
+        if not vars._AutoHarvestRun then
+            vars._AutoHarvestRun = true
+
+            task.spawn(function()
+                while true do
+                    if vars.AutoHarvest then
+                        ScanAndHarvest()
+                    end
+                    task.wait(vars.HarvestDelay)
+                end
+            end)
+        end
+
+        print("[AutoCraft] System Loaded (Craft + Harvest + New Position Range Applied)")
     end
 }
