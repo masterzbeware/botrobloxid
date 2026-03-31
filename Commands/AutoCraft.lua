@@ -84,7 +84,10 @@ return {
             :WaitForChild("CraftItem")
 
         -- =========================
-        -- LIST POSITION FIXED
+        -- LIST POSITION BARU
+        -- x = 1 sampai -19
+        -- y = 1
+        -- z = -1 sampai 32
         -- =========================
         local ovenPositions = {}
 
@@ -95,45 +98,9 @@ return {
             end
         end
 
-        -- Baris 1 - 6 lama
-        addRange(-14, 1, -1, 12)
-        addRange(-15, 1, -1, 12)
-        addRange(-16, 1, -1, 12)
-        addRange(-17, 1, -1, 12)
-        addRange(-18, 1, -1, 12)
-        addRange(-19, 1, -1, 12)
-
-        -- Tambahan list lama
-        addRange(-14, 1, 21, 36)
-        addRange(-15, 1, 21, 36)
-        addRange(-16, 1, 21, 36)
-        addRange(-17, 1, 21, 36)
-        addRange(-18, 1, 21, 36)
-        addRange(-19, 1, 21, 36)
-
-        -- Baris 7
-        addRange(-20, 1, -1, 12)
-
-        -- Baris 8 - 14
-        addRange(-5, 1, -1, 17)
-        addRange(-4, 1, -1, 17)
-        addRange(-3, 1, -1, 17)
-        addRange(-2, 1, -1, 17)
-        addRange(-1, 1, -1, 17)
-        addRange(0, 1, -1, 17)
-        addRange(1, 1, -1, 17)
-
-        -- =========================
-        -- TAMBAHAN POSITION BARU
-        -- =========================
-        addRange(-6, 1, 32, 24)
-        addRange(-5, 1, 32, 24)
-        addRange(-4, 1, 32, 24)
-        addRange(-3, 1, 32, 24)
-        addRange(-2, 1, 32, 24)
-        addRange(-1, 1, 32, 24)
-        addRange(0, 1, 32, 24)
-        addRange(1, 1, 32, 42)
+        for x = 1, -19, -1 do
+            addRange(x, 1, -1, 32)
+        end
 
         -- =========================
         -- CRAFT FUNCTION
@@ -186,6 +153,6 @@ return {
             end
         end)
 
-        print("[AutoCraft] System Loaded (Clean List + Extra Range Added)")
+        print("[AutoCraft] System Loaded (New Position Range Applied)")
     end
 }
