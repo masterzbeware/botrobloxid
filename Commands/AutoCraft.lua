@@ -1,7 +1,6 @@
 -- AutoCraft.lua
 return {
     Execute = function(tab)
-
         -- =========================
         -- GLOBAL VARS
         -- =========================
@@ -106,49 +105,108 @@ return {
         -- SERVICES
         -- =========================
         local ReplicatedStorage = game:GetService("ReplicatedStorage")
+        local Workspace = game:GetService("Workspace")
 
-        local Relay = ReplicatedStorage
-            :WaitForChild("Relay")
-            :WaitForChild("Inventory")
-
-        local CraftRemote = Relay:WaitForChild("CraftItem")
-
-        -- =========================
-        -- HARVEST REMOTE
-        -- GANTI JIKA NAMA REMOTE BERBEDA
-        -- contoh: HarvestItem / CollectItem / ClaimItem / dll
-        -- =========================
-        local HarvestRemote = Relay:WaitForChild("HarvestItem")
-
-        -- =========================
-        -- LIST POSITION BARU
-        -- x = 1 sampai -19
-        -- y = 1
-        -- z = -1 sampai 32
-        -- =========================
-        local ovenPositions = {}
-
-        local function addRange(x, y, zStart, zEnd)
-            local step = (zStart <= zEnd) and 1 or -1
-            for z = zStart, zEnd, step do
-                table.insert(ovenPositions, Vector3.new(x, y, z))
-            end
+        local RelayRoot = ReplicatedStorage:WaitForChild("Relay", 10)
+        if not RelayRoot then
+            warn("[AutoCraft] Relay tidak ditemukan")
+            return
         end
 
-        for x = 1, -19, -1 do
-            addRange(x, 1, -1, 32)
+        local Inventory = RelayRoot:WaitForChild("Inventory", 10)
+        if not Inventory then
+            warn("[AutoCraft] Relay.Inventory tidak ditemukan")
+            return
+        end
+
+        local Blocks = RelayRoot:WaitForChild("Blocks", 10)
+        if not Blocks then
+            warn("[AutoCraft] Relay.Blocks tidak ditemukan")
+            return
+        end
+
+        local CraftRemote = Inventory:WaitForChild("CraftItem", 10)
+        if not CraftRemote then
+            warn("[AutoCraft] CraftItem tidak ditemukan")
+            return
+        end
+
+        local HarvestRemote = Blocks:WaitForChild("HarvestCrop", 10)
+        if not HarvestRemote then
+            warn("[AutoHarvest] HarvestCrop tidak ditemukan")
+            return
+        end
+
+        local LoadedBlocks = Workspace:WaitForChild("LoadedBlocks", 10)
+        if not LoadedBlocks then
+            warn("[AutoCraft] workspace.LoadedBlocks tidak ditemukan")
+            return
+        end
+
+        -- =========================
+        -- HELPERS
+        -- =========================
+        local function toVector3(voxel)
+            if typeof(voxel) == "Vector3" then
+                return Vector3.new(voxel.X, voxel.Y, voxel.Z)
+            end
+            return nil
+        end
+
+        local function toHarvestVector(voxel)
+            if typeof(voxel) ~= "Vector3" then
+                return nil
+            end
+
+            if vector and vector.create then
+                return vector.create(voxel.X, voxel.Y, voxel.Z)
+            end
+
+            return Vector3.new(voxel.X, voxel.Y, voxel.Z)
+        end
+
+        local function getBakerOvens()
+            local ovens = {}
+
+            for _, block in ipairs(LoadedBlocks:GetChildren()) do
+                if block.Name == "Baker's Oven" then
+                    local voxel = block:GetAttribute("VoxelPosition")
+                    local pos = toVector3(voxel)
+
+                    if pos then
+                        table.insert(ovens, {
+                            Block = block,
+                            Voxel = pos
+                        })
+                    end
+                end
+            end
+
+            table.sort(ovens, function(a, b)
+                if a.Voxel.X ~= b.Voxel.X then
+                    return a.Voxel.X > b.Voxel.X
+                end
+                if a.Voxel.Y ~= b.Voxel.Y then
+                    return a.Voxel.Y > b.Voxel.Y
+                end
+                return a.Voxel.Z < b.Voxel.Z
+            end)
+
+            return ovens
         end
 
         -- =========================
         -- CRAFT FUNCTION
         -- =========================
         local function ScanAndCraft()
-            if #ovenPositions == 0 then
-                warn("[AutoCraft] List oven kosong!")
+            local ovens = getBakerOvens()
+
+            if #ovens == 0 then
+                warn("[AutoCraft] Tidak ada Baker's Oven ditemukan di LoadedBlocks")
                 return
             end
 
-            for i, pos in ipairs(ovenPositions) do
+            for i, ovenData in ipairs(ovens) do
                 if not vars.AutoCraft then
                     return
                 end
@@ -157,12 +215,12 @@ return {
                     CraftRemote:InvokeServer(
                         "Baker's Oven",
                         vars.SelectedItem,
-                        pos
+                        ovenData.Voxel
                     )
                 end)
 
                 if ok then
-                    print("[AutoCraft] Craft", vars.SelectedItem, "| Posisi", i, "|", pos)
+                    print("[AutoCraft] Craft", vars.SelectedItem, "| Oven", i, "|", ovenData.Voxel)
                 else
                     warn("[AutoCraft] Gagal craft:", err)
                 end
@@ -173,28 +231,32 @@ return {
 
         -- =========================
         -- HARVEST FUNCTION
-        -- SESUAIKAN ARGUMEN JIKA BERBEDA
         -- =========================
         local function ScanAndHarvest()
-            if #ovenPositions == 0 then
-                warn("[AutoHarvest] List oven kosong!")
+            local ovens = getBakerOvens()
+
+            if #ovens == 0 then
+                warn("[AutoHarvest] Tidak ada Baker's Oven ditemukan di LoadedBlocks")
                 return
             end
 
-            for i, pos in ipairs(ovenPositions) do
+            for i, ovenData in ipairs(ovens) do
                 if not vars.AutoHarvest then
                     return
                 end
 
+                local harvestPos = toHarvestVector(ovenData.Voxel)
+                if not harvestPos then
+                    warn("[AutoHarvest] VoxelPosition invalid pada oven", i)
+                    continue
+                end
+
                 local ok, err = pcall(function()
-                    HarvestRemote:InvokeServer(
-                        "Baker's Oven",
-                        pos
-                    )
+                    HarvestRemote:InvokeServer(harvestPos)
                 end)
 
                 if ok then
-                    print("[AutoHarvest] Harvest | Posisi", i, "|", pos)
+                    print("[AutoHarvest] Harvest | Oven", i, "|", ovenData.Voxel)
                 else
                     warn("[AutoHarvest] Gagal harvest:", err)
                 end
@@ -213,7 +275,10 @@ return {
                 while true do
                     if vars.AutoCraft then
                         ScanAndCraft()
+                    else
+                        task.wait(0.3)
                     end
+
                     task.wait(vars.CraftDelay)
                 end
             end)
@@ -229,12 +294,15 @@ return {
                 while true do
                     if vars.AutoHarvest then
                         ScanAndHarvest()
+                    else
+                        task.wait(0.3)
                     end
+
                     task.wait(vars.HarvestDelay)
                 end
             end)
         end
 
-        print("[AutoCraft] System Loaded (Craft + Harvest + New Position Range Applied)")
+        print("[AutoCraft] System Loaded (Craft + Harvest fixed for Baker's Oven)")
     end
 }
