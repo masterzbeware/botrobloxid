@@ -8,7 +8,7 @@ return {
         vars.AutoCraft       = vars.AutoCraft or false
         vars.AutoHarvest     = vars.AutoHarvest or false
         vars.CraftDelay      = vars.CraftDelay or 1.5
-        vars.HarvestDelay    = vars.HarvestDelay or 1.5
+        vars.HarvestDelay    = vars.HarvestDelay or 0.1
         vars.SelectedItem    = vars.SelectedItem or "Chocolate Bar"
         vars._AutoCraftRun   = vars._AutoCraftRun or false
         vars._AutoHarvestRun = vars._AutoHarvestRun or false
@@ -92,10 +92,10 @@ return {
         -- =========================
         Group:AddSlider("SliderHarvestDelay", {
             Text = "Delay Harvest",
-            Min = 0.3,
-            Max = 3,
+            Min = 0.05,
+            Max = 1,
             Default = vars.HarvestDelay,
-            Rounding = 1,
+            Rounding = 2,
             Callback = function(v)
                 vars.HarvestDelay = v
             end
@@ -203,6 +203,7 @@ return {
 
             if #ovens == 0 then
                 warn("[AutoCraft] Tidak ada Baker's Oven ditemukan di LoadedBlocks")
+                task.wait(0.5)
                 return
             end
 
@@ -211,16 +212,19 @@ return {
                     return
                 end
 
+                local ovenIndex = i
+                local ovenVoxel = ovenData.Voxel
+
                 local ok, err = pcall(function()
                     CraftRemote:InvokeServer(
                         "Baker's Oven",
                         vars.SelectedItem,
-                        ovenData.Voxel
+                        ovenVoxel
                     )
                 end)
 
                 if ok then
-                    print("[AutoCraft] Craft", vars.SelectedItem, "| Oven", i, "|", ovenData.Voxel)
+                    print("[AutoCraft] Craft", vars.SelectedItem, "| Oven", ovenIndex, "|", ovenVoxel)
                 else
                     warn("[AutoCraft] Gagal craft:", err)
                 end
@@ -237,6 +241,7 @@ return {
 
             if #ovens == 0 then
                 warn("[AutoHarvest] Tidak ada Baker's Oven ditemukan di LoadedBlocks")
+                task.wait(0.5)
                 return
             end
 
@@ -251,15 +256,21 @@ return {
                     continue
                 end
 
-                local ok, err = pcall(function()
-                    HarvestRemote:InvokeServer(harvestPos)
-                end)
+                local ovenIndex = i
+                local ovenVoxel = ovenData.Voxel
+                local ovenHarvestPos = harvestPos
 
-                if ok then
-                    print("[AutoHarvest] Harvest | Oven", i, "|", ovenData.Voxel)
-                else
-                    warn("[AutoHarvest] Gagal harvest:", err)
-                end
+                task.spawn(function()
+                    local ok, err = pcall(function()
+                        HarvestRemote:InvokeServer(ovenHarvestPos)
+                    end)
+
+                    if ok then
+                        print("[AutoHarvest] Harvest | Oven", ovenIndex, "|", ovenVoxel)
+                    else
+                        warn("[AutoHarvest] Gagal harvest:", err)
+                    end
+                end)
 
                 task.wait(vars.HarvestDelay)
             end
@@ -275,11 +286,10 @@ return {
                 while true do
                     if vars.AutoCraft then
                         ScanAndCraft()
+                        task.wait(0.1)
                     else
                         task.wait(0.3)
                     end
-
-                    task.wait(vars.CraftDelay)
                 end
             end)
         end
@@ -294,11 +304,10 @@ return {
                 while true do
                     if vars.AutoHarvest then
                         ScanAndHarvest()
+                        task.wait(0.1)
                     else
-                        task.wait(0.3)
+                        task.wait(0.2)
                     end
-
-                    task.wait(vars.HarvestDelay)
                 end
             end)
         end
