@@ -1,4 +1,4 @@
--- AutoPlanter (faster, throttled)
+-- AutoPlanter (no distance check — will attempt for any Farmland in LoadedBlocks)
 return {
     Execute = function(tab)
         local vars = _G.BotVars or {}
@@ -12,8 +12,8 @@ return {
 
         local Group = PlantTab:AddLeftGroupbox("Auto Planter")
 
-        vars.AutoPlanter     = vars.AutoPlanter or false
-        vars.PlanterDelay    = vars.PlanterDelay or 0.2 -- main loop sleep
+        vars.AutoPlanter  = vars.AutoPlanter or false
+        vars.PlanterDelay = vars.PlanterDelay or 0.2
         _G.BotVars = vars
 
         Group:AddToggle("ToggleAutoPlanter", {
@@ -28,7 +28,7 @@ return {
         Group:AddSlider("SliderPlanterDelay", {
             Text = "Delay Tanam",
             Default = vars.PlanterDelay,
-            Min = 0.05,
+            Min = 0.02,
             Max = 2,
             Rounding = 2,
             Callback = function(v) vars.PlanterDelay = v end
@@ -38,45 +38,62 @@ return {
         local LoadedBlocks = workspace:WaitForChild("LoadedBlocks")
         local UsePlanterCart = ReplicatedStorage:WaitForChild("Relay"):WaitForChild("Blocks"):WaitForChild("UsePlanterCart")
 
-        -- CONFIG: tweak untuk kecepatan vs safety
-        local MAX_CONCURRENT = 6          -- berapa invoke paralel (jangan terlalu tinggi)
-        local PER_INVOKE_DELAY = 0.03     -- delay singkat setelah spawn invoke (membatasi burst)
-        local BACKOFF_SECONDS = 3        -- jika gagal, tunggu beberapa detik sebelum coba lagi di voxel yang sama
+        -- Config (ubah sesuai kebutuhan)
+        local MAX_CONCURRENT = 6       -- berapa Invoke paralel (naikkan jika server aman)
+        local PER_INVOKE_DELAY = 0.03  -- jeda kecil setelah tiap invoke selesai
+        local BACKOFF_SECONDS = 3      -- jika gagal, tunggu beberapa detik sebelum coba lagi
 
         local concurrent = 0
-        local lastAttempt = {} -- key = "x/y/z" -> timestamp terakhir dicoba
+        local lastAttempt = {}        -- key -> timestamp (backoff)
+        local farmlands = {}          -- tabel: part -> voxel
 
-        local function voxelKey(v)
-            return tostring(v.X) .. "/" .. tostring(v.Y) .. "/" .. tostring(v.Z)
+        local function keyFromVoxel(v)
+            return tostring(v.X).."/"..tostring(v.Y).."/"..tostring(v.Z)
         end
 
-        local function tryInvoke(voxel)
-            -- spawn worker; concurrent tracked
+        -- maintain list agar tidak harus iterasi GetChildren tiap kali
+        local function addFarmland(part)
+            if not part or not part.GetAttribute then return end
+            if part.Name ~= "Farmland" then return end
+            local v = nil
+            pcall(function() v = part:GetAttribute("VoxelPosition") end)
+            if v then
+                farmlands[part] = v
+            end
+        end
+        local function removeFarmland(part)
+            farmlands[part] = nil
+        end
+
+        for _, c in ipairs(LoadedBlocks:GetChildren()) do addFarmland(c) end
+        LoadedBlocks.ChildAdded:Connect(addFarmland)
+        LoadedBlocks.ChildRemoved:Connect(removeFarmland)
+
+        local function safeInvokeTry(voxel)
             concurrent = concurrent + 1
             task.spawn(function()
-                local k = voxelKey(voxel)
+                local k = keyFromVoxel(voxel)
                 local ok, res = pcall(function()
                     return UsePlanterCart:InvokeServer(vector.create(voxel.X, voxel.Y, voxel.Z))
                 end)
-                if not (ok and res == true) then
-                    -- fallback Y+1
-                    local ok2, res2 = pcall(function()
-                        return UsePlanterCart:InvokeServer(vector.create(voxel.X, voxel.Y + 1, voxel.Z))
-                    end)
-                    if ok2 and res2 == true then
-                        print(("[AutoPlanter] planted (fallback) %s"):format(k))
-                        lastAttempt[k] = nil
-                    else
-                        -- gagal; catat waktu untuk backoff
-                        lastAttempt[k] = tick()
-                        -- print ringkas agar console tidak spam
-                        -- (tampilkan res/res2 kalau mau debugging)
-                        -- print(("[AutoPlanter] fail %s r1=%s r2=%s"):format(k, tostring(res), tostring(res2)))
-                    end
-                else
-                    print(("[AutoPlanter] planted %s"):format(voxelKey(voxel)))
+                if ok and res == true then
+                    print("[AutoPlanter] planted "..k)
                     lastAttempt[k] = nil
+                    concurrent = concurrent - 1
+                    return
                 end
+
+                -- fallback Y+1 (beberapa server mengharapkan Y+1)
+                local ok2, res2 = pcall(function()
+                    return UsePlanterCart:InvokeServer(vector.create(voxel.X, voxel.Y + 1, voxel.Z))
+                end)
+                if ok2 and res2 == true then
+                    print("[AutoPlanter] planted (fallback) "..k)
+                    lastAttempt[k] = nil
+                else
+                    lastAttempt[k] = tick() -- catat waktu gagal untuk backoff
+                end
+
                 task.wait(PER_INVOKE_DELAY)
                 concurrent = concurrent - 1
             end)
@@ -85,36 +102,25 @@ return {
         coroutine.wrap(function()
             while true do
                 if vars.AutoPlanter then
-                    local children = LoadedBlocks:GetChildren()
-                    for _, block in ipairs(children) do
+                    -- iterate ALL farmlands (tidak ada filter jarak)
+                    for part, voxel in pairs(farmlands) do
                         if not vars.AutoPlanter then break end
-                        if block and block.Name == "Farmland" and block.Parent then
-                            local voxel = nil
-                            if block.GetAttribute then
-                                voxel = block:GetAttribute("VoxelPosition")
-                            end
-                            local state = nil
-                            if block.GetAttribute then
-                                state = block:GetAttribute("State")
-                            end
-                            if voxel and state == nil then
-                                local k = voxelKey(voxel)
-                                -- backoff check
-                                if lastAttempt[k] and tick() - lastAttempt[k] < BACKOFF_SECONDS then
-                                    -- skip for sekarang
-                                else
-                                    -- tunggu slot concurrent
-                                    while concurrent >= MAX_CONCURRENT do
-                                        task.wait(0.02)
-                                        if not vars.AutoPlanter then break end
-                                    end
+                        if not part or not part.Parent then
+                            farmlands[part] = nil
+                        else
+                            local k = keyFromVoxel(voxel)
+                            if not lastAttempt[k] or tick() - lastAttempt[k] >= BACKOFF_SECONDS then
+                                -- throttle concurrent invokes
+                                while concurrent >= MAX_CONCURRENT do
+                                    task.wait(0.02)
                                     if not vars.AutoPlanter then break end
-                                    tryInvoke(voxel)
                                 end
+                                if not vars.AutoPlanter then break end
+                                safeInvokeTry(voxel)
                             end
                         end
                     end
-                    -- jeda antara loop besar (tweakable)
+
                     task.wait(vars.PlanterDelay)
                 else
                     repeat task.wait(0.5) until vars.AutoPlanter
@@ -122,6 +128,6 @@ return {
             end
         end)()
 
-        print("[Auto Planter] Sistem aktif (faster mode)")
+        print("[Auto Planter] Sistem aktif (no distance check)")
     end
 }
