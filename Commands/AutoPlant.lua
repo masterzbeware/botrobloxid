@@ -1,7 +1,6 @@
--- AutoPlanter.lua (simple fix)
+-- AutoPlanter.lua (robust simple)
 return {
     Execute = function(tab)
-
         local vars = _G.BotVars or {}
         local Tabs = vars.Tabs or {}
 
@@ -14,7 +13,7 @@ return {
         local Group = PlantTab:AddLeftGroupbox("Auto Planter")
 
         vars.AutoPlanter  = vars.AutoPlanter or false
-        vars.PlanterDelay = vars.PlanterDelay or 0.6 -- sedikit lebih aman
+        vars.PlanterDelay = vars.PlanterDelay or 0.6
         _G.BotVars = vars
 
         Group:AddToggle("ToggleAutoPlanter", {
@@ -48,43 +47,63 @@ return {
         coroutine.wrap(function()
             while true do
                 if vars.AutoPlanter then
-                    for _, block in ipairs(LoadedBlocks:GetChildren()) do
+                    -- ambil snapshot children supaya aman terhadap perubahan realtime
+                    local children = LoadedBlocks:GetChildren()
+                    for _, block in ipairs(children) do
                         if not vars.AutoPlanter then break end
 
-                        -- pastikan block punya voxel position dan kosong (tidak punya State)
-                        local voxel = nil
-                        if block.GetAttribute then
-                            voxel = block:GetAttribute("VoxelPosition")
-                        end
-                        local state = nil
-                        if block.GetAttribute then
-                            state = block:GetAttribute("State")
-                        end
-
-                        if voxel and state == nil then
-                            -- coba tanpa offset Y terlebih dahulu (banyak server pakai voxel langsung)
-                            local ok, res = pcall(function()
-                                return UsePlanterCart:InvokeServer(vector.create(voxel.X, voxel.Y, voxel.Z))
-                            end)
-
-                            -- jika gagal / nil, coba fallback Y+1
-                            if not (ok and res == true) then
-                                pcall(function()
-                                    UsePlanterCart:InvokeServer(vector.create(voxel.X, voxel.Y + 1, voxel.Z))
-                                end)
+                        -- pastikan masih valid dan nama Farmland
+                        if block and block.Name == "Farmland" and block.Parent then
+                            local voxel = nil
+                            if block.GetAttribute then
+                                voxel = block:GetAttribute("VoxelPosition")
+                            end
+                            local state = nil
+                            if block.GetAttribute then
+                                state = block:GetAttribute("State")
                             end
 
-                            task.wait(vars.PlanterDelay)
+                            -- hanya coba jika voxel ada dan farmland kosong (state == nil)
+                            if voxel and state == nil then
+                                -- 1) coba invoke dengan voxel langsung
+                                local ok, res = pcall(function()
+                                    return UsePlanterCart:InvokeServer(vector.create(voxel.X, voxel.Y, voxel.Z))
+                                end)
+
+                                if ok and res == true then
+                                    -- sukses
+                                    -- print minimal supaya console tidak penuh
+                                    print(("[AutoPlanter] planted at %d,%d,%d"):format(voxel.X, voxel.Y, voxel.Z))
+                                else
+                                    -- kalau gagal coba fallback Y+1 (banyak game expect posisi di atas tanah)
+                                    local ok2, res2 = pcall(function()
+                                        return UsePlanterCart:InvokeServer(vector.create(voxel.X, voxel.Y + 1, voxel.Z))
+                                    end)
+                                    if ok2 and res2 == true then
+                                        print(("[AutoPlanter] planted (fallback) at %d,%d,%d"):format(voxel.X, voxel.Y + 1, voxel.Z))
+                                    else
+                                        -- jika masih gagal, print ringkas hasil return (nil / false / error)
+                                        print(("[AutoPlanter] invoke failed at %d,%d,%d (r1=%s, r2=%s)"):format(
+                                            voxel.X, voxel.Y, voxel.Z,
+                                            tostring(res), tostring(res2)
+                                        ))
+                                    end
+                                end
+
+                                -- jeda antar invoke agar tidak spam server
+                                task.wait(vars.PlanterDelay)
+                            end
                         end
                     end
 
+                    -- setelah iterasi semua farmland, beri jeda kecil sebelum loop ulang
+                    task.wait(0.5)
                 else
                     repeat task.wait(0.5) until vars.AutoPlanter
                 end
             end
         end)()
 
-        print("[Auto Planter] Sistem aktif (simple mode)")
-
+        print("[Auto Planter] Sistem aktif (safe mode)")
     end
 }
