@@ -1,4 +1,4 @@
--- AutoPlanter (improved/debug)
+-- AutoPlanter.lua (simple fix)
 return {
     Execute = function(tab)
 
@@ -14,7 +14,7 @@ return {
         local Group = PlantTab:AddLeftGroupbox("Auto Planter")
 
         vars.AutoPlanter  = vars.AutoPlanter or false
-        vars.PlanterDelay = vars.PlanterDelay or 0.3
+        vars.PlanterDelay = vars.PlanterDelay or 0.6 -- sedikit lebih aman
         _G.BotVars = vars
 
         Group:AddToggle("ToggleAutoPlanter", {
@@ -45,57 +45,37 @@ return {
             :WaitForChild("Blocks")
             :WaitForChild("UsePlanterCart")
 
-        -- helper: try invoke and log result
-        local function tryInvokeVoxel(vox)
-            if not vox then return false, "no_voxel" end
-            local ok, res = pcall(function()
-                return UsePlanterCart:InvokeServer(vector.create(vox.X, vox.Y, vox.Z))
-            end)
-            print(("[AutoPlant] InvokeServer voxel=%s ok=%s res=%s"):format(tostring(vox), tostring(ok), tostring(res)))
-            return ok and res, (ok and res) or res
-        end
-
         coroutine.wrap(function()
             while true do
                 if vars.AutoPlanter then
-                    local count = #LoadedBlocks:GetChildren()
-                    print("[AutoPlant] loadedblocks_count=", count)
-                    local anyTried = false
-
                     for _, block in ipairs(LoadedBlocks:GetChildren()) do
                         if not vars.AutoPlanter then break end
 
-                        -- prefer attribute "VoxelPosition" (safer than Name)
+                        -- pastikan block punya voxel position dan kosong (tidak punya State)
                         local voxel = nil
                         if block.GetAttribute then
                             voxel = block:GetAttribute("VoxelPosition")
                         end
-                        -- fallback: if block has a Vector3 child named VoxelPosition (unlikely) or property
-                        if not voxel and block:FindFirstChild("VoxelPosition") and block.VoxelPosition.Value then
-                            voxel = block.VoxelPosition.Value
+                        local state = nil
+                        if block.GetAttribute then
+                            state = block:GetAttribute("State")
                         end
 
-                        if voxel and typeof(voxel) == "Vector3" then
-                            anyTried = true
-                            -- try without offset first
-                            local success = false
-                            local ok, res = tryInvokeVoxel(voxel)
-                            if ok then
-                                success = true
-                            else
-                                -- fallback: try Y+1 (some servers expect top coordinate)
-                                local voxUp = Vector3.new(voxel.X, voxel.Y + 1, voxel.Z)
-                                ok, res = tryInvokeVoxel(voxUp)
-                                if ok then success = true end
+                        if voxel and state == nil then
+                            -- coba tanpa offset Y terlebih dahulu (banyak server pakai voxel langsung)
+                            local ok, res = pcall(function()
+                                return UsePlanterCart:InvokeServer(vector.create(voxel.X, voxel.Y, voxel.Z))
+                            end)
+
+                            -- jika gagal / nil, coba fallback Y+1
+                            if not (ok and res == true) then
+                                pcall(function()
+                                    UsePlanterCart:InvokeServer(vector.create(voxel.X, voxel.Y + 1, voxel.Z))
+                                end)
                             end
 
                             task.wait(vars.PlanterDelay)
                         end
-                    end
-
-                    if not anyTried then
-                        -- nothing to try right now
-                        task.wait(1)
                     end
 
                 else
@@ -104,7 +84,7 @@ return {
             end
         end)()
 
-        print("[Auto Planter] Sistem aktif (improved)")
+        print("[Auto Planter] Sistem aktif (simple mode)")
 
     end
 }
