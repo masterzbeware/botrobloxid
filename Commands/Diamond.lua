@@ -46,6 +46,9 @@ return {
         local isPushing = false
         local lastPushTime = 0
 
+        local lastUnragdollTime = 0
+        local UNRAGDOLL_COOLDOWN = 1
+
         ----------------------------------------------------------------
         -- SETTINGS
         ----------------------------------------------------------------
@@ -265,6 +268,45 @@ return {
         end
 
         ----------------------------------------------------------------
+-- AUTO UNRAGDOLL
+----------------------------------------------------------------
+local function doUnragdoll()
+    local now = tick()
+
+    if now - lastUnragdollTime < UNRAGDOLL_COOLDOWN then
+        return
+    end
+
+    lastUnragdollTime = now
+
+    pcall(function()
+        playerReplication:FireServer("unragdoll")
+    end)
+end
+
+local function checkAutoUnragdoll()
+    if not humanoid then return end
+    if humanoid.Health <= 0 then return end
+
+    local char = LocalPlayer.Character
+    if not char then return end
+
+    local state = humanoid:GetState()
+
+    if state == Enum.HumanoidStateType.Ragdoll
+        or state == Enum.HumanoidStateType.Physics
+        or state == Enum.HumanoidStateType.FallingDown
+        or humanoid.PlatformStand == true
+        or LocalPlayer:GetAttribute("Ragdolled") == true
+        or LocalPlayer:GetAttribute("ragdolled") == true
+        or char:GetAttribute("Ragdolled") == true
+        or char:GetAttribute("ragdolled") == true
+    then
+        doUnragdoll()
+    end
+end
+
+        ----------------------------------------------------------------
         -- START DIAMOND
         ----------------------------------------------------------------
         local function startFollow(player)
@@ -382,16 +424,21 @@ return {
                     hasChatted = true
                 end
 
-                humanoid:MoveTo(targetPosition)
+humanoid:MoveTo(targetPosition)
 
-                ----------------------------------------------------------------
-                -- AUTO PUSH SAAT DIAMOND AKTIF
-                ----------------------------------------------------------------
-                local pushTarget = getNearestPushTarget()
+----------------------------------------------------------------
+-- AUTO UNRAGDOLL SAAT DIAMOND AKTIF
+----------------------------------------------------------------
+checkAutoUnragdoll()
 
-                if pushTarget then
-                    doPush()
-                end
+----------------------------------------------------------------
+-- AUTO PUSH SAAT DIAMOND AKTIF
+----------------------------------------------------------------
+local pushTarget = getNearestPushTarget()
+
+if pushTarget then
+    doPush()
+end
             end)
         end
 
