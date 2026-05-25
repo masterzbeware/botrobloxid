@@ -53,9 +53,9 @@ return {
         local defaultBotFollowDistance = 2
         local sideSpacing = 3
 
-        local PUSH_RADIUS = 5
-        local PUSH_COOLDOWN = 0.8
-        local CHARGE_TIME = 0.3
+        local PUSH_RADIUS = 10
+        local PUSH_COOLDOWN = 1
+        local CHARGE_TIME = 1
 
         ----------------------------------------------------------------
         -- BOT ORDER
