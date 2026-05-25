@@ -4,10 +4,11 @@
 
 return {
     Execute = function()
-        local Players = game:GetService("Players")
-        local RunService = game:GetService("RunService")
-        local TextChatService = game:GetService("TextChatService")
-        local ReplicatedStorage = game:GetService("ReplicatedStorage")
+    local Players = game:GetService("Players")
+    local RunService = game:GetService("RunService")
+    local TextChatService = game:GetService("TextChatService")
+    local ReplicatedStorage = game:GetService("ReplicatedStorage")
+    local PathfindingService = game:GetService("PathfindingService")
 
         local LocalPlayer = Players.LocalPlayer
         if not LocalPlayer then return end
@@ -26,6 +27,13 @@ return {
         local following = false
         local targetPlayer
         local followConnection
+
+        local waypoints = {}
+local waypointIndex = 1
+local lastPathTime = 0
+
+local PATH_RECALC_TIME = 0.5
+local WAYPOINT_DISTANCE = 3
 
         local adminFollowDistance = 3
         local defaultBotFollowDistance = 2
@@ -93,6 +101,106 @@ return {
 
             return nil
         end
+
+        ----------------------------------------------------------------
+-- CHECK WALL BETWEEN BOT AND TARGET POSITION
+----------------------------------------------------------------
+local function hasWallBetween(targetPosition)
+    if not myHRP then return false end
+
+    local direction = targetPosition - myHRP.Position
+
+    if direction.Magnitude <= 1 then
+        return false
+    end
+
+    local rayParams = RaycastParams.new()
+    rayParams.FilterType = Enum.RaycastFilterType.Exclude
+
+    local ignoreList = {}
+
+    if LocalPlayer.Character then
+        table.insert(ignoreList, LocalPlayer.Character)
+    end
+
+    if targetPlayer and targetPlayer.Character then
+        table.insert(ignoreList, targetPlayer.Character)
+    end
+
+    rayParams.FilterDescendantsInstances = ignoreList
+
+    local result = workspace:Raycast(myHRP.Position, direction, rayParams)
+
+    if result then
+        return true
+    end
+
+    return false
+end
+
+----------------------------------------------------------------
+-- SMART MOVE WITH PATHFINDING
+----------------------------------------------------------------
+local function smartMoveTo(targetPosition)
+    if not humanoid or not myHRP then return end
+
+    -- Kalau tidak ada tembok, jalan langsung biasa
+    if not hasWallBetween(targetPosition) then
+        waypoints = {}
+        waypointIndex = 1
+        humanoid:MoveTo(targetPosition)
+        return
+    end
+
+    -- Kalau ada tembok, hitung path setiap 0.5 detik
+    local now = tick()
+
+    if now - lastPathTime >= PATH_RECALC_TIME then
+        lastPathTime = now
+
+        local path = PathfindingService:CreatePath({
+            AgentRadius = 2,
+            AgentHeight = 5,
+            AgentCanJump = true,
+            AgentCanClimb = true,
+        })
+
+        local success = pcall(function()
+            path:ComputeAsync(myHRP.Position, targetPosition)
+        end)
+
+        if success and path.Status == Enum.PathStatus.Success then
+            waypoints = path:GetWaypoints()
+            waypointIndex = 2
+        else
+            -- Kalau path gagal, tetap coba MoveTo biasa
+            humanoid:MoveTo(targetPosition)
+            return
+        end
+    end
+
+    -- Ikuti waypoint
+    if waypoints and waypoints[waypointIndex] then
+        local waypoint = waypoints[waypointIndex]
+
+        if (myHRP.Position - waypoint.Position).Magnitude <= WAYPOINT_DISTANCE then
+            waypointIndex += 1
+            waypoint = waypoints[waypointIndex]
+        end
+
+        if waypoint then
+            if waypoint.Action == Enum.PathWaypointAction.Jump then
+                humanoid.Jump = true
+            end
+
+            humanoid:MoveTo(waypoint.Position)
+        else
+            humanoid:MoveTo(targetPosition)
+        end
+    else
+        humanoid:MoveTo(targetPosition)
+    end
+end
 
         ----------------------------------------------------------------
         -- START FOLLOW
@@ -170,7 +278,7 @@ local botOrder = {
                 local offset = hrp.CFrame.LookVector * -(distance * myIndex)
                 local targetPosition = hrp.Position + offset
 
-                humanoid:MoveTo(targetPosition)
+                smartMoveTo(targetPosition)
             end)
         end
 
