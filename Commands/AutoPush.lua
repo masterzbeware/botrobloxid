@@ -1,9 +1,7 @@
 -- Commands/AutoPush.lua
 -- Admin-only auto push guard
--- Supports: !autopush / !stopautopush
--- Auto push nearby players within 5 studs
--- Bot tidak akan push admin / sesama bot
--- Hanya bot terdekat dengan target yang boleh push
+-- Supports: !autopush / !stopautopush / !stop
+-- Tidak toggle: !autopush selalu aktif, !stopautopush selalu mati
 
 return {
     Execute = function()
@@ -35,16 +33,15 @@ return {
         ----------------------------------------------------------------
         -- SETTINGS
         ----------------------------------------------------------------
-        local PUSH_RADIUS = 10
-        local PUSH_COOLDOWN = 1
-        local CHARGE_TIME = 1
+        local PUSH_RADIUS = 5
+        local PUSH_COOLDOWN = 0.8
+        local CHARGE_TIME = 0.3
 
         ----------------------------------------------------------------
         -- BOT LIST
-        -- Masukkan semua UserId bot di sini
         ----------------------------------------------------------------
         local BOT_USERS = {
-            [11001607521] = true, -- Bot 1 / Admin kalau ini akun utama
+            [11001607521] = true, -- Bot 1 / Admin
             [11001608049] = true, -- Bot 2
             [11001625681] = true, -- Bot 3
             [11001647769] = true, -- Bot 4
@@ -58,7 +55,7 @@ return {
         ----------------------------------------------------------------
         -- STATE
         ----------------------------------------------------------------
-        local autoPushEnabled = false
+        local autoPushing = false
         local pushConnection = nil
         local lastPushTime = 0
         local isPushing = false
@@ -85,18 +82,37 @@ return {
         -- SEND CHAT
         ----------------------------------------------------------------
         local function sendChat(msg)
-            pcall(function()
-                if TextChatService and TextChatService.TextChannels then
-                    local ch = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
-                    if ch then
-                        ch:SendAsync(msg)
-                        return
-                    end
-                end
+            local ok = false
 
-                ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest
-                    :FireServer(msg, "All")
-            end)
+            if TextChatService and TextChatService.TextChannels then
+                local ch = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+                if ch then
+                    pcall(function()
+                        ch:SendAsync(msg)
+                    end)
+                    ok = true
+                end
+            end
+
+            if not ok then
+                pcall(function()
+                    ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest
+                        :FireServer(msg, "All")
+                end)
+            end
+        end
+
+        ----------------------------------------------------------------
+        -- STOP AUTO PUSH
+        ----------------------------------------------------------------
+        local function stopAutoPush()
+            autoPushing = false
+            isPushing = false
+
+            if pushConnection then
+                pushConnection:Disconnect()
+                pushConnection = nil
+            end
         end
 
         ----------------------------------------------------------------
@@ -126,7 +142,7 @@ return {
         end
 
         ----------------------------------------------------------------
-        -- CEK APAKAH LOCAL BOT INI YANG PALING DEKAT KE TARGET
+        -- CEK BOT TERDEKAT KE TARGET
         ----------------------------------------------------------------
         local function isClosestBotToTarget(targetHRP)
             if not myHRP then return false end
@@ -143,8 +159,7 @@ return {
                     if botHRP and botHum and botHum.Health > 0 then
                         local botDistance = (botHRP.Position - targetHRP.Position).Magnitude
 
-                        -- Kalau ada bot lain yang lebih dekat ke target,
-                        -- maka bot ini jangan push.
+                        -- Kalau bot lain lebih dekat, bot ini jangan push
                         if botDistance < myDistance then
                             return false
                         end
@@ -222,15 +237,20 @@ return {
         -- START AUTO PUSH
         ----------------------------------------------------------------
         local function startAutoPush()
-            if autoPushEnabled then return end
+            -- Kalau sudah aktif, jangan dibuat ulang
+            if autoPushing then
+                return
+            end
 
-            autoPushEnabled = true
+            stopAutoPush()
+
+            autoPushing = true
             sendChat("Auto push enabled!")
 
             pushConnection = RunService.Heartbeat:Connect(function()
-                if not autoPushEnabled then return end
-                if not myHRP then return end
+                if not autoPushing then return end
                 if not humanoid then return end
+                if not myHRP then return end
                 if humanoid.Health <= 0 then return end
 
                 local target = getNearestPlayer()
@@ -242,29 +262,18 @@ return {
         end
 
         ----------------------------------------------------------------
-        -- STOP AUTO PUSH
+        -- FIND PLAYER BY NAME / DISPLAY NAME
         ----------------------------------------------------------------
-        local function stopAutoPush()
-            autoPushEnabled = false
-            isPushing = false
+        local function findPlayerByName(name)
+            name = name:lower()
 
-            if pushConnection then
-                pushConnection:Disconnect()
-                pushConnection = nil
+            for _, p in ipairs(Players:GetPlayers()) do
+                if p.Name:lower() == name or p.DisplayName:lower() == name then
+                    return p
+                end
             end
 
-            sendChat("Auto push disabled!")
-        end
-
-        ----------------------------------------------------------------
-        -- TOGGLE AUTO PUSH
-        ----------------------------------------------------------------
-        local function toggleAutoPush()
-            if autoPushEnabled then
-                stopAutoPush()
-            else
-                startAutoPush()
-            end
+            return nil
         end
 
         ----------------------------------------------------------------
@@ -275,13 +284,16 @@ return {
 
             local lower = msg:lower()
 
+            -- !autopush
             if lower == "!autopush" then
-                toggleAutoPush()
+                startAutoPush()
                 return
             end
 
-            if lower == "!stopautopush" then
+            -- !stop / !stopautopush
+            if lower == "!stop" or lower == "!stopautopush" then
                 stopAutoPush()
+                sendChat("Auto push disabled!")
                 return
             end
         end
