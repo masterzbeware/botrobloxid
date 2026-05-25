@@ -32,8 +32,12 @@ return {
 local waypointIndex = 1
 local lastPathTime = 0
 
-local PATH_RECALC_TIME = 0.5
+local PATH_RECALC_TIME = 0.6
 local WAYPOINT_DISTANCE = 4
+
+local lastPosition = nil
+local stuckTime = 0
+local STUCK_LIMIT = 1.2
 
         local adminFollowDistance = 3
         local defaultBotFollowDistance = 2
@@ -156,21 +160,75 @@ local function hasWallBetween(targetPosition)
     return false
 end
 
+local function doUnstuckMove(targetPosition)
+    if not humanoid or not myHRP then return end
+
+    humanoid.Jump = true
+
+    local right = myHRP.CFrame.RightVector
+    local forward = myHRP.CFrame.LookVector
+
+    local sideDirection
+
+    if math.random(1, 2) == 1 then
+        sideDirection = right
+    else
+        sideDirection = -right
+    end
+
+    local escapePosition =
+        myHRP.Position
+        + sideDirection * 6
+        + forward * 3
+
+    humanoid:MoveTo(escapePosition)
+
+    task.delay(0.4, function()
+        if humanoid and myHRP then
+            humanoid:MoveTo(targetPosition)
+        end
+    end)
+end
+
 ----------------------------------------------------------------
 -- SMART MOVE WITH PATHFINDING
 ----------------------------------------------------------------
 local function smartMoveTo(targetPosition)
     if not humanoid or not myHRP then return end
 
-    local distanceToTarget = (myHRP.Position - targetPosition).Magnitude
+    ----------------------------------------------------------------
+    -- CEK STUCK
+    ----------------------------------------------------------------
+    if lastPosition then
+        local movedDistance = (myHRP.Position - lastPosition).Magnitude
 
-    -- Kalau target dekat, jalan biasa saja
-    if distanceToTarget <= 8 then
-        humanoid:MoveTo(targetPosition)
+        if movedDistance < 0.25 then
+            stuckTime += RunService.Heartbeat:Wait()
+        else
+            stuckTime = 0
+        end
+    end
+
+    lastPosition = myHRP.Position
+
+    if stuckTime >= STUCK_LIMIT then
+        stuckTime = 0
+        waypoints = {}
+        waypointIndex = 1
+        doUnstuckMove(targetPosition)
         return
     end
 
-    -- Kalau tidak ada tembok, jalan biasa
+    ----------------------------------------------------------------
+    -- KALAU TARGET LEBIH TINGGI, COBA LOMPAT
+    ----------------------------------------------------------------
+    if targetPosition.Y - myHRP.Position.Y > 1.5 then
+        humanoid.Jump = true
+    end
+
+    ----------------------------------------------------------------
+    -- KALAU TIDAK ADA TEMBOK, JALAN LANGSUNG
+    ----------------------------------------------------------------
     if not hasWallBetween(targetPosition) then
         waypoints = {}
         waypointIndex = 1
@@ -178,9 +236,11 @@ local function smartMoveTo(targetPosition)
         return
     end
 
+    ----------------------------------------------------------------
+    -- KALAU ADA TEMBOK, PAKAI PATHFINDING
+    ----------------------------------------------------------------
     local now = tick()
 
-    -- Hitung path ulang setiap beberapa detik
     if now - lastPathTime >= PATH_RECALC_TIME then
         lastPathTime = now
 
@@ -200,15 +260,15 @@ local function smartMoveTo(targetPosition)
             waypoints = path:GetWaypoints()
             waypointIndex = 2
         else
-            -- Kalau path gagal, coba geser kanan/kiri
-            local right = myHRP.CFrame.RightVector
-            local sideTarget = targetPosition + right * 5
-
-            humanoid:MoveTo(sideTarget)
+            -- Kalau path gagal, paksa keluar dari posisi stuck
+            doUnstuckMove(targetPosition)
             return
         end
     end
 
+    ----------------------------------------------------------------
+    -- IKUTI WAYPOINT
+    ----------------------------------------------------------------
     local waypoint = waypoints[waypointIndex]
 
     if waypoint then
