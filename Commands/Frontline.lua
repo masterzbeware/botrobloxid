@@ -54,6 +54,20 @@ return {
     "11002918670", -- Bot 9
         }
 
+        local function getActiveBotOrder()
+    local activeBots = {}
+
+    for _, userId in ipairs(botOrder) do
+        local player = Players:GetPlayerByUserId(tonumber(userId))
+
+        if player then
+            table.insert(activeBots, userId)
+        end
+    end
+
+    return activeBots
+end
+
         ----------------------------------------------------------------
         -- UPDATE CHARACTER
         ----------------------------------------------------------------
@@ -112,53 +126,61 @@ return {
         ----------------------------------------------------------------
         -- START FRONTLINE
         ----------------------------------------------------------------
-        local function startFrontline(player)
-            if not player then return end
+local function startFrontline(player)
+    if not player then return end
 
-            stopFrontline()
-            positioning = true
-            targetPlayer = player
+    stopFrontline()
+    positioning = true
+    targetPlayer = player
 
-            local myIndex = table.find(botOrder, tostring(LocalPlayer.UserId)) or 1
-            local totalBots = #botOrder
-            local middleIndex = math.ceil(totalBots / 2)
-            local horizontalOffset = (myIndex - middleIndex) * spacing
+    local activeBotOrder = getActiveBotOrder()
 
-            followConnection = RunService.Heartbeat:Connect(function()
-                if not positioning or not humanoid or not myHRP then return end
-                if not targetPlayer.Character then return end
+    local myIndex = table.find(activeBotOrder, tostring(LocalPlayer.UserId))
+    if not myIndex then
+        return
+    end
 
-                local hrp = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
-                if not hrp then return end
+    local totalBots = #activeBotOrder
+    local middleIndex = (totalBots + 1) / 2
+    local horizontalOffset = (myIndex - middleIndex) * spacing
 
-                -- DISTANCE
-                local distance = defaultBotFrontDistance
-                if Admin:IsAdmin(targetPlayer) then
-                    distance = adminFrontDistance
-                end
+    followConnection = RunService.Heartbeat:Connect(function()
+        if not positioning or not humanoid or not myHRP then return end
+        if not targetPlayer.Character then return end
 
-                local special = Distance:GetDistance(
-                    tostring(LocalPlayer.UserId),
-                    tostring(targetPlayer.UserId)
-                )
-                if special then
-                    distance = special
-                end
+        local hrp = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
 
-                -- FINAL POSITION
-                local targetPosition =
-                    hrp.Position
-                    + hrp.CFrame.LookVector * distance
-                    + hrp.CFrame.RightVector * horizontalOffset
+        -- DISTANCE
+        local distance = defaultBotFrontDistance
 
-                if not hasChatted then
-                    sendChat("Yes, Sir!")
-                    hasChatted = true
-                end
-
-                humanoid:MoveTo(targetPosition)
-            end)
+        if Admin:IsAdmin(targetPlayer) then
+            distance = adminFrontDistance
         end
+
+        local special = Distance:GetDistance(
+            tostring(LocalPlayer.UserId),
+            tostring(targetPlayer.UserId)
+        )
+
+        if special then
+            distance = special
+        end
+
+        -- FINAL POSITION
+        local targetPosition =
+            hrp.Position
+            + hrp.CFrame.LookVector * distance
+            + hrp.CFrame.RightVector * horizontalOffset
+
+        if not hasChatted then
+            sendChat("Yes, Sir!")
+            hasChatted = true
+        end
+
+        humanoid:MoveTo(targetPosition)
+    end)
+end
 
         ----------------------------------------------------------------
         -- COMMAND HANDLER (ADMIN ONLY)

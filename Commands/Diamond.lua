@@ -145,43 +145,73 @@ return {
 
                 local targetPosition
 
-                ----------------------------------------------------------------
-                -- DIAMOND CORE (BOT 1–4)
-                ----------------------------------------------------------------
-                if myIndex == 1 then
-                    -- FRONT
-                    targetPosition = hrp.Position + hrp.CFrame.LookVector * distance
+----------------------------------------------------------------
+-- DIAMOND FORMATION
+----------------------------------------------------------------
+local forward = hrp.CFrame.LookVector
+local right = hrp.CFrame.RightVector
 
-                elseif myIndex == 2 then
-                    -- RIGHT
-                    targetPosition = hrp.Position + hrp.CFrame.RightVector * sideSpacing
+local frontDistance = distance + 1
+local diagonalFrontDistance = distance * 0.7
+local backDistance = distance
+local backCenterDistance = distance * 1.7
 
-                elseif myIndex == 3 then
-                    -- LEFT
-                    targetPosition = hrp.Position - hrp.CFrame.RightVector * sideSpacing
+if myIndex == 1 then
+    -- Bot 1: tepat di depan Admin
+    targetPosition =
+        hrp.Position
+        + forward * frontDistance
 
-                elseif myIndex == 4 then
-                    -- BACK
-                    targetPosition = hrp.Position - hrp.CFrame.LookVector * distance
+elseif myIndex == 2 then
+    -- Bot 2: kanan depan
+    targetPosition =
+        hrp.Position
+        + forward * diagonalFrontDistance
+        + right * sideSpacing
 
-                else
-                    ----------------------------------------------------------------
-                    -- TWOLINE BACK (BOT 5+)
-                    ----------------------------------------------------------------
-                    local twolineIndex = myIndex - 4
-                    local isLeft = twolineIndex % 2 == 1
-                    local lineIndex = math.ceil(twolineIndex / 2)
+elseif myIndex == 3 then
+    -- Bot 3: kiri depan
+    targetPosition =
+        hrp.Position
+        + forward * diagonalFrontDistance
+        - right * sideSpacing
 
-                    local backOffset =
-                        hrp.CFrame.LookVector * -(distance * (lineIndex + 1))
+elseif myIndex == 4 then
+    -- Bot 4: kanan belakang
+    targetPosition =
+        hrp.Position
+        - forward * backDistance
+        + right * sideSpacing
 
-                    local sideDir =
-                        isLeft and -hrp.CFrame.RightVector or hrp.CFrame.RightVector
+elseif myIndex == 5 then
+    -- Bot 5: kiri belakang
+    targetPosition =
+        hrp.Position
+        - forward * backDistance
+        - right * sideSpacing
 
-                    local sideOffset = sideDir * sideSpacing
+elseif myIndex == 6 then
+    -- Bot 6: tepat di belakang Admin
+    targetPosition =
+        hrp.Position
+        - forward * backCenterDistance
 
-                    targetPosition = hrp.Position + backOffset + sideOffset
-                end
+else
+    ----------------------------------------------------------------
+    -- BOT 7+ lanjut di belakang dalam 2 baris
+    ----------------------------------------------------------------
+    local extraIndex = myIndex - 6
+    local isLeft = extraIndex % 2 == 1
+    local lineIndex = math.ceil(extraIndex / 2)
+
+    local sideDir =
+        isLeft and -right or right
+
+    targetPosition =
+        hrp.Position
+        - forward * (backCenterDistance + distance * lineIndex)
+        + sideDir * sideSpacing
+end
 
                 if not hasChatted then
                     sendChat("Yes, Sir!")
