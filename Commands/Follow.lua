@@ -38,6 +38,7 @@ return {
             humanoid = char:WaitForChild("Humanoid")
             myHRP = char:WaitForChild("HumanoidRootPart")
         end
+
         updateCharacter()
         LocalPlayer.CharacterAdded:Connect(updateCharacter)
 
@@ -46,6 +47,7 @@ return {
         ----------------------------------------------------------------
         local function sendChat(msg)
             local ok = false
+
             if TextChatService and TextChatService.TextChannels then
                 local ch = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
                 if ch then
@@ -55,6 +57,7 @@ return {
                     ok = true
                 end
             end
+
             if not ok then
                 pcall(function()
                     ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest
@@ -69,6 +72,7 @@ return {
         local function stopFollow()
             following = false
             targetPlayer = nil
+
             if followConnection then
                 followConnection:Disconnect()
                 followConnection = nil
@@ -80,11 +84,13 @@ return {
         ----------------------------------------------------------------
         local function findPlayerByName(name)
             name = name:lower()
+
             for _, p in ipairs(Players:GetPlayers()) do
                 if p.Name:lower() == name or p.DisplayName:lower() == name then
                     return p
                 end
             end
+
             return nil
         end
 
@@ -94,33 +100,57 @@ return {
         local function startFollow(player)
             if not player then return end
 
+            -- Jangan follow diri sendiri
+            if player == LocalPlayer then
+                stopFollow()
+                return
+            end
+
             stopFollow()
+
             following = true
             targetPlayer = player
+
             sendChat("Yes, Sir!")
 
-            -- BOT ORDER (FRONT → BACK)
+            -- BOT ORDER dari depan ke belakang
             local botOrder = {
-    "11001607521", -- Bot 1
-    "11001608049", -- Bot 2
-    "11001625681", -- Bot 3
-    "11001647769", -- Bot 4
-    "11002716767", -- Bot 5
-    "11002763516", -- Bot 6
-    "11002833908", -- Bot 7
+                "11001607521", -- Bot 1
+                "11001608049", -- Bot 2
+                "11001625681", -- Bot 3
+                "11001647769", -- Bot 4
+                "11002716767", -- Bot 5
+                "11002763516", -- Bot 6
+                "11002833908", -- Bot 7
             }
 
-            local myIndex = table.find(botOrder, tostring(LocalPlayer.UserId)) or 1
+            local myOrder = table.find(botOrder, tostring(LocalPlayer.UserId))
+            local targetOrder = table.find(botOrder, tostring(player.UserId))
+
+            local myIndex
+
+            if myOrder and targetOrder then
+                myIndex = myOrder - targetOrder
+            else
+                myIndex = myOrder or 1
+            end
+
+            -- Kalau posisi bot ini sebelum target, jangan follow
+            if myIndex <= 0 then
+                stopFollow()
+                return
+            end
 
             followConnection = RunService.Heartbeat:Connect(function()
                 if not following or not humanoid or not myHRP then return end
+                if not targetPlayer then return end
                 if not targetPlayer.Character then return end
 
                 local hrp = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
                 if not hrp then return end
 
-                -- FOLLOW DISTANCE
                 local distance = defaultBotFollowDistance
+
                 if Admin:IsAdmin(targetPlayer) then
                     distance = adminFollowDistance
                 end
@@ -129,11 +159,12 @@ return {
                     tostring(LocalPlayer.UserId),
                     tostring(targetPlayer.UserId)
                 )
+
                 if special then
                     distance = special
                 end
 
-                -- STRAIGHT LINE POSITION
+                -- Posisi lurus ke belakang target
                 local offset = hrp.CFrame.LookVector * -(distance * myIndex)
                 local targetPosition = hrp.Position + offset
 
@@ -155,20 +186,22 @@ return {
                 return
             end
 
-            
-            -- !follow <name>
+            -- !follow <name/displayname>
             local targetName = lower:match("^!follow%s+(.+)$")
             if targetName then
                 local target = findPlayerByName(targetName)
+
                 if target then
                     startFollow(target)
                 end
+
                 return
             end
 
-            -- stop
+            -- !stop / !unfollow
             if lower == "!stop" or lower == "!unfollow" then
                 stopFollow()
+                return
             end
         end
 
@@ -177,10 +210,12 @@ return {
         ----------------------------------------------------------------
         if TextChatService and TextChatService.TextChannels then
             local ch = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+
             if ch then
                 ch.OnIncomingMessage = function(message)
                     local uid = message.TextSource and message.TextSource.UserId
                     local sender = uid and Players:GetPlayerByUserId(uid)
+
                     if sender then
                         handleCommand(message.Text, sender)
                     end
