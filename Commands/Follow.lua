@@ -33,7 +33,7 @@ local waypointIndex = 1
 local lastPathTime = 0
 
 local PATH_RECALC_TIME = 0.5
-local WAYPOINT_DISTANCE = 3
+local WAYPOINT_DISTANCE = 4
 
         local adminFollowDistance = 3
         local defaultBotFollowDistance = 2
@@ -108,7 +108,15 @@ local WAYPOINT_DISTANCE = 3
 local function hasWallBetween(targetPosition)
     if not myHRP then return false end
 
-    local direction = targetPosition - myHRP.Position
+    -- Biar raycast tidak nembak ke lantai, kita samakan tinggi Y
+    local startPos = myHRP.Position + Vector3.new(0, 2, 0)
+    local endPos = Vector3.new(
+        targetPosition.X,
+        myHRP.Position.Y + 2,
+        targetPosition.Z
+    )
+
+    local direction = endPos - startPos
 
     if direction.Magnitude <= 1 then
         return false
@@ -129,9 +137,19 @@ local function hasWallBetween(targetPosition)
 
     rayParams.FilterDescendantsInstances = ignoreList
 
-    local result = workspace:Raycast(myHRP.Position, direction, rayParams)
+    local result = workspace:Raycast(startPos, direction, rayParams)
 
-    if result then
+    if result and result.Instance then
+        -- Kalau part tidak bisa ditabrak, jangan dianggap tembok
+        if result.Instance:IsA("BasePart") and result.Instance.CanCollide == false then
+            return false
+        end
+
+        -- Kalau yang kena terlalu dekat ke bawah, kemungkinan lantai
+        if result.Position.Y < myHRP.Position.Y + 0.5 then
+            return false
+        end
+
         return true
     end
 
@@ -144,7 +162,15 @@ end
 local function smartMoveTo(targetPosition)
     if not humanoid or not myHRP then return end
 
-    -- Kalau tidak ada tembok, jalan langsung biasa
+    local distanceToTarget = (myHRP.Position - targetPosition).Magnitude
+
+    -- Kalau target dekat, jalan biasa saja
+    if distanceToTarget <= 8 then
+        humanoid:MoveTo(targetPosition)
+        return
+    end
+
+    -- Kalau tidak ada tembok, jalan biasa
     if not hasWallBetween(targetPosition) then
         waypoints = {}
         waypointIndex = 1
@@ -152,9 +178,9 @@ local function smartMoveTo(targetPosition)
         return
     end
 
-    -- Kalau ada tembok, hitung path setiap 0.5 detik
     local now = tick()
 
+    -- Hitung path ulang setiap beberapa detik
     if now - lastPathTime >= PATH_RECALC_TIME then
         lastPathTime = now
 
@@ -163,6 +189,7 @@ local function smartMoveTo(targetPosition)
             AgentHeight = 5,
             AgentCanJump = true,
             AgentCanClimb = true,
+            WaypointSpacing = 4,
         })
 
         local success = pcall(function()
@@ -173,16 +200,18 @@ local function smartMoveTo(targetPosition)
             waypoints = path:GetWaypoints()
             waypointIndex = 2
         else
-            -- Kalau path gagal, tetap coba MoveTo biasa
-            humanoid:MoveTo(targetPosition)
+            -- Kalau path gagal, coba geser kanan/kiri
+            local right = myHRP.CFrame.RightVector
+            local sideTarget = targetPosition + right * 5
+
+            humanoid:MoveTo(sideTarget)
             return
         end
     end
 
-    -- Ikuti waypoint
-    if waypoints and waypoints[waypointIndex] then
-        local waypoint = waypoints[waypointIndex]
+    local waypoint = waypoints[waypointIndex]
 
+    if waypoint then
         if (myHRP.Position - waypoint.Position).Magnitude <= WAYPOINT_DISTANCE then
             waypointIndex += 1
             waypoint = waypoints[waypointIndex]
