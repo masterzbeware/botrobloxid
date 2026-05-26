@@ -32,7 +32,7 @@ local commandFiles = {
     "Perfix.lua",
     "Main.lua",
     "Follow.lua",
-    "riefing.lua",
+    "Briefing.lua",
     "Frontline.lua",
     "Pushup.lua",
     "Sync.lua",
