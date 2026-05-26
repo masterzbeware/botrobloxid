@@ -132,93 +132,130 @@ return {
             return nil
         end
 
-        ----------------------------------------------------------------
-        -- START BRIEFING
-        ----------------------------------------------------------------
-        local function startBriefing(player)
-            if not player then return end
+----------------------------------------------------------------
+-- START BRIEFING
+----------------------------------------------------------------
+local function startBriefing(player)
+    if not player then return end
 
-            -- Jangan briefing diri sendiri
-            if player == LocalPlayer then
-                stopBriefing()
-                return
-            end
+    -- Jangan briefing diri sendiri
+    if player == LocalPlayer then
+        stopBriefing()
+        return
+    end
 
-            stopBriefing()
+    stopBriefing()
 
-            briefing = true
-            targetPlayer = player
+    briefing = true
+    targetPlayer = player
 
-            sendChat("Yes, Sir!")
+    sendChat("Yes, Sir!")
 
-            local myOrder = table.find(botOrder, tostring(LocalPlayer.UserId))
-            local targetOrder = table.find(botOrder, tostring(player.UserId))
+    local myOrder = table.find(botOrder, tostring(LocalPlayer.UserId))
 
-            local myIndex
+    if not myOrder then
+        stopBriefing()
+        return
+    end
 
-            if myOrder and targetOrder then
-                myIndex = myOrder - targetOrder
-            else
-                myIndex = myOrder or 1
-            end
+    ----------------------------------------------------------------
+    -- BRIEFING FORMATION SETTINGS
+    ----------------------------------------------------------------
+    local columns = 3
 
-            -- Kalau posisi bot ini sebelum/sama dengan target, jangan briefing
-            if myIndex <= 0 then
-                stopBriefing()
-                return
-            end
+    -- Jarak kiri-kanan
+    local horizontalSpacing = 3
 
-            if humanoid then
-                humanoid.AutoRotate = false
-            end
+    -- Jarak depan-belakang
+    local rowSpacing = 3
 
-            followConnection = RunService.Heartbeat:Connect(function()
-                if not briefing or not humanoid or not myHRP then return end
-                if not targetPlayer then return end
-                if not targetPlayer.Character then return end
+    -- Geser semua formasi sedikit ke kanan
+    local formationRightShift = 1
 
-                local hrp = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
-                if not hrp then return end
+    local zeroIndex = myOrder - 1
+    local column = zeroIndex % columns
+    local row = math.floor(zeroIndex / columns)
 
-                local distance = defaultBotBriefingDistance
+    ----------------------------------------------------------------
+    -- POSISI KOLOM
+    --
+    -- Bot1 = kanan
+    -- Bot2 = tengah
+    -- Bot3 = kiri
+    --
+    -- Bot4 = kanan belakang Bot1
+    -- Bot5 = tengah belakang Bot2
+    -- Bot6 = kiri belakang Bot3
+    ----------------------------------------------------------------
+    local horizontalOffset = 0
 
-                if Admin:IsAdmin(targetPlayer) then
-                    distance = adminBriefingDistance
-                end
+    if column == 0 then
+        -- Bot1, Bot4, Bot7 = kanan
+        horizontalOffset = horizontalSpacing
+    elseif column == 1 then
+        -- Bot2, Bot5, Bot8 = tengah
+        horizontalOffset = 0
+    elseif column == 2 then
+        -- Bot3, Bot6, Bot9 = kiri
+        horizontalOffset = -horizontalSpacing
+    end
 
-                local special = Distance:GetDistance(
-                    tostring(LocalPlayer.UserId),
-                    tostring(targetPlayer.UserId)
-                )
+    -- Geser sedikit ke kanan
+    horizontalOffset = horizontalOffset + formationRightShift
 
-                if special then
-                    distance = special
-                end
+    if humanoid then
+        humanoid.AutoRotate = false
+    end
 
-                ----------------------------------------------------------------
-                -- POSISI DI DEPAN TARGET
-                --
-                -- Follow.lua:
-                -- belakang = hrp.CFrame.LookVector * -(distance * myIndex)
-                --
-                -- Briefing.lua:
-                -- depan = hrp.CFrame.LookVector * (distance * myIndex)
-                ----------------------------------------------------------------
-                local offset = hrp.CFrame.LookVector * (distance * myIndex)
-                local targetPosition = hrp.Position + offset
+    followConnection = RunService.Heartbeat:Connect(function()
+        if not briefing or not humanoid or not myHRP then return end
+        if not targetPlayer then return end
+        if not targetPlayer.Character then return end
 
-                humanoid:MoveTo(targetPosition)
+        local hrp = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
 
-                ----------------------------------------------------------------
-                -- MENGHADAP KE VIP / LEADER
-                ----------------------------------------------------------------
-                local distanceToPosition = (myHRP.Position - targetPosition).Magnitude
+        local distance = defaultBotBriefingDistance
 
-                if distanceToPosition <= 2.5 then
-                    faceTarget(hrp)
-                end
-            end)
+        if Admin:IsAdmin(targetPlayer) then
+            distance = adminBriefingDistance
         end
+
+        local special = Distance:GetDistance(
+            tostring(LocalPlayer.UserId),
+            tostring(targetPlayer.UserId)
+        )
+
+        if special then
+            distance = special
+        end
+
+        ----------------------------------------------------------------
+        -- POSISI DI DEPAN LEADER
+        ----------------------------------------------------------------
+        local frontOffset =
+            hrp.CFrame.LookVector * (distance + (row * rowSpacing))
+
+        local sideOffset =
+            hrp.CFrame.RightVector * horizontalOffset
+
+        local targetPosition =
+            hrp.Position
+            + frontOffset
+            + sideOffset
+
+        humanoid:MoveTo(targetPosition)
+
+        ----------------------------------------------------------------
+        -- MENGHADAP KE VIP / LEADER
+        ----------------------------------------------------------------
+        local distanceToPosition = (myHRP.Position - targetPosition).Magnitude
+
+        if distanceToPosition <= 2.5 then
+            faceTarget(hrp)
+        end
+    end)
+end
 
         ----------------------------------------------------------------
         -- COMMAND HANDLER
