@@ -137,17 +137,34 @@ return {
                     distance = special
                 end
 
-                -- FORMATION (LEFT / RIGHT)
-                local half = math.ceil(#botOrder / 2)
-                local isLeft = myIndex <= half
-                local lineIndex = isLeft and myIndex or (myIndex - half)
+-- FORMATION TWO LINE
+-- Bot2 - Bot5 di kiri
+-- Bot6 - Bot9/Bot10 di kanan
+-- Bot6 sejajar Bot2, Bot7 sejajar Bot3, dst
 
-                local backOffset = hrp.CFrame.LookVector * -(distance * lineIndex)
-                local sideDir = isLeft and -hrp.CFrame.RightVector or hrp.CFrame.RightVector
-                local sideOffset = sideDir * sideSpacing
+local rowIndex
+local sideDir
 
-                local targetPosition = hrp.Position + backOffset + sideOffset
-                humanoid:MoveTo(targetPosition)
+if myIndex >= 2 and myIndex <= 5 then
+    -- Baris kiri: Bot2, Bot3, Bot4, Bot5
+    rowIndex = myIndex - 1
+    sideDir = -hrp.CFrame.RightVector
+
+elseif myIndex >= 6 and myIndex <= 10 then
+    -- Baris kanan: Bot6, Bot7, Bot8, Bot9, Bot10
+    rowIndex = myIndex - 5
+    sideDir = hrp.CFrame.RightVector
+
+else
+    -- Bot1 / admin tidak ikut geser formasi
+    return
+end
+
+local backOffset = hrp.CFrame.LookVector * -(distance * rowIndex)
+local sideOffset = sideDir * sideSpacing
+
+local targetPosition = hrp.Position + backOffset + sideOffset
+humanoid:MoveTo(targetPosition)
             end)
         end
 
