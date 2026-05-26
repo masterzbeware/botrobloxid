@@ -52,10 +52,14 @@ return {
 
             local lower = msg:lower()
 
-            if lower == "!salute" then
-                sendChat("/e salute")
-                return
-            end
+if lower == "!salute" then
+    sendChat("Yes, Sir!")
+
+    task.wait(0.5)
+
+    sendChat("/e salute")
+    return
+end
         end
 
         ----------------------------------------------------------------
