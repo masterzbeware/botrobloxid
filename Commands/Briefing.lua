@@ -32,8 +32,8 @@ return {
         local targetPlayer
         local followConnection
 
-        local adminBriefingDistance = 3
-        local defaultBotBriefingDistance = 2
+local adminBriefingDistance = 7
+local defaultBotBriefingDistance = 6
 
         ----------------------------------------------------------------
         -- BOT ORDER DARI DEPAN KE DEPAN LAGI
@@ -88,17 +88,16 @@ return {
         ----------------------------------------------------------------
         -- FACE TARGET
         ----------------------------------------------------------------
-        local function faceTarget(targetHRP)
-            if not myHRP or not targetHRP then return end
+local function faceLeaderDirection(targetHRP)
+    if not myHRP or not targetHRP then return end
 
-            local lookPosition = Vector3.new(
-                targetHRP.Position.X,
-                myHRP.Position.Y,
-                targetHRP.Position.Z
-            )
+    -- Karena bot ada di depan leader,
+    -- bot harus menghadap ke arah kebalikan LookVector leader
+    local lookPosition =
+        myHRP.Position - targetHRP.CFrame.LookVector
 
-            myHRP.CFrame = CFrame.lookAt(myHRP.Position, lookPosition)
-        end
+    myHRP.CFrame = CFrame.lookAt(myHRP.Position, lookPosition)
+end
 
         ----------------------------------------------------------------
         -- STOP BRIEFING
@@ -163,14 +162,9 @@ local function startBriefing(player)
     ----------------------------------------------------------------
     local columns = 3
 
-    -- Jarak kiri-kanan
-    local horizontalSpacing = 3
-
-    -- Jarak depan-belakang
-    local rowSpacing = 3
-
-    -- Geser semua formasi sedikit ke kanan
-    local formationRightShift = 1
+local horizontalSpacing = 4
+local rowSpacing = 3.5
+local formationRightShift = 0.5
 
     local zeroIndex = myOrder - 1
     local column = zeroIndex % columns
@@ -251,9 +245,9 @@ local function startBriefing(player)
         ----------------------------------------------------------------
         local distanceToPosition = (myHRP.Position - targetPosition).Magnitude
 
-        if distanceToPosition <= 2.5 then
-            faceTarget(hrp)
-        end
+if distanceToPosition <= 2.5 then
+    faceLeaderDirection(hrp)
+end
     end)
 end
 
