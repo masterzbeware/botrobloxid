@@ -33,7 +33,6 @@ return {
         local following = false
         local targetPlayer
         local followConnection
-        local hasChatted = false
 
         local adminFollowDistance = 3
         local defaultBotFollowDistance = 2
@@ -67,29 +66,11 @@ local botOrder = {
         LocalPlayer.CharacterAdded:Connect(updateCharacter)
 
         ----------------------------------------------------------------
-        -- SEND CHAT (ONCE)
-        ----------------------------------------------------------------
-        local function sendChat(msg)
-            pcall(function()
-                if TextChatService and TextChatService.TextChannels then
-                    local ch = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
-                    if ch then
-                        ch:SendAsync(msg)
-                        return
-                    end
-                end
-                ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest
-                    :FireServer(msg, "All")
-            end)
-        end
-
-        ----------------------------------------------------------------
         -- STOP FOLLOW
         ----------------------------------------------------------------
         local function stopFollow()
             following = false
             targetPlayer = nil
-            hasChatted = false
 
             if followConnection then
                 followConnection:Disconnect()
@@ -213,11 +194,6 @@ else
         - forward * (backCenterDistance + distance * lineIndex)
         + sideDir * sideSpacing
 end
-
-                if not hasChatted then
-                    sendChat("Yes, Sir!")
-                    hasChatted = true
-                end
 
                 humanoid:MoveTo(targetPosition)
             end)

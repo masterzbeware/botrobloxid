@@ -33,7 +33,6 @@ return {
         local targetPlayer
         local followConnection
         local humanoid, myHRP
-        local hasChatted = false
 
         local adminFrontDistance = 3
         local defaultBotFrontDistance = 2
@@ -103,7 +102,6 @@ end
         local function stopFrontline()
             positioning = false
             targetPlayer = nil
-            hasChatted = false
 
             if followConnection then
                 followConnection:Disconnect()
@@ -173,11 +171,6 @@ local function startFrontline(player)
             hrp.Position
             + hrp.CFrame.LookVector * distance
             + hrp.CFrame.RightVector * horizontalOffset
-
-        if not hasChatted then
-            sendChat("Yes, Sir!")
-            hasChatted = true
-        end
 
         humanoid:MoveTo(targetPosition)
     end)

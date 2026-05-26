@@ -33,7 +33,6 @@ return {
         local following = false
         local targetPlayer
         local followConnection
-        local hasChatted = false
 
         local adminFollowDistance = 3
         local defaultBotFollowDistance = 2
@@ -93,7 +92,6 @@ return {
         local function stopFollow()
             following = false
             targetPlayer = nil
-            hasChatted = false
 
             if followConnection then
                 followConnection:Disconnect()
@@ -202,11 +200,6 @@ return {
                     targetPosition =
                         hrp.Position
                         - forward * offsetDistance
-                end
-
-                if not hasChatted then
-                    sendChat("Yes, Sir!")
-                    hasChatted = true
                 end
 
                 humanoid:MoveTo(targetPosition)

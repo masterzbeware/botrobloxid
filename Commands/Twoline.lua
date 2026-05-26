@@ -95,10 +95,9 @@ return {
         local function startFollow(player)
             if not player then return end
 
-            stopFollow()
-            following = true
-            targetPlayer = player
-            sendChat("Yes, Sir!")
+stopFollow()
+following = true
+targetPlayer = player
 
             -- BOT ORDER
             local botOrder = {

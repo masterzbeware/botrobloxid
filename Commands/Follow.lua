@@ -43,30 +43,6 @@ return {
         LocalPlayer.CharacterAdded:Connect(updateCharacter)
 
         ----------------------------------------------------------------
-        -- SEND CHAT
-        ----------------------------------------------------------------
-        local function sendChat(msg)
-            local ok = false
-
-            if TextChatService and TextChatService.TextChannels then
-                local ch = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
-                if ch then
-                    pcall(function()
-                        ch:SendAsync(msg)
-                    end)
-                    ok = true
-                end
-            end
-
-            if not ok then
-                pcall(function()
-                    ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest
-                        :FireServer(msg, "All")
-                end)
-            end
-        end
-
-        ----------------------------------------------------------------
         -- STOP FOLLOW
         ----------------------------------------------------------------
         local function stopFollow()
@@ -110,8 +86,6 @@ return {
 
             following = true
             targetPlayer = player
-
-            sendChat("Yes, Sir!")
 
             -- BOT ORDER dari depan ke belakang
 local botOrder = {

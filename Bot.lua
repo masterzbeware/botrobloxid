@@ -36,6 +36,7 @@ local commandFiles = {
     "Cross.lua",
     "Frontline.lua",
     "Pushup.lua",
+    "BriefingAnswer.lua",
     "Sync.lua",
     "Salute.lua",
     "Twoline.lua",
@@ -82,5 +83,6 @@ jalankan("diamond")
 jalankan("salute")
 jalankan("briefing")
 jalankan("cross")
+jalankan("briefinganswer")
 
 print("✅ Bot.lua loaded — All systems active.")
