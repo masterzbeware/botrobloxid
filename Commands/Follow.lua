@@ -28,8 +28,12 @@ return {
         local targetPlayer
         local followConnection
 
-local lastMoveTime = 0
-local UPDATE_TIME = 0.15
+local lastPathTime = 0
+local PATH_UPDATE_TIME = 1
+
+local currentWaypoints = {}
+local currentWaypointIndex = 2
+local currentTargetPosition = nil
 
         local adminFollowDistance = 3
         local defaultBotFollowDistance = 2
@@ -104,7 +108,7 @@ local function getFollowTargetPosition(hrp, distance, myIndex)
 
     -- Kalau target/admin jauh lebih tinggi dari bot,
     -- bot jalan dulu ke posisi target/admin.
-    if myHRP and math.abs(hrp.Position.Y - myHRP.Position.Y) > 3 then
+    if myHRP and math.abs(hrp.Position.Y - myHRP.Position.Y) > 1.5 then
         return hrp.Position
     end
 
@@ -117,40 +121,63 @@ end
 local function smartMoveTo(targetPosition)
     if not humanoid or not myHRP then return end
 
-    local path = PathfindingService:CreatePath({
-        AgentRadius = 2,
-        AgentHeight = 5,
-        AgentCanJump = true,
-        AgentCanClimb = true,
-        WaypointSpacing = 3,
-    })
+    local now = tick()
 
-    local success = pcall(function()
-        path:ComputeAsync(myHRP.Position, targetPosition)
-    end)
+    -- Hitung path baru hanya setiap 1 detik
+    if not currentTargetPosition
+        or (targetPosition - currentTargetPosition).Magnitude > 5
+        or now - lastPathTime >= PATH_UPDATE_TIME
+    then
+        lastPathTime = now
+        currentTargetPosition = targetPosition
 
-    if success and path.Status == Enum.PathStatus.Success then
-        local waypoints = path:GetWaypoints()
+        local path = PathfindingService:CreatePath({
+            AgentRadius = 2,
+            AgentHeight = 5,
+            AgentCanJump = true,
+            AgentCanClimb = true,
+            WaypointSpacing = 4,
+        })
 
-        if waypoints[2] then
-            if waypoints[2].Action == Enum.PathWaypointAction.Jump then
+        local success = pcall(function()
+            path:ComputeAsync(myHRP.Position, targetPosition)
+        end)
+
+        if success and path.Status == Enum.PathStatus.Success then
+            currentWaypoints = path:GetWaypoints()
+            currentWaypointIndex = 2
+        else
+            currentWaypoints = {}
+            currentWaypointIndex = 2
+
+            -- Kalau gagal, jangan muter-muter.
+            -- Coba jalan langsung ke target.
+            humanoid:MoveTo(targetPosition)
+            return
+        end
+    end
+
+    local waypoint = currentWaypoints[currentWaypointIndex]
+
+    if waypoint then
+        local distToWaypoint = (myHRP.Position - waypoint.Position).Magnitude
+
+        if distToWaypoint < 3 then
+            currentWaypointIndex += 1
+            waypoint = currentWaypoints[currentWaypointIndex]
+        end
+
+        if waypoint then
+            if waypoint.Action == Enum.PathWaypointAction.Jump then
                 humanoid.Jump = true
             end
 
-            humanoid:MoveTo(waypoints[2].Position)
+            humanoid:MoveTo(waypoint.Position)
         else
             humanoid:MoveTo(targetPosition)
         end
     else
-        -- Kalau path gagal, baru coba geser kanan sedikit
-        humanoid.Jump = true
-
-        local sidePosition =
-            myHRP.Position
-            + myHRP.CFrame.RightVector * 4
-            + myHRP.CFrame.LookVector * 2
-
-        humanoid:MoveTo(sidePosition)
+        humanoid:MoveTo(targetPosition)
     end
 end
 
@@ -229,14 +256,7 @@ local botOrder = {
                 -- Posisi lurus ke belakang target
 local targetPosition = getFollowTargetPosition(hrp, distance, myIndex)
 
-local now = tick()
-
-if now - lastMoveTime >= UPDATE_TIME then
-    lastMoveTime = now
-    smartMoveTo(targetPosition)
-end
-            end)
-        end
+smartMoveTo(targetPosition)
 
         ----------------------------------------------------------------
         -- COMMAND HANDLER
