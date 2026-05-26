@@ -1,42 +1,76 @@
 -- Commands/Follow.lua
--- Admin-only follow system (NORMAL MoveTo, straight line formation)
+-- Admin-only follow system with Pathfinding
 -- Supports: !follow / !follow <username|displayname>
 
 return {
     Execute = function()
-    local Players = game:GetService("Players")
-    local RunService = game:GetService("RunService")
-    local TextChatService = game:GetService("TextChatService")
-    local ReplicatedStorage = game:GetService("ReplicatedStorage")
-    local PathfindingService = game:GetService("PathfindingService")
+        ----------------------------------------------------------------
+        -- SERVICES
+        ----------------------------------------------------------------
+        local Players = game:GetService("Players")
+        local RunService = game:GetService("RunService")
+        local TextChatService = game:GetService("TextChatService")
+        local ReplicatedStorage = game:GetService("ReplicatedStorage")
+        local PathfindingService = game:GetService("PathfindingService")
 
         local LocalPlayer = Players.LocalPlayer
         if not LocalPlayer then return end
 
-        -- LOAD ADMIN MODULE
+        ----------------------------------------------------------------
+        -- LOAD MODULES
+        ----------------------------------------------------------------
         local Admin = loadstring(game:HttpGet(
             "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
         ))()
 
-        -- LOAD DISTANCE MODULE
         local Distance = loadstring(game:HttpGet(
             "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Distance.lua"
         ))()
 
+        ----------------------------------------------------------------
+        -- STATE
+        ----------------------------------------------------------------
         local humanoid, myHRP
         local following = false
         local targetPlayer
         local followConnection
 
-local lastPathTime = 0
-local PATH_UPDATE_TIME = 1
+        local currentWaypoints = {}
+        local currentWaypointIndex = 2
+        local currentTargetPosition = nil
+        local lastPathTime = 0
 
-local currentWaypoints = {}
-local currentWaypointIndex = 2
-local currentTargetPosition = nil
+        local lastPosition = nil
+        local stuckTime = 0
+        local lastUnstuckTime = 0
 
+        ----------------------------------------------------------------
+        -- SETTINGS
+        ----------------------------------------------------------------
         local adminFollowDistance = 3
         local defaultBotFollowDistance = 2
+
+        local PATH_UPDATE_TIME = 0.8
+        local WAYPOINT_REACH_DISTANCE = 3
+        local TARGET_REPATH_DISTANCE = 5
+
+        local STUCK_LIMIT = 1.5
+        local UNSTUCK_COOLDOWN = 2
+
+        ----------------------------------------------------------------
+        -- BOT ORDER
+        ----------------------------------------------------------------
+        local botOrder = {
+            "11001607521", -- Bot 1
+            "11001608049", -- Bot 2
+            "11001625681", -- Bot 3
+            "11001647769", -- Bot 4
+            "11002716767", -- Bot 5
+            "11002763516", -- Bot 6
+            "11002833908", -- Bot 7
+            "11002919499", -- Bot 8
+            "11002918670", -- Bot 9
+        }
 
         ----------------------------------------------------------------
         -- UPDATE CHARACTER
@@ -48,7 +82,11 @@ local currentTargetPosition = nil
         end
 
         updateCharacter()
-        LocalPlayer.CharacterAdded:Connect(updateCharacter)
+
+        LocalPlayer.CharacterAdded:Connect(function()
+            task.wait(1)
+            updateCharacter()
+        end)
 
         ----------------------------------------------------------------
         -- SEND CHAT
@@ -75,11 +113,22 @@ local currentTargetPosition = nil
         end
 
         ----------------------------------------------------------------
+        -- RESET PATH
+        ----------------------------------------------------------------
+        local function resetPath()
+            currentWaypoints = {}
+            currentWaypointIndex = 2
+            currentTargetPosition = nil
+            lastPathTime = 0
+        end
+
+        ----------------------------------------------------------------
         -- STOP FOLLOW
         ----------------------------------------------------------------
         local function stopFollow()
             following = false
             targetPlayer = nil
+            resetPath()
 
             if followConnection then
                 followConnection:Disconnect()
@@ -94,7 +143,14 @@ local currentTargetPosition = nil
             name = name:lower()
 
             for _, p in ipairs(Players:GetPlayers()) do
-                if p.Name:lower() == name or p.DisplayName:lower() == name then
+                local playerName = p.Name:lower()
+                local displayName = p.DisplayName:lower()
+
+                if playerName == name or displayName == name then
+                    return p
+                end
+
+                if playerName:sub(1, #name) == name or displayName:sub(1, #name) == name then
                     return p
                 end
             end
@@ -102,84 +158,160 @@ local currentTargetPosition = nil
             return nil
         end
 
-local function getFollowTargetPosition(hrp, distance, myIndex)
-    local offset = hrp.CFrame.LookVector * -(distance * myIndex)
-    local targetPosition = hrp.Position + offset
+        ----------------------------------------------------------------
+        -- GET FOLLOW TARGET POSITION
+        ----------------------------------------------------------------
+        local function getFollowTargetPosition(hrp, distance, myIndex)
+            local offset = hrp.CFrame.LookVector * -(distance * myIndex)
+            local targetPosition = hrp.Position + offset
 
-    -- Kalau target/admin jauh lebih tinggi dari bot,
-    -- bot jalan dulu ke posisi target/admin.
-    if myHRP and math.abs(hrp.Position.Y - myHRP.Position.Y) > 1.5 then
-        return hrp.Position
-    end
-
-    return targetPosition
-end
-
-----------------------------------------------------------------
--- SIMPLE PATHFINDING MOVE
-----------------------------------------------------------------
-local function smartMoveTo(targetPosition)
-    if not humanoid or not myHRP then return end
-
-    local now = tick()
-
-    -- Hitung path baru hanya setiap 1 detik
-    if not currentTargetPosition
-        or (targetPosition - currentTargetPosition).Magnitude > 5
-        or now - lastPathTime >= PATH_UPDATE_TIME
-    then
-        lastPathTime = now
-        currentTargetPosition = targetPosition
-
-        local path = PathfindingService:CreatePath({
-            AgentRadius = 2,
-            AgentHeight = 5,
-            AgentCanJump = true,
-            AgentCanClimb = true,
-            WaypointSpacing = 4,
-        })
-
-        local success = pcall(function()
-            path:ComputeAsync(myHRP.Position, targetPosition)
-        end)
-
-        if success and path.Status == Enum.PathStatus.Success then
-            currentWaypoints = path:GetWaypoints()
-            currentWaypointIndex = 2
-        else
-            currentWaypoints = {}
-            currentWaypointIndex = 2
-
-            -- Kalau gagal, jangan muter-muter.
-            -- Coba jalan langsung ke target.
-            humanoid:MoveTo(targetPosition)
-            return
-        end
-    end
-
-    local waypoint = currentWaypoints[currentWaypointIndex]
-
-    if waypoint then
-        local distToWaypoint = (myHRP.Position - waypoint.Position).Magnitude
-
-        if distToWaypoint < 3 then
-            currentWaypointIndex += 1
-            waypoint = currentWaypoints[currentWaypointIndex]
-        end
-
-        if waypoint then
-            if waypoint.Action == Enum.PathWaypointAction.Jump then
-                humanoid.Jump = true
+            -- Kalau beda tinggi, jalan dulu ke posisi target/admin.
+            -- Ini membantu bot cari tangga / jalan naik dulu.
+            if myHRP and math.abs(hrp.Position.Y - myHRP.Position.Y) > 1.5 then
+                return hrp.Position
             end
 
-            humanoid:MoveTo(waypoint.Position)
-        else
-            humanoid:MoveTo(targetPosition)
+            return targetPosition
         end
-    else
-        humanoid:MoveTo(targetPosition)
-    end
-end
+
+        ----------------------------------------------------------------
+        -- COMPUTE PATH
+        ----------------------------------------------------------------
+        local function computePath(targetPosition)
+            if not humanoid or not myHRP then return false end
+
+            local path = PathfindingService:CreatePath({
+                AgentRadius = 2,
+                AgentHeight = 5,
+                AgentCanJump = false, -- false supaya tidak lompat-lompat terus
+                AgentCanClimb = true,
+                WaypointSpacing = 3,
+            })
+
+            local success = pcall(function()
+                path:ComputeAsync(myHRP.Position, targetPosition)
+            end)
+
+            if success and path.Status == Enum.PathStatus.Success then
+                currentWaypoints = path:GetWaypoints()
+                currentWaypointIndex = 2
+                currentTargetPosition = targetPosition
+                return true
+            end
+
+            currentWaypoints = {}
+            currentWaypointIndex = 2
+            currentTargetPosition = nil
+            return false
+        end
+
+        ----------------------------------------------------------------
+        -- UNSTUCK MOVE
+        ----------------------------------------------------------------
+        local function doUnstuckMove()
+            if not humanoid or not myHRP then return end
+
+            local now = tick()
+            if now - lastUnstuckTime < UNSTUCK_COOLDOWN then return end
+            lastUnstuckTime = now
+
+            resetPath()
+
+            local side = myHRP.CFrame.RightVector
+            if math.random(1, 2) == 1 then
+                side = -side
+            end
+
+            local escapePosition =
+                myHRP.Position
+                + side * 5
+                + myHRP.CFrame.LookVector * 3
+
+            humanoid:MoveTo(escapePosition)
+        end
+
+        ----------------------------------------------------------------
+        -- CHECK STUCK
+        ----------------------------------------------------------------
+        local function checkStuck(targetPosition)
+            if not myHRP then return end
+
+            local distanceToTarget = (myHRP.Position - targetPosition).Magnitude
+            if distanceToTarget < 4 then
+                stuckTime = 0
+                lastPosition = myHRP.Position
+                return
+            end
+
+            if lastPosition then
+                local moved = (myHRP.Position - lastPosition).Magnitude
+
+                if moved < 0.15 then
+                    stuckTime += 0.1
+                else
+                    stuckTime = 0
+                end
+            end
+
+            lastPosition = myHRP.Position
+
+            if stuckTime >= STUCK_LIMIT then
+                stuckTime = 0
+                doUnstuckMove()
+            end
+        end
+
+        ----------------------------------------------------------------
+        -- SMART MOVE TO
+        ----------------------------------------------------------------
+        local function smartMoveTo(targetPosition)
+            if not humanoid or not myHRP then return end
+
+            checkStuck(targetPosition)
+
+            local now = tick()
+            local needNewPath = false
+
+            if not currentTargetPosition then
+                needNewPath = true
+            elseif (targetPosition - currentTargetPosition).Magnitude > TARGET_REPATH_DISTANCE then
+                needNewPath = true
+            elseif now - lastPathTime >= PATH_UPDATE_TIME then
+                needNewPath = true
+            end
+
+            if needNewPath then
+                lastPathTime = now
+
+                local success = computePath(targetPosition)
+
+                if not success then
+                    -- Kalau path gagal, jangan lompat-lompat.
+                    -- Coba jalan langsung dulu.
+                    humanoid:MoveTo(targetPosition)
+                    return
+                end
+            end
+
+            local waypoint = currentWaypoints[currentWaypointIndex]
+
+            if waypoint then
+                local distanceToWaypoint = (myHRP.Position - waypoint.Position).Magnitude
+
+                if distanceToWaypoint <= WAYPOINT_REACH_DISTANCE then
+                    currentWaypointIndex += 1
+                    waypoint = currentWaypoints[currentWaypointIndex]
+                end
+
+                if waypoint then
+                    humanoid:MoveTo(waypoint.Position)
+                else
+                    humanoid:MoveTo(targetPosition)
+                end
+            else
+                humanoid:MoveTo(targetPosition)
+            end
+        end
 
         ----------------------------------------------------------------
         -- START FOLLOW
@@ -187,7 +319,6 @@ end
         local function startFollow(player)
             if not player then return end
 
-            -- Jangan follow diri sendiri
             if player == LocalPlayer then
                 stopFollow()
                 return
@@ -197,21 +328,9 @@ end
 
             following = true
             targetPlayer = player
+            resetPath()
 
             sendChat("Yes, Sir!")
-
-            -- BOT ORDER dari depan ke belakang
-local botOrder = {
-    "11001607521", -- Bot 1
-    "11001608049", -- Bot 2
-    "11001625681", -- Bot 3
-    "11001647769", -- Bot 4
-    "11002716767", -- Bot 5
-    "11002763516", -- Bot 6
-    "11002833908", -- Bot 7
-    "11002919499", -- Bot 8
-    "11002918670", -- Bot 9
-}
 
             local myOrder = table.find(botOrder, tostring(LocalPlayer.UserId))
             local targetOrder = table.find(botOrder, tostring(player.UserId))
@@ -224,7 +343,6 @@ local botOrder = {
                 myIndex = myOrder or 1
             end
 
-            -- Kalau posisi bot ini sebelum target, jangan follow
             if myIndex <= 0 then
                 stopFollow()
                 return
@@ -232,6 +350,7 @@ local botOrder = {
 
             followConnection = RunService.Heartbeat:Connect(function()
                 if not following or not humanoid or not myHRP then return end
+                if humanoid.Health <= 0 then return end
                 if not targetPlayer then return end
                 if not targetPlayer.Character then return end
 
@@ -253,10 +372,11 @@ local botOrder = {
                     distance = special
                 end
 
-                -- Posisi lurus ke belakang target
-local targetPosition = getFollowTargetPosition(hrp, distance, myIndex)
+                local targetPosition = getFollowTargetPosition(hrp, distance, myIndex)
 
-smartMoveTo(targetPosition)
+                smartMoveTo(targetPosition)
+            end)
+        end
 
         ----------------------------------------------------------------
         -- COMMAND HANDLER
@@ -266,13 +386,11 @@ smartMoveTo(targetPosition)
 
             local lower = msg:lower()
 
-            -- !follow
             if lower == "!follow" then
                 startFollow(sender)
                 return
             end
 
-            -- !follow <name/displayname>
             local targetName = lower:match("^!follow%s+(.+)$")
             if targetName then
                 local target = findPlayerByName(targetName)
@@ -284,7 +402,6 @@ smartMoveTo(targetPosition)
                 return
             end
 
-            -- !stop / !unfollow
             if lower == "!stop" or lower == "!unfollow" then
                 stopFollow()
                 return
