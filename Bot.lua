@@ -38,8 +38,6 @@ local commandFiles = {
     "Twoline.lua",
     "Vote.lua",
     "Diamond.lua",
-    "Sidecover.lua",
-    "Interactive.lua",
 }
 
 for _, fileName in ipairs(commandFiles) do
