@@ -98,6 +98,19 @@ local UPDATE_TIME = 0.15
             return nil
         end
 
+local function getFollowTargetPosition(hrp, distance, myIndex)
+    local offset = hrp.CFrame.LookVector * -(distance * myIndex)
+    local targetPosition = hrp.Position + offset
+
+    -- Kalau target/admin jauh lebih tinggi dari bot,
+    -- bot jalan dulu ke posisi target/admin.
+    if myHRP and math.abs(hrp.Position.Y - myHRP.Position.Y) > 3 then
+        return hrp.Position
+    end
+
+    return targetPosition
+end
+
 ----------------------------------------------------------------
 -- SIMPLE PATHFINDING MOVE
 ----------------------------------------------------------------
@@ -129,7 +142,15 @@ local function smartMoveTo(targetPosition)
             humanoid:MoveTo(targetPosition)
         end
     else
-        humanoid:MoveTo(targetPosition)
+        -- Kalau path gagal, baru coba geser kanan sedikit
+        humanoid.Jump = true
+
+        local sidePosition =
+            myHRP.Position
+            + myHRP.CFrame.RightVector * 4
+            + myHRP.CFrame.LookVector * 2
+
+        humanoid:MoveTo(sidePosition)
     end
 end
 
@@ -206,8 +227,7 @@ local botOrder = {
                 end
 
                 -- Posisi lurus ke belakang target
-local offset = hrp.CFrame.LookVector * -(distance * myIndex)
-local targetPosition = hrp.Position + offset
+local targetPosition = getFollowTargetPosition(hrp, distance, myIndex)
 
 local now = tick()
 
