@@ -72,6 +72,15 @@ return {
             "11002918670", -- Bot 9
         }
 
+        local stairFolders = {
+    workspace:FindFirstChild("Detectors")
+        and workspace.Detectors:FindFirstChild("Stage"),
+
+    workspace:FindFirstChild("New")
+        and workspace.New:FindFirstChild("Salon")
+        and workspace.New.Salon:FindFirstChild("scenario"),
+}
+
         ----------------------------------------------------------------
         -- UPDATE CHARACTER
         ----------------------------------------------------------------
@@ -161,18 +170,56 @@ return {
         ----------------------------------------------------------------
         -- GET FOLLOW TARGET POSITION
         ----------------------------------------------------------------
-        local function getFollowTargetPosition(hrp, distance, myIndex)
-            local offset = hrp.CFrame.LookVector * -(distance * myIndex)
-            local targetPosition = hrp.Position + offset
+local function getFollowTargetPosition(hrp, distance, myIndex)
+    local offset = hrp.CFrame.LookVector * -(distance * myIndex)
+    local targetPosition = hrp.Position + offset
 
-            -- Kalau beda tinggi, jalan dulu ke posisi target/admin.
-            -- Ini membantu bot cari tangga / jalan naik dulu.
-            if myHRP and math.abs(hrp.Position.Y - myHRP.Position.Y) > 1.5 then
-                return hrp.Position
-            end
+    -- Kalau target/admin lebih tinggi, cari tangga dulu
+    if myHRP and hrp.Position.Y - myHRP.Position.Y > 1.5 then
+        local stairPart = getNearestStairPart(hrp.Position.Y)
 
-            return targetPosition
+        if stairPart then
+            return stairPart.Position + Vector3.new(0, 2, 0)
         end
+
+        -- fallback kalau tangga tidak ketemu
+        return hrp.Position
+    end
+
+    return targetPosition
+end
+
+----------------------------------------------------------------
+-- FIND NEAREST STAIR PART
+----------------------------------------------------------------
+local function getNearestStairPart(targetY)
+    if not myHRP then return nil end
+
+    local nearestPart = nil
+    local nearestDistance = math.huge
+
+    for _, folder in ipairs(stairFolders) do
+        if folder then
+            for _, obj in ipairs(folder:GetDescendants()) do
+                if obj:IsA("BasePart") and obj.CanCollide == true then
+                    -- Ambil part yang posisinya menuju ke atas
+                    if obj.Position.Y > myHRP.Position.Y + 0.5
+                        and obj.Position.Y <= targetY + 5
+                    then
+                        local distance = (myHRP.Position - obj.Position).Magnitude
+
+                        if distance < nearestDistance then
+                            nearestDistance = distance
+                            nearestPart = obj
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    return nearestPart
+end
 
         ----------------------------------------------------------------
         -- COMPUTE PATH
@@ -180,13 +227,13 @@ return {
         local function computePath(targetPosition)
             if not humanoid or not myHRP then return false end
 
-            local path = PathfindingService:CreatePath({
-                AgentRadius = 2,
-                AgentHeight = 5,
-                AgentCanJump = false, -- false supaya tidak lompat-lompat terus
-                AgentCanClimb = true,
-                WaypointSpacing = 3,
-            })
+local path = PathfindingService:CreatePath({
+    AgentRadius = 2,
+    AgentHeight = 5,
+    AgentCanJump = true,
+    AgentCanClimb = true,
+    WaypointSpacing = 3,
+})
 
             local success = pcall(function()
                 path:ComputeAsync(myHRP.Position, targetPosition)
