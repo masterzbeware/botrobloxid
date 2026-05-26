@@ -1,13 +1,10 @@
 -- Commands/Briefing.lua
--- Admin-only briefing formation system
+-- Admin-only briefing system (NORMAL MoveTo, straight line formation)
 -- Supports: !briefing / !briefing <username|displayname>
--- Konsep: bot baris di depan VIP/leader dan menghadap ke VIP/leader
+-- Konsep: bot berdiri di depan VIP/leader dan menghadap ke VIP/leader
 
 return {
     Execute = function()
-        ----------------------------------------------------------------
-        -- SERVICES
-        ----------------------------------------------------------------
         local Players = game:GetService("Players")
         local RunService = game:GetService("RunService")
         local TextChatService = game:GetService("TextChatService")
@@ -17,35 +14,29 @@ return {
         if not LocalPlayer then return end
 
         ----------------------------------------------------------------
-        -- LOAD MODULES
+        -- LOAD ADMIN MODULE
         ----------------------------------------------------------------
         local Admin = loadstring(game:HttpGet(
             "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
         ))()
 
+        ----------------------------------------------------------------
+        -- LOAD DISTANCE MODULE
+        ----------------------------------------------------------------
         local Distance = loadstring(game:HttpGet(
             "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Distance.lua"
         ))()
 
-        ----------------------------------------------------------------
-        -- STATE
-        ----------------------------------------------------------------
-        local positioning = false
+        local humanoid, myHRP
+        local briefing = false
         local targetPlayer
         local followConnection
-        local humanoid, myHRP
-        local hasChatted = false
 
-        -- Jarak barisan pertama dari depan VIP
-        local adminFrontDistance = 6
-        local defaultBotFrontDistance = 5
-
-        -- Jarak kiri-kanan dan depan-belakang
-        local horizontalSpacing = 3
-        local rowSpacing = 3
+        local adminBriefingDistance = 3
+        local defaultBotBriefingDistance = 2
 
         ----------------------------------------------------------------
-        -- BOT ORDER
+        -- BOT ORDER DARI DEPAN KE DEPAN LAGI
         ----------------------------------------------------------------
         local botOrder = {
             "11001608049", -- Bot 1
@@ -74,18 +65,24 @@ return {
         -- SEND CHAT
         ----------------------------------------------------------------
         local function sendChat(msg)
-            pcall(function()
-                if TextChatService and TextChatService.TextChannels then
-                    local ch = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
-                    if ch then
-                        ch:SendAsync(msg)
-                        return
-                    end
-                end
+            local ok = false
 
-                ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest
-                    :FireServer(msg, "All")
-            end)
+            if TextChatService and TextChatService.TextChannels then
+                local ch = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+                if ch then
+                    pcall(function()
+                        ch:SendAsync(msg)
+                    end)
+                    ok = true
+                end
+            end
+
+            if not ok then
+                pcall(function()
+                    ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest
+                        :FireServer(msg, "All")
+                end)
+            end
         end
 
         ----------------------------------------------------------------
@@ -107,9 +104,8 @@ return {
         -- STOP BRIEFING
         ----------------------------------------------------------------
         local function stopBriefing()
-            positioning = false
+            briefing = false
             targetPlayer = nil
-            hasChatted = false
 
             if humanoid then
                 humanoid.AutoRotate = true
@@ -142,54 +138,52 @@ return {
         local function startBriefing(player)
             if not player then return end
 
-            stopBriefing()
-
-            positioning = true
-            targetPlayer = player
-
-            ----------------------------------------------------------------
-            -- PENTING:
-            -- Pakai botOrder asli, bukan activeBotOrder.
-            -- Supaya Bot2 tetap di tengah walaupun Bot1/Bot3 belum masuk.
-            ----------------------------------------------------------------
-            local myIndex = table.find(botOrder, tostring(LocalPlayer.UserId))
-            if not myIndex then
+            -- Jangan briefing diri sendiri
+            if player == LocalPlayer then
+                stopBriefing()
                 return
             end
 
-            ----------------------------------------------------------------
-            -- BRIEFING GRID SETTINGS
-            ----------------------------------------------------------------
-            local columns = 3
+            stopBriefing()
 
-            local zeroIndex = myIndex - 1
-            local column = zeroIndex % columns
-            local row = math.floor(zeroIndex / columns)
+            briefing = true
+            targetPlayer = player
 
-            -- Hasil column:
-            -- 0 = kiri
-            -- 1 = tengah
-            -- 2 = kanan
-            local horizontalOffset = (column - 1) * horizontalSpacing
+            sendChat("Yes, Sir!")
+
+            local myOrder = table.find(botOrder, tostring(LocalPlayer.UserId))
+            local targetOrder = table.find(botOrder, tostring(player.UserId))
+
+            local myIndex
+
+            if myOrder and targetOrder then
+                myIndex = myOrder - targetOrder
+            else
+                myIndex = myOrder or 1
+            end
+
+            -- Kalau posisi bot ini sebelum/sama dengan target, jangan briefing
+            if myIndex <= 0 then
+                stopBriefing()
+                return
+            end
 
             if humanoid then
                 humanoid.AutoRotate = false
             end
 
             followConnection = RunService.Heartbeat:Connect(function()
-                if not positioning or not humanoid or not myHRP then return end
+                if not briefing or not humanoid or not myHRP then return end
+                if not targetPlayer then return end
                 if not targetPlayer.Character then return end
 
                 local hrp = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
                 if not hrp then return end
 
-                ----------------------------------------------------------------
-                -- DISTANCE
-                ----------------------------------------------------------------
-                local distance = defaultBotFrontDistance
+                local distance = defaultBotBriefingDistance
 
                 if Admin:IsAdmin(targetPlayer) then
-                    distance = adminFrontDistance
+                    distance = adminBriefingDistance
                 end
 
                 local special = Distance:GetDistance(
@@ -202,32 +196,21 @@ return {
                 end
 
                 ----------------------------------------------------------------
-                -- FINAL POSITION
+                -- POSISI DI DEPAN TARGET
                 --
-                -- Formasi:
+                -- Follow.lua:
+                -- belakang = hrp.CFrame.LookVector * -(distance * myIndex)
                 --
-                --              VIP / Leader
-                --
-                --      Bot1      Bot2      Bot3
-                --      Bot4      Bot5      Bot6
-                --      Bot7      Bot8      Bot9
-                --
-                -- Bot2, Bot5, Bot8 sejajar tengah dengan VIP.
+                -- Briefing.lua:
+                -- depan = hrp.CFrame.LookVector * (distance * myIndex)
                 ----------------------------------------------------------------
-                local targetPosition =
-                    hrp.Position
-                    + hrp.CFrame.LookVector * (distance + (row * rowSpacing))
-                    + hrp.CFrame.RightVector * horizontalOffset
-
-                if not hasChatted then
-                    sendChat("Yes, Sir!")
-                    hasChatted = true
-                end
+                local offset = hrp.CFrame.LookVector * (distance * myIndex)
+                local targetPosition = hrp.Position + offset
 
                 humanoid:MoveTo(targetPosition)
 
                 ----------------------------------------------------------------
-                -- ROTATE TO FACE VIP
+                -- MENGHADAP KE VIP / LEADER
                 ----------------------------------------------------------------
                 local distanceToPosition = (myHRP.Position - targetPosition).Magnitude
 
@@ -238,7 +221,7 @@ return {
         end
 
         ----------------------------------------------------------------
-        -- COMMAND HANDLER ADMIN ONLY
+        -- COMMAND HANDLER
         ----------------------------------------------------------------
         local function handleCommand(msg, sender)
             if not Admin:IsAdmin(sender) then return end
@@ -251,7 +234,7 @@ return {
                 return
             end
 
-            -- !briefing <name>
+            -- !briefing <name/displayname>
             local targetName = lower:match("^!briefing%s+(.+)$")
             if targetName then
                 local target = findPlayerByName(targetName)
@@ -263,9 +246,10 @@ return {
                 return
             end
 
-            -- stop
+            -- !stop / !unbriefing
             if lower == "!stop" or lower == "!unbriefing" then
                 stopBriefing()
+                return
             end
         end
 
