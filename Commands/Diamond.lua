@@ -1,5 +1,3 @@
-ga usah ada AutoPush jadi gabung aja sama Diamond.lua , jika !diamond maka udah otomatis aktif push
-
 -- Commands/Diamond.lua
 -- Admin-only follow system (DIAMOND + TWOLINE)
 -- Supports: !diamond / !diamond <username|displayname>
