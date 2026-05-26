@@ -209,20 +209,11 @@ local formationRightShift = 0.5
         local hrp = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
         if not hrp then return end
 
-        local distance = defaultBotBriefingDistance
+local distance = defaultBotBriefingDistance
 
-        if Admin:IsAdmin(targetPlayer) then
-            distance = adminBriefingDistance
-        end
-
-        local special = Distance:GetDistance(
-            tostring(LocalPlayer.UserId),
-            tostring(targetPlayer.UserId)
-        )
-
-        if special then
-            distance = special
-        end
+if Admin:IsAdmin(targetPlayer) then
+    distance = adminBriefingDistance
+end
 
         ----------------------------------------------------------------
         -- POSISI DI DEPAN LEADER
