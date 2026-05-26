@@ -33,7 +33,7 @@ local commandFiles = {
     "Main.lua",
     "Follow.lua",
     "Briefing.lua",
-    "Cross.lua"
+    "Cross.lua",
     "Frontline.lua",
     "Pushup.lua",
     "Sync.lua",
