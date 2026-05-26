@@ -137,43 +137,36 @@ return {
                     distance = special
                 end
 
---- FORMATION TWO LINE
--- Bot1 Bot2 Bot3 Bot4
--- Bot5 Bot6 Bot7 Bot8
---       Bot9
-
-local rightVector = hrp.CFrame.RightVector
-local lookVector = hrp.CFrame.LookVector
+-- FORMATION TWO LINE
+-- Bot2 - Bot5 di kiri
+-- Bot6 - Bot9/Bot10 di kanan
+-- Bot6 sejajar Bot2, Bot7 sejajar Bot3, dst
 
 local rowIndex
-local columnIndex
+local sideDir
 
-if myIndex >= 1 and myIndex <= 4 then
-    -- Baris pertama: Bot1 - Bot4
-    rowIndex = 1
-    columnIndex = myIndex
+if myIndex >= 2 and myIndex <= 5 then
+    -- Baris kiri: Bot2, Bot3, Bot4, Bot5
+    rowIndex = myIndex - 1
+    sideDir = -hrp.CFrame.RightVector
 
-elseif myIndex >= 5 and myIndex <= 8 then
-    -- Baris kedua: Bot5 - Bot8
-    rowIndex = 2
-    columnIndex = myIndex - 4
-
-elseif myIndex == 9 then
-    -- Bot9 paling belakang tengah
-    rowIndex = 3
-    columnIndex = 2.5
+elseif myIndex >= 6 and myIndex <= 10 then
+    -- Baris kanan: Bot6, Bot7, Bot8, Bot9, Bot10
+    rowIndex = myIndex - 5
+    sideDir = hrp.CFrame.RightVector
 
 else
+    -- Bot1 / admin tidak ikut geser formasi
     return
 end
 
-local centerOffset = columnIndex - 2.5
-
-local backOffset = lookVector * -(distance * rowIndex)
-local sideOffset = rightVector * (centerOffset * sideSpacing)
+local backOffset = hrp.CFrame.LookVector * -(distance * rowIndex)
+local sideOffset = sideDir * sideSpacing
 
 local targetPosition = hrp.Position + backOffset + sideOffset
 humanoid:MoveTo(targetPosition)
+            end)
+        end
 
         ----------------------------------------------------------------
         -- COMMAND HANDLER (ADMIN ONLY)
