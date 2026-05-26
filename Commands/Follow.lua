@@ -5,10 +5,11 @@ gimana caranya kode ini agar jika ada tembok maka akan menghindar
 
 return {
     Execute = function()
-        local Players = game:GetService("Players")
-        local RunService = game:GetService("RunService")
-        local TextChatService = game:GetService("TextChatService")
-        local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local TextChatService = game:GetService("TextChatService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local PathfindingService = game:GetService("PathfindingService")
 
         local LocalPlayer = Players.LocalPlayer
         if not LocalPlayer then return end
@@ -96,6 +97,72 @@ return {
         end
 
         ----------------------------------------------------------------
+-- PATHFINDING
+----------------------------------------------------------------
+local currentPathId = 0
+local lastPathTime = 0
+local lastTargetPosition
+
+local function moveWithPath(targetPosition)
+    if not humanoid or not myHRP then return end
+
+    -- Jangan terlalu sering hitung path biar tidak lag
+    if tick() - lastPathTime < 0.8 then
+        return
+    end
+
+    -- Kalau target belum banyak berubah, jangan hitung ulang
+    if lastTargetPosition and (lastTargetPosition - targetPosition).Magnitude < 3 then
+        return
+    end
+
+    lastPathTime = tick()
+    lastTargetPosition = targetPosition
+    currentPathId += 1
+
+    local thisPathId = currentPathId
+
+    local path = PathfindingService:CreatePath({
+        AgentRadius = 2,
+        AgentHeight = 5,
+        AgentCanJump = true,
+        AgentCanClimb = true,
+        WaypointSpacing = 4,
+    })
+
+    local success, err = pcall(function()
+        path:ComputeAsync(myHRP.Position, targetPosition)
+    end)
+
+    if not success or path.Status ~= Enum.PathStatus.Success then
+        humanoid:MoveTo(targetPosition)
+        return
+    end
+
+    local waypoints = path:GetWaypoints()
+
+    task.spawn(function()
+        for _, waypoint in ipairs(waypoints) do
+            if not following then return end
+            if thisPathId ~= currentPathId then return end
+            if not humanoid or not myHRP then return end
+
+            if waypoint.Action == Enum.PathWaypointAction.Jump then
+                humanoid.Jump = true
+            end
+
+            humanoid:MoveTo(waypoint.Position)
+
+            local reached = humanoid.MoveToFinished:Wait()
+
+            if not reached then
+                break
+            end
+        end
+    end)
+end
+
+        ----------------------------------------------------------------
         -- START FOLLOW
         ----------------------------------------------------------------
         local function startFollow(player)
@@ -167,11 +234,11 @@ local botOrder = {
                     distance = special
                 end
 
-                -- Posisi lurus ke belakang target
-                local offset = hrp.CFrame.LookVector * -(distance * myIndex)
-                local targetPosition = hrp.Position + offset
+-- Posisi lurus ke belakang target
+local offset = hrp.CFrame.LookVector * -(distance * myIndex)
+local targetPosition = hrp.Position + offset
 
-                humanoid:MoveTo(targetPosition)
+moveWithPath(targetPosition)
             end)
         end
 
