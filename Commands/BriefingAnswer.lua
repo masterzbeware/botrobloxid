@@ -93,61 +93,55 @@ return {
             return msg
         end
 
-        ----------------------------------------------------------------
-        -- GET BRIEFING ANSWER
-        ----------------------------------------------------------------
-        local function getBriefingAnswer(msg)
-            msg = normalizeMessage(msg)
+----------------------------------------------------------------
+-- GET BRIEFING ANSWER
+----------------------------------------------------------------
+local function getBriefingAnswer(msg)
+    msg = normalizeMessage(msg)
 
-            -- Mengerti / Paham
-            if msg == "apakah kalian mengerti"
-                or msg == "kalian mengerti"
-                or msg == "apakah kalian paham"
-                or msg == "kalian paham"
-                or msg == "paham tugas kalian"
-                or msg == "mengerti"
-                or msg == "paham"
-            then
-                return "Yes, Sir!"
-            end
+    -- Mengerti / Paham
+    -- Bisa mendeteksi kalimat panjang seperti:
+    -- "apakah kalian mengerti yang saya jelaskan"
+    if msg:find("mengerti", 1, true)
+        or msg:find("paham", 1, true)
+    then
+        return "Yes, Sir!"
+    end
 
-            -- Sudah jelas
-            if msg == "apakah sudah jelas"
-                or msg == "sudah jelas"
-                or msg == "jelas"
-            then
-                return "Clear, Sir!"
-            end
+    -- Sudah jelas
+    if msg:find("sudah jelas", 1, true)
+        or msg:find("jelas", 1, true)
+    then
+        return "Clear, Sir!"
+    end
 
-            -- Siap
-            if msg == "siap"
-                or msg == "kalian siap"
-                or msg == "apakah kalian siap"
-                or msg == "siap melaksanakan"
-                or msg == "siap menjalankan tugas"
-            then
-                return "Ready, Sir!"
-            end
+    -- Siap
+    if msg:find("siap", 1, true)
+        or msg:find("siap melaksanakan", 1, true)
+        or msg:find("siap menjalankan tugas", 1, true)
+    then
+        return "Ready, Sir!"
+    end
 
-            -- Ada pertanyaan
-            if msg == "ada pertanyaan"
-                or msg == "apakah ada pertanyaan"
-                or msg == "ada yang ingin ditanyakan"
-                or msg == "ada yang mau bertanya"
-            then
-                return "No, Sir!"
-            end
+    -- Ada pertanyaan
+    if msg:find("ada pertanyaan", 1, true)
+        or msg:find("apakah ada pertanyaan", 1, true)
+        or msg:find("ada yang ingin ditanyakan", 1, true)
+        or msg:find("ada yang mau bertanya", 1, true)
+    then
+        return "No, Sir!"
+    end
 
-            -- Laksanakan
-            if msg == "laksanakan"
-                or msg == "jalankan tugas"
-                or msg == "mulai bergerak"
-            then
-                return "Yes, Sir!"
-            end
+    -- Laksanakan
+    if msg:find("laksanakan", 1, true)
+        or msg:find("jalankan tugas", 1, true)
+        or msg:find("mulai bergerak", 1, true)
+    then
+        return "Yes, Sir!"
+    end
 
-            return nil
-        end
+    return nil
+end
 
         ----------------------------------------------------------------
         -- HANDLE CHAT
