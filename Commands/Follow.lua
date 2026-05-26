@@ -1,15 +1,13 @@
-gimana caranya kode ini agar jika ada tembok maka akan menghindar
 -- Commands/Follow.lua
 -- Admin-only follow system (NORMAL MoveTo, straight line formation)
 -- Supports: !follow / !follow <username|displayname>
 
 return {
     Execute = function()
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local TextChatService = game:GetService("TextChatService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local PathfindingService = game:GetService("PathfindingService")
+        local Players = game:GetService("Players")
+        local RunService = game:GetService("RunService")
+        local TextChatService = game:GetService("TextChatService")
+        local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
         local LocalPlayer = Players.LocalPlayer
         if not LocalPlayer then return end
@@ -97,83 +95,16 @@ local PathfindingService = game:GetService("PathfindingService")
         end
 
         ----------------------------------------------------------------
--- PATHFINDING
-----------------------------------------------------------------
-local currentPathId = 0
-local lastPathTime = 0
-local lastTargetPosition
-
-local function moveWithPath(targetPosition)
-    if not humanoid or not myHRP then return end
-
-    -- Jangan terlalu sering hitung path biar tidak lag
-    if tick() - lastPathTime < 0.8 then
-        return
-    end
-
-    -- Kalau target belum banyak berubah, jangan hitung ulang
-    if lastTargetPosition and (lastTargetPosition - targetPosition).Magnitude < 3 then
-        return
-    end
-
-    lastPathTime = tick()
-    lastTargetPosition = targetPosition
-    currentPathId += 1
-
-    local thisPathId = currentPathId
-
-    local path = PathfindingService:CreatePath({
-        AgentRadius = 2,
-        AgentHeight = 5,
-        AgentCanJump = true,
-        AgentCanClimb = true,
-        WaypointSpacing = 4,
-    })
-
-    local success, err = pcall(function()
-        path:ComputeAsync(myHRP.Position, targetPosition)
-    end)
-
-    if not success or path.Status ~= Enum.PathStatus.Success then
-        humanoid:MoveTo(targetPosition)
-        return
-    end
-
-    local waypoints = path:GetWaypoints()
-
-    task.spawn(function()
-        for _, waypoint in ipairs(waypoints) do
-            if not following then return end
-            if thisPathId ~= currentPathId then return end
-            if not humanoid or not myHRP then return end
-
-            if waypoint.Action == Enum.PathWaypointAction.Jump then
-                humanoid.Jump = true
-            end
-
-            humanoid:MoveTo(waypoint.Position)
-
-            local reached = humanoid.MoveToFinished:Wait()
-
-            if not reached then
-                break
-            end
-        end
-    end)
-end
-
-        ----------------------------------------------------------------
         -- START FOLLOW
         ----------------------------------------------------------------
         local function startFollow(player)
             if not player then return end
 
             -- Jangan follow diri sendiri
-if player == LocalPlayer then
-    warn("[FOLLOW DEBUG] Tidak bisa follow diri sendiri:", LocalPlayer.Name, LocalPlayer.UserId)
-    stopFollow()
-    return
-end
+            if player == LocalPlayer then
+                stopFollow()
+                return
+            end
 
             stopFollow()
 
@@ -207,14 +138,10 @@ local botOrder = {
             end
 
             -- Kalau posisi bot ini sebelum target, jangan follow
-if myIndex <= 0 then
-    warn("[FOLLOW DEBUG] Bot tidak follow karena myIndex <= 0")
-    warn("[FOLLOW DEBUG] LocalPlayer:", LocalPlayer.Name, LocalPlayer.UserId)
-    warn("[FOLLOW DEBUG] Target:", player.Name, player.UserId)
-    warn("[FOLLOW DEBUG] myOrder:", myOrder, "targetOrder:", targetOrder, "myIndex:", myIndex)
-    stopFollow()
-    return
-end
+            if myIndex <= 0 then
+                stopFollow()
+                return
+            end
 
             followConnection = RunService.Heartbeat:Connect(function()
                 if not following or not humanoid or not myHRP then return end
@@ -239,84 +166,64 @@ end
                     distance = special
                 end
 
--- Posisi lurus ke belakang target
-local offset = hrp.CFrame.LookVector * -(distance * myIndex)
-local targetPosition = hrp.Position + offset
+                -- Posisi lurus ke belakang target
+                local offset = hrp.CFrame.LookVector * -(distance * myIndex)
+                local targetPosition = hrp.Position + offset
 
-moveWithPath(targetPosition)
+                humanoid:MoveTo(targetPosition)
             end)
         end
 
-----------------------------------------------------------------
--- COMMAND HANDLER
-----------------------------------------------------------------
-local function handleCommand(msg, sender)
-    warn("[FOLLOW DEBUG] Chat dari:", sender.Name, sender.UserId, "Pesan:", msg)
+        ----------------------------------------------------------------
+        -- COMMAND HANDLER
+        ----------------------------------------------------------------
+        local function handleCommand(msg, sender)
+            if not Admin:IsAdmin(sender) then return end
 
-    if not Admin:IsAdmin(sender) then
-        warn("[FOLLOW DEBUG] Ditolak, bukan admin:", sender.Name, sender.UserId)
-        return
-    end
+            local lower = msg:lower()
 
-    warn("[FOLLOW DEBUG] Admin valid:", sender.Name)
+            -- !follow
+            if lower == "!follow" then
+                startFollow(sender)
+                return
+            end
 
-    local lower = msg:lower()
+            -- !follow <name/displayname>
+            local targetName = lower:match("^!follow%s+(.+)$")
+            if targetName then
+                local target = findPlayerByName(targetName)
 
-    if lower == "!follow" then
-        warn("[FOLLOW DEBUG] Command !follow diterima")
-        startFollow(sender)
-        return
-    end
+                if target then
+                    startFollow(target)
+                end
 
-    local targetName = lower:match("^!follow%s+(.+)$")
-    if targetName then
-        local target = findPlayerByName(targetName)
+                return
+            end
 
-        if target then
-            warn("[FOLLOW DEBUG] Follow target:", target.Name)
-            startFollow(target)
-        else
-            warn("[FOLLOW DEBUG] Target tidak ditemukan:", targetName)
+            -- !stop / !unfollow
+            if lower == "!stop" or lower == "!unfollow" then
+                stopFollow()
+                return
+            end
         end
 
-        return
-    end
+        ----------------------------------------------------------------
+        -- TEXT CHAT SERVICE
+        ----------------------------------------------------------------
+        if TextChatService and TextChatService.TextChannels then
+            local ch = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
 
-    if lower == "!stop" or lower == "!unfollow" then
-        warn("[FOLLOW DEBUG] Stop follow")
-        stopFollow()
-        return
-    end
-end
+            if ch then
+                ch.OnIncomingMessage = function(message)
+                    local uid = message.TextSource and message.TextSource.UserId
+                    local sender = uid and Players:GetPlayerByUserId(uid)
 
-----------------------------------------------------------------
--- TEXT CHAT SERVICE FIX UNTUK EXECUTOR
-----------------------------------------------------------------
-task.spawn(function()
-    local textChannels = TextChatService:WaitForChild("TextChannels", 10)
-    if not textChannels then
-        warn("[FOLLOW] TextChannels tidak ditemukan")
-        return
-    end
-
-    local ch = textChannels:FindFirstChild("RBXGeneral") or textChannels:WaitForChild("RBXGeneral", 10)
-
-    if not ch then
-        warn("[FOLLOW] RBXGeneral tidak ditemukan")
-        return
-    end
-
-    ch.MessageReceived:Connect(function(message)
-        local uid = message.TextSource and message.TextSource.UserId
-        local sender = uid and Players:GetPlayerByUserId(uid)
-
-        if sender then
-            handleCommand(message.Text, sender)
+                    if sender then
+                        handleCommand(message.Text, sender)
+                    end
+                end
+            end
         end
-    end)
-
-    warn("[FOLLOW] TextChat listener aktif")
-end)
 
         ----------------------------------------------------------------
         -- FALLBACK CHAT
