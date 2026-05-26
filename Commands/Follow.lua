@@ -28,12 +28,8 @@ return {
         local targetPlayer
         local followConnection
 
-        local waypoints = {}
-local waypointIndex = 1
-local lastPathTime = 0
-
-local PATH_RECALC_TIME = 0.25
-local WAYPOINT_DISTANCE = 3
+local lastMoveTime = 0
+local UPDATE_TIME = 0.15
 
         local adminFollowDistance = 3
         local defaultBotFollowDistance = 2
@@ -102,98 +98,33 @@ local WAYPOINT_DISTANCE = 3
             return nil
         end
 
-        ----------------------------------------------------------------
--- CHECK WALL BETWEEN BOT AND TARGET POSITION
 ----------------------------------------------------------------
-local function hasWallBetween(targetPosition)
-    if not myHRP then return false end
-
-    local direction = targetPosition - myHRP.Position
-
-    if direction.Magnitude <= 1 then
-        return false
-    end
-
-    local rayParams = RaycastParams.new()
-    rayParams.FilterType = Enum.RaycastFilterType.Exclude
-
-    local ignoreList = {}
-
-    if LocalPlayer.Character then
-        table.insert(ignoreList, LocalPlayer.Character)
-    end
-
-    if targetPlayer and targetPlayer.Character then
-        table.insert(ignoreList, targetPlayer.Character)
-    end
-
-    rayParams.FilterDescendantsInstances = ignoreList
-
-    local result = workspace:Raycast(myHRP.Position, direction, rayParams)
-
-    if result then
-        return true
-    end
-
-    return false
-end
-
-----------------------------------------------------------------
--- SMART MOVE WITH PATHFINDING
+-- SIMPLE PATHFINDING MOVE
 ----------------------------------------------------------------
 local function smartMoveTo(targetPosition)
     if not humanoid or not myHRP then return end
 
-    -- Kalau tidak ada tembok, jalan langsung biasa
-    if not hasWallBetween(targetPosition) then
-        waypoints = {}
-        waypointIndex = 1
-        humanoid:MoveTo(targetPosition)
-        return
-    end
+    local path = PathfindingService:CreatePath({
+        AgentRadius = 2,
+        AgentHeight = 5,
+        AgentCanJump = true,
+        AgentCanClimb = true,
+        WaypointSpacing = 3,
+    })
 
-    -- Kalau ada tembok, hitung path setiap 0.5 detik
-    local now = tick()
+    local success = pcall(function()
+        path:ComputeAsync(myHRP.Position, targetPosition)
+    end)
 
-    if now - lastPathTime >= PATH_RECALC_TIME then
-        lastPathTime = now
+    if success and path.Status == Enum.PathStatus.Success then
+        local waypoints = path:GetWaypoints()
 
-        local path = PathfindingService:CreatePath({
-            AgentRadius = 2,
-            AgentHeight = 5,
-            AgentCanJump = true,
-            AgentCanClimb = true,
-        })
-
-        local success = pcall(function()
-            path:ComputeAsync(myHRP.Position, targetPosition)
-        end)
-
-        if success and path.Status == Enum.PathStatus.Success then
-            waypoints = path:GetWaypoints()
-            waypointIndex = 2
-        else
-            -- Kalau path gagal, tetap coba MoveTo biasa
-            humanoid:MoveTo(targetPosition)
-            return
-        end
-    end
-
-    -- Ikuti waypoint
-    if waypoints and waypoints[waypointIndex] then
-        local waypoint = waypoints[waypointIndex]
-
-        if (myHRP.Position - waypoint.Position).Magnitude <= WAYPOINT_DISTANCE then
-            waypointIndex += 1
-            waypoint = waypoints[waypointIndex]
-        end
-
-        if waypoint then
-            if waypoint.Action == Enum.PathWaypointAction.Jump then
+        if waypoints[2] then
+            if waypoints[2].Action == Enum.PathWaypointAction.Jump then
                 humanoid.Jump = true
             end
 
-            humanoid:MoveTo(waypoint.Position)
+            humanoid:MoveTo(waypoints[2].Position)
         else
             humanoid:MoveTo(targetPosition)
         end
@@ -275,10 +206,15 @@ local botOrder = {
                 end
 
                 -- Posisi lurus ke belakang target
-                local offset = hrp.CFrame.LookVector * -(distance * myIndex)
-                local targetPosition = hrp.Position + offset
+local offset = hrp.CFrame.LookVector * -(distance * myIndex)
+local targetPosition = hrp.Position + offset
 
-                smartMoveTo(targetPosition)
+local now = tick()
+
+if now - lastMoveTime >= UPDATE_TIME then
+    lastMoveTime = now
+    smartMoveTo(targetPosition)
+end
             end)
         end
 
