@@ -52,6 +52,7 @@ return {
             "11002919499", -- Bot 7
             "11002918670", -- Bot 8
             "11007692539", -- Bot 9
+            "11008102483", -- Bot 10
         }
 
         local function getActiveBotOrder()
