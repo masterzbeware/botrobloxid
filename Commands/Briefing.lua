@@ -47,15 +47,14 @@ return {
         -- BOT ORDER
         ----------------------------------------------------------------
         local botOrder = {
-            "11001607521", -- Bot 1
-            "11001608049", -- Bot 2
-            "11001625681", -- Bot 3
-            "11001647769", -- Bot 4
-            "11002716767", -- Bot 5
-            "11002763516", -- Bot 6
-            "11002833908", -- Bot 7
-            "11002919499", -- Bot 8
-            "11002918670", -- Bot 9
+    "11001608049", -- Bot 1
+    "11001625681", -- Bot 2
+    "11001647769", -- Bot 3
+    "11002716767", -- Bot 4
+    "11002763516", -- Bot 5
+    "11002833908", -- Bot 6
+    "11002919499", -- Bot 7
+    "11002918670", -- Bot 8
         }
 
         local function getActiveBotOrder()
@@ -150,83 +149,94 @@ return {
             return nil
         end
 
+----------------------------------------------------------------
+-- START BRIEFING
+----------------------------------------------------------------
+local function startBriefing(player)
+    if not player then return end
+
+    stopBriefing()
+
+    positioning = true
+    targetPlayer = player
+
+    local activeBotOrder = getActiveBotOrder()
+
+    local myIndex = table.find(activeBotOrder, tostring(LocalPlayer.UserId))
+    if not myIndex then
+        return
+    end
+
+    ----------------------------------------------------------------
+    -- BRIEFING GRID SETTINGS
+    ----------------------------------------------------------------
+    local columns = 3
+    local horizontalSpacing = 3
+    local rowSpacing = 3
+
+    local zeroIndex = myIndex - 1
+    local column = zeroIndex % columns
+    local row = math.floor(zeroIndex / columns)
+
+    -- Bot1 kiri, Bot2 tengah, Bot3 kanan
+    -- Bot4 kiri, Bot5 tengah, Bot6 kanan
+    -- Bot7 kiri, Bot8 tengah, Bot9 kanan
+    local horizontalOffset = (column - 1) * horizontalSpacing
+
+    if humanoid then
+        humanoid.AutoRotate = false
+    end
+
+    followConnection = RunService.Heartbeat:Connect(function()
+        if not positioning or not humanoid or not myHRP then return end
+        if not targetPlayer.Character then return end
+
+        local hrp = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+
         ----------------------------------------------------------------
-        -- START BRIEFING
+        -- DISTANCE
         ----------------------------------------------------------------
-        local function startBriefing(player)
-            if not player then return end
+        local distance = defaultBotFrontDistance
 
-            stopBriefing()
-
-            positioning = true
-            targetPlayer = player
-
-            local activeBotOrder = getActiveBotOrder()
-
-            local myIndex = table.find(activeBotOrder, tostring(LocalPlayer.UserId))
-            if not myIndex then
-                return
-            end
-
-            local totalBots = #activeBotOrder
-            local middleIndex = (totalBots + 1) / 2
-            local horizontalOffset = (myIndex - middleIndex) * spacing
-
-            if humanoid then
-                humanoid.AutoRotate = false
-            end
-
-            followConnection = RunService.Heartbeat:Connect(function()
-                if not positioning or not humanoid or not myHRP then return end
-                if not targetPlayer.Character then return end
-
-                local hrp = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
-                if not hrp then return end
-
-                ----------------------------------------------------------------
-                -- DISTANCE
-                ----------------------------------------------------------------
-                local distance = defaultBotFrontDistance
-
-                if Admin:IsAdmin(targetPlayer) then
-                    distance = adminFrontDistance
-                end
-
-                local special = Distance:GetDistance(
-                    tostring(LocalPlayer.UserId),
-                    tostring(targetPlayer.UserId)
-                )
-
-                if special then
-                    distance = special
-                end
-
-                ----------------------------------------------------------------
-                -- FINAL POSITION
-                -- Di depan VIP/leader, tapi bot menghadap ke VIP
-                ----------------------------------------------------------------
-                local targetPosition =
-                    hrp.Position
-                    + hrp.CFrame.LookVector * distance
-                    + hrp.CFrame.RightVector * horizontalOffset
-
-                if not hasChatted then
-                    sendChat("Yes, Sir!")
-                    hasChatted = true
-                end
-
-                humanoid:MoveTo(targetPosition)
-
-                ----------------------------------------------------------------
-                -- ROTATE TO FACE VIP
-                ----------------------------------------------------------------
-                local distanceToPosition = (myHRP.Position - targetPosition).Magnitude
-
-                if distanceToPosition <= 2.5 then
-                    faceTarget(hrp)
-                end
-            end)
+        if Admin:IsAdmin(targetPlayer) then
+            distance = adminFrontDistance
         end
+
+        local special = Distance:GetDistance(
+            tostring(LocalPlayer.UserId),
+            tostring(targetPlayer.UserId)
+        )
+
+        if special then
+            distance = special
+        end
+
+        ----------------------------------------------------------------
+        -- FINAL POSITION
+        ----------------------------------------------------------------
+        local targetPosition =
+            hrp.Position
+            + hrp.CFrame.LookVector * (distance + (row * rowSpacing))
+            + hrp.CFrame.RightVector * horizontalOffset
+
+        if not hasChatted then
+            sendChat("Yes, Sir!")
+            hasChatted = true
+        end
+
+        humanoid:MoveTo(targetPosition)
+
+        ----------------------------------------------------------------
+        -- ROTATE TO FACE VIP
+        ----------------------------------------------------------------
+        local distanceToPosition = (myHRP.Position - targetPosition).Magnitude
+
+        if distanceToPosition <= 2.5 then
+            faceTarget(hrp)
+        end
+    end)
+end
 
         ----------------------------------------------------------------
         -- COMMAND HANDLER ADMIN ONLY

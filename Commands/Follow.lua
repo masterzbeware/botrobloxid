@@ -115,15 +115,14 @@ return {
 
             -- BOT ORDER dari depan ke belakang
 local botOrder = {
-    "11001607521", -- Bot 1
-    "11001608049", -- Bot 2
-    "11001625681", -- Bot 3
-    "11001647769", -- Bot 4
-    "11002716767", -- Bot 5
-    "11002763516", -- Bot 6
-    "11002833908", -- Bot 7
-    "11002919499", -- Bot 8
-    "11002918670", -- Bot 9
+    "11001608049", -- Bot 1
+    "11001625681", -- Bot 2
+    "11001647769", -- Bot 3
+    "11002716767", -- Bot 4
+    "11002763516", -- Bot 5
+    "11002833908", -- Bot 6
+    "11002919499", -- Bot 7
+    "11002918670", -- Bot 8
 }
 
             local myOrder = table.find(botOrder, tostring(LocalPlayer.UserId))
