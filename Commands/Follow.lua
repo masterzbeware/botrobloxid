@@ -101,22 +101,17 @@ local botOrder = {
             "11008102483", -- Bot 10
 }
 
-            local myOrder = table.find(botOrder, tostring(LocalPlayer.UserId))
-            local targetOrder = table.find(botOrder, tostring(player.UserId))
+local myOrder = table.find(
+    botOrder,
+    tostring(LocalPlayer.UserId)
+)
 
-            local myIndex
+if not myOrder then
+    stopFollow()
+    return
+end
 
-            if myOrder and targetOrder then
-                myIndex = myOrder - targetOrder
-            else
-                myIndex = myOrder or 1
-            end
-
-            -- Kalau posisi bot ini sebelum target, jangan follow
-            if myIndex <= 0 then
-                stopFollow()
-                return
-            end
+local myIndex = myOrder
 
             followConnection = RunService.Heartbeat:Connect(function()
                 if not following or not humanoid or not myHRP then return end
