@@ -31,6 +31,7 @@ _G.BotVars.Modules = {}
 local commandFiles = {
     "Perfix.lua",
     "Main.lua",
+    "Reset.lua",
     "Follow.lua",
     "Briefing.lua",
     "Cross.lua",
@@ -85,6 +86,7 @@ jalankan("salute")
 jalankan("briefing")
 jalankan("box")
 jalankan("cross")
+jalankan("reset")
 jalankan("briefinganswer")
 
 print("✅ Bot.lua loaded — All systems active.")
