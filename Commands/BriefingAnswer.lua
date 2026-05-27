@@ -105,22 +105,21 @@ local function getBriefingAnswer(msg)
     if msg:find("mengerti", 1, true)
         or msg:find("paham", 1, true)
     then
-        return "Yes, Sir!"
+        return "Siap, dimengerti!"
     end
 
     -- Sudah jelas
     if msg:find("sudah jelas", 1, true)
         or msg:find("jelas", 1, true)
     then
-        return "Clear, Sir!"
+        return "Siap, Jelas!"
     end
 
-    -- Siap
-    if msg:find("siap", 1, true)
-        or msg:find("siap melaksanakan", 1, true)
-        or msg:find("siap menjalankan tugas", 1, true)
+    -- Ambil alih
+    if msg:find("ambil alih", 1, true)
+        or msg:find("ambilalih", 1, true)
     then
-        return "Ready, Sir!"
+        return "Siap!"
     end
 
     -- Ada pertanyaan
@@ -129,15 +128,16 @@ local function getBriefingAnswer(msg)
         or msg:find("ada yang ingin ditanyakan", 1, true)
         or msg:find("ada yang mau bertanya", 1, true)
     then
-        return "No, Sir!"
+        return "Siap, Tidak ada!"
     end
 
+
+    
     -- Laksanakan
-    if msg:find("laksanakan", 1, true)
-        or msg:find("jalankan tugas", 1, true)
-        or msg:find("mulai bergerak", 1, true)
+    if msg:find("hormat", 1, true)
+        or msg:find("hormat grak", 1, true)
     then
-        return "Yes, Sir!"
+        return "/e salute"
     end
 
     return nil
@@ -150,10 +150,14 @@ end
             if not msg or not sender then return end
             if sender == LocalPlayer then return end
 
-            -- hanya admin yang bisa trigger jawaban
-            if not Admin:IsAdmin(sender) then
-                return
-            end
+-- target follow
+local followTarget = vars.CurrentFollowTarget
+
+-- hanya admin ATAU target follow
+if not Admin:IsAdmin(sender)
+and sender ~= followTarget then
+    return
+end
 
             local answer = getBriefingAnswer(msg)
 

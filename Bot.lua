@@ -40,7 +40,7 @@ local commandFiles = {
     "BriefingAnswer.lua",
     "Sync.lua",
     "Salute.lua",
-    "Box.lua",
+    "Broadcast.lua",
     "Twoline.lua",
     "Diamond.lua",
 }
@@ -76,6 +76,7 @@ end
 -- ✅ EXECUTION ORDER
 jalankan("perfix")
 jalankan("main")
+jalankan("broadcast")
 jalankan("follow")
 jalankan("frontline") 
 jalankan("pushup") 
@@ -84,7 +85,6 @@ jalankan("twoline")
 jalankan("diamond") 
 jalankan("salute")
 jalankan("briefing")
-jalankan("box")
 jalankan("cross")
 jalankan("reset")
 jalankan("briefinganswer")
