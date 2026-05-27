@@ -19,7 +19,7 @@ _G.BotVars = {
 
 local Window = Library:CreateWindow({
     Title = "MasterZ HUB",
-    Footer = "1.0.3",
+    Footer = "1.0.0",
     Icon = 0
 })
 
@@ -39,6 +39,7 @@ local commandFiles = {
     "BriefingAnswer.lua",
     "Sync.lua",
     "Salute.lua",
+    "Box.lua",
     "Twoline.lua",
     "Diamond.lua",
 }
@@ -82,6 +83,7 @@ jalankan("twoline")
 jalankan("diamond") 
 jalankan("salute")
 jalankan("briefing")
+jalankan("box")
 jalankan("cross")
 jalankan("briefinganswer")
 
