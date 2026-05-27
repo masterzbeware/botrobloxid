@@ -1,12 +1,11 @@
 -- Commands/Box.lua
 -- Admin-only BOX formation
--- Command:
+--
+-- Commands:
 -- !box
 -- !box <username|displayname>
 --
 -- FORMATION:
---
---        BG7
 --
 -- BG1   BG2   BG3
 --
@@ -14,7 +13,7 @@
 --
 -- BG6   BG7   BG8
 --
--- Sisa bot otomatis di belakang
+-- BG9   BG10 (rear support)
 
 return {
     Execute = function()
@@ -25,7 +24,9 @@ return {
         local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
         local LocalPlayer = Players.LocalPlayer
-        if not LocalPlayer then return end
+        if not LocalPlayer then
+            return
+        end
 
         ----------------------------------------------------------------
         -- LOAD ADMIN MODULE
@@ -41,7 +42,10 @@ return {
         local myHRP
 
         local function updateCharacter()
-            local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+
+            local char =
+                LocalPlayer.Character
+                or LocalPlayer.CharacterAdded:Wait()
 
             humanoid = char:WaitForChild("Humanoid")
             myHRP = char:WaitForChild("HumanoidRootPart")
@@ -70,23 +74,32 @@ return {
         -- CHAT
         ----------------------------------------------------------------
         local function sendChat(msg)
-            local ok = false
 
-            if TextChatService and TextChatService.TextChannels then
-                local ch = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+            local success = false
 
-                if ch then
+            if TextChatService
+            and TextChatService.TextChannels then
+
+                local channel =
+                    TextChatService.TextChannels
+                    :FindFirstChild("RBXGeneral")
+
+                if channel then
+
                     pcall(function()
-                        ch:SendAsync(msg)
+                        channel:SendAsync(msg)
                     end)
 
-                    ok = true
+                    success = true
                 end
             end
 
-            if not ok then
+            if not success then
+
                 pcall(function()
-                    ReplicatedStorage.DefaultChatSystemChatEvents
+
+                    ReplicatedStorage
+                        .DefaultChatSystemChatEvents
                         .SayMessageRequest
                         :FireServer(msg, "All")
                 end)
@@ -97,12 +110,15 @@ return {
         -- FIND PLAYER
         ----------------------------------------------------------------
         local function findPlayerByName(name)
+
             name = name:lower()
 
-            for _, p in ipairs(Players:GetPlayers()) do
-                if p.Name:lower() == name
-                or p.DisplayName:lower() == name then
-                    return p
+            for _, player in ipairs(Players:GetPlayers()) do
+
+                if player.Name:lower() == name
+                or player.DisplayName:lower() == name then
+
+                    return player
                 end
             end
 
@@ -110,14 +126,14 @@ return {
         end
 
         ----------------------------------------------------------------
-        -- FORMATION
+        -- FORMATION STATE
         ----------------------------------------------------------------
         local active = false
         local targetPlayer
         local followConnection
 
         ----------------------------------------------------------------
-        -- STOP
+        -- STOP FORMATION
         ----------------------------------------------------------------
         local function stopFormation()
 
@@ -135,27 +151,39 @@ return {
         end
 
         ----------------------------------------------------------------
-        -- BOX POSITIONS
+        -- BOX OFFSETS
+        --
+        -- Negative Z = depan VIP
+        -- Positive Z = belakang VIP
         ----------------------------------------------------------------
         local formationOffsets = {
 
-            -- BG1 BG2 BG3 (depan)
-            [1] = Vector3.new(-6,0,-8),
-            [2] = Vector3.new(0,0,-8),
-            [3] = Vector3.new(6,0,-8),
+            ------------------------------------------------------------
+            -- FRONT LINE
+            ------------------------------------------------------------
+            [1] = Vector3.new(-6, 0, -8),
+            [2] = Vector3.new( 0, 0, -8),
+            [3] = Vector3.new( 6, 0, -8),
 
-            -- BG4 VIP BG5 (tengah)
-            [4] = Vector3.new(-6,0,0),
-            [5] = Vector3.new(6,0,0),
+            ------------------------------------------------------------
+            -- VIP SIDE PROTECTION
+            -- Sejajar dengan VIP
+            ------------------------------------------------------------
+            [4] = Vector3.new(-4.5, 0, 0),
+            [5] = Vector3.new( 4.5, 0, 0),
 
-            -- BG6 BG7 BG8 (belakang)
-            [6] = Vector3.new(-6,0,8),
-            [7] = Vector3.new(0,0,8),
-            [8] = Vector3.new(6,0,8),
+            ------------------------------------------------------------
+            -- BACK LINE
+            ------------------------------------------------------------
+            [6] = Vector3.new(-6, 0, 8),
+            [7] = Vector3.new( 0, 0, 8),
+            [8] = Vector3.new( 6, 0, 8),
 
-            -- sisa di belakang lagi
-            [9] = Vector3.new(-3,0,14),
-            [10] = Vector3.new(3,0,14),
+            ------------------------------------------------------------
+            -- REAR SUPPORT
+            ------------------------------------------------------------
+            [9]  = Vector3.new(-3, 0, 14),
+            [10] = Vector3.new( 3, 0, 14),
         }
 
         ----------------------------------------------------------------
@@ -163,7 +191,9 @@ return {
         ----------------------------------------------------------------
         local function startBox(player)
 
-            if not player then return end
+            if not player then
+                return
+            end
 
             if player == LocalPlayer then
                 stopFormation()
@@ -177,6 +207,9 @@ return {
 
             sendChat("Box Formation!")
 
+            ------------------------------------------------------------
+            -- FIND BOT POSITION
+            ------------------------------------------------------------
             local myOrder = table.find(
                 botOrder,
                 tostring(LocalPlayer.UserId)
@@ -196,6 +229,9 @@ return {
 
             humanoid.AutoRotate = false
 
+            ------------------------------------------------------------
+            -- FOLLOW LOOP
+            ------------------------------------------------------------
             followConnection = RunService.Heartbeat:Connect(function()
 
                 if not active then return end
@@ -204,14 +240,16 @@ return {
                 if not humanoid then return end
                 if not myHRP then return end
 
-                local hrp = targetPlayer.Character:FindFirstChild(
-                    "HumanoidRootPart"
-                )
+                local hrp =
+                    targetPlayer.Character
+                    :FindFirstChild("HumanoidRootPart")
 
-                if not hrp then return end
+                if not hrp then
+                    return
+                end
 
                 --------------------------------------------------------
-                -- POSITION
+                -- TARGET POSITION
                 --------------------------------------------------------
                 local targetPosition =
                     hrp.CFrame:PointToWorldSpace(myOffset)
@@ -219,18 +257,21 @@ return {
                 humanoid:MoveTo(targetPosition)
 
                 --------------------------------------------------------
-                -- FACE SAME DIRECTION AS LEADER
+                -- FACE SAME DIRECTION AS VIP
                 --------------------------------------------------------
                 local distance =
                     (myHRP.Position - targetPosition).Magnitude
 
                 if distance <= 3 then
 
-                    local lookPos =
-                        myHRP.Position + hrp.CFrame.LookVector
+                    local lookPosition =
+                        myHRP.Position
+                        + hrp.CFrame.LookVector
 
-                    myHRP.CFrame =
-                        CFrame.lookAt(myHRP.Position, lookPos)
+                    myHRP.CFrame = CFrame.lookAt(
+                        myHRP.Position,
+                        lookPosition
+                    )
                 end
             end)
         end
@@ -250,6 +291,7 @@ return {
             -- !box
             ------------------------------------------------------------
             if lower == "!box" then
+
                 startBox(sender)
                 return
             end
@@ -257,11 +299,13 @@ return {
             ------------------------------------------------------------
             -- !box username
             ------------------------------------------------------------
-            local targetName = lower:match("^!box%s+(.+)$")
+            local targetName =
+                lower:match("^!box%s+(.+)$")
 
             if targetName then
 
-                local target = findPlayerByName(targetName)
+                local target =
+                    findPlayerByName(targetName)
 
                 if target then
                     startBox(target)
@@ -282,23 +326,26 @@ return {
         end
 
         ----------------------------------------------------------------
-        -- TEXTCHATSERVICE
+        -- TEXT CHAT SERVICE
         ----------------------------------------------------------------
-        if TextChatService and TextChatService.TextChannels then
+        if TextChatService
+        and TextChatService.TextChannels then
 
-            local ch =
-                TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+            local channel =
+                TextChatService.TextChannels
+                :FindFirstChild("RBXGeneral")
 
-            if ch then
+            if channel then
 
-                ch.OnIncomingMessage = function(message)
+                channel.OnIncomingMessage = function(message)
 
-                    local uid =
+                    local userId =
                         message.TextSource
                         and message.TextSource.UserId
 
                     local sender =
-                        uid and Players:GetPlayerByUserId(uid)
+                        userId
+                        and Players:GetPlayerByUserId(userId)
 
                     if sender then
                         handleCommand(message.Text, sender)
@@ -308,19 +355,19 @@ return {
         end
 
         ----------------------------------------------------------------
-        -- FALLBACK CHAT
+        -- LEGACY CHAT FALLBACK
         ----------------------------------------------------------------
-        for _, p in ipairs(Players:GetPlayers()) do
+        for _, player in ipairs(Players:GetPlayers()) do
 
-            p.Chatted:Connect(function(msg)
-                handleCommand(msg, p)
+            player.Chatted:Connect(function(msg)
+                handleCommand(msg, player)
             end)
         end
 
-        Players.PlayerAdded:Connect(function(p)
+        Players.PlayerAdded:Connect(function(player)
 
-            p.Chatted:Connect(function(msg)
-                handleCommand(msg, p)
+            player.Chatted:Connect(function(msg)
+                handleCommand(msg, player)
             end)
         end)
     end
