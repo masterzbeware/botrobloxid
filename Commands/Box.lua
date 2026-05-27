@@ -109,21 +109,39 @@ return {
         ----------------------------------------------------------------
         -- FIND PLAYER
         ----------------------------------------------------------------
-        local function findPlayerByName(name)
+local function findPlayerByName(name)
 
-            name = name:lower()
+    name = name:lower()
 
-            for _, player in ipairs(Players:GetPlayers()) do
+    for _, player in ipairs(Players:GetPlayers()) do
 
-                if player.Name:lower() == name
-                or player.DisplayName:lower() == name then
+        local username =
+            player.Name:lower()
 
-                    return player
-                end
-            end
+        local displayname =
+            player.DisplayName:lower()
 
-            return nil
+        --------------------------------------------------------
+        -- EXACT MATCH
+        --------------------------------------------------------
+        if username == name
+        or displayname == name then
+
+            return player
         end
+
+        --------------------------------------------------------
+        -- PARTIAL MATCH
+        --------------------------------------------------------
+        if username:find(name, 1, true)
+        or displayname:find(name, 1, true) then
+
+            return player
+        end
+    end
+
+    return nil
+end
 
         ----------------------------------------------------------------
         -- FORMATION STATE

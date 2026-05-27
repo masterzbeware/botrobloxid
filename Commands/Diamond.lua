@@ -81,23 +81,58 @@ local botOrder = {
         ----------------------------------------------------------------
         -- FIND PLAYER BY NAME / DISPLAY NAME
         ----------------------------------------------------------------
-        local function findPlayerByName(name)
-            name = name:lower()
-            for _, p in ipairs(Players:GetPlayers()) do
-                if p.Name:lower() == name or p.DisplayName:lower() == name then
-                    return p
-                end
-            end
-            return nil
+local function findPlayerByName(name)
+
+    name = name:lower()
+
+    for _, p in ipairs(Players:GetPlayers()) do
+
+        local username =
+            p.Name:lower()
+
+        local displayname =
+            p.DisplayName:lower()
+
+        ------------------------------------------------------------
+        -- EXACT MATCH
+        ------------------------------------------------------------
+        if username == name
+        or displayname == name then
+
+            return p
         end
+
+        ------------------------------------------------------------
+        -- PARTIAL MATCH
+        ------------------------------------------------------------
+        if username:find(name, 1, true)
+        or displayname:find(name, 1, true) then
+
+            return p
+        end
+    end
+
+    return nil
+end
 
         ----------------------------------------------------------------
         -- START DIAMOND FOLLOW
         ----------------------------------------------------------------
-        local function startFollow(player)
-            if not player then return end
+local function startFollow(player)
 
-            stopFollow()
+    if not player then
+        return
+    end
+
+    ------------------------------------------------------------
+    -- JANGAN FOLLOW DIRI SENDIRI
+    ------------------------------------------------------------
+    if player == LocalPlayer then
+        stopFollow()
+        return
+    end
+
+    stopFollow()
             following = true
             targetPlayer = player
 
