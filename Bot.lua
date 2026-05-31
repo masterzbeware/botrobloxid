@@ -1,7 +1,7 @@
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 
 local Window = Fluent:CreateWindow({
-    Title = "Generator ESP",
+    Title = "Kyro Hub",
     SubTitle = "",
     TabWidth = 160,
     Size = UDim2.fromOffset(500, 350),
@@ -12,138 +12,120 @@ local Window = Fluent:CreateWindow({
 
 local Tabs = {
     Main = Window:AddTab({ Title = "MAIN" }),
-    ESP = Window:AddTab({ Title = "ESP" })
+    AutoFishing = Window:AddTab({ Title = "AUTO FISHING" })
 }
 
-Tabs.ESP:AddParagraph({
-    Title = "ESP Generator",
-    Content = "Highlight generator dan tampilkan progress repair."
+Tabs.AutoFishing:AddParagraph({
+    Title = "Auto Fishing",
+    Content = "Auto casting"
 })
 
-local ESPEnabled = false
-local ESPObjects = {}
+-- VARIABEL
+local AutoFishingEnabled = false
+local autoFishingLoop = nil
 
-local function CreateESP(gen)
-    if ESPObjects[gen] then
-        return
-    end
+-- 🔥 SPEED CONTROL (NEW)
+local FishingSpeed = 1 -- default normal (1x)
 
-    local part = gen:FindFirstChildWhichIsA("BasePart")
+-- SERVICES
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
 
-    if not part then
-        return
-    end
+local CastRequest = ReplicatedStorage.Packages.Knit.Services.Fish.RF.CastRequest
+local MinigameResolved = ReplicatedStorage.Packages.Knit.Services.Fish.RF.MinigameResolved
+local CastVisuals = ReplicatedStorage.Packages.Knit.Services.Fish.RE.CastVisuals
 
-    -- Highlight
-    local highlight = Instance.new("Highlight")
-    highlight.FillColor = Color3.fromRGB(255, 0, 0)
-    highlight.FillTransparency = 0.5
-    highlight.OutlineTransparency = 0
-    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-    highlight.Adornee = gen
-    highlight.Parent = gen
-
-    -- Billboard
-    local billboard = Instance.new("BillboardGui")
-    billboard.Name = "GeneratorProgress"
-    billboard.Size = UDim2.new(0, 100, 0, 20)
-    billboard.StudsOffset = Vector3.new(0, 3, 0)
-    billboard.AlwaysOnTop = true
-    billboard.Parent = part
-
-local text = Instance.new("TextLabel")
-text.Size = UDim2.fromScale(1, 1)
-text.BackgroundTransparency = 1
-text.TextScaled = false
-text.TextSize = 20
-text.Font = Enum.Font.GothamBold
-text.TextColor3 = Color3.fromRGB(255,255,255)
-text.TextStrokeTransparency = 0.5
-text.Text = "Progress : 0%"
-text.Parent = billboard
-
-    local function UpdateText()
-        local progress = gen:GetAttribute("RepairProgress") or 0
-
-        -- jika ternyata game memakai 0-1
-        if progress <= 1 then
-            progress = progress * 100
-        end
-
-        progress = math.floor(progress)
-
-        text.Text = ("Progress : %d%%"):format(progress)
-
-        if progress >= 100 then
-            highlight.FillColor = Color3.fromRGB(0,255,0)
-        elseif progress > 0 then
-            highlight.FillColor = Color3.fromRGB(255,255,0)
-        else
-            highlight.FillColor = Color3.fromRGB(255,0,0)
-        end
-    end
-
-    UpdateText()
-
-    local connection = gen:GetAttributeChangedSignal("RepairProgress"):Connect(UpdateText)
-
-    ESPObjects[gen] = {
-        Highlight = highlight,
-        Billboard = billboard,
-        Connection = connection
-    }
+-- UTIL
+local function randomFloat(min, max)
+    return min + (math.random() * (max - min))
 end
 
-local function RemoveESP()
-    for _, data in pairs(ESPObjects) do
-        if data.Connection then
-            data.Connection:Disconnect()
-        end
-
-        if data.Highlight then
-            data.Highlight:Destroy()
-        end
-
-        if data.Billboard then
-            data.Billboard:Destroy()
-        end
-    end
-
-    table.clear(ESPObjects)
+local function getGoodPower()
+    return randomFloat(0.85, 0.95)
 end
 
-local function UpdateESP()
-    local Generators = workspace:FindFirstChild("Map")
-        and workspace.Map:FindFirstChild("Generators")
-
-    if not Generators then
-        return
-    end
-
-    for _, gen in ipairs(Generators:GetChildren()) do
-        CreateESP(gen)
-    end
+local function doCast()
+    local power = getGoodPower()
+    CastRequest:InvokeServer(power)
 end
 
-local Toggle = Tabs.ESP:AddToggle("GeneratorESP", {
-    Title = "ESP Generator",
-    Default = false
-})
+-- CAST VISUAL HANDLER
+CastVisuals.OnClientEvent:Connect(function(player, pos, fish, weight, data)
+    if player == LocalPlayer and AutoFishingEnabled then
 
-Toggle:OnChanged(function(Value)
-    ESPEnabled = Value
+        local minigameDelay = (4.5 + randomFloat(0, 0.5)) / FishingSpeed
+        task.wait(minigameDelay)
 
-    if ESPEnabled then
-        UpdateESP()
-    else
-        RemoveESP()
+        local reactionTime = randomFloat(0.2, 0.6) / FishingSpeed
+        task.wait(reactionTime)
+
+        MinigameResolved:InvokeServer(true)
     end
 end)
 
+-- LOOP
+local function StartAutoFishing()
+    if autoFishingLoop then
+        task.cancel(autoFishingLoop)
+    end
+
+    autoFishingLoop = task.spawn(function()
+        while AutoFishingEnabled do
+            doCast()
+
+            local baseDelay = randomFloat(8, 15)
+            task.wait(baseDelay / FishingSpeed)
+        end
+    end)
+end
+
+-- TOGGLE
+Tabs.AutoFishing:AddToggle("AutoFishingToggle", {
+    Title = "Auto Fishing",
+    Default = false
+}):OnChanged(function(Value)
+    AutoFishingEnabled = Value
+
+    if AutoFishingEnabled then
+        StartAutoFishing()
+
+        Fluent:Notify({
+            Title = "Auto Fishing",
+            Content = "Fishing dimulai!",
+            Duration = 3
+        })
+    else
+        if autoFishingLoop then
+            task.cancel(autoFishingLoop)
+            autoFishingLoop = nil
+        end
+
+        Fluent:Notify({
+            Title = "Auto Fishing",
+            Content = "Fishing dihentikan",
+            Duration = 2
+        })
+    end
+end)
+
+-- 🔥 SPEED SLIDER (NEW - DI BAWAH TOGGLE)
+Tabs.AutoFishing:AddSlider("FishingSpeedSlider", {
+    Title = "Fishing Speed",
+    Description = "Semakin kecil = semakin cepat",
+    Default = 1,
+    Min = 0.2,
+    Max = 3,
+    Rounding = 1
+}):OnChanged(function(Value)
+    FishingSpeed = Value
+end)
+
+-- MAINTAIN LOOP
 task.spawn(function()
     while task.wait(2) do
-        if ESPEnabled then
-            UpdateESP()
+        if AutoFishingEnabled and not autoFishingLoop then
+            StartAutoFishing()
         end
     end
 end)
@@ -151,7 +133,7 @@ end)
 Window:SelectTab(1)
 
 Fluent:Notify({
-    Title = "Loaded",
-    Content = "Generator ESP Ready",
+    Title = "L-01 Auto Fishing",
+    Content = "Ready!",
     Duration = 5
 })
