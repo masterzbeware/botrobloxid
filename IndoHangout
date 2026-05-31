@@ -191,6 +191,7 @@ Tabs.Mining:AddToggle("MiningToggle", {
     end
 end)
 
+
 -- ================= CRYSTAL ESP =================
 local function addESP(obj)
     if crystalHighlights[obj] then return end
@@ -244,6 +245,25 @@ Tabs.Mining:AddToggle("CrystalESP", {
         clearESP()
     end
 end)
+
+Tabs.Mining:AddButton({
+    Title = "Sell All Crystal",
+    Description = "Jual semua crystal di inventory",
+    Callback = function()
+
+        game:GetService("ReplicatedStorage")
+            :WaitForChild("Events")
+            :WaitForChild("RemoteFunction")
+            :WaitForChild("SellCrystal")
+            :InvokeServer("SellCrystal", "Sell All")
+
+        Fluent:Notify({
+            Title = "Mining",
+            Content = "All Crystal Sold!",
+            Duration = 2
+        })
+    end
+})
 
 -- ================= SHOP =================
 local selectedRod = "Party Rod"
