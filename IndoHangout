@@ -1,12 +1,12 @@
--- KYRO HUB AUTO FISHING + MINING [CLEAN FIXED + MINING SLIDER]
+-- KYRO HUB AUTO FISHING + MINING + SHOP + ROD SYSTEM
 
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 
 local Window = Fluent:CreateWindow({
     Title = "Kyro Hub",
-    SubTitle = "Premium",
+    SubTitle = "Premium System",
     TabWidth = 160,
-    Size = UDim2.fromOffset(450, 250),
+    Size = UDim2.fromOffset(500, 350),
     Acrylic = true,
     Theme = "Dark",
     MinimizeKey = Enum.KeyCode.LeftControl
@@ -15,24 +15,28 @@ local Window = Fluent:CreateWindow({
 -- ================= TAB =================
 local Tabs = {
     AutoFishing = Window:AddTab({ Title = "FISHING" }),
-    Mining = Window:AddTab({ Title = "MINING" })
+    Mining = Window:AddTab({ Title = "MINING" }),
+    Shop = Window:AddTab({ Title = "SHOP" })
 }
 
--- ================= VARIABEL =================
+-- ================= SERVICES =================
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local RodEvent = ReplicatedStorage.Events.RemoteEvent.Rod
+local PickaxeEvent = ReplicatedStorage.Events.RemoteEvent.Pickaxe
+
+-- ================= VARIABLES =================
 local AutoFishingEnabled = false
 local isFishing = false
 local catchCount = 0
 
 local AutoMiningEnabled = false
 local miningSpeed = 0.4
-local miningLoop = nil
 
--- ================= SERVICES =================
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local RodEvent = ReplicatedStorage.Events.RemoteEvent.Rod
-local PickaxeEvent = ReplicatedStorage.Events.RemoteEvent.Pickaxe
+local CrystalESPEnabled = false
+local crystalHighlights = {}
 
 -- ================= FISHING =================
 local function getRod()
@@ -41,28 +45,28 @@ local function getRod()
 end
 
 local function makeWhiteBarFullWidth()
-    local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
-    if not playerGui then return end
+    local gui = LocalPlayer:FindFirstChild("PlayerGui")
+    if not gui then return end
 
-    local reelingUI = playerGui:FindFirstChild("Reeling")
-    if not reelingUI or not reelingUI.Enabled then return end
+    local reeling = gui:FindFirstChild("Reeling")
+    if not reeling or not reeling.Enabled then return end
 
-    local mainFrame = reelingUI:FindFirstChild("MainFrame")
-    if not mainFrame then return end
-
-    local frame = mainFrame:FindFirstChild("Frame")
+    local frame = reeling:FindFirstChild("MainFrame")
     if not frame then return end
 
-    local whiteBar = frame:FindFirstChild("WhiteBar")
-    local redBar = frame:FindFirstChild("RedBar")
+    local inner = frame:FindFirstChild("Frame")
+    if not inner then return end
 
-    if whiteBar then
-        whiteBar.Size = UDim2.new(1, 0, whiteBar.Size.Y.Scale, 0)
-        whiteBar.Position = UDim2.new(0, 0, whiteBar.Position.Y.Scale, 0)
+    local white = inner:FindFirstChild("WhiteBar")
+    local red = inner:FindFirstChild("RedBar")
+
+    if white then
+        white.Size = UDim2.new(1, 0, white.Size.Y.Scale, 0)
+        white.Position = UDim2.new(0, 0, white.Position.Y.Scale, 0)
     end
 
-    if redBar then
-        redBar.Size = UDim2.new(0.02, 0, redBar.Size.Y.Scale, 0)
+    if red then
+        red.Size = UDim2.new(0.02, 0, red.Size.Y.Scale, 0)
     end
 end
 
@@ -87,12 +91,8 @@ task.spawn(function()
     end
 end)
 
-local rod = getRod()
-
-if rod then
+if getRod() then
     RodEvent.OnClientEvent:Connect(function(action, rodObj)
-        if rodObj ~= rod then return end
-
         if action == "StartReeling" then
             isFishing = true
             makeWhiteBarFullWidth()
@@ -110,36 +110,31 @@ if rod then
 end
 
 local function cast()
-    if not AutoFishingEnabled then return end
-    if isFishing then return end
+    if not AutoFishingEnabled or isFishing then return end
 
-    local currentRod = getRod()
-    if not currentRod then return end
-    rod = currentRod
+    local rod = getRod()
+    if not rod then return end
 
     isFishing = true
     RodEvent:FireServer("Throw", nil, rod)
 
     task.wait(15)
-
-    if AutoFishingEnabled then
-        isFishing = false
-    end
+    isFishing = false
 end
 
-local function startFishingLoop()
+task.spawn(function()
     while AutoFishingEnabled do
         if not isFishing then
             cast()
         end
         task.wait(math.random(3, 6))
     end
-end
+end)
 
 -- ================= FISHING UI =================
 Tabs.AutoFishing:AddParagraph({
     Title = "Auto Fishing",
-    Content = "Fishing system active"
+    Content = "Fishing System Active"
 })
 
 Tabs.AutoFishing:AddToggle("AutoFishingToggle", {
@@ -147,31 +142,11 @@ Tabs.AutoFishing:AddToggle("AutoFishingToggle", {
     Default = false
 }):OnChanged(function(v)
     AutoFishingEnabled = v
-
-    if v then
-        isFishing = false
-        catchCount = 0
-        task.spawn(startFishingLoop)
-
-        Fluent:Notify({
-            Title = "Fishing",
-            Content = "Enabled",
-            Duration = 2
-        })
-    else
-        isFishing = false
-
-        Fluent:Notify({
-            Title = "Fishing",
-            Content = "Disabled",
-            Duration = 2
-        })
-    end
+    isFishing = false
 end)
 
 Tabs.AutoFishing:AddButton({
     Title = "Sell All Fish",
-    Description = "Sell semua ikan",
     Callback = function()
         local args = {"SellFish", "Sell All"}
 
@@ -183,9 +158,8 @@ Tabs.AutoFishing:AddButton({
     end
 })
 
--- ================= MINING SYSTEM =================
-
-local function miningLoopFunc()
+-- ================= MINING =================
+local function miningLoop()
     while AutoMiningEnabled do
         PickaxeEvent:FireServer("Hit")
         task.wait(miningSpeed)
@@ -194,13 +168,11 @@ end
 
 Tabs.Mining:AddParagraph({
     Title = "Auto Mining",
-    Content = "Auto hit mining system + crystal ESP"
+    Content = "Mining + Crystal System"
 })
 
--- 🔥 SLIDER (DI ATAS TOGGLE)
-Tabs.Mining:AddSlider("MiningSpeedSlider", {
+Tabs.Mining:AddSlider("MiningSpeed", {
     Title = "Mining Speed",
-    Description = "Semakin kecil = semakin cepat",
     Default = 0.4,
     Min = 0.1,
     Max = 1,
@@ -209,52 +181,35 @@ Tabs.Mining:AddSlider("MiningSpeedSlider", {
     miningSpeed = v
 end)
 
--- ================= TOGGLE MINING =================
-Tabs.Mining:AddToggle("AutoMiningToggle", {
+Tabs.Mining:AddToggle("MiningToggle", {
     Title = "Auto Mining",
     Default = false
 }):OnChanged(function(v)
     AutoMiningEnabled = v
-
     if v then
-        task.spawn(miningLoopFunc)
-
-        Fluent:Notify({
-            Title = "Mining",
-            Content = "Enabled",
-            Duration = 2
-        })
-    else
-        Fluent:Notify({
-            Title = "Mining",
-            Content = "Disabled",
-            Duration = 2
-        })
+        task.spawn(miningLoop)
     end
 end)
 
--- ================= CRYSTAL HIGHLIGHT =================
-local CrystalESPEnabled = false
-local crystalHighlights = {}
-
-local function createCrystalESP(crystal)
-    if crystalHighlights[crystal] then return end
-    if not crystal:IsA("BasePart") then return end
+-- ================= CRYSTAL ESP =================
+local function addESP(obj)
+    if crystalHighlights[obj] then return end
+    if not obj:IsA("BasePart") then return end
 
     local h = Instance.new("Highlight")
     h.FillColor = Color3.fromRGB(0, 255, 255)
     h.OutlineColor = Color3.fromRGB(255, 255, 255)
     h.FillTransparency = 0.4
     h.OutlineTransparency = 0
-    h.Adornee = crystal
-    h.Parent = crystal
+    h.Adornee = obj
+    h.Parent = obj
 
-    crystalHighlights[crystal] = h
+    crystalHighlights[obj] = h
 end
 
-local function removeCrystalESP()
-    for _, h in pairs(crystalHighlights) do
-        if h then h:Destroy() end
+local function clearESP()
+    for _, v in pairs(crystalHighlights) do
+        v:Destroy()
     end
     table.clear(crystalHighlights)
 end
@@ -265,9 +220,9 @@ local function updateCrystals()
 
     if not folder then return end
 
-    for _, obj in ipairs(folder:GetChildren()) do
-        if obj:IsA("BasePart") then
-            createCrystalESP(obj)
+    for _, v in ipairs(folder:GetChildren()) do
+        if v:IsA("BasePart") then
+            addESP(v)
         end
     end
 end
@@ -286,14 +241,44 @@ Tabs.Mining:AddToggle("CrystalESP", {
             end
         end)
     else
-        removeCrystalESP()
+        clearESP()
     end
 end)
+
+-- ================= SHOP =================
+local selectedRod = "Party Rod"
+
+Tabs.Shop:AddParagraph({
+    Title = "Rod Shop",
+    Content = "Buy rod at shop"
+})
+
+Tabs.Shop:AddDropdown("RodDropdown", {
+    Title = "Select Rod",
+    Values = {"Party Rod", "Shark Rod", "Piranha Rod"},
+    Multi = false,
+    Default = 1
+}):OnChanged(function(v)
+    selectedRod = v
+end)
+
+Tabs.Shop:AddButton({
+    Title = "Buy Selected Rod",
+    Callback = function()
+        local args = {"Buy", selectedRod}
+
+        game:GetService("ReplicatedStorage")
+            :WaitForChild("Events")
+            :WaitForChild("RemoteFunction")
+            :WaitForChild("RodShop")
+            :InvokeServer(unpack(args))
+    end
+})
 
 -- ================= INIT =================
 Fluent:Notify({
     Title = "Kyro Hub",
-    Content = "Fishing + Mining Loaded",
+    Content = "System Loaded Successfully",
     Duration = 3
 })
 
