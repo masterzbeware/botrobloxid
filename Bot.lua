@@ -1,92 +1,157 @@
-local repoBase = "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Commands/"
-local obsidianRepo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 
--- Load Obsidian
-local success, Library = pcall(function()
-    return loadstring(game:HttpGet(obsidianRepo .. "Library.lua"))()
-end)
-
-if not success or not Library then
-    error("[Bot.lua] Gagal load Obsidian Library")
-end
-
-_G.BotVars = {
-    Players = game:GetService("Players"),
-    TextChatService = game:GetService("TextChatService"),
-    RunService = game:GetService("RunService"),
-    LocalPlayer = game:GetService("Players").LocalPlayer,
-}
-
-local Window = Library:CreateWindow({
-    Title = "MasterZ HUB",
-    Footer = "1.0.1",
-    Icon = 0
+local Window = Fluent:CreateWindow({
+    Title = "Generator ESP",
+    SubTitle = "",
+    TabWidth = 160,
+    Size = UDim2.fromOffset(500, 350),
+    Acrylic = true,
+    Theme = "Dark",
+    MinimizeKey = Enum.KeyCode.LeftControl
 })
 
-_G.BotVars.Library = Library
-_G.BotVars.MainWindow = Window
-_G.BotVars.Modules = {}
-
--- ✅ SEMUA COMMAND
-local commandFiles = {
-    "Perfix.lua",
-    "Main.lua",
-    "Reset.lua",
-    "Follow.lua",
-    "Briefing.lua",
-    "Cross.lua",
-    "Frontline.lua",
-    "Pushup.lua",
-    "BriefingAnswer.lua",
-    "Sync.lua",
-    "Salute.lua",
-    "Broadcast.lua",
-    "Twoline.lua",
-    "Diamond.lua",
+local Tabs = {
+    Main = Window:AddTab({ Title = "MAIN" }),
+    ESP = Window:AddTab({ Title = "ESP" })
 }
 
-for _, fileName in ipairs(commandFiles) do
-    local ok, response = pcall(function()
-        return game:HttpGet(repoBase .. fileName)
-    end)
+Tabs.ESP:AddParagraph({
+    Title = "ESP Generator",
+    Content = "Highlight generator dan tampilkan progress repair."
+})
 
-    if ok and response then
-        local loader = loadstring(response)
-        if loader then
-            local successModule, moduleTable = pcall(loader)
-            if successModule and type(moduleTable) == "table" then
-                local key = fileName:gsub("%.lua$", ""):lower()
-                _G.BotVars.Modules[key] = moduleTable
-                print("[Bot.lua] Loaded:", key)
-            end
+local ESPEnabled = false
+local ESPObjects = {}
+
+local function CreateESP(gen)
+    if ESPObjects[gen] then
+        return
+    end
+
+    local part = gen:FindFirstChildWhichIsA("BasePart")
+
+    if not part then
+        return
+    end
+
+    -- Highlight
+    local highlight = Instance.new("Highlight")
+    highlight.FillColor = Color3.fromRGB(255, 0, 0)
+    highlight.FillTransparency = 0.5
+    highlight.OutlineTransparency = 0
+    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    highlight.Adornee = gen
+    highlight.Parent = gen
+
+    -- Billboard
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "GeneratorProgress"
+    billboard.Size = UDim2.new(0, 100, 0, 20)
+    billboard.StudsOffset = Vector3.new(0, 3, 0)
+    billboard.AlwaysOnTop = true
+    billboard.Parent = part
+
+local text = Instance.new("TextLabel")
+text.Size = UDim2.fromScale(1, 1)
+text.BackgroundTransparency = 1
+text.TextScaled = false
+text.TextSize = 20
+text.Font = Enum.Font.GothamBold
+text.TextColor3 = Color3.fromRGB(255,255,255)
+text.TextStrokeTransparency = 0.5
+text.Text = "Progress : 0%"
+text.Parent = billboard
+
+    local function UpdateText()
+        local progress = gen:GetAttribute("RepairProgress") or 0
+
+        -- jika ternyata game memakai 0-1
+        if progress <= 1 then
+            progress = progress * 100
+        end
+
+        progress = math.floor(progress)
+
+        text.Text = ("Progress : %d%%"):format(progress)
+
+        if progress >= 100 then
+            highlight.FillColor = Color3.fromRGB(0,255,0)
+        elseif progress > 0 then
+            highlight.FillColor = Color3.fromRGB(255,255,0)
+        else
+            highlight.FillColor = Color3.fromRGB(255,0,0)
         end
     end
+
+    UpdateText()
+
+    local connection = gen:GetAttributeChangedSignal("RepairProgress"):Connect(UpdateText)
+
+    ESPObjects[gen] = {
+        Highlight = highlight,
+        Billboard = billboard,
+        Connection = connection
+    }
 end
 
-task.wait(0.3)
+local function RemoveESP()
+    for _, data in pairs(ESPObjects) do
+        if data.Connection then
+            data.Connection:Disconnect()
+        end
 
-local function jalankan(name)
-    local module = _G.BotVars.Modules[name]
-    if module and module.Execute then
-        module.Execute()
-        print("[Bot.lua] Executed:", name)
+        if data.Highlight then
+            data.Highlight:Destroy()
+        end
+
+        if data.Billboard then
+            data.Billboard:Destroy()
+        end
+    end
+
+    table.clear(ESPObjects)
+end
+
+local function UpdateESP()
+    local Generators = workspace:FindFirstChild("Map")
+        and workspace.Map:FindFirstChild("Generators")
+
+    if not Generators then
+        return
+    end
+
+    for _, gen in ipairs(Generators:GetChildren()) do
+        CreateESP(gen)
     end
 end
 
--- ✅ EXECUTION ORDER
-jalankan("perfix")
-jalankan("main")
-jalankan("broadcast")
-jalankan("follow")
-jalankan("frontline") 
-jalankan("pushup") 
-jalankan("sync") 
-jalankan("twoline") 
-jalankan("diamond") 
-jalankan("salute")
-jalankan("briefing")
-jalankan("cross")
-jalankan("reset")
-jalankan("briefinganswer")
+local Toggle = Tabs.ESP:AddToggle("GeneratorESP", {
+    Title = "ESP Generator",
+    Default = false
+})
 
-print("✅ Bot.lua loaded — All systems active.")
+Toggle:OnChanged(function(Value)
+    ESPEnabled = Value
+
+    if ESPEnabled then
+        UpdateESP()
+    else
+        RemoveESP()
+    end
+end)
+
+task.spawn(function()
+    while task.wait(2) do
+        if ESPEnabled then
+            UpdateESP()
+        end
+    end
+end)
+
+Window:SelectTab(1)
+
+Fluent:Notify({
+    Title = "Loaded",
+    Content = "Generator ESP Ready",
+    Duration = 5
+})
