@@ -1,0 +1,221 @@
+-- AUTO MINING + CUCI BATU + SMELTING L-01 + KYRO HUB
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+
+local MiningEvent = ReplicatedStorage:WaitForChild("RockSystem"):WaitForChild("MiningEvent")
+local CuciBatuEvent = ReplicatedStorage:WaitForChild("CuciBatuSystem"):WaitForChild("CuciBatuEvent")
+local SmeltingEvent = ReplicatedStorage:WaitForChild("SmeltingSystem"):WaitForChild("SmeltingEvent")
+
+local Fluent = loadstring(game:HttpGet(
+    "https://github.com/StyearX/Fluent-Modded/releases/download/Fluent/FluentPro"
+))()
+
+local Window = Fluent:CreateWindow({
+    Title = "KYRO HUB",
+    SubTitle = "Auto Mining + Cuci + Smelting",
+    TabWidth = 160,
+    Size = UDim2.fromOffset(450, 350),
+    Acrylic = true,
+    Theme = "Amber Glow",
+    MinimizeKey = Enum.KeyCode.LeftControl,
+    Search = true
+})
+
+local Tabs = {
+    Main = Window:AddTab({ Title = "AUTO JOB", Icon = "solar/pickaxe-bold" })
+}
+
+-- ============ VARIABLES ============
+local autoMiningEnabled = false
+local autoCuciEnabled = false
+local autoSmeltingEnabled = false
+
+-- ============ AUTO MINING ============
+MiningEvent.OnClientEvent:Connect(function(action, prompt, data)
+    if not autoMiningEnabled then return end
+    if action == "OpenMinigame" and data then
+        task.wait(0.1)
+        MiningEvent:FireServer("StopProcess", true)
+    end
+end)
+
+local function triggerMiningPrompt()
+    local rocks = Workspace:FindFirstChild("Rocks")
+    if not rocks then return end
+    for _, rock in ipairs(rocks:GetChildren()) do
+        local rockPrompt = rock:FindFirstChild("RocksPrompt")
+        if rockPrompt then
+            local prompt = rockPrompt:FindFirstChild("ProximityPrompt")
+            if prompt then
+                pcall(function()
+                    prompt.MaxActivationDistance = 15
+                    prompt:InputHoldBegin()
+                    task.wait(0.15)
+                    prompt:InputHoldEnd()
+                end)
+                return
+            end
+        end
+    end
+end
+
+local function startAutoMining()
+    task.spawn(function()
+        while autoMiningEnabled do
+            triggerMiningPrompt()
+            task.wait(3)
+        end
+    end)
+end
+
+-- ============ AUTO CUCI BATU ============
+CuciBatuEvent.OnClientEvent:Connect(function(action, prompt, data)
+    if not autoCuciEnabled then return end
+    if action == "OpenMinigame" and data then
+        task.wait(0.1)
+        CuciBatuEvent:FireServer("StopProcess", true)
+    end
+end)
+
+local function triggerCuciPrompt()
+    local cuciBatu = Workspace:FindFirstChild("CuciBatu")
+    if not cuciBatu then return end
+    for _, obj in ipairs(cuciBatu:GetChildren()) do
+        local cuciPrompt = obj:FindFirstChild("CuciPrompt")
+        if cuciPrompt then
+            local prompt = cuciPrompt:FindFirstChild("ProximityPrompt")
+            if prompt then
+                pcall(function()
+                    prompt.MaxActivationDistance = 15
+                    prompt:InputHoldBegin()
+                    task.wait(0.15)
+                    prompt:InputHoldEnd()
+                end)
+                return
+            end
+        end
+    end
+end
+
+local function startAutoCuci()
+    task.spawn(function()
+        while autoCuciEnabled do
+            triggerCuciPrompt()
+            task.wait(3)
+        end
+    end)
+end
+
+-- ============ AUTO SMELTING ============
+local smeltingStarted = false
+
+SmeltingEvent.OnClientEvent:Connect(function(action, data)
+    if not autoSmeltingEnabled then return end
+    
+    if action == "OpenMenu" and data then
+        -- Pilih item pertama untuk di-smelt
+        for barName, info in pairs(data) do
+            print("[L-01] 🔥 Memilih:", barName)
+            SmeltingEvent:FireServer("RequestCraft", barName)
+            break
+        end
+    elseif action == "StartMinigame" and data then
+        task.wait(0.1)
+        SmeltingEvent:FireServer("StopProcess", true)
+    end
+end)
+
+local function triggerSmeltingPrompt()
+    -- Cari prompt smelting di workspace
+    for _, v in ipairs(Workspace:GetDescendants()) do
+        if v:IsA("ProximityPrompt") then
+            local name = v.Name:lower()
+            if name:find("smelt") or name:find("furnace") or name:find("forge") then
+                pcall(function()
+                    v.MaxActivationDistance = 15
+                    v:InputHoldBegin()
+                    task.wait(0.15)
+                    v:InputHoldEnd()
+                end)
+                return
+            end
+        end
+    end
+end
+
+local function startAutoSmelting()
+    task.spawn(function()
+        while autoSmeltingEnabled do
+            triggerSmeltingPrompt()
+            task.wait(4)
+        end
+    end)
+end
+
+-- ============ UI ============
+Tabs.Main:AddParagraph({
+    Title = "Auto Mining",
+    Content = "Trigger prompt → StopProcess langsung"
+})
+
+Tabs.Main:AddToggle("AutoMiningToggle", {
+    Title = "Auto Mining",
+    Default = false
+}):OnChanged(function(v)
+    autoMiningEnabled = v
+    if v then
+        startAutoMining()
+        Fluent:Notify({ Title = "Auto Mining", Content = "Enabled", Duration = 2 })
+    else
+        Fluent:Notify({ Title = "Auto Mining", Content = "Disabled", Duration = 2 })
+    end
+end)
+
+Tabs.Main:AddParagraph({
+    Title = "Auto Cuci Batu",
+    Content = "Trigger prompt → StopProcess langsung"
+})
+
+Tabs.Main:AddToggle("AutoCuciToggle", {
+    Title = "Auto Cuci Batu",
+    Default = false
+}):OnChanged(function(v)
+    autoCuciEnabled = v
+    if v then
+        startAutoCuci()
+        Fluent:Notify({ Title = "Auto Cuci Batu", Content = "Enabled", Duration = 2 })
+    else
+        Fluent:Notify({ Title = "Auto Cuci Batu", Content = "Disabled", Duration = 2 })
+    end
+end)
+
+Tabs.Main:AddParagraph({
+    Title = "Auto Smelting",
+    Content = "Trigger prompt → Pilih item → StopProcess"
+})
+
+Tabs.Main:AddToggle("AutoSmeltingToggle", {
+    Title = "Auto Smelting",
+    Default = false
+}):OnChanged(function(v)
+    autoSmeltingEnabled = v
+    if v then
+        startAutoSmelting()
+        Fluent:Notify({ Title = "Auto Smelting", Content = "Enabled", Duration = 2 })
+    else
+        Fluent:Notify({ Title = "Auto Smelting", Content = "Disabled", Duration = 2 })
+    end
+end)
+
+Fluent:Notify({ Title = "KYRO HUB", Content = "Auto Mining + Cuci + Smelting Loaded", Duration = 3 })
+
+print("[L-01] ====================================")
+print("[L-01] 🔥 AUTO MINING + CUCI + SMELTING")
+print("[L-01] 📍 Equip Pickaxe untuk mining")
+print("[L-01] 📍 Bawa Rock untuk cuci batu")
+print("[L-01] 📍 Bawa hasil cuci untuk smelting")
+print("[L-01] ====================================")
