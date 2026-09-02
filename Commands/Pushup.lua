@@ -1,9 +1,3 @@
--- Commands/Pushup.lua
--- Admin-only pushup command
---
--- !pushup 3
--- !stop
-
 return {
     Execute = function()
 
@@ -126,36 +120,39 @@ return {
         -- STOP PUSH UP ANIMATION
         ----------------------------------------------------------------
         --
-        -- Kita hentikan AnimationTrack "Push Up" secara langsung.
-        -- Ini dipakai karena sebelumnya kita belum mengetahui apakah
-        -- animationHandler memiliki action "stopAnimation".
-        --
+        -- Mencari AnimationTrack Push Up yang sedang dimainkan
+        -- lalu menghentikannya secara langsung.
         ----------------------------------------------------------------
 
         local function stopPushupAnimation()
 
-            local character = LocalPlayer.Character
+            local character =
+                LocalPlayer.Character
 
             if not character then
                 return
             end
 
             local humanoid =
-                character:FindFirstChildOfClass("Humanoid")
+                character:FindFirstChildOfClass(
+                    "Humanoid"
+                )
 
             if not humanoid then
                 return
             end
 
             local animator =
-                humanoid:FindFirstChildOfClass("Animator")
+                humanoid:FindFirstChildOfClass(
+                    "Animator"
+                )
 
             if not animator then
                 return
             end
 
             ------------------------------------------------------------
-            -- CARI SEMUA ANIMATION TRACK
+            -- CARI ANIMATION TRACK
             ------------------------------------------------------------
 
             for _, track in ipairs(
@@ -166,14 +163,16 @@ return {
                     tostring(track.Name):lower()
 
                 --------------------------------------------------------
-                -- HANYA STOP PUSH UP
+                -- PUSH UP
                 --------------------------------------------------------
 
                 if trackName == "push up"
                     or trackName:find("push") then
 
                     pcall(function()
+
                         track:Stop(0.15)
+
                     end)
 
                 end
@@ -184,6 +183,9 @@ return {
 
         ----------------------------------------------------------------
         -- PLAY PUSH UP
+        ----------------------------------------------------------------
+        --
+        -- DIPANGGIL HANYA SATU KALI.
         ----------------------------------------------------------------
 
         local function playPushup()
@@ -200,10 +202,14 @@ return {
         end
 
         ----------------------------------------------------------------
-        -- STOP PUSH UP
+        -- STOP PUSHUP
         ----------------------------------------------------------------
 
         local function stopPushup()
+
+            ------------------------------------------------------------
+            -- MATIKAN STATUS
+            ------------------------------------------------------------
 
             vars.PushupActive = false
 
@@ -233,7 +239,8 @@ return {
         -- REGISTER PUSHUP CONTROLLER
         ----------------------------------------------------------------
 
-        vars.ModeControllers.pushup = stopPushup
+        vars.ModeControllers.pushup =
+            stopPushup
 
         ----------------------------------------------------------------
         -- STOP SEMUA MODE LAIN
@@ -267,19 +274,23 @@ return {
             end
 
             ------------------------------------------------------------
-            -- BATAS JUMLAH
+            -- BATAS MINIMUM
             ------------------------------------------------------------
 
             if jumlah < 1 then
                 return
             end
 
+            ------------------------------------------------------------
+            -- BATAS MAKSIMUM
+            ------------------------------------------------------------
+
             if jumlah > 1000 then
                 jumlah = 1000
             end
 
             ------------------------------------------------------------
-            -- STOP MODE LAIN
+            -- STOP SEMUA MODE LAIN
             ------------------------------------------------------------
 
             stopOtherModes()
@@ -303,7 +314,7 @@ return {
             vars.PushupActive = true
 
             ------------------------------------------------------------
-            -- CHAT
+            -- YES SIR
             ------------------------------------------------------------
 
             sendChat("Yes, Sir!")
@@ -315,7 +326,7 @@ return {
             task.wait(2)
 
             ------------------------------------------------------------
-            -- CEK JIKA SUDAH DIHENTIKAN SAAT MENUNGGU
+            -- CEK MASIH AKTIF
             ------------------------------------------------------------
 
             if not vars.PushupActive then
@@ -327,11 +338,25 @@ return {
             end
 
             ------------------------------------------------------------
-            -- PUSHUP LOOP
+            -- MULAI ANIMASI
+            ------------------------------------------------------------
+            --
+            -- PENTING:
+            -- Hanya dipanggil SATU KALI.
+            ------------------------------------------------------------
+
+            playPushup()
+
+            ------------------------------------------------------------
+            -- MULAI HITUNG
             ------------------------------------------------------------
 
             vars.PushupConnection =
                 task.spawn(function()
+
+                    ----------------------------------------------------
+                    -- HITUNG 1 SAMPAI JUMLAH
+                    ----------------------------------------------------
 
                     for i = 1, jumlah do
 
@@ -348,13 +373,7 @@ return {
                         end
 
                         ------------------------------------------------
-                        -- PLAY ANIMATION
-                        ------------------------------------------------
-
-                        playPushup()
-
-                        ------------------------------------------------
-                        -- TUNGGU ANIMASI
+                        -- TUNGGU SATU HITUNGAN
                         ------------------------------------------------
 
                         task.wait(5)
@@ -372,49 +391,39 @@ return {
                         end
 
                         ------------------------------------------------
-                        -- CHAT JUMLAH
+                        -- KIRIM ANGKA
                         ------------------------------------------------
 
-                        if i == jumlah then
+                        sendChat(
+                            tostring(i)
+                        )
 
-                            sendChat(
-                                i .. " push up, Sir!"
-                            )
+                    end
 
-                        else
+                    ----------------------------------------------------
+                    -- SUDAH SELESAI
+                    ----------------------------------------------------
 
-                            sendChat(
-                                i .. " push up!"
-                            )
+                    ----------------------------------------------------
+                    -- STOP ANIMATION
+                    ----------------------------------------------------
 
-                        end
+                    stopPushupAnimation()
 
-                        ------------------------------------------------
-                        -- JIKA SUDAH PUSHUP TERAKHIR
-                        ------------------------------------------------
+                    ----------------------------------------------------
+                    -- MATIKAN STATUS
+                    ----------------------------------------------------
 
-                        if i == jumlah then
+                    vars.PushupActive = false
 
-                            ------------------------------------------------
-                            -- STOP ANIMASI TERAKHIR
-                            ------------------------------------------------
+                    vars.PushupConnection = nil
 
-                            stopPushupAnimation()
+                    ----------------------------------------------------
+                    -- RESET ACTIVE MODE
+                    ----------------------------------------------------
 
-                            ------------------------------------------------
-                            -- SELESAI
-                            ------------------------------------------------
-
-                            vars.PushupActive = false
-                            vars.PushupConnection = nil
-
-                            if vars.ActiveMode == "pushup" then
-                                vars.ActiveMode = nil
-                            end
-
-                            return
-                        end
-
+                    if vars.ActiveMode == "pushup" then
+                        vars.ActiveMode = nil
                     end
 
                 end)
@@ -429,6 +438,10 @@ return {
             message,
             sender
         )
+
+            ------------------------------------------------------------
+            -- ADMIN ONLY
+            ------------------------------------------------------------
 
             if not Admin:IsAdmin(sender) then
                 return
@@ -462,7 +475,7 @@ return {
             if msg == "!stop" then
 
                 --------------------------------------------------------
-                -- MATIKAN ACTIVE MODE
+                -- RESET ACTIVE MODE
                 --------------------------------------------------------
 
                 vars.ActiveMode = nil
@@ -503,7 +516,9 @@ return {
 
             local channel =
                 TextChatService.TextChannels
-                    :FindFirstChild("RBXGeneral")
+                    :FindFirstChild(
+                        "RBXGeneral"
+                    )
 
             if channel then
 
