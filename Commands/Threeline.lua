@@ -36,8 +36,8 @@ return {
         local targetPlayer = nil
         local followConnection = nil
 
-        local humanoid
-        local myHRP
+        local humanoid = nil
+        local myHRP = nil
 
         local hasChatted = false
 
@@ -45,17 +45,17 @@ return {
         -- DISTANCE CONFIG
         ----------------------------------------------------------------
 
-        -- Jarak bot dari Admin
+        -- Jarak baris pertama dari Admin
         local adminFrontDistance = 3
 
-        -- Default jika target bukan Admin
+        -- Jarak default jika target bukan Admin
         local defaultBotFrontDistance = 2
 
         ----------------------------------------------------------------
         -- FORMATION CONFIG
         ----------------------------------------------------------------
 
-        -- Jarak antar bot kiri-kanan
+        -- Jarak antar Bot kiri-kanan
         local sideSpacing = 3
 
         -- Jarak antar baris
@@ -66,6 +66,12 @@ return {
         ----------------------------------------------------------------
 
         local columns = 3
+
+        ----------------------------------------------------------------
+        -- BATAS BOT
+        ----------------------------------------------------------------
+
+        local stopThreshold = 1.5
 
         ----------------------------------------------------------------
         -- BOT ORDER
@@ -150,27 +156,46 @@ return {
                 -- LEGACY CHAT
                 --------------------------------------------------------
 
-                ReplicatedStorage
-                    .DefaultChatSystemChatEvents
-                    .SayMessageRequest
-                    :FireServer(
-                        msg,
-                        "All"
+                local chatEvents =
+                    ReplicatedStorage:FindFirstChild(
+                        "DefaultChatSystemChatEvents"
                     )
+
+                if chatEvents then
+
+                    local sayMessageRequest =
+                        chatEvents:FindFirstChild(
+                            "SayMessageRequest"
+                        )
+
+                    if sayMessageRequest then
+
+                        sayMessageRequest:FireServer(
+                            msg,
+                            "All"
+                        )
+
+                    end
+
+                end
 
             end)
 
         end
 
         ----------------------------------------------------------------
-        -- STOP FRONTLINE
+        -- STOP THREELINE
         ----------------------------------------------------------------
 
-        local function stopFrontline()
+        local function stopThreeline()
 
             positioning = false
             targetPlayer = nil
             hasChatted = false
+
+            ------------------------------------------------------------
+            -- DISCONNECT FOLLOW LOOP
+            ------------------------------------------------------------
 
             if followConnection then
 
@@ -217,10 +242,10 @@ return {
         end
 
         ----------------------------------------------------------------
-        -- START FRONTLINE
+        -- START THREELINE
         ----------------------------------------------------------------
 
-        local function startFrontline(player)
+        local function startThreeline(player)
 
             if not player then
                 return
@@ -269,15 +294,11 @@ return {
             end
 
             ------------------------------------------------------------
-            -- HITUNG BARIS DAN KOLOM
-            ------------------------------------------------------------
+            -- HITUNG BARIS
             --
-            -- Index:
-            --
-            -- 1   2   3
-            -- 4   5   6
-            -- 7   8   9
-            --
+            -- 1 2 3 = Row 1
+            -- 4 5 6 = Row 2
+            -- 7 8 9 = Row 3
             ------------------------------------------------------------
 
             local row =
@@ -285,17 +306,23 @@ return {
                     myIndex / columns
                 )
 
+            ------------------------------------------------------------
+            -- HITUNG KOLOM
+            --
+            -- 1 = kiri
+            -- 2 = tengah
+            -- 3 = kanan
+            ------------------------------------------------------------
+
             local column =
                 ((myIndex - 1) % columns) + 1
 
             ------------------------------------------------------------
-            -- POSISI HORIZONTAL
+            -- HITUNG POSISI KIRI / KANAN
             --
-            -- 3 kolom:
-            --
-            -- Column 1 = kiri
-            -- Column 2 = tengah
-            -- Column 3 = kanan
+            -- Column 1 = -3
+            -- Column 2 =  0
+            -- Column 3 = +3
             --
             ------------------------------------------------------------
 
@@ -308,16 +335,16 @@ return {
                 *
                 sideSpacing
 
-            ------------------------------------------------------------
+            ----------------------------------------------------------------
             -- FOLLOW LOOP
-            ------------------------------------------------------------
+            ----------------------------------------------------------------
 
             followConnection =
                 RunService.Heartbeat:Connect(
                     function()
 
                         ------------------------------------------------
-                        -- VALIDASI
+                        -- VALIDASI STATE
                         ------------------------------------------------
 
                         if not positioning then
@@ -347,7 +374,7 @@ return {
                         end
 
                         ------------------------------------------------
-                        -- TARGET HRP
+                        -- TARGET HUMANOID ROOT PART
                         ------------------------------------------------
 
                         local hrp =
@@ -360,14 +387,14 @@ return {
                         end
 
                         ------------------------------------------------
-                        -- DISTANCE
+                        -- DISTANCE DASAR
                         ------------------------------------------------
 
                         local distance =
                             defaultBotFrontDistance
 
                         ------------------------------------------------
-                        -- JIKA TARGET ADMIN
+                        -- JIKA TARGET ADALAH ADMIN
                         ------------------------------------------------
 
                         if Admin:IsAdmin(
@@ -401,26 +428,30 @@ return {
                         end
 
                         ------------------------------------------------
-                        -- HITUNG JARAK KE DEPAN
+                        -- HITUNG JARAK DEPAN
+                        --
+                        -- Row 1 = 3 studs
+                        -- Row 2 = 6 studs
+                        -- Row 3 = 9 studs
+                        --
                         ------------------------------------------------
-                        --
-                        -- Row 1 = paling dekat Admin
-                        -- Row 2 = lebih jauh
-                        -- Row 3 = paling jauh
-                        --
+
+                        local forwardDistance =
+                            distance
+                            +
+                            ((row - 1) * rowSpacing)
+
+                        ------------------------------------------------
+                        -- ARAH DEPAN ADMIN
                         ------------------------------------------------
 
                         local forwardOffset =
                             hrp.CFrame.LookVector
                             *
-                            (
-                                distance
-                                +
-                                ((row - 1) * rowSpacing)
-                            )
+                            forwardDistance
 
                         ------------------------------------------------
-                        -- HITUNG KIRI / KANAN
+                        -- ARAH KIRI / KANAN ADMIN
                         ------------------------------------------------
 
                         local sideOffset =
@@ -429,7 +460,7 @@ return {
                             horizontalOffset
 
                         ------------------------------------------------
-                        -- FINAL POSITION
+                        -- POSISI AKHIR
                         ------------------------------------------------
 
                         local targetPosition =
@@ -454,7 +485,7 @@ return {
                         end
 
                         ------------------------------------------------
-                        -- HITUNG JARAK BOT
+                        -- HITUNG JARAK BOT KE POSISI
                         ------------------------------------------------
 
                         local distanceToTarget =
@@ -468,7 +499,7 @@ return {
                         -- BOT MASIH JAUH
                         ------------------------------------------------
 
-                        if distanceToTarget > 1.5 then
+                        if distanceToTarget > stopThreshold then
 
                             humanoid.AutoRotate = true
 
@@ -528,24 +559,26 @@ return {
                 msg:lower()
 
             ------------------------------------------------------------
-            -- !FRONTLINE
+            -- !THREELINE
             ------------------------------------------------------------
 
-            if lower == "!frontline" then
+            if lower == "!threeline" then
 
-                startFrontline(sender)
+                startThreeline(
+                    sender
+                )
 
                 return
 
             end
 
             ------------------------------------------------------------
-            -- !FRONTLINE <NAME>
+            -- !THREELINE <NAME>
             ------------------------------------------------------------
 
             local targetName =
                 lower:match(
-                    "^!frontline%s+(.+)$"
+                    "^!threeline%s+(.+)$"
                 )
 
             if targetName then
@@ -557,7 +590,7 @@ return {
 
                 if target then
 
-                    startFrontline(
+                    startThreeline(
                         target
                     )
 
@@ -572,9 +605,9 @@ return {
             ------------------------------------------------------------
 
             if lower == "!stop"
-                or lower == "!unfrontline" then
+                or lower == "!unthreeline" then
 
-                stopFrontline()
+                stopThreeline()
 
             end
 
@@ -675,10 +708,14 @@ return {
 
                 updateCharacter()
 
+                --------------------------------------------------------
+                -- JIKA SEBELUMNYA SEDANG THREELINE
+                --------------------------------------------------------
+
                 if positioning
                     and targetPlayer then
 
-                    startFrontline(
+                    startThreeline(
                         targetPlayer
                     )
 
