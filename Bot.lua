@@ -32,13 +32,9 @@ local commandFiles = {
     "Perfix.lua",
     "Main.lua",
     "Follow.lua",
-    "Threeline.lua",
     "Pushup.lua",
     "Sync.lua",
     "Twoline.lua",
-    "Vote.lua",
-    "Diamond.lua",
-    "Sidecover.lua",
 }
 
 for _, fileName in ipairs(commandFiles) do
@@ -73,12 +69,8 @@ end
 jalankan("perfix")
 jalankan("main")
 jalankan("follow")
-jalankan("threeline") 
 jalankan("pushup") 
 jalankan("sync") 
 jalankan("twoline") 
-jalankan("vote") 
-jalankan("diamond") 
-jalankan("sidecover") 
 
 print("✅ Bot.lua loaded — All systems active.")
