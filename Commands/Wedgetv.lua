@@ -78,7 +78,7 @@ return {
         --------------------------------------------------
 
         -- Jarak dasar dari PLAYER
-        local baseBackDistance = 5
+        local baseBackDistance = 2
 
         -- Jarak antar baris
         local rowSpacing = 3
