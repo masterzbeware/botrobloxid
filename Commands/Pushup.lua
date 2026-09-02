@@ -1,3 +1,8 @@
+-- Commands/Pushup.lua
+-- Admin-only pushup command
+-- !pushup 3
+-- !stop
+
 return {
     Execute = function()
 
@@ -16,6 +21,16 @@ return {
         end
 
         ----------------------------------------------------------------
+        -- GLOBAL
+        ----------------------------------------------------------------
+
+        _G.BotVars = _G.BotVars or {}
+
+        local vars = _G.BotVars
+
+        vars.ModeControllers = vars.ModeControllers or {}
+
+        ----------------------------------------------------------------
         -- LOAD ADMIN
         ----------------------------------------------------------------
 
@@ -24,18 +39,7 @@ return {
         ))()
 
         ----------------------------------------------------------------
-        -- GLOBAL VARIABLES
-        ----------------------------------------------------------------
-
-        _G.BotVars = _G.BotVars or {}
-
-        local vars = _G.BotVars
-
-        vars.PushupActive = false
-        vars.PushupThread = nil
-
-        ----------------------------------------------------------------
-        -- ANIMATION HANDLER
+        -- ANIMATION REMOTE
         ----------------------------------------------------------------
 
         local animationHandler =
@@ -43,6 +47,13 @@ return {
                 :WaitForChild("Connections")
                 :WaitForChild("dataProviders")
                 :WaitForChild("animationHandler")
+
+        ----------------------------------------------------------------
+        -- VARIABLES
+        ----------------------------------------------------------------
+
+        vars.PushupActive = false
+        vars.PushupConnection = nil
 
         ----------------------------------------------------------------
         -- SEND CHAT
@@ -54,63 +65,48 @@ return {
                 return
             end
 
-            ------------------------------------------------------------
-            -- TEXT CHAT
-            ------------------------------------------------------------
-
             if TextChatService
                 and TextChatService.TextChannels then
 
                 local channel =
-                    TextChatService.TextChannels:FindFirstChild(
-                        "RBXGeneral"
-                    )
+                    TextChatService.TextChannels
+                        :FindFirstChild("RBXGeneral")
 
                 if channel then
-
                     pcall(function()
-
                         channel:SendAsync(text)
-
                     end)
 
                     return
-
                 end
-
             end
-
-            ------------------------------------------------------------
-            -- LEGACY CHAT FALLBACK
-            ------------------------------------------------------------
 
             pcall(function()
 
                 local chatEvents =
-                    ReplicatedStorage:FindFirstChild(
-                        "DefaultChatSystemChatEvents"
-                    )
+                    ReplicatedStorage
+                        :FindFirstChild(
+                            "DefaultChatSystemChatEvents"
+                        )
 
                 if not chatEvents then
                     return
                 end
 
                 local sayMessageRequest =
-                    chatEvents:FindFirstChild(
-                        "SayMessageRequest"
-                    )
+                    chatEvents
+                        :FindFirstChild(
+                            "SayMessageRequest"
+                        )
 
                 if sayMessageRequest then
-
                     sayMessageRequest:FireServer(
                         text,
                         "All"
                     )
-
                 end
 
             end)
-
         end
 
         ----------------------------------------------------------------
@@ -119,40 +115,61 @@ return {
 
         local function playPushup()
 
-            local success, result =
-                pcall(function()
+            pcall(function()
 
-                    return animationHandler:InvokeServer(
-                        "playAnimation",
-                        "Push Up"
-                    )
-
-                end)
-
-            if not success then
-
-                warn(
-                    "[Pushup] Gagal menjalankan Push Up:",
-                    result
+                animationHandler:InvokeServer(
+                    "playAnimation",
+                    "Push Up"
                 )
 
-                return false
-
-            end
-
-            return true
+            end)
 
         end
 
         ----------------------------------------------------------------
-        -- STOP PUSHUP LOOP
+        -- STOP PUSH UP
         ----------------------------------------------------------------
 
         local function stopPushup()
 
             vars.PushupActive = false
 
-            vars.PushupThread = nil
+            if vars.PushupConnection then
+
+                task.cancel(
+                    vars.PushupConnection
+                )
+
+                vars.PushupConnection = nil
+
+            end
+
+        end
+
+        ----------------------------------------------------------------
+        -- REGISTER PUSHUP CONTROLLER
+        ----------------------------------------------------------------
+
+        vars.ModeControllers.pushup = stopPushup
+
+        ----------------------------------------------------------------
+        -- STOP SEMUA MODE LAIN
+        ----------------------------------------------------------------
+
+        local function stopOtherModes()
+
+            for name, stopFunction in pairs(
+                vars.ModeControllers
+            ) do
+
+                if name ~= "pushup"
+                    and type(stopFunction) == "function" then
+
+                    pcall(stopFunction)
+
+                end
+
+            end
 
         end
 
@@ -162,29 +179,33 @@ return {
 
         local function startPushup(jumlah)
 
-            ------------------------------------------------------------
-            -- VALIDASI JUMLAH
-            ------------------------------------------------------------
-
             if not jumlah then
                 return
             end
 
-            jumlah = math.floor(jumlah)
+            ------------------------------------------------------------
+            -- BATAS JUMLAH
+            ------------------------------------------------------------
 
-            if jumlah <= 0 then
+            if jumlah < 1 then
                 return
             end
 
-            ------------------------------------------------------------
-            -- BATASI ANGKA TERLALU BESAR
-            ------------------------------------------------------------
-
             if jumlah > 1000 then
-
                 jumlah = 1000
-
             end
+
+            ------------------------------------------------------------
+            -- STOP SEMUA MODE SEBELUM PUSHUP
+            ------------------------------------------------------------
+
+            stopOtherModes()
+
+            ------------------------------------------------------------
+            -- SET ACTIVE MODE
+            ------------------------------------------------------------
+
+            vars.ActiveMode = "pushup"
 
             ------------------------------------------------------------
             -- STOP PUSHUP LAMA
@@ -192,10 +213,8 @@ return {
 
             stopPushup()
 
-            task.wait()
-
             ------------------------------------------------------------
-            -- ACTIVE
+            -- AKTIFKAN PUSHUP
             ------------------------------------------------------------
 
             vars.PushupActive = true
@@ -213,49 +232,34 @@ return {
             task.wait(2)
 
             ------------------------------------------------------------
-            -- JALANKAN LOOP
+            -- PUSHUP LOOP
             ------------------------------------------------------------
 
-            vars.PushupThread = task.spawn(
-                function()
+            vars.PushupConnection =
+                task.spawn(function()
 
                     for i = 1, jumlah do
 
                         ------------------------------------------------
-                        -- CEK APAKAH DI-STOP
+                        -- CEK MASIH AKTIF
                         ------------------------------------------------
 
                         if not vars.PushupActive then
-
                             return
+                        end
 
+                        if vars.ActiveMode ~= "pushup" then
+                            return
                         end
 
                         ------------------------------------------------
                         -- PLAY ANIMATION
-                        --
-                        -- SESUAI HASIL RSPY:
-                        --
-                        -- InvokeServer(
-                        --     "playAnimation",
-                        --     "Push Up"
-                        -- )
                         ------------------------------------------------
 
-                        local success =
-                            playPushup()
-
-                        if not success then
-
-                            vars.PushupActive = false
-                            vars.PushupThread = nil
-
-                            return
-
-                        end
+                        playPushup()
 
                         ------------------------------------------------
-                        -- TUNGGU SATU PUSH UP
+                        -- TUNGGU 5 DETIK
                         ------------------------------------------------
 
                         task.wait(5)
@@ -265,9 +269,11 @@ return {
                         ------------------------------------------------
 
                         if not vars.PushupActive then
-
                             return
+                        end
 
+                        if vars.ActiveMode ~= "pushup" then
+                            return
                         end
 
                         ------------------------------------------------
@@ -295,10 +301,13 @@ return {
                     ----------------------------------------------------
 
                     vars.PushupActive = false
-                    vars.PushupThread = nil
+                    vars.PushupConnection = nil
 
-                end
-            )
+                    if vars.ActiveMode == "pushup" then
+                        vars.ActiveMode = nil
+                    end
+
+                end)
 
         end
 
@@ -311,32 +320,20 @@ return {
             sender
         )
 
-            if not sender then
-                return
-            end
-
-            ------------------------------------------------------------
-            -- ADMIN CHECK
-            ------------------------------------------------------------
-
             if not Admin:IsAdmin(sender) then
                 return
             end
 
-            if not message then
-                return
-            end
-
-            local lower =
+            local msg =
                 message:lower()
 
             ------------------------------------------------------------
-            -- !PUSHUP ANGKA
+            -- PUSHUP
             ------------------------------------------------------------
 
             local jumlah =
                 tonumber(
-                    lower:match(
+                    msg:match(
                         "^!pushup%s+(%d+)$"
                     )
                 )
@@ -346,20 +343,43 @@ return {
                 startPushup(jumlah)
 
                 return
-
             end
 
             ------------------------------------------------------------
-            -- !PUSHUP STOP
+            -- STOP UNIVERSAL
             ------------------------------------------------------------
 
-            if lower == "!pushup stop"
-                or lower == "!stop pushup" then
+            if msg == "!stop" then
+
+                --------------------------------------------------------
+                -- MATIKAN ACTIVE MODE
+                --------------------------------------------------------
+
+                vars.ActiveMode = nil
+
+                --------------------------------------------------------
+                -- STOP PUSHUP
+                --------------------------------------------------------
 
                 stopPushup()
 
-                return
+                --------------------------------------------------------
+                -- STOP SEMUA MODE LAIN
+                --------------------------------------------------------
 
+                for name, stopFunction in pairs(
+                    vars.ModeControllers
+                ) do
+
+                    if type(stopFunction) == "function" then
+
+                        pcall(stopFunction)
+
+                    end
+
+                end
+
+                return
             end
 
         end
@@ -372,9 +392,8 @@ return {
             and TextChatService.TextChannels then
 
             local channel =
-                TextChatService.TextChannels:FindFirstChild(
-                    "RBXGeneral"
-                )
+                TextChatService.TextChannels
+                    :FindFirstChild("RBXGeneral")
 
             if channel then
 
@@ -447,12 +466,6 @@ return {
 
             end
         )
-
-        ----------------------------------------------------------------
-        -- DONE
-        ----------------------------------------------------------------
-
-        print("✅ Pushup.lua loaded")
 
     end
 }
