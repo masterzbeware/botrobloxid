@@ -35,6 +35,7 @@ local commandFiles = {
     "Pushup.lua",
     "Sync.lua",
     "Twoline.lua",
+    "Wedgetv.lua"
 }
 
 for _, fileName in ipairs(commandFiles) do
@@ -72,5 +73,6 @@ jalankan("follow")
 jalankan("pushup") 
 jalankan("sync") 
 jalankan("twoline") 
+jalankan("wedgetv")
 
 print("✅ Bot.lua loaded — All systems active.")
