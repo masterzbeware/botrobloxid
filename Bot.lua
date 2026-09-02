@@ -32,7 +32,7 @@ local commandFiles = {
     "Perfix.lua",
     "Main.lua",
     "Follow.lua",
-    "Frontline.lua",
+    "Threeline.lua",
     "Pushup.lua",
     "Sync.lua",
     "Twoline.lua",
@@ -73,7 +73,7 @@ end
 jalankan("perfix")
 jalankan("main")
 jalankan("follow")
-jalankan("frontline") 
+jalankan("threeline") 
 jalankan("pushup") 
 jalankan("sync") 
 jalankan("twoline") 
