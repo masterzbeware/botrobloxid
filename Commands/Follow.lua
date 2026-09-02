@@ -114,34 +114,69 @@ local botOrder = {
 
 
             local myIndex = table.find(botOrder, tostring(LocalPlayer.UserId)) or 1
+followConnection = RunService.Heartbeat:Connect(function()
+    if not following or not humanoid or not myHRP then
+        return
+    end
 
-            followConnection = RunService.Heartbeat:Connect(function()
-                if not following or not humanoid or not myHRP then return end
-                if not targetPlayer.Character then return end
+    if not targetPlayer.Character then
+        return
+    end
 
-                local hrp = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
-                if not hrp then return end
+    local hrp = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then
+        return
+    end
 
-                -- FOLLOW DISTANCE
-                local distance = defaultBotFollowDistance
-                if Admin:IsAdmin(targetPlayer) then
-                    distance = adminFollowDistance
-                end
+    ------------------------------------------------------------
+    -- FOLLOW DISTANCE
+    ------------------------------------------------------------
 
-                local special = Distance:GetDistance(
-                    tostring(LocalPlayer.UserId),
-                    tostring(targetPlayer.UserId)
-                )
-                if special then
-                    distance = special
-                end
+    local distance = defaultBotFollowDistance
 
-                -- STRAIGHT LINE POSITION
-                local offset = hrp.CFrame.LookVector * -(distance * myIndex)
-                local targetPosition = hrp.Position + offset
+    if Admin:IsAdmin(targetPlayer) then
+        distance = adminFollowDistance
+    end
 
-                humanoid:MoveTo(targetPosition)
-            end)
+    local special = Distance:GetDistance(
+        tostring(LocalPlayer.UserId),
+        tostring(targetPlayer.UserId)
+    )
+
+    if special then
+        distance = special
+    end
+
+    ------------------------------------------------------------
+    -- FORMATION POSITION
+    -- Bot 1 paling dekat dengan Admin
+    -- Bot berikutnya berada di belakangnya
+    ------------------------------------------------------------
+
+    local offset = hrp.CFrame.LookVector * -(distance * myIndex)
+
+    local targetPosition = hrp.Position + offset
+
+    ------------------------------------------------------------
+    -- MOVE BOT
+    ------------------------------------------------------------
+
+    humanoid:MoveTo(targetPosition)
+
+    ------------------------------------------------------------
+    -- MENGHADAP SEARAH DENGAN ADMIN
+    ------------------------------------------------------------
+
+    humanoid.AutoRotate = false
+
+    local adminLookVector = hrp.CFrame.LookVector
+
+    myHRP.CFrame = CFrame.lookAt(
+        myHRP.Position,
+        myHRP.Position + adminLookVector
+    )
+end)
+
         end
 
         ----------------------------------------------------------------
