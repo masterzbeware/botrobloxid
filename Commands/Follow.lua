@@ -162,19 +162,20 @@ followConnection = RunService.Heartbeat:Connect(function()
     ------------------------------------------------------------
 
     humanoid:MoveTo(targetPosition)
+------------------------------------------------------------
+-- MENGHADAP PERSIS SEARAH DENGAN ADMIN
+------------------------------------------------------------
 
-    ------------------------------------------------------------
-    -- MENGHADAP SEARAH DENGAN ADMIN
-    ------------------------------------------------------------
+humanoid.AutoRotate = false
 
-    humanoid.AutoRotate = false
+-- Ambil rotasi Admin saja
+local adminRotation = hrp.CFrame - hrp.Position
 
-    local adminLookVector = hrp.CFrame.LookVector
+-- Pertahankan posisi bot, tetapi gunakan rotasi Admin
+myHRP.CFrame = CFrame.new(
+    myHRP.Position
+) * adminRotation
 
-    myHRP.CFrame = CFrame.lookAt(
-        myHRP.Position,
-        myHRP.Position + adminLookVector
-    )
 end)
 
         end
