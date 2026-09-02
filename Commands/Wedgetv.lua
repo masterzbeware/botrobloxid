@@ -78,7 +78,7 @@ return {
         --------------------------------------------------
 
         -- Jarak dasar dari PLAYER
-        local baseBackDistance = 2
+        local baseBackDistance = 1
 
         -- Jarak antar baris
         local rowSpacing = 3
@@ -251,10 +251,10 @@ return {
 
         local function getBotDistance(player)
 
-            local distance = 1
+            local distance = 0.5
 
             if Admin:IsAdmin(player) then
-                distance = 1
+                distance = 0.5
             end
 
             local specialDistance =
