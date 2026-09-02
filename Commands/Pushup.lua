@@ -1,5 +1,6 @@
 -- Commands/Pushup.lua
 -- Admin-only pushup command
+--
 -- !pushup 3
 -- !stop
 
@@ -65,6 +66,10 @@ return {
                 return
             end
 
+            ------------------------------------------------------------
+            -- TEXT CHAT
+            ------------------------------------------------------------
+
             if TextChatService
                 and TextChatService.TextChannels then
 
@@ -73,6 +78,7 @@ return {
                         :FindFirstChild("RBXGeneral")
 
                 if channel then
+
                     pcall(function()
                         channel:SendAsync(text)
                     end)
@@ -80,6 +86,10 @@ return {
                     return
                 end
             end
+
+            ------------------------------------------------------------
+            -- OLD CHAT FALLBACK
+            ------------------------------------------------------------
 
             pcall(function()
 
@@ -100,13 +110,76 @@ return {
                         )
 
                 if sayMessageRequest then
+
                     sayMessageRequest:FireServer(
                         text,
                         "All"
                     )
+
                 end
 
             end)
+
+        end
+
+        ----------------------------------------------------------------
+        -- STOP PUSH UP ANIMATION
+        ----------------------------------------------------------------
+        --
+        -- Kita hentikan AnimationTrack "Push Up" secara langsung.
+        -- Ini dipakai karena sebelumnya kita belum mengetahui apakah
+        -- animationHandler memiliki action "stopAnimation".
+        --
+        ----------------------------------------------------------------
+
+        local function stopPushupAnimation()
+
+            local character = LocalPlayer.Character
+
+            if not character then
+                return
+            end
+
+            local humanoid =
+                character:FindFirstChildOfClass("Humanoid")
+
+            if not humanoid then
+                return
+            end
+
+            local animator =
+                humanoid:FindFirstChildOfClass("Animator")
+
+            if not animator then
+                return
+            end
+
+            ------------------------------------------------------------
+            -- CARI SEMUA ANIMATION TRACK
+            ------------------------------------------------------------
+
+            for _, track in ipairs(
+                animator:GetPlayingAnimationTracks()
+            ) do
+
+                local trackName =
+                    tostring(track.Name):lower()
+
+                --------------------------------------------------------
+                -- HANYA STOP PUSH UP
+                --------------------------------------------------------
+
+                if trackName == "push up"
+                    or trackName:find("push") then
+
+                    pcall(function()
+                        track:Stop(0.15)
+                    end)
+
+                end
+
+            end
+
         end
 
         ----------------------------------------------------------------
@@ -134,6 +207,10 @@ return {
 
             vars.PushupActive = false
 
+            ------------------------------------------------------------
+            -- STOP LOOP
+            ------------------------------------------------------------
+
             if vars.PushupConnection then
 
                 task.cancel(
@@ -143,6 +220,12 @@ return {
                 vars.PushupConnection = nil
 
             end
+
+            ------------------------------------------------------------
+            -- STOP ANIMATION
+            ------------------------------------------------------------
+
+            stopPushupAnimation()
 
         end
 
@@ -196,7 +279,7 @@ return {
             end
 
             ------------------------------------------------------------
-            -- STOP SEMUA MODE SEBELUM PUSHUP
+            -- STOP MODE LAIN
             ------------------------------------------------------------
 
             stopOtherModes()
@@ -232,6 +315,18 @@ return {
             task.wait(2)
 
             ------------------------------------------------------------
+            -- CEK JIKA SUDAH DIHENTIKAN SAAT MENUNGGU
+            ------------------------------------------------------------
+
+            if not vars.PushupActive then
+                return
+            end
+
+            if vars.ActiveMode ~= "pushup" then
+                return
+            end
+
+            ------------------------------------------------------------
             -- PUSHUP LOOP
             ------------------------------------------------------------
 
@@ -241,7 +336,7 @@ return {
                     for i = 1, jumlah do
 
                         ------------------------------------------------
-                        -- CEK MASIH AKTIF
+                        -- CEK AKTIF
                         ------------------------------------------------
 
                         if not vars.PushupActive then
@@ -259,7 +354,7 @@ return {
                         playPushup()
 
                         ------------------------------------------------
-                        -- TUNGGU 5 DETIK
+                        -- TUNGGU ANIMASI
                         ------------------------------------------------
 
                         task.wait(5)
@@ -294,17 +389,32 @@ return {
 
                         end
 
-                    end
+                        ------------------------------------------------
+                        -- JIKA SUDAH PUSHUP TERAKHIR
+                        ------------------------------------------------
 
-                    ----------------------------------------------------
-                    -- SELESAI
-                    ----------------------------------------------------
+                        if i == jumlah then
 
-                    vars.PushupActive = false
-                    vars.PushupConnection = nil
+                            ------------------------------------------------
+                            -- STOP ANIMASI TERAKHIR
+                            ------------------------------------------------
 
-                    if vars.ActiveMode == "pushup" then
-                        vars.ActiveMode = nil
+                            stopPushupAnimation()
+
+                            ------------------------------------------------
+                            -- SELESAI
+                            ------------------------------------------------
+
+                            vars.PushupActive = false
+                            vars.PushupConnection = nil
+
+                            if vars.ActiveMode == "pushup" then
+                                vars.ActiveMode = nil
+                            end
+
+                            return
+                        end
+
                     end
 
                 end)
@@ -328,7 +438,7 @@ return {
                 message:lower()
 
             ------------------------------------------------------------
-            -- PUSHUP
+            -- !PUSHUP JUMLAH
             ------------------------------------------------------------
 
             local jumlah =
@@ -346,7 +456,7 @@ return {
             end
 
             ------------------------------------------------------------
-            -- STOP UNIVERSAL
+            -- !STOP
             ------------------------------------------------------------
 
             if msg == "!stop" then
@@ -364,7 +474,7 @@ return {
                 stopPushup()
 
                 --------------------------------------------------------
-                -- STOP SEMUA MODE LAIN
+                -- STOP SEMUA MODE
                 --------------------------------------------------------
 
                 for name, stopFunction in pairs(
