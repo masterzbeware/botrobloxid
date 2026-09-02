@@ -58,6 +58,20 @@ return {
         -- BOT ORDER
         ----------------------------------------------------------------
 
+        -- JANGAN UBAH URUTAN INI
+        --
+        -- Bot 1 = 11611503633
+        -- Bot 2 = 11611534165
+        -- Bot 3 = 11611567975
+        -- Bot 4 = 11611562042
+        -- Bot 5 = 11611591921
+        -- Bot 6 = 11122806815
+        -- Bot 7 = 11122806817
+        -- Bot 8 = 11122687468
+        -- Bot 9 = 11122854402
+        --
+        -- Bot 9 tidak digunakan dalam formasi Wedgetv.
+
         local botOrder = {
             "11611503633", -- Bot 1
             "11611534165", -- Bot 2
@@ -74,16 +88,16 @@ return {
         -- WEDGE SETTINGS
         ----------------------------------------------------------------
 
-        -- Jarak baris pertama dari player
-        local backDistance = 6
+        -- Jarak dasar formasi dari player
+        local baseBackDistance = 5
 
-        -- Jarak kiri / kanan baris pertama
-        local sideSpacing = 3
-
-        -- Jarak baris kedua dari player
+        -- Jarak antar baris
         local rowSpacing = 3
 
-        -- Jarak minimum sebelum bot dianggap sudah sampai
+        -- Jarak kiri / kanan
+        local sideSpacing = 3
+
+        -- Jarak minimum sebelum bot dianggap sampai
         local stopThreshold = 1.5
 
         ----------------------------------------------------------------
@@ -243,6 +257,7 @@ return {
                     or player.DisplayName:lower() == name then
 
                     return player
+
                 end
 
             end
@@ -276,6 +291,286 @@ return {
         end
 
         ----------------------------------------------------------------
+        -- GET WEDGE POSITION
+        ----------------------------------------------------------------
+
+        local function getWedgePosition(
+            myIndex,
+            targetHRP,
+            distance
+        )
+
+            ------------------------------------------------------------
+            -- BOT 1
+            --
+            -- Bot 1                    Bot 8
+            ------------------------------------------------------------
+
+            if myIndex == 1 then
+
+                return
+                    targetHRP.Position
+
+                    -
+                    (
+                        targetHRP.CFrame.LookVector
+                        *
+                        (
+                            baseBackDistance
+                            + distance
+                        )
+                    )
+
+                    -
+                    (
+                        targetHRP.CFrame.RightVector
+                        *
+                        (
+                            sideSpacing * 3
+                        )
+                    )
+
+            end
+
+            ------------------------------------------------------------
+            -- BOT 8
+            --
+            -- Bot 1                    Bot 8
+            ------------------------------------------------------------
+
+            if myIndex == 8 then
+
+                return
+                    targetHRP.Position
+
+                    -
+                    (
+                        targetHRP.CFrame.LookVector
+                        *
+                        (
+                            baseBackDistance
+                            + distance
+                        )
+                    )
+
+                    +
+                    (
+                        targetHRP.CFrame.RightVector
+                        *
+                        (
+                            sideSpacing * 3
+                        )
+                    )
+
+            end
+
+            ------------------------------------------------------------
+            -- BOT 7
+            --
+            --     Bot 7            Bot 6
+            ------------------------------------------------------------
+
+            if myIndex == 7 then
+
+                return
+                    targetHRP.Position
+
+                    -
+                    (
+                        targetHRP.CFrame.LookVector
+                        *
+                        (
+                            baseBackDistance
+                            + rowSpacing
+                            + distance
+                        )
+                    )
+
+                    -
+                    (
+                        targetHRP.CFrame.RightVector
+                        *
+                        (
+                            sideSpacing * 2
+                        )
+                    )
+
+            end
+
+            ------------------------------------------------------------
+            -- BOT 6
+            --
+            --     Bot 7            Bot 6
+            ------------------------------------------------------------
+
+            if myIndex == 6 then
+
+                return
+                    targetHRP.Position
+
+                    -
+                    (
+                        targetHRP.CFrame.LookVector
+                        *
+                        (
+                            baseBackDistance
+                            + rowSpacing
+                            + distance
+                        )
+                    )
+
+                    +
+                    (
+                        targetHRP.CFrame.RightVector
+                        *
+                        (
+                            sideSpacing * 2
+                        )
+                    )
+
+            end
+
+            ------------------------------------------------------------
+            -- BOT 5
+            --
+            --         Bot 5      Bot 4
+            ------------------------------------------------------------
+
+            if myIndex == 5 then
+
+                return
+                    targetHRP.Position
+
+                    -
+                    (
+                        targetHRP.CFrame.LookVector
+                        *
+                        (
+                            baseBackDistance
+                            + (rowSpacing * 2)
+                            + distance
+                        )
+                    )
+
+                    -
+                    (
+                        targetHRP.CFrame.RightVector
+                        *
+                        sideSpacing
+                    )
+
+            end
+
+            ------------------------------------------------------------
+            -- BOT 4
+            --
+            --         Bot 5      Bot 4
+            ------------------------------------------------------------
+
+            if myIndex == 4 then
+
+                return
+                    targetHRP.Position
+
+                    -
+                    (
+                        targetHRP.CFrame.LookVector
+                        *
+                        (
+                            baseBackDistance
+                            + (rowSpacing * 2)
+                            + distance
+                        )
+                    )
+
+                    +
+                    (
+                        targetHRP.CFrame.RightVector
+                        *
+                        sideSpacing
+                    )
+
+            end
+
+            ------------------------------------------------------------
+            -- BOT 3
+            --
+            --             Bot 3  Bot 2
+            ------------------------------------------------------------
+
+            if myIndex == 3 then
+
+                return
+                    targetHRP.Position
+
+                    -
+                    (
+                        targetHRP.CFrame.LookVector
+                        *
+                        (
+                            baseBackDistance
+                            + (rowSpacing * 3)
+                            + distance
+                        )
+                    )
+
+                    -
+                    (
+                        targetHRP.CFrame.RightVector
+                        *
+                        (
+                            sideSpacing * 0.5
+                        )
+                    )
+
+            end
+
+            ------------------------------------------------------------
+            -- BOT 2
+            --
+            --             Bot 3  Bot 2
+            ------------------------------------------------------------
+
+            if myIndex == 2 then
+
+                return
+                    targetHRP.Position
+
+                    -
+                    (
+                        targetHRP.CFrame.LookVector
+                        *
+                        (
+                            baseBackDistance
+                            + (rowSpacing * 3)
+                            + distance
+                        )
+                    )
+
+                    +
+                    (
+                        targetHRP.CFrame.RightVector
+                        *
+                        (
+                            sideSpacing * 0.5
+                        )
+                    )
+
+            end
+
+            ------------------------------------------------------------
+            -- BOT 9
+            ------------------------------------------------------------
+
+            -- Bot 9 tidak digunakan.
+            -- Jika LocalPlayer adalah Bot 9,
+            -- bot akan diam dalam mode Wedgetv.
+
+            return nil
+
+        end
+
+        ----------------------------------------------------------------
         -- START WEDGETV
         ----------------------------------------------------------------
 
@@ -292,7 +587,7 @@ return {
             stopOtherModes()
 
             ------------------------------------------------------------
-            -- SET ACTIVE MODE
+            -- ACTIVE MODE
             ------------------------------------------------------------
 
             vars.ActiveMode = "wedgetv"
@@ -322,7 +617,7 @@ return {
             sendChat("Yes, Sir!")
 
             ------------------------------------------------------------
-            -- FIND BOT INDEX
+            -- CARI INDEX BOT
             ------------------------------------------------------------
 
             local myIndex =
@@ -341,12 +636,10 @@ return {
             end
 
             ------------------------------------------------------------
-            -- HANYA 4 BOT PERTAMA
+            -- BOT 9 TIDAK IKUT FORMASI
             ------------------------------------------------------------
 
-            if myIndex > 4 then
-
-                stopWedge()
+            if myIndex == 9 then
 
                 return
             end
@@ -360,7 +653,7 @@ return {
                     function()
 
                         ------------------------------------------------
-                        -- CEK ACTIVE MODE
+                        -- CEK MODE
                         ------------------------------------------------
 
                         if vars.ActiveMode ~= "wedgetv" then
@@ -418,139 +711,22 @@ return {
                             )
 
                         ------------------------------------------------
-                        -- FORMATION
-                        ------------------------------------------------
-                        --
-                        -- BOT 1           BOT 2
-                        --
-                        --    BOT 3     BOT 4
-                        --
-                        --        PLAYER
-                        --
+                        -- GET POSITION
                         ------------------------------------------------
 
-                        local targetPosition
-
-                        ------------------------------------------------
-                        -- BOT 1
-                        -- KIRI ATAS
-                        ------------------------------------------------
-
-                        if myIndex == 1 then
-
-                            targetPosition =
-                                targetHRP.Position
-
-                                -
-                                (
-                                    targetHRP.CFrame.LookVector
-                                    *
-                                    (
-                                        backDistance
-                                        + distance
-                                    )
-                                )
-
-                                -
-                                (
-                                    targetHRP.CFrame.RightVector
-                                    *
-                                    sideSpacing
-                                )
-
-                        ------------------------------------------------
-                        -- BOT 2
-                        -- KANAN ATAS
-                        ------------------------------------------------
-
-                        elseif myIndex == 2 then
-
-                            targetPosition =
-                                targetHRP.Position
-
-                                -
-                                (
-                                    targetHRP.CFrame.LookVector
-                                    *
-                                    (
-                                        backDistance
-                                        + distance
-                                    )
-                                )
-
-                                +
-                                (
-                                    targetHRP.CFrame.RightVector
-                                    *
-                                    sideSpacing
-                                )
-
-                        ------------------------------------------------
-                        -- BOT 3
-                        -- KIRI BAWAH
-                        ------------------------------------------------
-
-                        elseif myIndex == 3 then
-
-                            targetPosition =
-                                targetHRP.Position
-
-                                -
-                                (
-                                    targetHRP.CFrame.LookVector
-                                    *
-                                    (
-                                        rowSpacing
-                                        + distance
-                                    )
-                                )
-
-                                -
-                                (
-                                    targetHRP.CFrame.RightVector
-                                    *
-                                    (
-                                        sideSpacing * 0.5
-                                    )
-                                )
-
-                        ------------------------------------------------
-                        -- BOT 4
-                        -- KANAN BAWAH
-                        ------------------------------------------------
-
-                        elseif myIndex == 4 then
-
-                            targetPosition =
-                                targetHRP.Position
-
-                                -
-                                (
-                                    targetHRP.CFrame.LookVector
-                                    *
-                                    (
-                                        rowSpacing
-                                        + distance
-                                    )
-                                )
-
-                                +
-                                (
-                                    targetHRP.CFrame.RightVector
-                                    *
-                                    (
-                                        sideSpacing * 0.5
-                                    )
-                                )
-
-                        end
+                        local targetPosition =
+                            getWedgePosition(
+                                myIndex,
+                                targetHRP,
+                                distance
+                            )
 
                         if not targetPosition then
                             return
                         end
 
                         ------------------------------------------------
-                        -- DISTANCE TO POSITION
+                        -- JARAK KE POSISI
                         ------------------------------------------------
 
                         local distanceToTarget =
