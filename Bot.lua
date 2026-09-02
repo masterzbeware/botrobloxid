@@ -1,139 +1,84 @@
-local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+local repoBase = "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Commands/"
+local obsidianRepo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
 
-local Window = Fluent:CreateWindow({
-    Title = "Kyro Hub",
-    SubTitle = "",
-    TabWidth = 160,
-    Size = UDim2.fromOffset(500, 350),
-    Acrylic = true,
-    Theme = "Dark",
-    MinimizeKey = Enum.KeyCode.LeftControl
-})
+-- Load Obsidian
+local success, Library = pcall(function()
+    return loadstring(game:HttpGet(obsidianRepo .. "Library.lua"))()
+end)
 
-local Tabs = {
-    Main = Window:AddTab({ Title = "MAIN" }),
-    AutoFishing = Window:AddTab({ Title = "AUTO FISHING" })
+if not success or not Library then
+    error("[Bot.lua] Gagal load Obsidian Library")
+end
+
+_G.BotVars = {
+    Players = game:GetService("Players"),
+    TextChatService = game:GetService("TextChatService"),
+    RunService = game:GetService("RunService"),
+    LocalPlayer = game:GetService("Players").LocalPlayer,
 }
 
-Tabs.AutoFishing:AddParagraph({
-    Title = "Auto Fishing",
-    Content = "Auto casting"
+local Window = Library:CreateWindow({
+    Title = "MasterZ HUB",
+    Footer = "1.0.4",
+    Icon = 0
 })
 
--- VARIABEL
-local AutoFishingEnabled = false
-local autoFishingLoop = nil
+_G.BotVars.Library = Library
+_G.BotVars.MainWindow = Window
+_G.BotVars.Modules = {}
 
--- 🔥 SPEED CONTROL (NEW)
-local FishingSpeed = 1 -- default normal (1x)
+-- ✅ SEMUA COMMAND
+local commandFiles = {
+    "Perfix.lua",
+    "Main.lua",
+    "Follow.lua",
+    "Frontline.lua",
+    "Pushup.lua",
+    "Sync.lua",
+    "Twoline.lua",
+    "Vote.lua",
+    "Diamond.lua",
+    "Sidecover.lua",
+}
 
--- SERVICES
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-
-local CastRequest = ReplicatedStorage.Packages.Knit.Services.Fish.RF.CastRequest
-local MinigameResolved = ReplicatedStorage.Packages.Knit.Services.Fish.RF.MinigameResolved
-local CastVisuals = ReplicatedStorage.Packages.Knit.Services.Fish.RE.CastVisuals
-
--- UTIL
-local function randomFloat(min, max)
-    return min + (math.random() * (max - min))
-end
-
-local function getGoodPower()
-    return randomFloat(0.85, 0.95)
-end
-
-local function doCast()
-    local power = getGoodPower()
-    CastRequest:InvokeServer(power)
-end
-
--- CAST VISUAL HANDLER
-CastVisuals.OnClientEvent:Connect(function(player, pos, fish, weight, data)
-    if player == LocalPlayer and AutoFishingEnabled then
-
-        local minigameDelay = (4.5 + randomFloat(0, 0.5)) / FishingSpeed
-        task.wait(minigameDelay)
-
-        local reactionTime = randomFloat(0.2, 0.6) / FishingSpeed
-        task.wait(reactionTime)
-
-        MinigameResolved:InvokeServer(true)
-    end
-end)
-
--- LOOP
-local function StartAutoFishing()
-    if autoFishingLoop then
-        task.cancel(autoFishingLoop)
-    end
-
-    autoFishingLoop = task.spawn(function()
-        while AutoFishingEnabled do
-            doCast()
-
-            local baseDelay = randomFloat(8, 15)
-            task.wait(baseDelay / FishingSpeed)
-        end
+for _, fileName in ipairs(commandFiles) do
+    local ok, response = pcall(function()
+        return game:HttpGet(repoBase .. fileName)
     end)
+
+    if ok and response then
+        local loader = loadstring(response)
+        if loader then
+            local successModule, moduleTable = pcall(loader)
+            if successModule and type(moduleTable) == "table" then
+                local key = fileName:gsub("%.lua$", ""):lower()
+                _G.BotVars.Modules[key] = moduleTable
+                print("[Bot.lua] Loaded:", key)
+            end
+        end
+    end
 end
 
--- TOGGLE
-Tabs.AutoFishing:AddToggle("AutoFishingToggle", {
-    Title = "Auto Fishing",
-    Default = false
-}):OnChanged(function(Value)
-    AutoFishingEnabled = Value
+task.wait(0.3)
 
-    if AutoFishingEnabled then
-        StartAutoFishing()
-
-        Fluent:Notify({
-            Title = "Auto Fishing",
-            Content = "Fishing dimulai!",
-            Duration = 3
-        })
-    else
-        if autoFishingLoop then
-            task.cancel(autoFishingLoop)
-            autoFishingLoop = nil
-        end
-
-        Fluent:Notify({
-            Title = "Auto Fishing",
-            Content = "Fishing dihentikan",
-            Duration = 2
-        })
+local function jalankan(name)
+    local module = _G.BotVars.Modules[name]
+    if module and module.Execute then
+        module.Execute()
+        print("[Bot.lua] Executed:", name)
     end
-end)
+end
 
--- 🔥 SPEED SLIDER (NEW - DI BAWAH TOGGLE)
-Tabs.AutoFishing:AddSlider("FishingSpeedSlider", {
-    Title = "Fishing Speed",
-    Description = "Semakin kecil = semakin cepat",
-    Default = 1,
-    Min = 0.2,
-    Max = 3,
-    Rounding = 1
-}):OnChanged(function(Value)
-    FishingSpeed = Value
-end)
+-- ✅ EXECUTION ORDER
+jalankan("perfix")
+jalankan("main")
+jalankan("follow")
+jalankan("frontline") 
+jalankan("pushup") 
+jalankan("sync") 
+jalankan("twoline") 
+jalankan("vote") 
+jalankan("diamond") 
+jalankan("sidecover") 
 
--- MAINTAIN LOOP
-task.spawn(function()
-    while task.wait(2) do
-        if AutoFishingEnabled and not autoFishingLoop then
-            StartAutoFishing()
-        end
-    end
-end)
-
-Window:SelectTab(1)
-
-Fluent:Notify({
-    Title = "L-01 Auto Fishing",
-    Content = "Ready!",
-    Duration = 5
-})
+print("✅ Bot.lua loaded — All systems active.")
