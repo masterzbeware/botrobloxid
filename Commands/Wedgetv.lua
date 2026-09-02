@@ -251,10 +251,10 @@ return {
 
         local function getBotDistance(player)
 
-            local distance = 2
+            local distance = 1
 
             if Admin:IsAdmin(player) then
-                distance = 3
+                distance = 1
             end
 
             local specialDistance =
