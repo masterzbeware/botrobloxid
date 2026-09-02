@@ -1,6 +1,9 @@
-
 return {
     Execute = function()
+
+        ----------------------------------------------------------------
+        -- SERVICES
+        ----------------------------------------------------------------
 
         local Players = game:GetService("Players")
         local RunService = game:GetService("RunService")
@@ -13,25 +16,32 @@ return {
             return
         end
 
-        ------------------------------------------------------------
+        ----------------------------------------------------------------
+        -- GLOBAL MODE SYSTEM
+        ----------------------------------------------------------------
+
+        _G.BotVars = _G.BotVars or {}
+        _G.BotVars.ModeControllers = _G.BotVars.ModeControllers or {}
+
+        ----------------------------------------------------------------
         -- LOAD ADMIN
-        ------------------------------------------------------------
+        ----------------------------------------------------------------
 
         local Admin = loadstring(game:HttpGet(
             "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
         ))()
 
-        ------------------------------------------------------------
+        ----------------------------------------------------------------
         -- LOAD DISTANCE
-        ------------------------------------------------------------
+        ----------------------------------------------------------------
 
         local Distance = loadstring(game:HttpGet(
             "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Distance.lua"
         ))()
 
-        ------------------------------------------------------------
+        ----------------------------------------------------------------
         -- VARIABLES
-        ------------------------------------------------------------
+        ----------------------------------------------------------------
 
         local humanoid
         local myHRP
@@ -40,17 +50,16 @@ return {
         local targetPlayer = nil
         local followConnection = nil
 
-        ------------------------------------------------------------
+        ----------------------------------------------------------------
         -- DISTANCE
-        ------------------------------------------------------------
+        ----------------------------------------------------------------
 
         local adminFollowDistance = 3
         local defaultBotFollowDistance = 2
 
-        ------------------------------------------------------------
+        ----------------------------------------------------------------
         -- BOT ORDER
-        -- URUTAN DARI PALING DEPAN KE PALING BELAKANG
-        ------------------------------------------------------------
+        ----------------------------------------------------------------
 
         local botOrder = {
 
@@ -64,16 +73,11 @@ return {
             "11122687468", -- Bot 8
             "11122854402", -- Bot 9
 
-            "11122806815", -- Bot 10
-            "11122806817", -- Bot 11
-            "11122687468", -- Bot 12
-            "11122854402", -- Bot 13
-
         }
 
-        ------------------------------------------------------------
+        ----------------------------------------------------------------
         -- UPDATE CHARACTER
-        ------------------------------------------------------------
+        ----------------------------------------------------------------
 
         local function updateCharacter()
 
@@ -93,17 +97,13 @@ return {
 
         updateCharacter()
 
-        ------------------------------------------------------------
+        ----------------------------------------------------------------
         -- SEND CHAT
-        ------------------------------------------------------------
+        ----------------------------------------------------------------
 
         local function sendChat(message)
 
             local success = false
-
-            --------------------------------------------------------
-            -- TEXT CHAT
-            --------------------------------------------------------
 
             if TextChatService
                 and TextChatService.TextChannels then
@@ -124,21 +124,32 @@ return {
                 end
             end
 
-            --------------------------------------------------------
-            -- LEGACY CHAT
-            --------------------------------------------------------
-
             if not success then
 
                 pcall(function()
 
-                    ReplicatedStorage
-                        .DefaultChatSystemChatEvents
-                        .SayMessageRequest
-                        :FireServer(
-                            message,
-                            "All"
+                    local chatEvents =
+                        ReplicatedStorage:FindFirstChild(
+                            "DefaultChatSystemChatEvents"
                         )
+
+                    if chatEvents then
+
+                        local sayMessageRequest =
+                            chatEvents:FindFirstChild(
+                                "SayMessageRequest"
+                            )
+
+                        if sayMessageRequest then
+
+                            sayMessageRequest:FireServer(
+                                message,
+                                "All"
+                            )
+
+                        end
+
+                    end
 
                 end)
 
@@ -146,9 +157,9 @@ return {
 
         end
 
-        ------------------------------------------------------------
+        ----------------------------------------------------------------
         -- STOP FOLLOW
-        ------------------------------------------------------------
+        ----------------------------------------------------------------
 
         local function stopFollow()
 
@@ -162,19 +173,42 @@ return {
 
             end
 
-            --------------------------------------------------------
-            -- KEMBALIKAN AUTOROTATE
-            --------------------------------------------------------
-
             if humanoid then
                 humanoid.AutoRotate = true
             end
 
         end
 
-        ------------------------------------------------------------
+        ----------------------------------------------------------------
+        -- REGISTER CONTROLLER
+        ----------------------------------------------------------------
+
+        _G.BotVars.ModeControllers.follow = stopFollow
+
+        ----------------------------------------------------------------
+        -- STOP SEMUA MODE LAIN
+        ----------------------------------------------------------------
+
+        local function stopOtherModes()
+
+            for name, stopFunction in pairs(
+                _G.BotVars.ModeControllers
+            ) do
+
+                if name ~= "follow"
+                    and type(stopFunction) == "function" then
+
+                    pcall(stopFunction)
+
+                end
+
+            end
+
+        end
+
+        ----------------------------------------------------------------
         -- FIND PLAYER
-        ------------------------------------------------------------
+        ----------------------------------------------------------------
 
         local function findPlayerByName(name)
 
@@ -197,9 +231,9 @@ return {
 
         end
 
-        ------------------------------------------------------------
+        ----------------------------------------------------------------
         -- START FOLLOW
-        ------------------------------------------------------------
+        ----------------------------------------------------------------
 
         local function startFollow(player)
 
@@ -207,9 +241,21 @@ return {
                 return
             end
 
-            --------------------------------------------------------
-            -- HAPUS FOLLOW LOOP SEBELUMNYA
-            --------------------------------------------------------
+            ------------------------------------------------------------
+            -- STOP MODE LAIN
+            ------------------------------------------------------------
+
+            stopOtherModes()
+
+            ------------------------------------------------------------
+            -- SET ACTIVE MODE
+            ------------------------------------------------------------
+
+            _G.BotVars.ActiveMode = "follow"
+
+            ------------------------------------------------------------
+            -- STOP CONNECTION LAMA
+            ------------------------------------------------------------
 
             if followConnection then
 
@@ -218,18 +264,14 @@ return {
 
             end
 
-            --------------------------------------------------------
-            -- SET TARGET
-            --------------------------------------------------------
-
-            targetPlayer = player
             following = true
+            targetPlayer = player
 
             sendChat("Yes, Sir!")
 
-            --------------------------------------------------------
+            ------------------------------------------------------------
             -- CARI INDEX BOT
-            --------------------------------------------------------
+            ------------------------------------------------------------
 
             local myIndex =
                 table.find(
@@ -237,196 +279,171 @@ return {
                     tostring(LocalPlayer.UserId)
                 )
 
-            --------------------------------------------------------
-            -- BUKAN BOT
-            --------------------------------------------------------
-
             if not myIndex then
 
-                following = false
-                targetPlayer = nil
+                stopFollow()
 
                 return
+
             end
 
-            --------------------------------------------------------
+            ------------------------------------------------------------
             -- FOLLOW LOOP
-            --------------------------------------------------------
+            ------------------------------------------------------------
 
             followConnection =
-                RunService.Heartbeat:Connect(function()
+                RunService.Heartbeat:Connect(
+                    function()
 
-                    ------------------------------------------------
-                    -- VALIDASI
-                    ------------------------------------------------
+                        ------------------------------------------------
+                        -- JIKA MODE SUDAH BERGANTI
+                        ------------------------------------------------
 
-                    if not following then
-                        return
-                    end
+                        if _G.BotVars.ActiveMode ~= "follow" then
 
-                    if not humanoid
-                        or not myHRP then
+                            stopFollow()
 
-                        return
-                    end
+                            return
 
-                    if not targetPlayer then
-                        return
-                    end
+                        end
 
-                    ------------------------------------------------
-                    -- ADMIN CHARACTER
-                    ------------------------------------------------
+                        ------------------------------------------------
+                        -- VALIDASI
+                        ------------------------------------------------
 
-                    local targetCharacter =
-                        targetPlayer.Character
+                        if not following then
+                            return
+                        end
 
-                    if not targetCharacter then
-                        return
-                    end
+                        if not humanoid
+                            or not myHRP then
 
-                    ------------------------------------------------
-                    -- ADMIN HRP
-                    ------------------------------------------------
+                            return
 
-                    local targetHRP =
-                        targetCharacter:FindFirstChild(
-                            "HumanoidRootPart"
-                        )
+                        end
 
-                    if not targetHRP then
-                        return
-                    end
+                        if not targetPlayer then
+                            return
+                        end
 
-                    ------------------------------------------------
-                    -- JARAK ANTAR BOT
-                    ------------------------------------------------
+                        ------------------------------------------------
+                        -- TARGET CHARACTER
+                        ------------------------------------------------
 
-                    local distance =
-                        defaultBotFollowDistance
+                        local targetCharacter =
+                            targetPlayer.Character
 
-                    ------------------------------------------------
-                    -- KALAU TARGET ADMIN
-                    ------------------------------------------------
+                        if not targetCharacter then
+                            return
+                        end
 
-                    if Admin:IsAdmin(targetPlayer) then
+                        local targetHRP =
+                            targetCharacter:FindFirstChild(
+                                "HumanoidRootPart"
+                            )
 
-                        distance =
-                            adminFollowDistance
+                        if not targetHRP then
+                            return
+                        end
 
-                    end
+                        ------------------------------------------------
+                        -- DISTANCE
+                        ------------------------------------------------
 
-                    ------------------------------------------------
-                    -- CEK DISTANCE KHUSUS
-                    ------------------------------------------------
+                        local distance =
+                            defaultBotFollowDistance
 
-                    local specialDistance =
-                        Distance:GetDistance(
-                            tostring(LocalPlayer.UserId),
-                            tostring(targetPlayer.UserId)
-                        )
+                        if Admin:IsAdmin(targetPlayer) then
 
-                    if specialDistance then
+                            distance =
+                                adminFollowDistance
 
-                        distance =
-                            specialDistance
+                        end
 
-                    end
+                        local specialDistance =
+                            Distance:GetDistance(
+                                tostring(LocalPlayer.UserId),
+                                tostring(targetPlayer.UserId)
+                            )
 
-                    ------------------------------------------------
-                    -- HITUNG POSISI BOT
-                    ------------------------------------------------
-                    --
-                    -- Admin
-                    --   ↓
-                    -- Bot 1 = 3
-                    -- Bot 2 = 6
-                    -- Bot 3 = 9
-                    -- dst.
-                    --
-                    ------------------------------------------------
+                        if specialDistance then
 
-                    local targetPosition =
-                        targetHRP.Position
-                        -
-                        (
-                            targetHRP.CFrame.LookVector
-                            *
-                            (distance * myIndex)
-                        )
+                            distance =
+                                specialDistance
 
-                    ------------------------------------------------
-                    -- HITUNG JARAK BOT KE TARGET
-                    ------------------------------------------------
+                        end
 
-                    local distanceToTarget =
-                        (
-                            myHRP.Position
+                        ------------------------------------------------
+                        -- POSISI BOT
+                        ------------------------------------------------
+
+                        local targetPosition =
+                            targetHRP.Position
                             -
-                            targetPosition
-                        ).Magnitude
-
-                    ------------------------------------------------
-                    -- BOT JAUH DARI ADMIN
-                    ------------------------------------------------
-
-                    if distanceToTarget > 1.5 then
+                            (
+                                targetHRP.CFrame.LookVector
+                                *
+                                (distance * myIndex)
+                            )
 
                         ------------------------------------------------
-                        -- AUTOROTATE AKTIF
+                        -- JARAK
                         ------------------------------------------------
 
-                        humanoid.AutoRotate = true
+                        local distanceToTarget =
+                            (
+                                myHRP.Position
+                                -
+                                targetPosition
+                            ).Magnitude
 
                         ------------------------------------------------
-                        -- SURUH BOT BERJALAN
+                        -- JALAN
                         ------------------------------------------------
 
-                        humanoid:MoveTo(
-                            targetPosition
-                        )
+                        if distanceToTarget > 1.5 then
 
-                        return
+                            humanoid.AutoRotate = true
+
+                            humanoid:MoveTo(
+                                targetPosition
+                            )
+
+                            return
+
+                        end
+
+                        ------------------------------------------------
+                        -- SUDAH SAMPAI
+                        ------------------------------------------------
+
+                        humanoid.AutoRotate = false
+
+                        local adminRotation =
+                            targetHRP.CFrame
+                            -
+                            targetHRP.Position
+
+                        myHRP.CFrame =
+                            CFrame.new(
+                                myHRP.Position
+                            )
+                            *
+                            adminRotation
+
                     end
-
-                    ------------------------------------------------
-                    -- BOT SUDAH SAMPAI
-                    ------------------------------------------------
-
-                    humanoid.AutoRotate = false
-
-                    ------------------------------------------------
-                    -- SAMAKAN ARAH DENGAN ADMIN
-                    ------------------------------------------------
-
-                    local adminRotation =
-                        targetHRP.CFrame
-                        -
-                        targetHRP.Position
-
-                    myHRP.CFrame =
-                        CFrame.new(
-                            myHRP.Position
-                        )
-                        *
-                        adminRotation
-
-                end)
+                )
 
         end
 
-        ------------------------------------------------------------
+        ----------------------------------------------------------------
         -- COMMAND HANDLER
-        ------------------------------------------------------------
+        ----------------------------------------------------------------
 
         local function handleCommand(
             message,
             sender
         )
-
-            --------------------------------------------------------
-            -- HANYA ADMIN YANG BOLEH
-            --------------------------------------------------------
 
             if not Admin:IsAdmin(sender) then
                 return
@@ -435,20 +452,21 @@ return {
             local lower =
                 message:lower()
 
-            --------------------------------------------------------
+            ------------------------------------------------------------
             -- !FOLLOW
-            --------------------------------------------------------
+            ------------------------------------------------------------
 
             if lower == "!follow" then
 
                 startFollow(sender)
 
                 return
+
             end
 
-            --------------------------------------------------------
+            ------------------------------------------------------------
             -- !FOLLOW PLAYER
-            --------------------------------------------------------
+            ------------------------------------------------------------
 
             local targetName =
                 lower:match(
@@ -469,25 +487,29 @@ return {
                 end
 
                 return
+
             end
 
-            --------------------------------------------------------
+            ------------------------------------------------------------
             -- !STOP
-            --------------------------------------------------------
+            ------------------------------------------------------------
 
             if lower == "!stop"
                 or lower == "!unfollow" then
 
+                _G.BotVars.ActiveMode = nil
+
                 stopFollow()
 
                 return
+
             end
 
         end
 
-        ------------------------------------------------------------
+        ----------------------------------------------------------------
         -- TEXT CHAT
-        ------------------------------------------------------------
+        ----------------------------------------------------------------
 
         if TextChatService
             and TextChatService.TextChannels then
@@ -524,11 +546,12 @@ return {
                     end
 
             end
+
         end
 
-        ------------------------------------------------------------
-        -- LEGACY CHAT
-        ------------------------------------------------------------
+        ----------------------------------------------------------------
+        -- FALLBACK CHAT
+        ----------------------------------------------------------------
 
         for _, player in ipairs(
             Players:GetPlayers()
@@ -547,9 +570,9 @@ return {
 
         end
 
-        ------------------------------------------------------------
+        ----------------------------------------------------------------
         -- PLAYER ADDED
-        ------------------------------------------------------------
+        ----------------------------------------------------------------
 
         Players.PlayerAdded:Connect(
             function(player)
@@ -568,9 +591,9 @@ return {
             end
         )
 
-        ------------------------------------------------------------
-        -- RESPawn
-        ------------------------------------------------------------
+        ----------------------------------------------------------------
+        -- CHARACTER RESPAWN
+        ----------------------------------------------------------------
 
         LocalPlayer.CharacterAdded:Connect(
             function()
@@ -579,11 +602,7 @@ return {
 
                 updateCharacter()
 
-                ------------------------------------------------
-                -- FOLLOW AKAN TETAP BERJALAN
-                ------------------------------------------------
-
-                if following
+                if _G.BotVars.ActiveMode == "follow"
                     and targetPlayer then
 
                     startFollow(

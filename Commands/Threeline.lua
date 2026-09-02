@@ -1,732 +1,733 @@
-return {
-    Execute = function()
+--//==================================================
+--// THREELINE.LUA
+--//==================================================
 
-        ----------------------------------------------------------------
-        -- SERVICES
-        ----------------------------------------------------------------
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local TextChatService = game:GetService("TextChatService")
 
-        local Players = game:GetService("Players")
-        local RunService = game:GetService("RunService")
-        local TextChatService = game:GetService("TextChatService")
-        local ReplicatedStorage = game:GetService("ReplicatedStorage")
+--//==================================================
+--// LOAD MODULES
+--//==================================================
 
-        local LocalPlayer = Players.LocalPlayer
+local Admin = loadstring(game:HttpGet(
+    "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
+))()
 
-        if not LocalPlayer then
+local Distance = loadstring(game:HttpGet(
+    "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Distance.lua"
+))()
+
+--//==================================================
+--// GLOBAL BOT VARIABLES
+--//==================================================
+
+_G.BotVars = _G.BotVars or {}
+_G.BotVars.ModeControllers = _G.BotVars.ModeControllers or {}
+
+--//==================================================
+--// LOCAL PLAYER
+--//==================================================
+
+local LocalPlayer = Players.LocalPlayer
+
+--//==================================================
+--// CONFIG
+--//==================================================
+
+local adminFrontDistance = 3
+local defaultBotFrontDistance = 2
+
+local sideSpacing = 3
+local rowSpacing = 3
+
+local columns = 3
+
+local stopThreshold = 1.5
+
+--//==================================================
+--// BOT ORDER
+--//==================================================
+
+local botOrder = {
+    "11611503633", -- Bot 1
+    "11611534165", -- Bot 2
+    "11611567975", -- Bot 3
+    "11611562042", -- Bot 4
+    "11611591921", -- Bot 5
+    "11122806815", -- Bot 6
+    "11122806817", -- Bot 7
+    "11122687468", -- Bot 8
+    "11122854402", -- Bot 9
+}
+
+--//==================================================
+--// STATE
+--//==================================================
+
+local humanoid = nil
+local myHRP = nil
+
+local following = false
+local targetPlayer = nil
+
+local followConnection = nil
+
+--//==================================================
+--// UPDATE CHARACTER
+--//==================================================
+
+local function updateCharacter()
+
+    local character = LocalPlayer.Character
+
+    if not character then
+        return false
+    end
+
+    humanoid =
+        character:FindFirstChildOfClass("Humanoid")
+        or character:WaitForChild("Humanoid", 5)
+
+    myHRP =
+        character:FindFirstChild("HumanoidRootPart")
+        or character:WaitForChild("HumanoidRootPart", 5)
+
+    if humanoid then
+        humanoid.AutoRotate = true
+    end
+
+    return humanoid ~= nil and myHRP ~= nil
+end
+
+--//==================================================
+--// SEND CHAT
+--//==================================================
+
+local function sendChat(text)
+
+    pcall(function()
+
+        local channels =
+            TextChatService:WaitForChild("TextChannels", 3)
+
+        local channel =
+            channels and channels:FindFirstChild("RBXGeneral")
+
+        if channel then
+            channel:SendAsync(text)
+        end
+
+    end)
+
+end
+
+--//==================================================
+--// FIND PLAYER
+--//==================================================
+
+local function findPlayerByName(name)
+
+    if not name or name == "" then
+        return nil
+    end
+
+    name = name:lower()
+
+    -- Exact username / display name
+    for _, player in ipairs(Players:GetPlayers()) do
+
+        if player.Name:lower() == name
+            or player.DisplayName:lower() == name then
+
+            return player
+        end
+
+    end
+
+    -- Partial username / display name
+    for _, player in ipairs(Players:GetPlayers()) do
+
+        if player.Name:lower():find(name, 1, true)
+            or player.DisplayName:lower():find(name, 1, true) then
+
+            return player
+        end
+
+    end
+
+    return nil
+end
+
+--//==================================================
+--// GET BOT INDEX
+--//==================================================
+
+local function getBotIndex()
+
+    local userId = tostring(LocalPlayer.UserId)
+
+    for index, botId in ipairs(botOrder) do
+
+        if botId == userId then
+            return index
+        end
+
+    end
+
+    return nil
+end
+
+--//==================================================
+--// STOP THREELINE
+--//==================================================
+
+local function stopThreeline()
+
+    following = false
+    targetPlayer = nil
+
+    if followConnection then
+
+        followConnection:Disconnect()
+        followConnection = nil
+
+    end
+
+    if humanoid then
+
+        humanoid.AutoRotate = true
+        humanoid:Move(Vector3.zero)
+
+    end
+
+end
+
+--//==================================================
+--// REGISTER THREELINE CONTROLLER
+--//==================================================
+
+_G.BotVars.ModeControllers.threeline = {
+
+    Start = function(player)
+
+        --==================================================
+        -- STOP SEMUA MODE LAIN
+        --==================================================
+
+        for modeName, controller
+            in pairs(_G.BotVars.ModeControllers) do
+
+            if modeName ~= "threeline"
+                and type(controller) == "table"
+                and type(controller.Stop) == "function" then
+
+                pcall(function()
+                    controller.Stop()
+                end)
+
+            end
+
+        end
+
+        --==================================================
+        -- SET ACTIVE MODE
+        --==================================================
+
+        _G.BotVars.ActiveMode = "threeline"
+
+        if not player then
             return
         end
 
-        ----------------------------------------------------------------
-        -- LOAD MODULES
-        ----------------------------------------------------------------
+        task.spawn(function()
 
-        local Admin = loadstring(game:HttpGet(
-            "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
-        ))()
+            --==================================================
+            -- UPDATE CHARACTER
+            --==================================================
 
-        local Distance = loadstring(game:HttpGet(
-            "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Distance.lua"
-        ))()
+            if not updateCharacter() then
+                return
+            end
 
-        ----------------------------------------------------------------
-        -- STATE
-        ----------------------------------------------------------------
+            --==================================================
+            -- GET BOT INDEX
+            --==================================================
 
-        local positioning = false
-        local targetPlayer = nil
-        local followConnection = nil
+            local myIndex = getBotIndex()
 
-        local humanoid = nil
-        local myHRP = nil
+            if not myIndex then
 
-        local hasChatted = false
+                warn(
+                    "[Threeline] Bot tidak ditemukan di botOrder:",
+                    LocalPlayer.UserId
+                )
 
-        ----------------------------------------------------------------
-        -- DISTANCE CONFIG
-        ----------------------------------------------------------------
+                return
+            end
 
-        -- Jarak baris pertama dari Admin
-        local adminFrontDistance = 3
+            --==================================================
+            -- STATE
+            --==================================================
 
-        -- Jarak default jika target bukan Admin
-        local defaultBotFrontDistance = 2
+            targetPlayer = player
+            following = true
 
-        ----------------------------------------------------------------
-        -- FORMATION CONFIG
-        ----------------------------------------------------------------
+            sendChat("Yes, Sir!")
 
-        -- Jarak antar Bot kiri-kanan
-        local sideSpacing = 3
+            --==================================================
+            -- DISCONNECT OLD CONNECTION
+            --==================================================
 
-        -- Jarak antar baris
-        local rowSpacing = 3
+            if followConnection then
+                followConnection:Disconnect()
+            end
 
-        ----------------------------------------------------------------
-        -- JUMLAH KOLOM
-        ----------------------------------------------------------------
+            --==================================================
+            -- HEARTBEAT
+            --==================================================
 
-        local columns = 3
+            followConnection =
+                RunService.Heartbeat:Connect(function()
 
-        ----------------------------------------------------------------
-        -- BATAS BOT
-        ----------------------------------------------------------------
+                --==================================================
+                -- ACTIVE MODE CHECK
+                --==================================================
 
-        local stopThreshold = 1.5
+                if _G.BotVars.ActiveMode ~= "threeline" then
 
-        ----------------------------------------------------------------
-        -- BOT ORDER
-        --
-        -- FORMASI:
-        --
-        -- BOT 1   BOT 2   BOT 3
-        -- BOT 4   BOT 5   BOT 6
-        -- BOT 7   BOT 8   BOT 9
-        --
-        ----------------------------------------------------------------
+                    stopThreeline()
 
-        local botOrder = {
+                    return
+                end
 
-            "11611503633", -- Bot 1
-            "11611534165", -- Bot 2
-            "11611567975", -- Bot 3
+                --==================================================
+                -- FOLLOWING CHECK
+                --==================================================
 
-            "11611562042", -- Bot 4
-            "11611591921", -- Bot 5
-            "11122806815", -- Bot 6
+                if not following then
+                    return
+                end
 
-            "11122806817", -- Bot 7
-            "11122687468", -- Bot 8
-            "11122854402", -- Bot 9
+                --==================================================
+                -- CHARACTER CHECK
+                --==================================================
 
-            "11122806815", -- Bot 10
-            "11122806817", -- Bot 11
-            "11122687468", -- Bot 12
-            "11122854402", -- Bot 13
-        }
+                if not LocalPlayer.Character
+                    or not humanoid
+                    or not myHRP then
 
-        ----------------------------------------------------------------
-        -- UPDATE CHARACTER
-        ----------------------------------------------------------------
-
-        local function updateCharacter()
-
-            local char =
-                LocalPlayer.Character
-                or LocalPlayer.CharacterAdded:Wait()
-
-            humanoid =
-                char:WaitForChild("Humanoid")
-
-            myHRP =
-                char:WaitForChild("HumanoidRootPart")
-
-            humanoid.AutoRotate = true
-
-        end
-
-        updateCharacter()
-
-        ----------------------------------------------------------------
-        -- SEND CHAT
-        ----------------------------------------------------------------
-
-        local function sendChat(msg)
-
-            pcall(function()
-
-                --------------------------------------------------------
-                -- TEXT CHAT
-                --------------------------------------------------------
-
-                if TextChatService
-                    and TextChatService.TextChannels then
-
-                    local ch =
-                        TextChatService.TextChannels:FindFirstChild(
-                            "RBXGeneral"
-                        )
-
-                    if ch then
-
-                        ch:SendAsync(msg)
-
+                    if not updateCharacter() then
                         return
-
                     end
 
                 end
 
-                --------------------------------------------------------
-                -- LEGACY CHAT
-                --------------------------------------------------------
+                --==================================================
+                -- TARGET CHECK
+                --==================================================
 
-                local chatEvents =
-                    ReplicatedStorage:FindFirstChild(
-                        "DefaultChatSystemChatEvents"
+                if not targetPlayer
+                    or not targetPlayer.Parent then
+
+                    stopThreeline()
+
+                    return
+                end
+
+                local targetCharacter =
+                    targetPlayer.Character
+
+                if not targetCharacter then
+                    return
+                end
+
+                local targetHRP =
+                    targetCharacter:FindFirstChild(
+                        "HumanoidRootPart"
                     )
 
-                if chatEvents then
+                if not targetHRP then
+                    return
+                end
 
-                    local sayMessageRequest =
-                        chatEvents:FindFirstChild(
-                            "SayMessageRequest"
+                --==================================================
+                -- DISTANCE
+                --==================================================
+
+                local distance
+
+                if Admin:IsAdmin(targetPlayer) then
+
+                    distance = adminFrontDistance
+
+                else
+
+                    distance = defaultBotFrontDistance
+
+                end
+
+                --==================================================
+                -- CALCULATE ROW
+                --==================================================
+
+                local row =
+                    math.ceil(myIndex / columns)
+
+                --==================================================
+                -- CALCULATE COLUMN
+                --==================================================
+
+                local column =
+                    ((myIndex - 1) % columns) + 1
+
+                --==================================================
+                -- HORIZONTAL POSITION
+                --
+                -- COLUMN 1 = -3
+                -- COLUMN 2 =  0
+                -- COLUMN 3 = +3
+                --==================================================
+
+                local horizontalOffset =
+                    (
+                        column
+                        - ((columns + 1) / 2)
+                    )
+                    * sideSpacing
+
+                --==================================================
+                -- FORWARD DISTANCE
+                --
+                -- ROW 1 = distance
+                -- ROW 2 = distance + rowSpacing
+                -- ROW 3 = distance + rowSpacing * 2
+                --==================================================
+
+                local forwardDistance =
+                    distance
+                    + ((row - 1) * rowSpacing)
+
+                --==================================================
+                -- FORWARD OFFSET
+                --==================================================
+
+                local forwardOffset =
+                    targetHRP.CFrame.LookVector
+                    * forwardDistance
+
+                --==================================================
+                -- SIDE OFFSET
+                --==================================================
+
+                local sideOffset =
+                    targetHRP.CFrame.RightVector
+                    * horizontalOffset
+
+                --==================================================
+                -- FINAL TARGET POSITION
+                --==================================================
+
+                local targetPosition =
+                    targetHRP.Position
+                    + forwardOffset
+                    + sideOffset
+
+                --==================================================
+                -- DISTANCE FROM BOT
+                --==================================================
+
+                local difference =
+                    targetPosition - myHRP.Position
+
+                local magnitude =
+                    difference.Magnitude
+
+                --==================================================
+                -- MOVE
+                --==================================================
+
+                if magnitude > stopThreshold then
+
+                    humanoid.AutoRotate = true
+
+                    humanoid:MoveTo(targetPosition)
+
+                else
+
+                    humanoid:Move(Vector3.zero)
+
+                    humanoid.AutoRotate = false
+
+                    --==================================================
+                    -- FACE TARGET
+                    --==================================================
+
+                    myHRP.CFrame =
+                        CFrame.lookAt(
+                            myHRP.Position,
+
+                            Vector3.new(
+                                targetHRP.Position.X,
+                                myHRP.Position.Y,
+                                targetHRP.Position.Z
+                            )
                         )
-
-                    if sayMessageRequest then
-
-                        sayMessageRequest:FireServer(
-                            msg,
-                            "All"
-                        )
-
-                    end
 
                 end
 
             end)
 
-        end
+        end)
 
-        ----------------------------------------------------------------
-        -- STOP THREELINE
-        ----------------------------------------------------------------
+    end,
 
-        local function stopThreeline()
+    Stop = stopThreeline,
+}
 
-            positioning = false
-            targetPlayer = nil
-            hasChatted = false
+--//==================================================
+--// START THREELINE
+--//==================================================
 
-            ------------------------------------------------------------
-            -- DISCONNECT FOLLOW LOOP
-            ------------------------------------------------------------
+local function startThreeline(player)
 
-            if followConnection then
+    if not player then
+        return
+    end
 
-                followConnection:Disconnect()
-                followConnection = nil
+    --==================================================
+    -- STOP FOLLOW / TWOLINE
+    --==================================================
 
-            end
+    for modeName, controller
+        in pairs(_G.BotVars.ModeControllers) do
 
-            ------------------------------------------------------------
-            -- KEMBALIKAN AUTOROTATE
-            ------------------------------------------------------------
+        if modeName ~= "threeline"
+            and type(controller) == "table"
+            and type(controller.Stop) == "function" then
 
-            if humanoid then
-
-                humanoid.AutoRotate = true
-
-            end
-
-        end
-
-        ----------------------------------------------------------------
-        -- FIND PLAYER BY NAME / DISPLAY NAME
-        ----------------------------------------------------------------
-
-        local function findPlayerByName(name)
-
-            name = name:lower()
-
-            for _, p in ipairs(
-                Players:GetPlayers()
-            ) do
-
-                if p.Name:lower() == name
-                    or p.DisplayName:lower() == name then
-
-                    return p
-
-                end
-
-            end
-
-            return nil
+            pcall(function()
+                controller.Stop()
+            end)
 
         end
 
-        ----------------------------------------------------------------
-        -- START THREELINE
-        ----------------------------------------------------------------
-
-        local function startThreeline(player)
-
-            if not player then
-                return
-            end
-
-            ------------------------------------------------------------
-            -- STOP CONNECTION LAMA
-            ------------------------------------------------------------
-
-            if followConnection then
-
-                followConnection:Disconnect()
-                followConnection = nil
-
-            end
-
-            ------------------------------------------------------------
-            -- SET STATE
-            ------------------------------------------------------------
-
-            positioning = true
-            targetPlayer = player
-            hasChatted = false
+    end
 
-            ------------------------------------------------------------
-            -- CARI INDEX BOT
-            ------------------------------------------------------------
+    --==================================================
+    -- SET ACTIVE MODE
+    --==================================================
 
-            local myIndex =
-                table.find(
-                    botOrder,
-                    tostring(LocalPlayer.UserId)
-                )
-
-            ------------------------------------------------------------
-            -- JIKA BUKAN BOT
-            ------------------------------------------------------------
-
-            if not myIndex then
-
-                positioning = false
-                targetPlayer = nil
-
-                return
-
-            end
-
-            ------------------------------------------------------------
-            -- HITUNG BARIS
-            --
-            -- 1 2 3 = Row 1
-            -- 4 5 6 = Row 2
-            -- 7 8 9 = Row 3
-            ------------------------------------------------------------
-
-            local row =
-                math.ceil(
-                    myIndex / columns
-                )
+    _G.BotVars.ActiveMode = "threeline"
 
-            ------------------------------------------------------------
-            -- HITUNG KOLOM
-            --
-            -- 1 = kiri
-            -- 2 = tengah
-            -- 3 = kanan
-            ------------------------------------------------------------
+    --==================================================
+    -- START
+    --==================================================
 
-            local column =
-                ((myIndex - 1) % columns) + 1
-
-            ------------------------------------------------------------
-            -- HITUNG POSISI KIRI / KANAN
-            --
-            -- Column 1 = -3
-            -- Column 2 =  0
-            -- Column 3 = +3
-            --
-            ------------------------------------------------------------
+    local controller =
+        _G.BotVars.ModeControllers.threeline
 
-            local horizontalOffset =
-                (
-                    column
-                    -
-                    ((columns + 1) / 2)
-                )
-                *
-                sideSpacing
-
-            ----------------------------------------------------------------
-            -- FOLLOW LOOP
-            ----------------------------------------------------------------
-
-            followConnection =
-                RunService.Heartbeat:Connect(
-                    function()
+    if controller and controller.Start then
 
-                        ------------------------------------------------
-                        -- VALIDASI STATE
-                        ------------------------------------------------
+        controller.Start(player)
 
-                        if not positioning then
-                            return
-                        end
+    end
 
-                        if not humanoid
-                            or not myHRP then
+end
 
-                            return
+--//==================================================
+--// COMMAND HANDLER
+--//==================================================
 
-                        end
+local function handleCommand(sender, message)
 
-                        if not targetPlayer then
-                            return
-                        end
+    if not sender then
+        return
+    end
 
-                        ------------------------------------------------
-                        -- TARGET CHARACTER
-                        ------------------------------------------------
+    --==================================================
+    -- ADMIN CHECK
+    --==================================================
 
-                        local targetCharacter =
-                            targetPlayer.Character
-
-                        if not targetCharacter then
-                            return
-                        end
-
-                        ------------------------------------------------
-                        -- TARGET HUMANOID ROOT PART
-                        ------------------------------------------------
+    if not Admin:IsAdmin(sender) then
+        return
+    end
 
-                        local hrp =
-                            targetCharacter:FindFirstChild(
-                                "HumanoidRootPart"
-                            )
+    if not message then
+        return
+    end
 
-                        if not hrp then
-                            return
-                        end
+    message = message:lower()
 
-                        ------------------------------------------------
-                        -- DISTANCE DASAR
-                        ------------------------------------------------
+    --==================================================
+    -- !THREELINE
+    --==================================================
 
-                        local distance =
-                            defaultBotFrontDistance
+    if message == "!threeline" then
 
-                        ------------------------------------------------
-                        -- JIKA TARGET ADALAH ADMIN
-                        ------------------------------------------------
+        startThreeline(sender)
 
-                        if Admin:IsAdmin(
-                            targetPlayer
-                        ) then
+        return
+    end
 
-                            distance =
-                                adminFrontDistance
+    --==================================================
+    -- !THREELINE PLAYER
+    --==================================================
 
-                        end
+    if message:sub(1, 11) == "!threeline " then
 
-                        ------------------------------------------------
-                        -- SPECIAL DISTANCE
-                        ------------------------------------------------
+        local playerName =
+            message:sub(12)
 
-                        local special =
-                            Distance:GetDistance(
-                                tostring(
-                                    LocalPlayer.UserId
-                                ),
-                                tostring(
-                                    targetPlayer.UserId
-                                )
-                            )
+        local target =
+            findPlayerByName(playerName)
 
-                        if special then
+        if target then
 
-                            distance =
-                                special
+            startThreeline(target)
 
-                        end
+        else
 
-                        ------------------------------------------------
-                        -- HITUNG JARAK DEPAN
-                        --
-                        -- Row 1 = 3 studs
-                        -- Row 2 = 6 studs
-                        -- Row 3 = 9 studs
-                        --
-                        ------------------------------------------------
-
-                        local forwardDistance =
-                            distance
-                            +
-                            ((row - 1) * rowSpacing)
-
-                        ------------------------------------------------
-                        -- ARAH DEPAN ADMIN
-                        ------------------------------------------------
-
-                        local forwardOffset =
-                            hrp.CFrame.LookVector
-                            *
-                            forwardDistance
-
-                        ------------------------------------------------
-                        -- ARAH KIRI / KANAN ADMIN
-                        ------------------------------------------------
-
-                        local sideOffset =
-                            hrp.CFrame.RightVector
-                            *
-                            horizontalOffset
-
-                        ------------------------------------------------
-                        -- POSISI AKHIR
-                        ------------------------------------------------
-
-                        local targetPosition =
-                            hrp.Position
-                            +
-                            forwardOffset
-                            +
-                            sideOffset
-
-                        ------------------------------------------------
-                        -- CHAT SEKALI
-                        ------------------------------------------------
-
-                        if not hasChatted then
-
-                            sendChat(
-                                "Yes, Sir!"
-                            )
-
-                            hasChatted = true
-
-                        end
-
-                        ------------------------------------------------
-                        -- HITUNG JARAK BOT KE POSISI
-                        ------------------------------------------------
-
-                        local distanceToTarget =
-                            (
-                                myHRP.Position
-                                -
-                                targetPosition
-                            ).Magnitude
-
-                        ------------------------------------------------
-                        -- BOT MASIH JAUH
-                        ------------------------------------------------
-
-                        if distanceToTarget > stopThreshold then
-
-                            humanoid.AutoRotate = true
-
-                            humanoid:MoveTo(
-                                targetPosition
-                            )
-
-                            return
-
-                        end
-
-                        ------------------------------------------------
-                        -- BOT SUDAH SAMPAI
-                        ------------------------------------------------
-
-                        humanoid.AutoRotate = false
-
-                        ------------------------------------------------
-                        -- SAMAKAN ARAH DENGAN ADMIN
-                        ------------------------------------------------
-
-                        local adminRotation =
-                            hrp.CFrame
-                            -
-                            hrp.Position
-
-                        myHRP.CFrame =
-                            CFrame.new(
-                                myHRP.Position
-                            )
-                            *
-                            adminRotation
-
-                    end
-                )
-
-        end
-
-        ----------------------------------------------------------------
-        -- COMMAND HANDLER
-        ----------------------------------------------------------------
-
-        local function handleCommand(
-            msg,
-            sender
-        )
-
-            ------------------------------------------------------------
-            -- ADMIN ONLY
-            ------------------------------------------------------------
-
-            if not Admin:IsAdmin(sender) then
-                return
-            end
-
-            local lower =
-                msg:lower()
-
-            ------------------------------------------------------------
-            -- !THREELINE
-            ------------------------------------------------------------
-
-            if lower == "!threeline" then
-
-                startThreeline(
-                    sender
-                )
-
-                return
-
-            end
-
-            ------------------------------------------------------------
-            -- !THREELINE <NAME>
-            ------------------------------------------------------------
-
-            local targetName =
-                lower:match(
-                    "^!threeline%s+(.+)$"
-                )
-
-            if targetName then
-
-                local target =
-                    findPlayerByName(
-                        targetName
-                    )
-
-                if target then
-
-                    startThreeline(
-                        target
-                    )
-
-                end
-
-                return
-
-            end
-
-            ------------------------------------------------------------
-            -- STOP
-            ------------------------------------------------------------
-
-            if lower == "!stop"
-                or lower == "!unthreeline" then
-
-                stopThreeline()
-
-            end
-
-        end
-
-        ----------------------------------------------------------------
-        -- TEXT CHAT SERVICE
-        ----------------------------------------------------------------
-
-        if TextChatService
-            and TextChatService.TextChannels then
-
-            local ch =
-                TextChatService.TextChannels:FindFirstChild(
-                    "RBXGeneral"
-                )
-
-            if ch then
-
-                ch.OnIncomingMessage =
-                    function(message)
-
-                        local uid =
-                            message.TextSource
-                            and message.TextSource.UserId
-
-                        local sender =
-                            uid
-                            and Players:GetPlayerByUserId(
-                                uid
-                            )
-
-                        if sender then
-
-                            handleCommand(
-                                message.Text,
-                                sender
-                            )
-
-                        end
-
-                    end
-
-            end
-
-        end
-
-        ----------------------------------------------------------------
-        -- FALLBACK CHAT
-        ----------------------------------------------------------------
-
-        for _, p in ipairs(
-            Players:GetPlayers()
-        ) do
-
-            p.Chatted:Connect(
-                function(msg)
-
-                    handleCommand(
-                        msg,
-                        p
-                    )
-
-                end
+            warn(
+                "[Threeline] Player tidak ditemukan:",
+                playerName
             )
 
         end
 
-        ----------------------------------------------------------------
-        -- PLAYER ADDED
-        ----------------------------------------------------------------
+        return
+    end
 
-        Players.PlayerAdded:Connect(
-            function(p)
+    --==================================================
+    -- !STOP
+    --==================================================
 
-                p.Chatted:Connect(
-                    function(msg)
+    if message == "!stop"
+        or message == "!unthreeline" then
 
-                        handleCommand(
-                            msg,
-                            p
-                        )
+        _G.BotVars.ActiveMode = nil
 
-                    end
+        stopThreeline()
+
+        return
+    end
+
+end
+
+--//==================================================
+--// CHARACTER RESPAWN
+--//==================================================
+
+LocalPlayer.CharacterAdded:Connect(function()
+
+    task.wait(1)
+
+    updateCharacter()
+
+    --==================================================
+    -- RESUME THREELINE
+    --==================================================
+
+    if _G.BotVars.ActiveMode == "threeline"
+        and targetPlayer
+        and targetPlayer.Parent then
+
+        local target =
+            targetPlayer
+
+        task.wait(0.5)
+
+        startThreeline(target)
+
+    end
+
+end)
+
+--//==================================================
+--// INITIAL CHARACTER
+--//==================================================
+
+updateCharacter()
+
+--//==================================================
+--// CHAT HANDLER
+--//==================================================
+
+local channels =
+    TextChatService:WaitForChild(
+        "TextChannels",
+        10
+    )
+
+local generalChannel =
+    channels
+    and channels:FindFirstChild("RBXGeneral")
+
+if generalChannel then
+
+    generalChannel.OnIncomingMessage =
+        function(message)
+
+        local textSource =
+            message.TextSource
+
+        if textSource then
+
+            local sender =
+                Players:GetPlayerByUserId(
+                    textSource.UserId
+                )
+
+            if sender then
+
+                handleCommand(
+                    sender,
+                    message.Text
                 )
 
             end
-        )
 
-        ----------------------------------------------------------------
-        -- CHARACTER RESPAWN
-        ----------------------------------------------------------------
+        end
 
-        LocalPlayer.CharacterAdded:Connect(
-            function()
-
-                task.wait(1)
-
-                updateCharacter()
-
-                --------------------------------------------------------
-                -- JIKA SEBELUMNYA SEDANG THREELINE
-                --------------------------------------------------------
-
-                if positioning
-                    and targetPlayer then
-
-                    startThreeline(
-                        targetPlayer
-                    )
-
-                end
-
-            end
-        )
-
+        return nil
     end
-}
+
+end
+
+--//==================================================
+--// FALLBACK CHAT
+--//==================================================
+
+Players.PlayerAdded:Connect(function(player)
+
+    player.Chatted:Connect(function(message)
+
+        handleCommand(
+            player,
+            message
+        )
+
+    end)
+
+end)
+
+for _, player in ipairs(
+    Players:GetPlayers()
+) do
+
+    player.Chatted:Connect(function(message)
+
+        handleCommand(
+            player,
+            message
+        )
+
+    end)
+
+end
+
+--//==================================================
+--// DONE
+--//==================================================
+
+print("✅ Threeline.lua loaded")
