@@ -1,9 +1,11 @@
+
+
 return {
     Execute = function()
 
-        ----------------------------------------------------------------
+        --------------------------------------------------
         -- SERVICES
-        ----------------------------------------------------------------
+        --------------------------------------------------
 
         local Players = game:GetService("Players")
         local RunService = game:GetService("RunService")
@@ -11,66 +13,53 @@ return {
         local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
         local LocalPlayer = Players.LocalPlayer
-
         if not LocalPlayer then
             return
         end
 
-        ----------------------------------------------------------------
-        -- GLOBAL MODE SYSTEM
-        ----------------------------------------------------------------
+        --------------------------------------------------
+        -- GLOBAL VARIABLES
+        --------------------------------------------------
 
         _G.BotVars = _G.BotVars or {}
-
-        _G.BotVars.ModeControllers =
-            _G.BotVars.ModeControllers or {}
+        _G.BotVars.ModeControllers = _G.BotVars.ModeControllers or {}
 
         local vars = _G.BotVars
 
-        ----------------------------------------------------------------
+        --------------------------------------------------
         -- LOAD ADMIN
-        ----------------------------------------------------------------
+        --------------------------------------------------
 
         local Admin = loadstring(game:HttpGet(
             "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
         ))()
 
-        ----------------------------------------------------------------
+        --------------------------------------------------
         -- LOAD DISTANCE
-        ----------------------------------------------------------------
+        --------------------------------------------------
 
         local Distance = loadstring(game:HttpGet(
             "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Distance.lua"
         ))()
 
-        ----------------------------------------------------------------
-        -- VARIABLES
-        ----------------------------------------------------------------
+        --------------------------------------------------
+        -- CHARACTER
+        --------------------------------------------------
 
         local humanoid
         local myHRP
+
+        --------------------------------------------------
+        -- STATE
+        --------------------------------------------------
 
         local wedgeActive = false
         local wedgeConnection = nil
         local targetPlayer = nil
 
-        ----------------------------------------------------------------
+        --------------------------------------------------
         -- BOT ORDER
-        ----------------------------------------------------------------
-
-        -- JANGAN UBAH URUTAN INI
-        --
-        -- Bot 1 = 11611503633
-        -- Bot 2 = 11611534165
-        -- Bot 3 = 11611567975
-        -- Bot 4 = 11611562042
-        -- Bot 5 = 11611591921
-        -- Bot 6 = 11122806815
-        -- Bot 7 = 11122806817
-        -- Bot 8 = 11122687468
-        -- Bot 9 = 11122854402
-        --
-        -- Bot 9 tidak digunakan dalam formasi Wedgetv.
+        --------------------------------------------------
 
         local botOrder = {
             "11611503633", -- Bot 1
@@ -84,25 +73,25 @@ return {
             "11122854402", -- Bot 9
         }
 
-        ----------------------------------------------------------------
-        -- WEDGE SETTINGS
-        ----------------------------------------------------------------
+        --------------------------------------------------
+        -- FORMATION SETTINGS
+        --------------------------------------------------
 
-        -- Jarak dasar formasi dari player
+        -- Jarak dasar dari PLAYER
         local baseBackDistance = 5
 
         -- Jarak antar baris
         local rowSpacing = 3
 
-        -- Jarak kiri / kanan
+        -- Jarak kiri/kanan
         local sideSpacing = 3
 
-        -- Jarak minimum sebelum bot dianggap sampai
+        -- Jarak minimum sebelum berhenti MoveTo
         local stopThreshold = 1.5
 
-        ----------------------------------------------------------------
+        --------------------------------------------------
         -- UPDATE CHARACTER
-        ----------------------------------------------------------------
+        --------------------------------------------------
 
         local function updateCharacter()
 
@@ -110,22 +99,17 @@ return {
                 LocalPlayer.Character
                 or LocalPlayer.CharacterAdded:Wait()
 
-            humanoid =
-                character:WaitForChild("Humanoid")
-
-            myHRP =
-                character:WaitForChild(
-                    "HumanoidRootPart"
-                )
+            humanoid = character:WaitForChild("Humanoid")
+            myHRP = character:WaitForChild("HumanoidRootPart")
 
             humanoid.AutoRotate = true
         end
 
         updateCharacter()
 
-        ----------------------------------------------------------------
+        --------------------------------------------------
         -- SEND CHAT
-        ----------------------------------------------------------------
+        --------------------------------------------------
 
         local function sendChat(message)
 
@@ -135,16 +119,15 @@ return {
 
             local success = false
 
-            ------------------------------------------------------------
+            --------------------------------------------------
             -- TEXT CHAT
-            ------------------------------------------------------------
+            --------------------------------------------------
 
             if TextChatService
                 and TextChatService.TextChannels then
 
                 local channel =
-                    TextChatService.TextChannels
-                        :FindFirstChild("RBXGeneral")
+                    TextChatService.TextChannels:FindFirstChild("RBXGeneral")
 
                 if channel then
 
@@ -156,9 +139,9 @@ return {
                 end
             end
 
-            ------------------------------------------------------------
-            -- FALLBACK CHAT
-            ------------------------------------------------------------
+            --------------------------------------------------
+            -- OLD CHAT FALLBACK
+            --------------------------------------------------
 
             if not success then
 
@@ -190,11 +173,12 @@ return {
                 end)
 
             end
+
         end
 
-        ----------------------------------------------------------------
-        -- STOP WEDGETV
-        ----------------------------------------------------------------
+        --------------------------------------------------
+        -- STOP WEDGE
+        --------------------------------------------------
 
         local function stopWedge()
 
@@ -214,21 +198,19 @@ return {
 
         end
 
-        ----------------------------------------------------------------
-        -- REGISTER CONTROLLER
-        ----------------------------------------------------------------
+        --------------------------------------------------
+        -- REGISTER MODE CONTROLLER
+        --------------------------------------------------
 
         vars.ModeControllers.wedgetv = stopWedge
 
-        ----------------------------------------------------------------
+        --------------------------------------------------
         -- STOP OTHER MODES
-        ----------------------------------------------------------------
+        --------------------------------------------------
 
         local function stopOtherModes()
 
-            for name, stopFunction in pairs(
-                vars.ModeControllers
-            ) do
+            for name, stopFunction in pairs(vars.ModeControllers) do
 
                 if name ~= "wedgetv"
                     and type(stopFunction) == "function" then
@@ -241,17 +223,15 @@ return {
 
         end
 
-        ----------------------------------------------------------------
+        --------------------------------------------------
         -- FIND PLAYER
-        ----------------------------------------------------------------
+        --------------------------------------------------
 
         local function findPlayerByName(name)
 
             name = name:lower()
 
-            for _, player in ipairs(
-                Players:GetPlayers()
-            ) do
+            for _, player in ipairs(Players:GetPlayers()) do
 
                 if player.Name:lower() == name
                     or player.DisplayName:lower() == name then
@@ -265,9 +245,9 @@ return {
             return nil
         end
 
-        ----------------------------------------------------------------
-        -- GET DISTANCE
-        ----------------------------------------------------------------
+        --------------------------------------------------
+        -- GET BOT DISTANCE
+        --------------------------------------------------
 
         local function getBotDistance(player)
 
@@ -290,9 +270,19 @@ return {
             return distance
         end
 
-        ----------------------------------------------------------------
+        --------------------------------------------------
         -- GET WEDGE POSITION
-        ----------------------------------------------------------------
+        --------------------------------------------------
+        --
+        -- FORMASI:
+        --
+        -- BOT 8                 BOT 7
+        --    BOT 6           BOT 5
+        --       BOT 4     BOT 3
+        --          BOT 2  BOT 1
+        --              PLAYER
+        --
+        --------------------------------------------------
 
         local function getWedgePosition(
             myIndex,
@@ -300,279 +290,219 @@ return {
             distance
         )
 
-            ------------------------------------------------------------
+            --------------------------------------------------
             -- BOT 1
-            --
-            -- Bot 1                    Bot 8
-            ------------------------------------------------------------
+            -- PALING DEKAT - KANAN
+            --------------------------------------------------
 
             if myIndex == 1 then
 
-                return
-                    targetHRP.Position
+                return targetHRP.Position
 
-                    -
-                    (
+                    - (
                         targetHRP.CFrame.LookVector
-                        *
-                        (
+                        * (
                             baseBackDistance
                             + distance
                         )
                     )
 
-                    -
-                    (
+                    + (
                         targetHRP.CFrame.RightVector
-                        *
-                        (
-                            sideSpacing * 3
-                        )
-                    )
-
-            end
-
-            ------------------------------------------------------------
-            -- BOT 8
-            --
-            -- Bot 1                    Bot 8
-            ------------------------------------------------------------
-
-            if myIndex == 8 then
-
-                return
-                    targetHRP.Position
-
-                    -
-                    (
-                        targetHRP.CFrame.LookVector
-                        *
-                        (
-                            baseBackDistance
-                            + distance
-                        )
-                    )
-
-                    +
-                    (
-                        targetHRP.CFrame.RightVector
-                        *
-                        (
-                            sideSpacing * 3
-                        )
-                    )
-
-            end
-
-            ------------------------------------------------------------
-            -- BOT 7
-            --
-            --     Bot 7            Bot 6
-            ------------------------------------------------------------
-
-            if myIndex == 7 then
-
-                return
-                    targetHRP.Position
-
-                    -
-                    (
-                        targetHRP.CFrame.LookVector
-                        *
-                        (
-                            baseBackDistance
-                            + rowSpacing
-                            + distance
-                        )
-                    )
-
-                    -
-                    (
-                        targetHRP.CFrame.RightVector
-                        *
-                        (
-                            sideSpacing * 2
-                        )
-                    )
-
-            end
-
-            ------------------------------------------------------------
-            -- BOT 6
-            --
-            --     Bot 7            Bot 6
-            ------------------------------------------------------------
-
-            if myIndex == 6 then
-
-                return
-                    targetHRP.Position
-
-                    -
-                    (
-                        targetHRP.CFrame.LookVector
-                        *
-                        (
-                            baseBackDistance
-                            + rowSpacing
-                            + distance
-                        )
-                    )
-
-                    +
-                    (
-                        targetHRP.CFrame.RightVector
-                        *
-                        (
-                            sideSpacing * 2
-                        )
-                    )
-
-            end
-
-            ------------------------------------------------------------
-            -- BOT 5
-            --
-            --         Bot 5      Bot 4
-            ------------------------------------------------------------
-
-            if myIndex == 5 then
-
-                return
-                    targetHRP.Position
-
-                    -
-                    (
-                        targetHRP.CFrame.LookVector
-                        *
-                        (
-                            baseBackDistance
-                            + (rowSpacing * 2)
-                            + distance
-                        )
-                    )
-
-                    -
-                    (
-                        targetHRP.CFrame.RightVector
-                        *
-                        sideSpacing
-                    )
-
-            end
-
-            ------------------------------------------------------------
-            -- BOT 4
-            --
-            --         Bot 5      Bot 4
-            ------------------------------------------------------------
-
-            if myIndex == 4 then
-
-                return
-                    targetHRP.Position
-
-                    -
-                    (
-                        targetHRP.CFrame.LookVector
-                        *
-                        (
-                            baseBackDistance
-                            + (rowSpacing * 2)
-                            + distance
-                        )
-                    )
-
-                    +
-                    (
-                        targetHRP.CFrame.RightVector
-                        *
-                        sideSpacing
-                    )
-
-            end
-
-            ------------------------------------------------------------
-            -- BOT 3
-            --
-            --             Bot 3  Bot 2
-            ------------------------------------------------------------
-
-            if myIndex == 3 then
-
-                return
-                    targetHRP.Position
-
-                    -
-                    (
-                        targetHRP.CFrame.LookVector
-                        *
-                        (
-                            baseBackDistance
-                            + (rowSpacing * 3)
-                            + distance
-                        )
-                    )
-
-                    -
-                    (
-                        targetHRP.CFrame.RightVector
-                        *
-                        (
+                        * (
                             sideSpacing * 0.5
                         )
                     )
 
             end
 
-            ------------------------------------------------------------
+            --------------------------------------------------
             -- BOT 2
-            --
-            --             Bot 3  Bot 2
-            ------------------------------------------------------------
+            -- PALING DEKAT - KIRI
+            --------------------------------------------------
 
             if myIndex == 2 then
 
-                return
-                    targetHRP.Position
+                return targetHRP.Position
 
-                    -
-                    (
+                    - (
                         targetHRP.CFrame.LookVector
-                        *
-                        (
+                        * (
                             baseBackDistance
-                            + (rowSpacing * 3)
                             + distance
                         )
                     )
 
-                    +
-                    (
+                    - (
                         targetHRP.CFrame.RightVector
-                        *
-                        (
+                        * (
                             sideSpacing * 0.5
                         )
                     )
 
             end
 
-            ------------------------------------------------------------
-            -- BOT 9
-            ------------------------------------------------------------
+            --------------------------------------------------
+            -- BOT 3
+            -- BARIS 2 - KANAN
+            --------------------------------------------------
 
-            -- Bot 9 tidak digunakan.
-            -- Jika LocalPlayer adalah Bot 9,
-            -- bot akan diam dalam mode Wedgetv.
+            if myIndex == 3 then
+
+                return targetHRP.Position
+
+                    - (
+                        targetHRP.CFrame.LookVector
+                        * (
+                            baseBackDistance
+                            + rowSpacing
+                            + distance
+                        )
+                    )
+
+                    + (
+                        targetHRP.CFrame.RightVector
+                        * sideSpacing
+                    )
+
+            end
+
+            --------------------------------------------------
+            -- BOT 4
+            -- BARIS 2 - KIRI
+            --------------------------------------------------
+
+            if myIndex == 4 then
+
+                return targetHRP.Position
+
+                    - (
+                        targetHRP.CFrame.LookVector
+                        * (
+                            baseBackDistance
+                            + rowSpacing
+                            + distance
+                        )
+                    )
+
+                    - (
+                        targetHRP.CFrame.RightVector
+                        * sideSpacing
+                    )
+
+            end
+
+            --------------------------------------------------
+            -- BOT 5
+            -- BARIS 3 - KANAN
+            --------------------------------------------------
+
+            if myIndex == 5 then
+
+                return targetHRP.Position
+
+                    - (
+                        targetHRP.CFrame.LookVector
+                        * (
+                            baseBackDistance
+                            + (rowSpacing * 2)
+                            + distance
+                        )
+                    )
+
+                    + (
+                        targetHRP.CFrame.RightVector
+                        * (sideSpacing * 1.5)
+                    )
+
+            end
+
+            --------------------------------------------------
+            -- BOT 6
+            -- BARIS 3 - KIRI
+            --------------------------------------------------
+
+            if myIndex == 6 then
+
+                return targetHRP.Position
+
+                    - (
+                        targetHRP.CFrame.LookVector
+                        * (
+                            baseBackDistance
+                            + (rowSpacing * 2)
+                            + distance
+                        )
+                    )
+
+                    - (
+                        targetHRP.CFrame.RightVector
+                        * (sideSpacing * 1.5)
+                    )
+
+            end
+
+            --------------------------------------------------
+            -- BOT 7
+            -- BARIS 4 - KANAN
+            --------------------------------------------------
+
+            if myIndex == 7 then
+
+                return targetHRP.Position
+
+                    - (
+                        targetHRP.CFrame.LookVector
+                        * (
+                            baseBackDistance
+                            + (rowSpacing * 3)
+                            + distance
+                        )
+                    )
+
+                    + (
+                        targetHRP.CFrame.RightVector
+                        * (sideSpacing * 2)
+                    )
+
+            end
+
+            --------------------------------------------------
+            -- BOT 8
+            -- BARIS 4 - KIRI
+            --------------------------------------------------
+
+            if myIndex == 8 then
+
+                return targetHRP.Position
+
+                    - (
+                        targetHRP.CFrame.LookVector
+                        * (
+                            baseBackDistance
+                            + (rowSpacing * 3)
+                            + distance
+                        )
+                    )
+
+                    - (
+                        targetHRP.CFrame.RightVector
+                        * (sideSpacing * 2)
+                    )
+
+            end
+
+            --------------------------------------------------
+            -- BOT 9 TIDAK DIPAKAI
+            --------------------------------------------------
 
             return nil
 
         end
 
-        ----------------------------------------------------------------
-        -- START WEDGETV
-        ----------------------------------------------------------------
+        --------------------------------------------------
+        -- START WEDGE
+        --------------------------------------------------
 
         local function startWedge(player)
 
@@ -580,21 +510,21 @@ return {
                 return
             end
 
-            ------------------------------------------------------------
+            --------------------------------------------------
             -- STOP MODE LAIN
-            ------------------------------------------------------------
+            --------------------------------------------------
 
             stopOtherModes()
 
-            ------------------------------------------------------------
-            -- ACTIVE MODE
-            ------------------------------------------------------------
+            --------------------------------------------------
+            -- SET ACTIVE MODE
+            --------------------------------------------------
 
             vars.ActiveMode = "wedgetv"
 
-            ------------------------------------------------------------
-            -- STOP CONNECTION LAMA
-            ------------------------------------------------------------
+            --------------------------------------------------
+            -- DISCONNECT OLD LOOP
+            --------------------------------------------------
 
             if wedgeConnection then
 
@@ -603,77 +533,68 @@ return {
 
             end
 
-            ------------------------------------------------------------
-            -- TARGET
-            ------------------------------------------------------------
+            --------------------------------------------------
+            -- START
+            --------------------------------------------------
 
             wedgeActive = true
             targetPlayer = player
 
-            ------------------------------------------------------------
-            -- CHAT
-            ------------------------------------------------------------
-
             sendChat("Yes, Sir!")
 
-            ------------------------------------------------------------
-            -- CARI INDEX BOT
-            ------------------------------------------------------------
+            --------------------------------------------------
+            -- FIND BOT INDEX
+            --------------------------------------------------
 
             local myIndex =
                 table.find(
                     botOrder,
-                    tostring(
-                        LocalPlayer.UserId
-                    )
+                    tostring(LocalPlayer.UserId)
                 )
 
             if not myIndex then
 
                 stopWedge()
-
                 return
+
             end
 
-            ------------------------------------------------------------
-            -- BOT 9 TIDAK IKUT FORMASI
-            ------------------------------------------------------------
+            --------------------------------------------------
+            -- BOT 9 NOT USED
+            --------------------------------------------------
 
             if myIndex == 9 then
-
                 return
             end
 
-            ------------------------------------------------------------
+            --------------------------------------------------
             -- HEARTBEAT
-            ------------------------------------------------------------
+            --------------------------------------------------
 
             wedgeConnection =
                 RunService.Heartbeat:Connect(
                     function()
 
-                        ------------------------------------------------
-                        -- CEK MODE
-                        ------------------------------------------------
+                        --------------------------------------------------
+                        -- MODE CHANGED
+                        --------------------------------------------------
 
                         if vars.ActiveMode ~= "wedgetv" then
 
                             stopWedge()
-
                             return
+
                         end
+
+                        --------------------------------------------------
+                        -- BASIC VALIDATION
+                        --------------------------------------------------
 
                         if not wedgeActive then
                             return
                         end
 
-                        ------------------------------------------------
-                        -- CEK CHARACTER
-                        ------------------------------------------------
-
-                        if not humanoid
-                            or not myHRP then
-
+                        if not humanoid or not myHRP then
                             return
                         end
 
@@ -681,9 +602,9 @@ return {
                             return
                         end
 
-                        ------------------------------------------------
+                        --------------------------------------------------
                         -- TARGET CHARACTER
-                        ------------------------------------------------
+                        --------------------------------------------------
 
                         local targetCharacter =
                             targetPlayer.Character
@@ -691,6 +612,10 @@ return {
                         if not targetCharacter then
                             return
                         end
+
+                        --------------------------------------------------
+                        -- TARGET HRP
+                        --------------------------------------------------
 
                         local targetHRP =
                             targetCharacter:FindFirstChild(
@@ -701,18 +626,18 @@ return {
                             return
                         end
 
-                        ------------------------------------------------
+                        --------------------------------------------------
                         -- DISTANCE
-                        ------------------------------------------------
+                        --------------------------------------------------
 
                         local distance =
                             getBotDistance(
                                 targetPlayer
                             )
 
-                        ------------------------------------------------
-                        -- GET POSITION
-                        ------------------------------------------------
+                        --------------------------------------------------
+                        -- POSITION
+                        --------------------------------------------------
 
                         local targetPosition =
                             getWedgePosition(
@@ -725,20 +650,19 @@ return {
                             return
                         end
 
-                        ------------------------------------------------
-                        -- JARAK KE POSISI
-                        ------------------------------------------------
+                        --------------------------------------------------
+                        -- DISTANCE TO POSITION
+                        --------------------------------------------------
 
                         local distanceToTarget =
                             (
                                 myHRP.Position
-                                -
-                                targetPosition
+                                - targetPosition
                             ).Magnitude
 
-                        ------------------------------------------------
+                        --------------------------------------------------
                         -- MOVE
-                        ------------------------------------------------
+                        --------------------------------------------------
 
                         if distanceToTarget > stopThreshold then
 
@@ -751,37 +675,43 @@ return {
                             return
                         end
 
-                        ------------------------------------------------
-                        -- SUDAH DI POSISI
-                        ------------------------------------------------
+                        --------------------------------------------------
+                        -- REACHED POSITION
+                        --------------------------------------------------
 
                         humanoid.AutoRotate = false
 
+                        --------------------------------------------------
+                        -- COPY TARGET ROTATION
+                        --------------------------------------------------
+
                         local targetRotation =
                             targetHRP.CFrame
-                            -
-                            targetHRP.Position
+                            - targetHRP.Position
 
                         myHRP.CFrame =
                             CFrame.new(
                                 myHRP.Position
                             )
-                            *
-                            targetRotation
+                            * targetRotation
 
                     end
                 )
 
         end
 
-        ----------------------------------------------------------------
-        -- COMMAND HANDLER
-        ----------------------------------------------------------------
+        --------------------------------------------------
+        -- HANDLE COMMAND
+        --------------------------------------------------
 
         local function handleCommand(
             message,
             sender
         )
+
+            --------------------------------------------------
+            -- ADMIN ONLY
+            --------------------------------------------------
 
             if not Admin:IsAdmin(sender) then
                 return
@@ -790,20 +720,20 @@ return {
             local lower =
                 message:lower()
 
-            ------------------------------------------------------------
-            -- !WEDGETV
-            ------------------------------------------------------------
+            --------------------------------------------------
+            -- !wedgetv
+            --------------------------------------------------
 
             if lower == "!wedgetv" then
 
                 startWedge(sender)
-
                 return
+
             end
 
-            ------------------------------------------------------------
-            -- !WEDGETV PLAYER
-            ------------------------------------------------------------
+            --------------------------------------------------
+            -- !wedgetv PlayerName
+            --------------------------------------------------
 
             local targetName =
                 lower:match(
@@ -826,9 +756,9 @@ return {
                 return
             end
 
-            ------------------------------------------------------------
-            -- !STOP
-            ------------------------------------------------------------
+            --------------------------------------------------
+            -- !stop
+            --------------------------------------------------
 
             if lower == "!stop" then
 
@@ -841,18 +771,17 @@ return {
 
         end
 
-        ----------------------------------------------------------------
-        -- TEXT CHAT
-        ----------------------------------------------------------------
+        --------------------------------------------------
+        -- TEXT CHAT SERVICE
+        --------------------------------------------------
 
         if TextChatService
             and TextChatService.TextChannels then
 
             local channel =
-                TextChatService.TextChannels
-                    :FindFirstChild(
-                        "RBXGeneral"
-                    )
+                TextChatService.TextChannels:FindFirstChild(
+                    "RBXGeneral"
+                )
 
             if channel then
 
@@ -884,9 +813,9 @@ return {
 
         end
 
-        ----------------------------------------------------------------
-        -- FALLBACK CHAT
-        ----------------------------------------------------------------
+        --------------------------------------------------
+        -- OLD CHAT
+        --------------------------------------------------
 
         for _, player in ipairs(
             Players:GetPlayers()
@@ -905,9 +834,9 @@ return {
 
         end
 
-        ----------------------------------------------------------------
-        -- PLAYER ADDED
-        ----------------------------------------------------------------
+        --------------------------------------------------
+        -- NEW PLAYER
+        --------------------------------------------------
 
         Players.PlayerAdded:Connect(
             function(player)
@@ -926,9 +855,9 @@ return {
             end
         )
 
-        ----------------------------------------------------------------
-        -- CHARACTER RESPAWN
-        ----------------------------------------------------------------
+        --------------------------------------------------
+        -- RESPAWN
+        --------------------------------------------------
 
         LocalPlayer.CharacterAdded:Connect(
             function()
@@ -936,6 +865,10 @@ return {
                 task.wait(1)
 
                 updateCharacter()
+
+                --------------------------------------------------
+                -- RESTART WEDGE
+                --------------------------------------------------
 
                 if vars.ActiveMode == "wedgetv"
                     and targetPlayer then
