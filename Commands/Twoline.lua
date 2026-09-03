@@ -58,14 +58,26 @@ return {
         local defaultBotFollowDistance = 2
 
         ----------------------------------------------------------------
-        -- TWOLINE CONFIG
+        -- ROLLING CONFIG
         ----------------------------------------------------------------
 
-        -- Jarak antar bot kiri dan kanan
+        -- Jarak kiri dan kanan
         local sideSpacing = 2.5
 
-        -- Jarak minimum sebelum bot berhenti
+        -- Jarak antar baris
+        local rowSpacing = 3
+
+        -- Jarak minimum sebelum dianggap sudah sampai
         local stopThreshold = 1.5
+
+        -- Kecepatan gerakan saat rolling
+        local rollSpeed = 10
+
+        -- Jarak bot menuju tengah
+        local centerDistance = 2
+
+        -- Waktu tunggu antar perpindahan
+        local rollDelay = 0.25
 
         ----------------------------------------------------------------
         -- BOT ORDER
@@ -168,10 +180,10 @@ return {
         end
 
         ----------------------------------------------------------------
-        -- STOP TWOLINE
+        -- STOP ROLLING
         ----------------------------------------------------------------
 
-        local function stopTwoline()
+        local function stopRolling()
 
             following = false
             targetPlayer = nil
@@ -186,6 +198,7 @@ return {
             if humanoid then
 
                 humanoid.AutoRotate = true
+                humanoid:MoveTo(myHRP.Position)
 
             end
 
@@ -195,7 +208,7 @@ return {
         -- REGISTER CONTROLLER
         ----------------------------------------------------------------
 
-        _G.BotVars.ModeControllers.twoline = stopTwoline
+        _G.BotVars.ModeControllers.rolling = stopRolling
 
         ----------------------------------------------------------------
         -- STOP SEMUA MODE LAIN
@@ -207,7 +220,7 @@ return {
                 _G.BotVars.ModeControllers
             ) do
 
-                if name ~= "twoline"
+                if name ~= "rolling"
                     and type(stopFunction) == "function" then
 
                     pcall(stopFunction)
@@ -277,10 +290,389 @@ return {
         end
 
         ----------------------------------------------------------------
-        -- START TWOLINE
+        -- GET BOT INDEX
         ----------------------------------------------------------------
 
-        local function startTwoline(player)
+        local function getBotIndex()
+
+            return table.find(
+                botOrder,
+                tostring(LocalPlayer.UserId)
+            )
+
+        end
+
+        ----------------------------------------------------------------
+        -- GET DISTANCE
+        ----------------------------------------------------------------
+
+        local function getFollowDistance(player)
+
+            local distance =
+                defaultBotFollowDistance
+
+            if Admin:IsAdmin(player) then
+
+                distance =
+                    adminFollowDistance
+
+            end
+
+            local success, specialDistance =
+                pcall(function()
+
+                    return Distance:GetDistance(
+                        tostring(LocalPlayer.UserId),
+                        tostring(player.UserId)
+                    )
+
+                end)
+
+            if success
+                and specialDistance then
+
+                distance =
+                    specialDistance
+
+            end
+
+            return distance
+
+        end
+
+        ----------------------------------------------------------------
+        -- GET NORMAL TWOLINE POSITION
+        ----------------------------------------------------------------
+
+        local function getNormalPosition(
+            index,
+            targetHRP,
+            distance
+        )
+
+            ------------------------------------------------------------
+            -- BOT 1 - 8
+            ------------------------------------------------------------
+
+            local row =
+                math.ceil(index / 2)
+
+            local side
+
+            if index % 2 == 1 then
+
+                -- GANJIL = KIRI
+                side = -1
+
+            else
+
+                -- GENAP = KANAN
+                side = 1
+
+            end
+
+            ------------------------------------------------------------
+            -- BELAKANG
+            ------------------------------------------------------------
+
+            local backDistance =
+                distance
+                + ((row - 1) * rowSpacing)
+
+            local backOffset =
+                targetHRP.CFrame.LookVector
+                * -backDistance
+
+            ------------------------------------------------------------
+            -- KIRI / KANAN
+            ------------------------------------------------------------
+
+            local sideOffset =
+                targetHRP.CFrame.RightVector
+                * (sideSpacing * side)
+
+            ------------------------------------------------------------
+            -- FINAL
+            ------------------------------------------------------------
+
+            return
+                targetHRP.Position
+                + backOffset
+                + sideOffset
+
+        end
+
+        ----------------------------------------------------------------
+        -- BOT 9 POSITION
+        ----------------------------------------------------------------
+
+        local function getBot9Position(
+            targetHRP,
+            distance
+        )
+
+            -- BOT 9 berada di kanan,
+            -- satu baris di bawah BOT 8.
+
+            local backDistance =
+                distance
+                + (4 * rowSpacing)
+
+            local backOffset =
+                targetHRP.CFrame.LookVector
+                * -backDistance
+
+            local sideOffset =
+                targetHRP.CFrame.RightVector
+                * sideSpacing
+
+            return
+                targetHRP.Position
+                + backOffset
+                + sideOffset
+
+        end
+
+        ----------------------------------------------------------------
+        -- GET ROLLING POSITION
+        ----------------------------------------------------------------
+
+        local function getRollingPosition(
+            index,
+            targetHRP,
+            distance
+        )
+
+            if index == 9 then
+
+                return getBot9Position(
+                    targetHRP,
+                    distance
+                )
+
+            end
+
+            return getNormalPosition(
+                index,
+                targetHRP,
+                distance
+            )
+
+        end
+
+        ----------------------------------------------------------------
+        -- GET CENTER POSITION
+        ----------------------------------------------------------------
+
+        local function getCenterPosition(
+            targetHRP,
+            distance
+        )
+
+            return
+                targetHRP.Position
+                - targetHRP.CFrame.LookVector
+                * (distance + centerDistance)
+
+        end
+
+        ----------------------------------------------------------------
+        -- MOVE TO POSITION
+        ----------------------------------------------------------------
+
+        local function moveToPosition(
+            position
+        )
+
+            if not position then
+                return false
+            end
+
+            if not humanoid
+                or not myHRP then
+
+                return false
+
+            end
+
+            local distance =
+                (myHRP.Position - position).Magnitude
+
+            if distance <= stopThreshold then
+
+                return true
+
+            end
+
+            humanoid.AutoRotate = true
+
+            humanoid:MoveTo(position)
+
+            return false
+
+        end
+
+        ----------------------------------------------------------------
+        -- GET ROLL TARGET
+        ----------------------------------------------------------------
+
+        local function getRollTargetPosition(
+            targetHRP,
+            distance,
+            index
+        )
+
+            ------------------------------------------------------------
+            -- BOT 1
+            --
+            -- BOT 1 masuk ke tengah lalu ke belakang
+            -- setelah BOT 7.
+            ------------------------------------------------------------
+
+            if index == 1 then
+
+                local backDistance =
+                    distance
+                    + (4 * rowSpacing)
+
+                local backOffset =
+                    targetHRP.CFrame.LookVector
+                    * -backDistance
+
+                local sideOffset =
+                    targetHRP.CFrame.RightVector
+                    * (-sideSpacing)
+
+                return
+                    targetHRP.Position
+                    + backOffset
+                    + sideOffset
+
+            end
+
+            ------------------------------------------------------------
+            -- BOT 2
+            --
+            -- BOT 2 masuk ke tengah lalu ke belakang
+            -- BOT 9.
+            ------------------------------------------------------------
+
+            if index == 2 then
+
+                local backDistance =
+                    distance
+                    + (5 * rowSpacing)
+
+                local backOffset =
+                    targetHRP.CFrame.LookVector
+                    * -backDistance
+
+                local sideOffset =
+                    targetHRP.CFrame.RightVector
+                    * sideSpacing
+
+                return
+                    targetHRP.Position
+                    + backOffset
+                    + sideOffset
+
+            end
+
+            return nil
+
+        end
+
+        ----------------------------------------------------------------
+        -- ROLL BOT 1
+        ----------------------------------------------------------------
+
+        local function rollBot1(
+            targetHRP,
+            distance
+        )
+
+            ------------------------------------------------------------
+            -- STEP 1
+            -- BOT 1 KE TENGAH
+            ------------------------------------------------------------
+
+            local centerPosition =
+                getCenterPosition(
+                    targetHRP,
+                    distance
+                )
+
+            moveToPosition(
+                centerPosition
+            )
+
+            ------------------------------------------------------------
+            -- STEP 2
+            -- BOT 1 KE BELAKANG BOT 7
+            ------------------------------------------------------------
+
+            local finalPosition =
+                getRollTargetPosition(
+                    targetHRP,
+                    distance,
+                    1
+                )
+
+            moveToPosition(
+                finalPosition
+            )
+
+        end
+
+        ----------------------------------------------------------------
+        -- ROLL BOT 2
+        ----------------------------------------------------------------
+
+        local function rollBot2(
+            targetHRP,
+            distance
+        )
+
+            ------------------------------------------------------------
+            -- STEP 1
+            -- BOT 2 KE TENGAH
+            ------------------------------------------------------------
+
+            local centerPosition =
+                getCenterPosition(
+                    targetHRP,
+                    distance
+                )
+
+            moveToPosition(
+                centerPosition
+            )
+
+            ------------------------------------------------------------
+            -- STEP 2
+            -- BOT 2 KE BELAKANG BOT 9
+            ------------------------------------------------------------
+
+            local finalPosition =
+                getRollTargetPosition(
+                    targetHRP,
+                    distance,
+                    2
+                )
+
+            moveToPosition(
+                finalPosition
+            )
+
+        end
+
+        ----------------------------------------------------------------
+        -- START ROLLING
+        ----------------------------------------------------------------
+
+        local function startRolling(
+            player
+        )
 
             if not player then
                 return
@@ -293,10 +685,11 @@ return {
             stopOtherModes()
 
             ------------------------------------------------------------
-            -- SET ACTIVE MODE
+            -- ACTIVE MODE
             ------------------------------------------------------------
 
-            _G.BotVars.ActiveMode = "twoline"
+            _G.BotVars.ActiveMode =
+                "rolling"
 
             ------------------------------------------------------------
             -- STOP CONNECTION LAMA
@@ -323,25 +716,22 @@ return {
             sendChat("Yes, Sir!")
 
             ------------------------------------------------------------
-            -- CARI INDEX BOT
+            -- INDEX
             ------------------------------------------------------------
 
             local myIndex =
-                table.find(
-                    botOrder,
-                    tostring(LocalPlayer.UserId)
-                )
+                getBotIndex()
 
             if not myIndex then
 
-                stopTwoline()
+                stopRolling()
 
                 return
 
             end
 
             ----------------------------------------------------------------
-            -- TWOLINE LOOP
+            -- ROLLING LOOP
             ----------------------------------------------------------------
 
             followConnection =
@@ -349,12 +739,13 @@ return {
                     function()
 
                         ------------------------------------------------
-                        -- JIKA MODE BERGANTI
+                        -- MODE CHECK
                         ------------------------------------------------
 
-                        if _G.BotVars.ActiveMode ~= "twoline" then
+                        if _G.BotVars.ActiveMode
+                            ~= "rolling" then
 
-                            stopTwoline()
+                            stopRolling()
 
                             return
 
@@ -401,131 +792,125 @@ return {
 
                         ------------------------------------------------
                         -- DISTANCE
-                        --
-                        -- SAMA SEPERTI FOLLOW.LUA
                         ------------------------------------------------
 
                         local distance =
-                            defaultBotFollowDistance
-
-                        if Admin:IsAdmin(targetPlayer) then
-
-                            distance =
-                                adminFollowDistance
-
-                        end
-
-                        ------------------------------------------------
-                        -- SPECIAL DISTANCE
-                        --
-                        -- SAMA SEPERTI FOLLOW.LUA
-                        ------------------------------------------------
-
-                        local specialDistance =
-                            Distance:GetDistance(
-                                tostring(LocalPlayer.UserId),
-                                tostring(targetPlayer.UserId)
+                            getFollowDistance(
+                                targetPlayer
                             )
 
-                        if specialDistance then
-
-                            distance =
-                                specialDistance
-
-                        end
-
                         ------------------------------------------------
-                        -- HITUNG BARIS
-                        ------------------------------------------------
-
-                        local row =
-                            math.ceil(myIndex / 2)
-
-                        ------------------------------------------------
-                        -- HITUNG SISI
-                        ------------------------------------------------
-
-                        local side
-
-                        if myIndex % 2 == 1 then
-
-                            -- BOT GANJIL = KIRI
-                            side = -1
-
-                        else
-
-                            -- BOT GENAP = KANAN
-                            side = 1
-
-                        end
-
-                        ------------------------------------------------
-                        -- POSISI BELAKANG
-                        --
-                        -- KONSEP SAMA DENGAN FOLLOW.LUA
-                        ------------------------------------------------
-
-                        local backDistance =
-                            distance * row
-
-                        local backOffset =
-                            targetHRP.CFrame.LookVector
-                            * -backDistance
-
-                        ------------------------------------------------
-                        -- POSISI KIRI / KANAN
-                        ------------------------------------------------
-
-                        local sideOffset =
-                            targetHRP.CFrame.RightVector
-                            * (sideSpacing * side)
-
-                        ------------------------------------------------
-                        -- POSISI AKHIR
+                        -- NORMAL POSITION
                         ------------------------------------------------
 
                         local targetPosition =
-                            targetHRP.Position
-                            + backOffset
-                            + sideOffset
-
-                        ------------------------------------------------
-                        -- JARAK BOT KE POSISI
-                        ------------------------------------------------
-
-                        local distanceToTarget =
-                            (
-                                myHRP.Position
-                                - targetPosition
-                            ).Magnitude
-
-                        ------------------------------------------------
-                        -- JALAN
-                        ------------------------------------------------
-
-                        if distanceToTarget > stopThreshold then
-
-                            humanoid.AutoRotate = true
-
-                            humanoid:MoveTo(
-                                targetPosition
+                            getRollingPosition(
+                                myIndex,
+                                targetHRP,
+                                distance
                             )
 
-                            return
+                        ------------------------------------------------
+                        -- BOT 1 / BOT 2
+                        --
+                        -- Untuk sementara mengikuti posisi rolling
+                        -- masing-masing.
+                        ------------------------------------------------
+
+                        if myIndex == 1 then
+
+                            local centerPosition =
+                                getCenterPosition(
+                                    targetHRP,
+                                    distance
+                                )
+
+                            local distanceToCenter =
+                                (
+                                    myHRP.Position
+                                    - centerPosition
+                                ).Magnitude
+
+                            if distanceToCenter
+                                > stopThreshold then
+
+                                humanoid.AutoRotate = true
+
+                                humanoid:MoveTo(
+                                    centerPosition
+                                )
+
+                                return
+
+                            end
+
+                        elseif myIndex == 2 then
+
+                            local centerPosition =
+                                getCenterPosition(
+                                    targetHRP,
+                                    distance
+                                )
+
+                            local distanceToCenter =
+                                (
+                                    myHRP.Position
+                                    - centerPosition
+                                ).Magnitude
+
+                            if distanceToCenter
+                                > stopThreshold then
+
+                                humanoid.AutoRotate = true
+
+                                humanoid:MoveTo(
+                                    centerPosition
+                                )
+
+                                return
+
+                            end
 
                         end
 
                         ------------------------------------------------
-                        -- SUDAH SAMPAI
+                        -- MOVE
+                        ------------------------------------------------
+
+                        if targetPosition then
+
+                            local distanceToTarget =
+                                (
+                                    myHRP.Position
+                                    - targetPosition
+                                ).Magnitude
+
+                            if distanceToTarget
+                                > stopThreshold then
+
+                                humanoid.AutoRotate = true
+
+                                humanoid:MoveTo(
+                                    targetPosition
+                                )
+
+                                return
+
+                            end
+
+                        end
+
+                        ------------------------------------------------
+                        -- ARRIVED
                         ------------------------------------------------
 
                         humanoid.AutoRotate = false
 
                         ------------------------------------------------
-                        -- ROTASI SAMA SEPERTI FOLLOW.LUA
+                        -- ROTATION
                         ------------------------------------------------
 
-                        local adminRotation =
+                        local targetRotation =
                             targetHRP.CFrame
                             - targetHRP.Position
 
@@ -533,7 +918,7 @@ return {
                             CFrame.new(
                                 myHRP.Position
                             )
-                            * adminRotation
+                            * targetRotation
 
                     end
                 )
@@ -557,24 +942,24 @@ return {
                 message:lower()
 
             ------------------------------------------------------------
-            -- !TWOLINE
+            -- !ROLLING
             ------------------------------------------------------------
 
-            if lower == "!twoline" then
+            if lower == "!rolling" then
 
-                startTwoline(sender)
+                startRolling(sender)
 
                 return
 
             end
 
             ------------------------------------------------------------
-            -- !TWOLINE PLAYER
+            -- !ROLLING PLAYER
             ------------------------------------------------------------
 
             local targetName =
                 lower:match(
-                    "^!twoline%s+(.+)$"
+                    "^!rolling%s+(.+)$"
                 )
 
             if targetName then
@@ -586,7 +971,7 @@ return {
 
                 if target then
 
-                    startTwoline(target)
+                    startRolling(target)
 
                 end
 
@@ -599,11 +984,11 @@ return {
             ------------------------------------------------------------
 
             if lower == "!stop"
-                or lower == "!untwoline" then
+                or lower == "!unrolling" then
 
                 _G.BotVars.ActiveMode = nil
 
-                stopTwoline()
+                stopRolling()
 
                 return
 
@@ -707,13 +1092,14 @@ return {
                 updateCharacter()
 
                 --------------------------------------------------------
-                -- JIKA TWOLINE MASIH AKTIF
+                -- JIKA ROLLING MASIH AKTIF
                 --------------------------------------------------------
 
-                if _G.BotVars.ActiveMode == "twoline"
+                if _G.BotVars.ActiveMode
+                    == "rolling"
                     and targetPlayer then
 
-                    startTwoline(
+                    startRolling(
                         targetPlayer
                     )
 
