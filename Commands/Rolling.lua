@@ -21,7 +21,8 @@ return {
         ----------------------------------------------------------------
 
         _G.BotVars = _G.BotVars or {}
-        _G.BotVars.ModeControllers = _G.BotVars.ModeControllers or {}
+        _G.BotVars.ModeControllers =
+            _G.BotVars.ModeControllers or {}
 
         ----------------------------------------------------------------
         -- LOAD ADMIN
@@ -46,14 +47,13 @@ return {
         local humanoid
         local myHRP
 
-        local following = false
         local targetPlayer = nil
-        local followConnection = nil
 
         local rolling = false
+        local rollToken = 0
 
         ----------------------------------------------------------------
-        -- DISTANCE
+        -- DISTANCE CONFIG
         ----------------------------------------------------------------
 
         local adminFollowDistance = 3
@@ -63,45 +63,30 @@ return {
         -- ROLLING CONFIG
         ----------------------------------------------------------------
 
-        -- Jarak kiri / kanan
         local sideSpacing = 2.5
-
-        -- Jarak antar baris
         local rowSpacing = 3
 
-        -- Jarak minimum dianggap sudah sampai
-        local stopThreshold = 1.5
-
-        -- Jarak bot ke belakang player
-        local baseBackDistance = 0
-
-        -- Jarak tambahan ketika masuk ke tengah
         local centerDistance = 2
 
-        -- Jarak waktu antar BOT
-        --
-        -- BOT 1 bergerak
-        -- tunggu selesai
-        -- BOT 2 bergerak
-        --
-        local turnDelay = 0.5
+        local stopThreshold = 1.5
+
+        -- Jarak tambahan supaya "di belakang" bot sebelumnya
+        local behindSpacing = 3
 
         ----------------------------------------------------------------
         -- BOT ORDER
         ----------------------------------------------------------------
 
         local botOrder = {
-
-            "11611503633", -- Bot 1
-            "11611534165", -- Bot 2
-            "11611567975", -- Bot 3
-            "11611562042", -- Bot 4
-            "11611591921", -- Bot 5
-            "11122806815", -- Bot 6
-            "11122806817", -- Bot 7
-            "11122687468", -- Bot 8
-            "11122854402", -- Bot 9
-
+            "11611503633", -- BOT 1
+            "11611534165", -- BOT 2
+            "11611567975", -- BOT 3
+            "11611562042", -- BOT 4
+            "11611591921", -- BOT 5
+            "11122806815", -- BOT 6
+            "11122806817", -- BOT 7
+            "11122687468", -- BOT 8
+            "11122854402", -- BOT 9
         }
 
         ----------------------------------------------------------------
@@ -118,10 +103,11 @@ return {
                 character:WaitForChild("Humanoid")
 
             myHRP =
-                character:WaitForChild("HumanoidRootPart")
+                character:WaitForChild(
+                    "HumanoidRootPart"
+                )
 
             humanoid.AutoRotate = true
-
         end
 
         updateCharacter()
@@ -138,20 +124,19 @@ return {
                 and TextChatService.TextChannels then
 
                 local channel =
-                    TextChatService.TextChannels:FindFirstChild(
-                        "RBXGeneral"
-                    )
+                    TextChatService.TextChannels
+                        :FindFirstChild("RBXGeneral")
 
                 if channel then
 
                     pcall(function()
+
                         channel:SendAsync(message)
+
                     end)
 
                     success = true
-
                 end
-
             end
 
             if not success then
@@ -159,9 +144,10 @@ return {
                 pcall(function()
 
                     local chatEvents =
-                        ReplicatedStorage:FindFirstChild(
-                            "DefaultChatSystemChatEvents"
-                        )
+                        ReplicatedStorage
+                            :FindFirstChild(
+                                "DefaultChatSystemChatEvents"
+                            )
 
                     if chatEvents then
 
@@ -178,13 +164,11 @@ return {
                             )
 
                         end
-
                     end
 
                 end)
 
             end
-
         end
 
         ----------------------------------------------------------------
@@ -193,16 +177,10 @@ return {
 
         local function stopRolling()
 
-            following = false
             rolling = false
             targetPlayer = nil
 
-            if followConnection then
-
-                followConnection:Disconnect()
-                followConnection = nil
-
-            end
+            rollToken += 1
 
             if humanoid then
 
@@ -215,9 +193,7 @@ return {
                     )
 
                 end
-
             end
-
         end
 
         ----------------------------------------------------------------
@@ -228,7 +204,7 @@ return {
             stopRolling
 
         ----------------------------------------------------------------
-        -- STOP MODE LAIN
+        -- STOP OTHER MODES
         ----------------------------------------------------------------
 
         local function stopOtherModes()
@@ -243,9 +219,7 @@ return {
                     pcall(stopFunction)
 
                 end
-
             end
-
         end
 
         ----------------------------------------------------------------
@@ -258,7 +232,6 @@ return {
                 or name == "" then
 
                 return nil
-
             end
 
             name = name:lower()
@@ -277,7 +250,6 @@ return {
                     return player
 
                 end
-
             end
 
             ------------------------------------------------------------
@@ -302,11 +274,9 @@ return {
                     return player
 
                 end
-
             end
 
             return nil
-
         end
 
         ----------------------------------------------------------------
@@ -319,11 +289,28 @@ return {
                 botOrder,
                 tostring(LocalPlayer.UserId)
             )
-
         end
 
         ----------------------------------------------------------------
-        -- GET DISTANCE
+        -- GET BOT BY INDEX
+        ----------------------------------------------------------------
+
+        local function getBotByIndex(index)
+
+            local userId =
+                tonumber(botOrder[index])
+
+            if not userId then
+                return nil
+            end
+
+            return Players:GetPlayerByUserId(
+                userId
+            )
+        end
+
+        ----------------------------------------------------------------
+        -- GET FOLLOW DISTANCE
         ----------------------------------------------------------------
 
         local function getFollowDistance(player)
@@ -357,28 +344,20 @@ return {
             end
 
             return distance
-
         end
 
         ----------------------------------------------------------------
-        -- GET POSITION
-        ----------------------------------------------------------------
+        -- GET ORIGINAL FORMATION POSITION
         --
-        -- Posisi awal:
-        --
-        --             PLAYER
-        --
-        --       BOT 1       BOT 2
-        --       BOT 3       BOT 4
-        --       BOT 5       BOT 6
-        --       BOT 7       BOT 8
-        --                    BOT 9
-        --
+        -- BOT 1  BOT 2
+        -- BOT 3  BOT 4
+        -- BOT 5  BOT 6
+        -- BOT 7  BOT 8
+        --             BOT 9
         ----------------------------------------------------------------
 
-        local function getPosition(
-            row,
-            side,
+        local function getFormationPosition(
+            index,
             targetHRP,
             distance
         )
@@ -387,9 +366,33 @@ return {
                 return nil
             end
 
+            local row
+            local side
+
+            ------------------------------------------------------------
+            -- BOT 9
+            ------------------------------------------------------------
+
+            if index == 9 then
+
+                row = 5
+                side = 1
+
+            else
+
+                row =
+                    math.ceil(index / 2)
+
+                if index % 2 == 1 then
+                    side = -1
+                else
+                    side = 1
+                end
+
+            end
+
             local backDistance =
                 distance
-                + baseBackDistance
                 + ((row - 1) * rowSpacing)
 
             local backOffset =
@@ -404,246 +407,137 @@ return {
                 targetHRP.Position
                 + backOffset
                 + sideOffset
-
         end
 
         ----------------------------------------------------------------
-        -- GET ORIGINAL POSITION
+        -- GET CENTER POSITION
+        --
+        -- Titik di antara BOT 1 dan BOT 2
         ----------------------------------------------------------------
 
-        local function getOriginalPosition(
-            index,
+        local function getCenterPosition(
             targetHRP,
             distance
         )
 
-            ------------------------------------------------------------
-            -- BOT 9
-            ------------------------------------------------------------
+            if not targetHRP then
+                return nil
+            end
 
-            if index == 9 then
+            return
+                targetHRP.Position
+                - targetHRP.CFrame.LookVector
+                * (distance + centerDistance)
+        end
 
-                return getPosition(
-                    5,
-                    1,
-                    targetHRP,
-                    distance
+        ----------------------------------------------------------------
+        -- GET POSITION BEHIND ANOTHER BOT
+        ----------------------------------------------------------------
+
+        local function getPositionBehindBot(
+            botPlayer
+        )
+
+            if not botPlayer then
+                return nil
+            end
+
+            local character =
+                botPlayer.Character
+
+            if not character then
+                return nil
+            end
+
+            local botHRP =
+                character:FindFirstChild(
+                    "HumanoidRootPart"
                 )
 
+            if not botHRP then
+                return nil
             end
 
-            ------------------------------------------------------------
-            -- BOT 1 - 8
-            ------------------------------------------------------------
-
-            local row =
-                math.ceil(index / 2)
-
-            local side
-
-            if index % 2 == 1 then
-
-                side = -1
-
-            else
-
-                side = 1
-
-            end
-
-            return getPosition(
-                row,
-                side,
-                targetHRP,
-                distance
-            )
-
+            return
+                botHRP.Position
+                - botHRP.CFrame.LookVector
+                * behindSpacing
         end
 
         ----------------------------------------------------------------
-        -- GET ROLLING DESTINATION
-        ----------------------------------------------------------------
+        -- GET ROLLING PREVIOUS BOT
         --
-        -- Urutan:
-        --
-        -- BOT 1 → belakang BOT 7
-        -- BOT 2 → belakang BOT 9
-        -- BOT 3 → posisi BOT 1
-        -- BOT 4 → posisi BOT 2
-        -- BOT 5 → posisi BOT 3
-        -- BOT 6 → posisi BOT 4
-        -- BOT 7 → posisi BOT 5
-        -- BOT 8 → posisi BOT 6
-        -- BOT 9 → posisi BOT 7
-        --
+        -- BOT 1 -> belakang BOT 7
+        -- BOT 2 -> belakang BOT 9
+        -- BOT 3 -> belakang BOT 1
+        -- BOT 4 -> belakang BOT 2
+        -- BOT 5 -> belakang BOT 3
+        -- BOT 6 -> belakang BOT 4
+        -- BOT 7 -> belakang BOT 5
+        -- BOT 8 -> belakang BOT 6
+        -- BOT 9 -> belakang BOT 8
         ----------------------------------------------------------------
 
-        local function getRollingDestination(
-            index,
-            targetHRP,
-            distance
+        local function getPreviousDestinationBot(
+            index
         )
 
-            ------------------------------------------------------------
-            -- BOT 1
-            -- KIRI → BARIS 5
-            ------------------------------------------------------------
+            local destinationBotIndex
 
             if index == 1 then
 
-                return getPosition(
-                    5,
-                    -1,
-                    targetHRP,
-                    distance
-                )
+                destinationBotIndex = 7
+
+            elseif index == 2 then
+
+                destinationBotIndex = 9
+
+            elseif index == 3 then
+
+                destinationBotIndex = 1
+
+            elseif index == 4 then
+
+                destinationBotIndex = 2
+
+            elseif index == 5 then
+
+                destinationBotIndex = 3
+
+            elseif index == 6 then
+
+                destinationBotIndex = 4
+
+            elseif index == 7 then
+
+                destinationBotIndex = 5
+
+            elseif index == 8 then
+
+                destinationBotIndex = 6
+
+            elseif index == 9 then
+
+                destinationBotIndex = 8
 
             end
 
-            ------------------------------------------------------------
-            -- BOT 2
-            -- KANAN → BARIS 6
-            ------------------------------------------------------------
-
-            if index == 2 then
-
-                return getPosition(
-                    6,
-                    1,
-                    targetHRP,
-                    distance
-                )
-
+            if not destinationBotIndex then
+                return nil
             end
 
-            ------------------------------------------------------------
-            -- BOT 3
-            -- POSISI BOT 1
-            ------------------------------------------------------------
-
-            if index == 3 then
-
-                return getPosition(
-                    1,
-                    -1,
-                    targetHRP,
-                    distance
-                )
-
-            end
-
-            ------------------------------------------------------------
-            -- BOT 4
-            -- POSISI BOT 2
-            ------------------------------------------------------------
-
-            if index == 4 then
-
-                return getPosition(
-                    1,
-                    1,
-                    targetHRP,
-                    distance
-                )
-
-            end
-
-            ------------------------------------------------------------
-            -- BOT 5
-            -- POSISI BOT 3
-            ------------------------------------------------------------
-
-            if index == 5 then
-
-                return getPosition(
-                    2,
-                    -1,
-                    targetHRP,
-                    distance
-                )
-
-            end
-
-            ------------------------------------------------------------
-            -- BOT 6
-            -- POSISI BOT 4
-            ------------------------------------------------------------
-
-            if index == 6 then
-
-                return getPosition(
-                    2,
-                    1,
-                    targetHRP,
-                    distance
-                )
-
-            end
-
-            ------------------------------------------------------------
-            -- BOT 7
-            -- POSISI BOT 5
-            ------------------------------------------------------------
-
-            if index == 7 then
-
-                return getPosition(
-                    3,
-                    -1,
-                    targetHRP,
-                    distance
-                )
-
-            end
-
-            ------------------------------------------------------------
-            -- BOT 8
-            -- POSISI BOT 6
-            ------------------------------------------------------------
-
-            if index == 8 then
-
-                return getPosition(
-                    3,
-                    1,
-                    targetHRP,
-                    distance
-                )
-
-            end
-
-            ------------------------------------------------------------
-            -- BOT 9
-            -- POSISI BOT 7
-            ------------------------------------------------------------
-
-            if index == 9 then
-
-                return getPosition(
-                    4,
-                    1,
-                    targetHRP,
-                    distance
-                )
-
-            end
-
-            return nil
-
+            return getBotByIndex(
+                destinationBotIndex
+            )
         end
 
         ----------------------------------------------------------------
-        -- MOVE AND WAIT
-        ----------------------------------------------------------------
-        --
-        -- Ini yang membuat BOT benar-benar bergiliran.
-        --
-        -- BOT tidak akan lanjut sebelum sampai tujuan.
-        --
+        -- MOVE TO POSITION
         ----------------------------------------------------------------
 
         local function moveAndWait(
-            position
+            position,
+            token
         )
 
             if not position then
@@ -654,7 +548,6 @@ return {
                 or not myHRP then
 
                 return false
-
             end
 
             humanoid.AutoRotate = true
@@ -663,22 +556,22 @@ return {
                 position
             )
 
-            while rolling do
+            while rolling
+                and token == rollToken do
 
                 if not humanoid
                     or not myHRP then
 
                     return false
-
                 end
 
-                local currentDistance =
+                local distance =
                     (
                         myHRP.Position
                         - position
                     ).Magnitude
 
-                if currentDistance
+                if distance
                     <= stopThreshold then
 
                     humanoid:MoveTo(
@@ -686,67 +579,89 @@ return {
                     )
 
                     return true
-
                 end
 
                 RunService.Heartbeat:Wait()
-
             end
 
             return false
-
         end
 
         ----------------------------------------------------------------
-        -- MOVE THROUGH CENTER
+        -- WAIT FOR PREVIOUS BOT
+        --
+        -- Ini yang membuat BOT 1 -> BOT 2 -> BOT 3
+        -- benar-benar bergantian.
         ----------------------------------------------------------------
 
-        local function moveThroughCenter(
-            targetHRP,
-            distance
+        local function waitForPreviousBot(
+            previousBot,
+            expectedPositionFunction,
+            token
         )
 
-            if not targetHRP then
-                return false
+            if not previousBot then
+                return true
             end
 
-            ------------------------------------------------------------
-            -- POSISI TENGAH
-            ------------------------------------------------------------
+            local timeout =
+                120
 
-            local centerPosition =
-                targetHRP.Position
-                - targetHRP.CFrame.LookVector
-                * (distance + centerDistance)
+            local startTime =
+                os.clock()
 
-            ------------------------------------------------------------
-            -- JALAN KE TENGAH
-            ------------------------------------------------------------
+            while rolling
+                and token == rollToken do
 
-            local reachedCenter =
-                moveAndWait(
-                    centerPosition
-                )
+                if os.clock() - startTime
+                    > timeout then
 
-            if not reachedCenter then
-                return false
+                    return false
+                end
+
+                local position =
+                    expectedPositionFunction()
+
+                if position then
+
+                    local character =
+                        previousBot.Character
+
+                    if character then
+
+                        local previousHRP =
+                            character:FindFirstChild(
+                                "HumanoidRootPart"
+                            )
+
+                        if previousHRP then
+
+                            local distance =
+                                (
+                                    previousHRP.Position
+                                    - position
+                                ).Magnitude
+
+                            if distance
+                                <= stopThreshold + 1 then
+
+                                return true
+                            end
+                        end
+                    end
+                end
+
+                RunService.Heartbeat:Wait()
             end
 
-            task.wait(0.1)
-
-            return true
-
+            return false
         end
 
         ----------------------------------------------------------------
-        -- PERFORM ROLL
+        -- PERFORM ONE ROLL
         ----------------------------------------------------------------
 
         local function performRoll()
-
-            if not rolling then
-                return
-            end
 
             local myIndex =
                 getBotIndex()
@@ -754,14 +669,9 @@ return {
             if not myIndex then
 
                 stopRolling()
-
                 return
 
             end
-
-            ------------------------------------------------------------
-            -- BOT TARGET
-            ------------------------------------------------------------
 
             local player =
                 targetPlayer
@@ -769,6 +679,60 @@ return {
             if not player then
                 return
             end
+
+            local token =
+                rollToken
+
+            ------------------------------------------------------------
+            -- BOT 2+ WAIT FOR PREVIOUS BOT
+            ------------------------------------------------------------
+
+            if myIndex > 1 then
+
+                local previousBot =
+                    getBotByIndex(
+                        myIndex - 1
+                    )
+
+                if not previousBot then
+                    return
+                end
+
+                local function previousBotExpectedPosition()
+
+                    local previousIndex =
+                        myIndex - 1
+
+                    local destinationBot =
+                        getPreviousDestinationBot(
+                            previousIndex
+                        )
+
+                    if not destinationBot then
+                        return nil
+                    end
+
+                    return getPositionBehindBot(
+                        destinationBot
+                    )
+                end
+
+                local ready =
+                    waitForPreviousBot(
+                        previousBot,
+                        previousBotExpectedPosition,
+                        token
+                    )
+
+                if not ready then
+                    return
+                end
+
+            end
+
+            ------------------------------------------------------------
+            -- GET TARGET
+            ------------------------------------------------------------
 
             local character =
                 player.Character
@@ -792,91 +756,96 @@ return {
                 )
 
             ------------------------------------------------------------
-            -- WAIT TURN
-            --
-            -- BOT 1 = langsung
-            -- BOT 2 = setelah BOT 1
-            -- BOT 3 = setelah BOT 2
-            -- dst.
-            --
+            -- SEMUA BOT LEWAT TENGAH
             ------------------------------------------------------------
 
-            task.wait(
-                (myIndex - 1)
-                * turnDelay
-            )
-
-            if not rolling then
-                return
-            end
-
-            ------------------------------------------------------------
-            -- AMBIL TARGET TERBARU
-            ------------------------------------------------------------
-
-            character =
-                player.Character
-
-            if not character then
-                return
-            end
-
-            targetHRP =
-                character:FindFirstChild(
-                    "HumanoidRootPart"
-                )
-
-            if not targetHRP then
-                return
-            end
-
-            distance =
-                getFollowDistance(
-                    player
-                )
-
-            ------------------------------------------------------------
-            -- BOT 1 / BOT 2
-            --
-            -- Masuk ke tengah terlebih dahulu.
-            ------------------------------------------------------------
-
-            if myIndex == 1
-                or myIndex == 2 then
-
-                local reachedCenter =
-                    moveThroughCenter(
-                        targetHRP,
-                        distance
-                    )
-
-                if not reachedCenter then
-                    return
-                end
-
-            end
-
-            ------------------------------------------------------------
-            -- DESTINATION
-            ------------------------------------------------------------
-
-            local destination =
-                getRollingDestination(
-                    myIndex,
+            local centerPosition =
+                getCenterPosition(
                     targetHRP,
                     distance
                 )
 
-            if not destination then
+            local reachedCenter =
+                moveAndWait(
+                    centerPosition,
+                    token
+                )
+
+            if not reachedCenter then
                 return
             end
 
             ------------------------------------------------------------
-            -- JALAN KE DESTINATION
+            -- AMBIL BOT YANG MENJADI DEPAN
             ------------------------------------------------------------
 
-            moveAndWait(
-                destination
+            local destinationBot =
+                getPreviousDestinationBot(
+                    myIndex
+                )
+
+            if not destinationBot then
+                return
+            end
+
+            ------------------------------------------------------------
+            -- TUNGGU TARGET BOT VALID
+            ------------------------------------------------------------
+
+            local destinationPosition
+
+            local startTime =
+                os.clock()
+
+            while rolling
+                and token == rollToken do
+
+                destinationPosition =
+                    getPositionBehindBot(
+                        destinationBot
+                    )
+
+                if destinationPosition then
+                    break
+                end
+
+                if os.clock() - startTime
+                    > 30 then
+
+                    return
+                end
+
+                RunService.Heartbeat:Wait()
+            end
+
+            if not destinationPosition then
+                return
+            end
+
+            ------------------------------------------------------------
+            -- BERJALAN KE BELAKANG BOT TUJUAN
+            ------------------------------------------------------------
+
+            local reachedDestination =
+                moveAndWait(
+                    destinationPosition,
+                    token
+                )
+
+            if not reachedDestination then
+                return
+            end
+
+            ------------------------------------------------------------
+            -- SELESAI
+            ------------------------------------------------------------
+
+            humanoid.AutoRotate = true
+
+            print(
+                "[ROLLING] BOT "
+                    .. tostring(myIndex)
+                    .. " selesai."
             )
 
         end
@@ -893,47 +862,36 @@ return {
                 return
             end
 
-            ------------------------------------------------------------
-            -- STOP MODE LAIN
-            ------------------------------------------------------------
-
             stopOtherModes()
-
-            ------------------------------------------------------------
-            -- ACTIVE MODE
-            ------------------------------------------------------------
 
             _G.BotVars.ActiveMode =
                 "rolling"
 
-            ------------------------------------------------------------
-            -- STOP CONNECTION LAMA
-            ------------------------------------------------------------
+            rolling = false
+            rollToken += 1
 
-            if followConnection then
+            task.wait()
 
-                followConnection:Disconnect()
-                followConnection = nil
-
-            end
-
-            ------------------------------------------------------------
-            -- STATE
-            ------------------------------------------------------------
-
-            following = true
             rolling = true
             targetPlayer = player
 
-            ------------------------------------------------------------
-            -- CHAT
-            ------------------------------------------------------------
+            local myIndex =
+                getBotIndex()
+
+            if myIndex then
+
+                print(
+                    "[ROLLING] BOT "
+                        .. tostring(myIndex)
+                        .. " siap."
+                )
+
+            end
 
             sendChat("Yes, Sir!")
 
-            ------------------------------------------------------------
-            -- START ROLL
-            ------------------------------------------------------------
+            local token =
+                rollToken
 
             task.spawn(function()
 
@@ -960,19 +918,20 @@ return {
                 message:lower()
 
             ------------------------------------------------------------
-            -- !ROLLING
+            -- !rolling
             ------------------------------------------------------------
 
             if lower == "!rolling" then
 
-                startRolling(sender)
+                startRolling(
+                    sender
+                )
 
                 return
-
             end
 
             ------------------------------------------------------------
-            -- !ROLLING PLAYER
+            -- !rolling PLAYER
             ------------------------------------------------------------
 
             local targetName =
@@ -996,11 +955,10 @@ return {
                 end
 
                 return
-
             end
 
             ------------------------------------------------------------
-            -- !STOP
+            -- STOP
             ------------------------------------------------------------
 
             if lower == "!stop"
@@ -1011,9 +969,7 @@ return {
                 stopRolling()
 
                 return
-
             end
-
         end
 
         ----------------------------------------------------------------
@@ -1024,9 +980,10 @@ return {
             and TextChatService.TextChannels then
 
             local channel =
-                TextChatService.TextChannels:FindFirstChild(
-                    "RBXGeneral"
-                )
+                TextChatService.TextChannels
+                    :FindFirstChild(
+                        "RBXGeneral"
+                    )
 
             if channel then
 
@@ -1053,9 +1010,7 @@ return {
                         end
 
                     end
-
             end
-
         end
 
         ----------------------------------------------------------------
@@ -1110,10 +1065,6 @@ return {
                 task.wait(1)
 
                 updateCharacter()
-
-                --------------------------------------------------------
-                -- JIKA ROLLING MASIH AKTIF
-                --------------------------------------------------------
 
                 if _G.BotVars.ActiveMode
                     == "rolling"
