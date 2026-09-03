@@ -98,10 +98,14 @@ return {
                 LocalPlayer.Character
                 or LocalPlayer.CharacterAdded:Wait()
 
-            humanoid = character:WaitForChild("Humanoid")
-            myHRP = character:WaitForChild("HumanoidRootPart")
+            humanoid =
+                character:WaitForChild("Humanoid")
+
+            myHRP =
+                character:WaitForChild("HumanoidRootPart")
 
             humanoid.AutoRotate = true
+
         end
 
         updateCharacter()
@@ -133,11 +137,17 @@ return {
                 if channel then
 
                     pcall(function()
-                        channel:SendAsync(message)
+
+                        channel:SendAsync(
+                            message
+                        )
+
                     end)
 
                     success = true
+
                 end
+
             end
 
             --------------------------------------------------
@@ -203,7 +213,8 @@ return {
         -- REGISTER MODE CONTROLLER
         --------------------------------------------------
 
-        vars.ModeControllers.wedgetv = stopWedge
+        vars.ModeControllers.wedgetv =
+            stopWedge
 
         --------------------------------------------------
         -- STOP OTHER MODES
@@ -248,6 +259,7 @@ return {
             end
 
             return nil
+
         end
 
         --------------------------------------------------
@@ -288,18 +300,16 @@ return {
         -- GET WEDGE POSITION
         --------------------------------------------------
         --
-        -- FORMASI 9 BOT:
+        -- POSISI BOT 1-8 TETAP SAMA SEPERTI KODE AWAL
         --
+        -- BOT 8                 BOT 7
+        --    BOT 6           BOT 5
+        --       BOT 4     BOT 3
+        --          BOT 2  BOT 1
+        --              PLAYER
         --
-        --                  BOT 1
-        --
-        --             BOT 2     BOT 3
-        --
-        --          BOT 4         BOT 5
-        --
-        --      BOT 6    BOT 7  BOT 8    BOT 9
-        --
-        --                  PLAYER
+        -- BOT 9:
+        -- berada tepat di tengah antara BOT 8 dan BOT 7
         --
         --------------------------------------------------
 
@@ -309,29 +319,27 @@ return {
             distance
         )
 
-            local playerPosition =
-                targetHRP.Position
-
-            local lookVector =
-                targetHRP.CFrame.LookVector
-
-            local rightVector =
-                targetHRP.CFrame.RightVector
-
             --------------------------------------------------
             -- BOT 1
-            -- BARIS 1 - TENGAH
+            -- PALING DEKAT - KANAN
             --------------------------------------------------
 
             if myIndex == 1 then
 
-                return playerPosition
+                return targetHRP.Position
 
                     - (
-                        lookVector
+                        targetHRP.CFrame.LookVector
                         * (
                             baseBackDistance
                             + distance
+                        )
+                    )
+
+                    + (
+                        targetHRP.CFrame.RightVector
+                        * (
+                            sideSpacing * 0.5
                         )
                     )
 
@@ -339,25 +347,26 @@ return {
 
             --------------------------------------------------
             -- BOT 2
-            -- BARIS 2 - KIRI
+            -- PALING DEKAT - KIRI
             --------------------------------------------------
 
             if myIndex == 2 then
 
-                return playerPosition
+                return targetHRP.Position
 
                     - (
-                        lookVector
+                        targetHRP.CFrame.LookVector
                         * (
                             baseBackDistance
-                            + rowSpacing
                             + distance
                         )
                     )
 
                     - (
-                        rightVector
-                        * sideSpacing
+                        targetHRP.CFrame.RightVector
+                        * (
+                            sideSpacing * 0.5
+                        )
                     )
 
             end
@@ -369,10 +378,10 @@ return {
 
             if myIndex == 3 then
 
-                return playerPosition
+                return targetHRP.Position
 
                     - (
-                        lookVector
+                        targetHRP.CFrame.LookVector
                         * (
                             baseBackDistance
                             + rowSpacing
@@ -381,7 +390,7 @@ return {
                     )
 
                     + (
-                        rightVector
+                        targetHRP.CFrame.RightVector
                         * sideSpacing
                     )
 
@@ -389,27 +398,25 @@ return {
 
             --------------------------------------------------
             -- BOT 4
-            -- BARIS 3 - KIRI
+            -- BARIS 2 - KIRI
             --------------------------------------------------
 
             if myIndex == 4 then
 
-                return playerPosition
+                return targetHRP.Position
 
                     - (
-                        lookVector
+                        targetHRP.CFrame.LookVector
                         * (
                             baseBackDistance
-                            + (rowSpacing * 2)
+                            + rowSpacing
                             + distance
                         )
                     )
 
                     - (
-                        rightVector
-                        * (
-                            sideSpacing * 1.7
-                        )
+                        targetHRP.CFrame.RightVector
+                        * sideSpacing
                     )
 
             end
@@ -421,10 +428,10 @@ return {
 
             if myIndex == 5 then
 
-                return playerPosition
+                return targetHRP.Position
 
                     - (
-                        lookVector
+                        targetHRP.CFrame.LookVector
                         * (
                             baseBackDistance
                             + (rowSpacing * 2)
@@ -433,9 +440,9 @@ return {
                     )
 
                     + (
-                        rightVector
+                        targetHRP.CFrame.RightVector
                         * (
-                            sideSpacing * 1.7
+                            sideSpacing * 1.5
                         )
                     )
 
@@ -443,26 +450,26 @@ return {
 
             --------------------------------------------------
             -- BOT 6
-            -- BARIS 4 - PALING KIRI
+            -- BARIS 3 - KIRI
             --------------------------------------------------
 
             if myIndex == 6 then
 
-                return playerPosition
+                return targetHRP.Position
 
                     - (
-                        lookVector
+                        targetHRP.CFrame.LookVector
                         * (
                             baseBackDistance
-                            + (rowSpacing * 3)
+                            + (rowSpacing * 2)
                             + distance
                         )
                     )
 
                     - (
-                        rightVector
+                        targetHRP.CFrame.RightVector
                         * (
-                            sideSpacing * 3
+                            sideSpacing * 1.5
                         )
                     )
 
@@ -470,15 +477,15 @@ return {
 
             --------------------------------------------------
             -- BOT 7
-            -- BARIS 4 - KIRI DALAM
+            -- BARIS 4 - KANAN
             --------------------------------------------------
 
             if myIndex == 7 then
 
-                return playerPosition
+                return targetHRP.Position
 
                     - (
-                        lookVector
+                        targetHRP.CFrame.LookVector
                         * (
                             baseBackDistance
                             + (rowSpacing * 3)
@@ -486,10 +493,10 @@ return {
                         )
                     )
 
-                    - (
-                        rightVector
+                    + (
+                        targetHRP.CFrame.RightVector
                         * (
-                            sideSpacing
+                            sideSpacing * 2
                         )
                     )
 
@@ -497,15 +504,15 @@ return {
 
             --------------------------------------------------
             -- BOT 8
-            -- BARIS 4 - KANAN DALAM
+            -- BARIS 4 - KIRI
             --------------------------------------------------
 
             if myIndex == 8 then
 
-                return playerPosition
+                return targetHRP.Position
 
                     - (
-                        lookVector
+                        targetHRP.CFrame.LookVector
                         * (
                             baseBackDistance
                             + (rowSpacing * 3)
@@ -513,10 +520,10 @@ return {
                         )
                     )
 
-                    + (
-                        rightVector
+                    - (
+                        targetHRP.CFrame.RightVector
                         * (
-                            sideSpacing
+                            sideSpacing * 2
                         )
                     )
 
@@ -524,15 +531,35 @@ return {
 
             --------------------------------------------------
             -- BOT 9
-            -- BARIS 4 - PALING KANAN
+            -- TENGAH ANTARA BOT 8 DAN BOT 7
             --------------------------------------------------
 
             if myIndex == 9 then
 
-                return playerPosition
+                local bot8Position =
+                    targetHRP.Position
 
                     - (
-                        lookVector
+                        targetHRP.CFrame.LookVector
+                        * (
+                            baseBackDistance
+                            + (rowSpacing * 3)
+                            + distance
+                        )
+                    )
+
+                    - (
+                        targetHRP.CFrame.RightVector
+                        * (
+                            sideSpacing * 2
+                        )
+                    )
+
+                local bot7Position =
+                    targetHRP.Position
+
+                    - (
+                        targetHRP.CFrame.LookVector
                         * (
                             baseBackDistance
                             + (rowSpacing * 3)
@@ -541,11 +568,20 @@ return {
                     )
 
                     + (
-                        rightVector
+                        targetHRP.CFrame.RightVector
                         * (
-                            sideSpacing * 3
+                            sideSpacing * 2
                         )
                     )
+
+                --------------------------------------------------
+                -- TITIK TENGAH BOT 8 DAN BOT 7
+                --------------------------------------------------
+
+                return (
+                    bot8Position
+                    + bot7Position
+                ) / 2
 
             end
 
@@ -622,7 +658,7 @@ return {
             end
 
             --------------------------------------------------
-            -- DEBUG BOT INDEX
+            -- DEBUG
             --------------------------------------------------
 
             print(
