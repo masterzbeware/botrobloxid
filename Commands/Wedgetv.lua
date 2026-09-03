@@ -1,5 +1,3 @@
-
-
 return {
     Execute = function()
 
@@ -13,6 +11,7 @@ return {
         local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
         local LocalPlayer = Players.LocalPlayer
+
         if not LocalPlayer then
             return
         end
@@ -83,7 +82,7 @@ return {
         -- Jarak antar baris
         local rowSpacing = 3
 
-        -- Jarak kiri/kanan
+        -- Jarak kiri / kanan
         local sideSpacing = 3
 
         -- Jarak minimum sebelum berhenti MoveTo
@@ -127,7 +126,9 @@ return {
                 and TextChatService.TextChannels then
 
                 local channel =
-                    TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+                    TextChatService.TextChannels:FindFirstChild(
+                        "RBXGeneral"
+                    )
 
                 if channel then
 
@@ -210,7 +211,9 @@ return {
 
         local function stopOtherModes()
 
-            for name, stopFunction in pairs(vars.ModeControllers) do
+            for name, stopFunction in pairs(
+                vars.ModeControllers
+            ) do
 
                 if name ~= "wedgetv"
                     and type(stopFunction) == "function" then
@@ -231,7 +234,9 @@ return {
 
             name = name:lower()
 
-            for _, player in ipairs(Players:GetPlayers()) do
+            for _, player in ipairs(
+                Players:GetPlayers()
+            ) do
 
                 if player.Name:lower() == name
                     or player.DisplayName:lower() == name then
@@ -253,9 +258,17 @@ return {
 
             local distance = 1
 
+            --------------------------------------------------
+            -- ADMIN DEFAULT DISTANCE
+            --------------------------------------------------
+
             if Admin:IsAdmin(player) then
                 distance = 1
             end
+
+            --------------------------------------------------
+            -- SPECIAL DISTANCE
+            --------------------------------------------------
 
             local specialDistance =
                 Distance:GetDistance(
@@ -268,19 +281,25 @@ return {
             end
 
             return distance
+
         end
 
         --------------------------------------------------
         -- GET WEDGE POSITION
         --------------------------------------------------
         --
-        -- FORMASI:
+        -- FORMASI 9 BOT:
         --
-        -- BOT 8                 BOT 7
-        --    BOT 6           BOT 5
-        --       BOT 4     BOT 3
-        --          BOT 2  BOT 1
-        --              PLAYER
+        --
+        --                  BOT 1
+        --
+        --             BOT 2     BOT 3
+        --
+        --          BOT 4         BOT 5
+        --
+        --      BOT 6    BOT 7  BOT 8    BOT 9
+        --
+        --                  PLAYER
         --
         --------------------------------------------------
 
@@ -290,27 +309,29 @@ return {
             distance
         )
 
+            local playerPosition =
+                targetHRP.Position
+
+            local lookVector =
+                targetHRP.CFrame.LookVector
+
+            local rightVector =
+                targetHRP.CFrame.RightVector
+
             --------------------------------------------------
             -- BOT 1
-            -- PALING DEKAT - KANAN
+            -- BARIS 1 - TENGAH
             --------------------------------------------------
 
             if myIndex == 1 then
 
-                return targetHRP.Position
+                return playerPosition
 
                     - (
-                        targetHRP.CFrame.LookVector
+                        lookVector
                         * (
                             baseBackDistance
                             + distance
-                        )
-                    )
-
-                    + (
-                        targetHRP.CFrame.RightVector
-                        * (
-                            sideSpacing * 0.5
                         )
                     )
 
@@ -318,26 +339,25 @@ return {
 
             --------------------------------------------------
             -- BOT 2
-            -- PALING DEKAT - KIRI
+            -- BARIS 2 - KIRI
             --------------------------------------------------
 
             if myIndex == 2 then
 
-                return targetHRP.Position
+                return playerPosition
 
                     - (
-                        targetHRP.CFrame.LookVector
+                        lookVector
                         * (
                             baseBackDistance
+                            + rowSpacing
                             + distance
                         )
                     )
 
                     - (
-                        targetHRP.CFrame.RightVector
-                        * (
-                            sideSpacing * 0.5
-                        )
+                        rightVector
+                        * sideSpacing
                     )
 
             end
@@ -349,10 +369,10 @@ return {
 
             if myIndex == 3 then
 
-                return targetHRP.Position
+                return playerPosition
 
                     - (
-                        targetHRP.CFrame.LookVector
+                        lookVector
                         * (
                             baseBackDistance
                             + rowSpacing
@@ -361,7 +381,7 @@ return {
                     )
 
                     + (
-                        targetHRP.CFrame.RightVector
+                        rightVector
                         * sideSpacing
                     )
 
@@ -369,25 +389,27 @@ return {
 
             --------------------------------------------------
             -- BOT 4
-            -- BARIS 2 - KIRI
+            -- BARIS 3 - KIRI
             --------------------------------------------------
 
             if myIndex == 4 then
 
-                return targetHRP.Position
+                return playerPosition
 
                     - (
-                        targetHRP.CFrame.LookVector
+                        lookVector
                         * (
                             baseBackDistance
-                            + rowSpacing
+                            + (rowSpacing * 2)
                             + distance
                         )
                     )
 
                     - (
-                        targetHRP.CFrame.RightVector
-                        * sideSpacing
+                        rightVector
+                        * (
+                            sideSpacing * 1.7
+                        )
                     )
 
             end
@@ -399,10 +421,10 @@ return {
 
             if myIndex == 5 then
 
-                return targetHRP.Position
+                return playerPosition
 
                     - (
-                        targetHRP.CFrame.LookVector
+                        lookVector
                         * (
                             baseBackDistance
                             + (rowSpacing * 2)
@@ -411,48 +433,79 @@ return {
                     )
 
                     + (
-                        targetHRP.CFrame.RightVector
-                        * (sideSpacing * 1.5)
+                        rightVector
+                        * (
+                            sideSpacing * 1.7
+                        )
                     )
 
             end
 
             --------------------------------------------------
             -- BOT 6
-            -- BARIS 3 - KIRI
+            -- BARIS 4 - PALING KIRI
             --------------------------------------------------
 
             if myIndex == 6 then
 
-                return targetHRP.Position
+                return playerPosition
 
                     - (
-                        targetHRP.CFrame.LookVector
+                        lookVector
                         * (
                             baseBackDistance
-                            + (rowSpacing * 2)
+                            + (rowSpacing * 3)
                             + distance
                         )
                     )
 
                     - (
-                        targetHRP.CFrame.RightVector
-                        * (sideSpacing * 1.5)
+                        rightVector
+                        * (
+                            sideSpacing * 3
+                        )
                     )
 
             end
 
             --------------------------------------------------
             -- BOT 7
-            -- BARIS 4 - KANAN
+            -- BARIS 4 - KIRI DALAM
             --------------------------------------------------
 
             if myIndex == 7 then
 
-                return targetHRP.Position
+                return playerPosition
 
                     - (
-                        targetHRP.CFrame.LookVector
+                        lookVector
+                        * (
+                            baseBackDistance
+                            + (rowSpacing * 3)
+                            + distance
+                        )
+                    )
+
+                    - (
+                        rightVector
+                        * (
+                            sideSpacing
+                        )
+                    )
+
+            end
+
+            --------------------------------------------------
+            -- BOT 8
+            -- BARIS 4 - KANAN DALAM
+            --------------------------------------------------
+
+            if myIndex == 8 then
+
+                return playerPosition
+
+                    - (
+                        lookVector
                         * (
                             baseBackDistance
                             + (rowSpacing * 3)
@@ -461,23 +514,25 @@ return {
                     )
 
                     + (
-                        targetHRP.CFrame.RightVector
-                        * (sideSpacing * 2)
+                        rightVector
+                        * (
+                            sideSpacing
+                        )
                     )
 
             end
 
             --------------------------------------------------
-            -- BOT 8
-            -- BARIS 4 - KIRI
+            -- BOT 9
+            -- BARIS 4 - PALING KANAN
             --------------------------------------------------
 
-            if myIndex == 8 then
+            if myIndex == 9 then
 
-                return targetHRP.Position
+                return playerPosition
 
                     - (
-                        targetHRP.CFrame.LookVector
+                        lookVector
                         * (
                             baseBackDistance
                             + (rowSpacing * 3)
@@ -485,15 +540,17 @@ return {
                         )
                     )
 
-                    - (
-                        targetHRP.CFrame.RightVector
-                        * (sideSpacing * 2)
+                    + (
+                        rightVector
+                        * (
+                            sideSpacing * 3
+                        )
                     )
 
             end
 
             --------------------------------------------------
-            -- BOT 9 TIDAK DIPAKAI
+            -- FALLBACK
             --------------------------------------------------
 
             return nil
@@ -552,20 +609,28 @@ return {
                     tostring(LocalPlayer.UserId)
                 )
 
+            --------------------------------------------------
+            -- USERID TIDAK TERDAFTAR
+            --------------------------------------------------
+
             if not myIndex then
 
                 stopWedge()
+
                 return
 
             end
 
             --------------------------------------------------
-            -- BOT 9 NOT USED
+            -- DEBUG BOT INDEX
             --------------------------------------------------
 
-            if myIndex == 9 then
-                return
-            end
+            print(
+                "[WEDGETV] Bot Index:",
+                myIndex,
+                "UserId:",
+                LocalPlayer.UserId
+            )
 
             --------------------------------------------------
             -- HEARTBEAT
@@ -582,6 +647,7 @@ return {
                         if vars.ActiveMode ~= "wedgetv" then
 
                             stopWedge()
+
                             return
 
                         end
@@ -594,8 +660,11 @@ return {
                             return
                         end
 
-                        if not humanoid or not myHRP then
+                        if not humanoid
+                            or not myHRP then
+
                             return
+
                         end
 
                         if not targetPlayer then
@@ -630,7 +699,7 @@ return {
                         -- DISTANCE
                         --------------------------------------------------
 
-                        local distance =
+                        local botDistance =
                             getBotDistance(
                                 targetPlayer
                             )
@@ -643,7 +712,7 @@ return {
                             getWedgePosition(
                                 myIndex,
                                 targetHRP,
-                                distance
+                                botDistance
                             )
 
                         if not targetPosition then
@@ -664,7 +733,8 @@ return {
                         -- MOVE
                         --------------------------------------------------
 
-                        if distanceToTarget > stopThreshold then
+                        if distanceToTarget
+                            > stopThreshold then
 
                             humanoid.AutoRotate = true
 
@@ -673,6 +743,7 @@ return {
                             )
 
                             return
+
                         end
 
                         --------------------------------------------------
@@ -727,6 +798,7 @@ return {
             if lower == "!wedgetv" then
 
                 startWedge(sender)
+
                 return
 
             end
@@ -749,11 +821,14 @@ return {
 
                 if target then
 
-                    startWedge(target)
+                    startWedge(
+                        target
+                    )
 
                 end
 
                 return
+
             end
 
             --------------------------------------------------
@@ -767,6 +842,7 @@ return {
                 stopWedge()
 
                 return
+
             end
 
         end
