@@ -33,6 +33,7 @@ local commandFiles = {
     "Main.lua",
     "Follow.lua",
     "Pushup.lua",
+    "Triangle.lua",
     "Sync.lua",
     "Twoline.lua",
     "Wedgetv.lua"
@@ -74,5 +75,6 @@ jalankan("pushup")
 jalankan("sync") 
 jalankan("twoline") 
 jalankan("wedgetv")
+jalankan("triangle")
 
 print("✅ Bot.lua loaded — All systems active.")
