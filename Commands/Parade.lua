@@ -63,7 +63,7 @@ return {
         local rowSpacing = 4
 
         -- Jarak formasi dari admin
-        local formationDistance = 8
+        local formationDistance = 2
 
         -- Jarak perjalanan parade
         local paradeDistance = 35
