@@ -60,16 +60,16 @@ return {
         local columnSpacing = 4
 
         -- Jarak antar baris depan/belakang
-        local rowSpacing = 5
+        local rowSpacing = 4
 
         -- Jarak formasi dari admin
         local formationDistance = 2
 
         -- Jarak perjalanan parade
-        local paradeDistance = 5
+        local paradeDistance = 10
 
         -- Kecepatan bot
-        local moveThreshold = 1.5
+        local moveThreshold = 1
 
         ----------------------------------------------------------------
         -- VARIABLES
