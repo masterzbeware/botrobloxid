@@ -60,13 +60,13 @@ return {
         local columnSpacing = 4
 
         -- Jarak antar baris depan/belakang
-        local rowSpacing = 4
+        local rowSpacing = 5
 
         -- Jarak formasi dari admin
         local formationDistance = 2
 
         -- Jarak perjalanan parade
-        local paradeDistance = 35
+        local paradeDistance = 5
 
         -- Kecepatan bot
         local moveThreshold = 1.5
