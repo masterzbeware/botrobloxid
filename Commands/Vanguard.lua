@@ -1,939 +1,885 @@
 return {
-	Execute = function()
+    Execute = function()
 
-		--------------------------------------------------
-		-- SERVICES
-		--------------------------------------------------
+        ----------------------------------------------------------------
+        -- SERVICES
+        ----------------------------------------------------------------
 
-		local Players = game:GetService("Players")
-		local RunService = game:GetService("RunService")
-		local TextChatService = game:GetService("TextChatService")
-		local ReplicatedStorage = game:GetService("ReplicatedStorage")
+        local Players = game:GetService("Players")
+        local RunService = game:GetService("RunService")
+        local TextChatService = game:GetService("TextChatService")
+        local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-		local LocalPlayer = Players.LocalPlayer
+        local LocalPlayer = Players.LocalPlayer
 
-		if not LocalPlayer then
-			return
-		end
+        if not LocalPlayer then
+            return
+        end
 
-		--------------------------------------------------
-		-- MODULES
-		--------------------------------------------------
+        ----------------------------------------------------------------
+        -- GLOBAL MODE SYSTEM
+        ----------------------------------------------------------------
 
-		local Admin = loadstring(game:HttpGet(
-			"https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
-		))()
+        _G.BotVars = _G.BotVars or {}
+        _G.BotVars.ModeControllers =
+            _G.BotVars.ModeControllers or {}
 
-		local Distance = loadstring(game:HttpGet(
-			"https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Distance.lua"
-		))()
+        ----------------------------------------------------------------
+        -- LOAD ADMIN
+        ----------------------------------------------------------------
 
-		--------------------------------------------------
-		-- GLOBAL VARIABLES
-		--------------------------------------------------
+        local Admin = loadstring(game:HttpGet(
+            "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
+        ))()
 
-		_G.BotVars = _G.BotVars or {}
+        ----------------------------------------------------------------
+        -- LOAD DISTANCE
+        ----------------------------------------------------------------
 
-		local vars = _G.BotVars
+        local Distance = loadstring(game:HttpGet(
+            "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Distance.lua"
+        ))()
 
-		vars.ModeControllers = vars.ModeControllers or {}
+        ----------------------------------------------------------------
+        -- VARIABLES
+        ----------------------------------------------------------------
 
-		--------------------------------------------------
-		-- MODE NAME
-		--------------------------------------------------
+        local humanoid
+        local myHRP
 
-		local MODE_NAME = "vanguard"
+        local active = false
+        local targetPlayer = nil
+        local vanguardConnection = nil
 
-		--------------------------------------------------
-		-- BOT ORDER
-		--------------------------------------------------
+        ----------------------------------------------------------------
+        -- CONFIG
+        ----------------------------------------------------------------
 
-		local botOrder = {
+        local stopDistance = 1.5
 
-			"11611503633", -- Bot 1
-			"11611534165", -- Bot 2
-			"11611567975", -- Bot 3
-			"11611562042", -- Bot 4
-			"11611591921", -- Bot 5
-			"11122806815", -- Bot 6
-			"11122806817", -- Bot 7
-			"11122687468", -- Bot 8
-			"11122854402", -- Bot 9
+        ----------------------------------------------------------------
+        -- BOT ORDER
+        ----------------------------------------------------------------
 
-			"BOT10_USER_ID", -- Bot 10
-			"BOT11_USER_ID", -- Bot 11
-			"BOT12_USER_ID", -- Bot 12
-			"BOT13_USER_ID", -- Bot 13
-			"BOT14_USER_ID", -- Bot 14
-		}
+        local botOrder = {
 
-		--------------------------------------------------
-		-- CONFIG
-		--------------------------------------------------
+            "11611503633", -- Bot 1
+            "11611534165", -- Bot 2
+            "11611567975", -- Bot 3
+            "11611562042", -- Bot 4
+            "11611591921", -- Bot 5
+            "11122806815", -- Bot 6
+            "11122806817", -- Bot 7
+            "11122687468", -- Bot 8
+            "11122854402", -- Bot 9
+            "11641280895", -- Bot 10
+            "11641342530", -- Bot 11
+            "11001607521", -- Bot 12
+            "11001608049", -- Bot 13
+            "11601625681", -- Bot 14
 
-		local Config = {
+        }
 
-			--------------------------------------------------
-			-- JARAK DARI PLAYER
-			--------------------------------------------------
+        ----------------------------------------------------------------
+        -- UPDATE CHARACTER
+        ----------------------------------------------------------------
 
-			FrontDistance = 5,
+        local function updateCharacter()
 
-			--------------------------------------------------
-			-- JARAK ANTAR BARIS
-			--------------------------------------------------
+            local character =
+                LocalPlayer.Character
+                or LocalPlayer.CharacterAdded:Wait()
 
-			RowSpacing = 3,
+            humanoid =
+                character:WaitForChild("Humanoid")
 
-			--------------------------------------------------
-			-- JARAK SAMPING
-			--------------------------------------------------
+            myHRP =
+                character:WaitForChild("HumanoidRootPart")
 
-			SideSpacing = 3,
+            humanoid.AutoRotate = true
 
-			--------------------------------------------------
-			-- JARAK BOT INNER
-			--------------------------------------------------
+        end
 
-			InnerSpacing = 2,
+        updateCharacter()
 
-			--------------------------------------------------
-			-- BATAS BERHENTI
-			--------------------------------------------------
+        ----------------------------------------------------------------
+        -- SEND CHAT
+        ----------------------------------------------------------------
 
-			StopThreshold = 1.5,
+        local function sendChat(message)
 
-			--------------------------------------------------
-			-- UPDATE RATE
-			--------------------------------------------------
+            local success = false
 
-			UpdateRate = 0.08,
-		}
+            ------------------------------------------------------------
+            -- TEXT CHAT
+            ------------------------------------------------------------
 
-		--------------------------------------------------
-		-- STOP MODE LAIN
-		--------------------------------------------------
+            if TextChatService
+                and TextChatService.TextChannels then
 
-		local function stopOtherModes()
+                local channel =
+                    TextChatService.TextChannels:FindFirstChild(
+                        "RBXGeneral"
+                    )
 
-			for modeName, controller in pairs(vars.ModeControllers) do
+                if channel then
 
-				if modeName ~= MODE_NAME then
+                    pcall(function()
 
-					if controller and controller.Stop then
-						pcall(function()
-							controller.Stop()
-						end)
-					end
+                        channel:SendAsync(message)
 
-				end
-			end
-		end
+                    end)
 
-		--------------------------------------------------
-		-- FIND PLAYER
-		--------------------------------------------------
+                    success = true
 
-		local function getPlayerByUserId(userId)
+                end
 
-			userId = tonumber(userId)
+            end
 
-			if not userId then
-				return nil
-			end
+            ------------------------------------------------------------
+            -- OLD CHAT FALLBACK
+            ------------------------------------------------------------
 
-			for _, player in ipairs(Players:GetPlayers()) do
+            if not success then
 
-				if player.UserId == userId then
-					return player
-				end
+                pcall(function()
 
-			end
+                    local chatEvents =
+                        ReplicatedStorage:FindFirstChild(
+                            "DefaultChatSystemChatEvents"
+                        )
 
-			return nil
-		end
+                    if chatEvents then
 
-		--------------------------------------------------
-		-- FIND PLAYER BY NAME
-		--------------------------------------------------
+                        local sayMessageRequest =
+                            chatEvents:FindFirstChild(
+                                "SayMessageRequest"
+                            )
 
-		local function getPlayerByName(name)
+                        if sayMessageRequest then
 
-			if not name then
-				return nil
-			end
+                            sayMessageRequest:FireServer(
+                                message,
+                                "All"
+                            )
 
-			name = string.lower(name)
+                        end
 
-			for _, player in ipairs(Players:GetPlayers()) do
+                    end
 
-				if string.lower(player.Name) == name
-					or string.lower(player.DisplayName) == name then
+                end)
 
-					return player
-				end
+            end
 
-			end
+        end
 
-			return nil
-		end
+        ----------------------------------------------------------------
+        -- STOP VANGUARD
+        ----------------------------------------------------------------
 
-		--------------------------------------------------
-		-- GET CHARACTER ROOT
-		--------------------------------------------------
+        local function stopVanguard()
 
-		local function getRoot(player)
+            active = false
+            targetPlayer = nil
 
-			if not player then
-				return nil
-			end
+            if vanguardConnection then
 
-			local character = player.Character
+                vanguardConnection:Disconnect()
+                vanguardConnection = nil
 
-			if not character then
-				return nil
-			end
+            end
 
-			return character:FindFirstChild("HumanoidRootPart")
-		end
+            if humanoid then
 
-		--------------------------------------------------
-		-- GET BOT ROOT
-		--------------------------------------------------
+                humanoid.AutoRotate = true
 
-		local function getBotRoot(player)
+            end
 
-			if not player then
-				return nil
-			end
+            ------------------------------------------------------------
+            -- CLEAR ACTIVE MODE
+            ------------------------------------------------------------
 
-			local character = player.Character
+            if _G.BotVars.ActiveMode == "vanguard" then
 
-			if not character then
-				return nil
-			end
+                _G.BotVars.ActiveMode = nil
 
-			return character:FindFirstChild("HumanoidRootPart")
-		end
+            end
 
-		--------------------------------------------------
-		-- MOVE BOT
-		--------------------------------------------------
+        end
 
-		local function moveBot(bot, targetPosition)
+        ----------------------------------------------------------------
+        -- REGISTER CONTROLLER
+        ----------------------------------------------------------------
 
-			local character = bot.Character
+        _G.BotVars.ModeControllers.vanguard =
+            stopVanguard
 
-			if not character then
-				return
-			end
+        ----------------------------------------------------------------
+        -- STOP MODE LAIN
+        ----------------------------------------------------------------
 
-			local humanoid = character:FindFirstChildOfClass("Humanoid")
-			local hrp = character:FindFirstChild("HumanoidRootPart")
+        local function stopOtherModes()
 
-			if not humanoid or not hrp then
-				return
-			end
+            for name, stopFunction in pairs(
+                _G.BotVars.ModeControllers
+            ) do
 
-			local distance = (hrp.Position - targetPosition).Magnitude
+                if name ~= "vanguard"
+                    and type(stopFunction) == "function" then
 
-			--------------------------------------------------
-			-- MOVE
-			--------------------------------------------------
+                    pcall(stopFunction)
 
-			if distance > Config.StopThreshold then
+                end
 
-				humanoid:MoveTo(targetPosition)
+            end
 
-			end
-		end
+        end
 
-		--------------------------------------------------
-		-- FACE SAME DIRECTION
-		--------------------------------------------------
+        ----------------------------------------------------------------
+        -- FIND PLAYER
+        ----------------------------------------------------------------
 
-		local function faceTarget(bot, targetHRP)
+        local function findPlayerByName(name)
 
-			local myHRP = getBotRoot(bot)
+            name = name:lower()
 
-			if not myHRP or not targetHRP then
-				return
-			end
+            for _, player in ipairs(
+                Players:GetPlayers()
+            ) do
 
-			local targetRotation =
-				CFrame.lookAt(
-					myHRP.Position,
-					myHRP.Position + targetHRP.CFrame.LookVector
-				)
+                if player.Name:lower() == name
+                    or player.DisplayName:lower() == name then
 
-			myHRP.CFrame =
-				CFrame.new(myHRP.Position)
-				* CFrame.Angles(
-					0,
-					math.atan2(
-						-targetRotation.LookVector.X,
-						-targetRotation.LookVector.Z
-					),
-					0
-				)
-		end
+                    return player
 
-		--------------------------------------------------
-		-- FORMATION POSITION
-		--------------------------------------------------
+                end
 
-		local function getVanguardPosition(index, targetHRP)
+            end
 
-			local origin = targetHRP.Position
+            return nil
 
-			local forward = targetHRP.CFrame.LookVector
-			local right = targetHRP.CFrame.RightVector
+        end
 
-			--------------------------------------------------
-			-- DEPTH
-			--------------------------------------------------
+        ----------------------------------------------------------------
+        -- GET FORMATION POSITION
+        ----------------------------------------------------------------
 
-			local d1 = Config.FrontDistance
+        local function getFormationPosition(
+            index,
+            targetHRP
+        )
 
-			local d2 =
-				d1 - Config.RowSpacing
+            local origin =
+                targetHRP.Position
 
-			local d3 =
-				d2 - Config.RowSpacing
+            local forward =
+                targetHRP.CFrame.LookVector
 
-			local d4 =
-				d3 - Config.RowSpacing
+            local right =
+                targetHRP.CFrame.RightVector
 
-			local d5 =
-				d4 - Config.RowSpacing
+            ------------------------------------------------------------
+            -- JARAK DEPAN
+            --
+            -- Semakin besar angka = semakin jauh dari player
+            ------------------------------------------------------------
 
-			local d6 =
-				d5 - Config.RowSpacing
+            local row1 = 5
+            local row2 = 8
+            local row3 = 11
+            local row4 = 14
+            local row5 = 17
+            local row6 = 20
+            local row7 = 23
 
-			local d7 =
-				d6 - Config.RowSpacing
+            ------------------------------------------------------------
+            -- BOT 1
+            ------------------------------------------------------------
 
-			local d8 =
-				d7 - Config.RowSpacing
+            if index == 1 then
 
-			--------------------------------------------------
-			-- BOT 1
-			--------------------------------------------------
+                return
+                    origin
+                    + forward * row1
 
-			if index == 1 then
+            ------------------------------------------------------------
+            -- BOT 2
+            ------------------------------------------------------------
 
-				return
-					origin
-					+ forward * d1
+            elseif index == 2 then
 
-			--------------------------------------------------
-			-- BOT 2
-			--------------------------------------------------
+                return
+                    origin
+                    + forward * row2
+                    - right * 3
 
-			elseif index == 2 then
+            ------------------------------------------------------------
+            -- BOT 3
+            ------------------------------------------------------------
 
-				return
-					origin
-					+ forward * d2
-					- right * Config.SideSpacing
+            elseif index == 3 then
 
-			--------------------------------------------------
-			-- BOT 3
-			--------------------------------------------------
+                return
+                    origin
+                    + forward * row2
+                    + right * 3
 
-			elseif index == 3 then
+            ------------------------------------------------------------
+            -- BOT 4
+            ------------------------------------------------------------
 
-				return
-					origin
-					+ forward * d2
-					+ right * Config.SideSpacing
+            elseif index == 4 then
 
-			--------------------------------------------------
-			-- BOT 4
-			--------------------------------------------------
+                return
+                    origin
+                    + forward * row3
+                    - right * 5
 
-			elseif index == 4 then
+            ------------------------------------------------------------
+            -- BOT 5
+            ------------------------------------------------------------
 
-				return
-					origin
-					+ forward * d3
-					- right * (Config.SideSpacing * 1.8)
+            elseif index == 5 then
 
-			--------------------------------------------------
-			-- BOT 5
-			--------------------------------------------------
+                return
+                    origin
+                    + forward * row3
+                    + right * 5
 
-			elseif index == 5 then
+            ------------------------------------------------------------
+            -- BOT 6
+            ------------------------------------------------------------
 
-				return
-					origin
-					+ forward * d3
-					+ right * (Config.SideSpacing * 1.8)
+            elseif index == 6 then
 
-			--------------------------------------------------
-			-- BOT 6
-			--------------------------------------------------
+                return
+                    origin
+                    + forward * row4
+                    - right * 7
 
-			elseif index == 6 then
+            ------------------------------------------------------------
+            -- BOT 7
+            ------------------------------------------------------------
 
-				return
-					origin
-					+ forward * d4
-					- right * (Config.SideSpacing * 2.5)
+            elseif index == 7 then
 
-			--------------------------------------------------
-			-- BOT 7
-			--------------------------------------------------
+                return
+                    origin
+                    + forward * row4
+                    + right * 7
 
-			elseif index == 7 then
+            ------------------------------------------------------------
+            -- BOT 8
+            ------------------------------------------------------------
 
-				return
-					origin
-					+ forward * d4
-					+ right * (Config.SideSpacing * 2.5)
+            elseif index == 8 then
 
-			--------------------------------------------------
-			-- BOT 8
-			--------------------------------------------------
+                return
+                    origin
+                    + forward * row5
+                    - right * 5
 
-			elseif index == 8 then
+            ------------------------------------------------------------
+            -- BOT 9
+            ------------------------------------------------------------
 
-				return
-					origin
-					+ forward * d5
-					- right * (Config.SideSpacing * 1.8)
+            elseif index == 9 then
 
-			--------------------------------------------------
-			-- BOT 9
-			--------------------------------------------------
+                return
+                    origin
+                    + forward * row5
+                    + right * 5
 
-			elseif index == 9 then
+            ------------------------------------------------------------
+            -- BOT 10
+            ------------------------------------------------------------
 
-				return
-					origin
-					+ forward * d5
-					+ right * (Config.SideSpacing * 1.8)
+            elseif index == 10 then
 
-			--------------------------------------------------
-			-- BOT 10
-			--------------------------------------------------
+                return
+                    origin
+                    + forward * row5
+                    - right * 2
 
-			elseif index == 10 then
+            ------------------------------------------------------------
+            -- BOT 11
+            ------------------------------------------------------------
 
-				return
-					origin
-					+ forward * d5
-					- right * Config.InnerSpacing
+            elseif index == 11 then
 
-			--------------------------------------------------
-			-- BOT 11
-			--------------------------------------------------
+                return
+                    origin
+                    + forward * row5
+                    + right * 2
 
-			elseif index == 11 then
+            ------------------------------------------------------------
+            -- BOT 12
+            ------------------------------------------------------------
 
-				return
-					origin
-					+ forward * d5
-					+ right * Config.InnerSpacing
+            elseif index == 12 then
 
-			--------------------------------------------------
-			-- BOT 12
-			--------------------------------------------------
+                return
+                    origin
+                    + forward * row6
+                    - right * 2
 
-			elseif index == 12 then
+            ------------------------------------------------------------
+            -- BOT 13
+            ------------------------------------------------------------
 
-				return
-					origin
-					+ forward * d6
-					- right * Config.InnerSpacing
+            elseif index == 13 then
 
-			--------------------------------------------------
-			-- BOT 13
-			--------------------------------------------------
+                return
+                    origin
+                    + forward * row6
+                    + right * 2
 
-			elseif index == 13 then
+            ------------------------------------------------------------
+            -- BOT 14
+            ------------------------------------------------------------
 
-				return
-					origin
-					+ forward * d6
-					+ right * Config.InnerSpacing
+            elseif index == 14 then
 
-			--------------------------------------------------
-			-- BOT 14
-			--------------------------------------------------
+                return
+                    origin
+                    + forward * row7
 
-			elseif index == 14 then
+            end
 
-				return
-					origin
-					+ forward * d7
+        end
 
-			end
+        ----------------------------------------------------------------
+        -- START VANGUARD
+        ----------------------------------------------------------------
 
-		end
+        local function startVanguard(player)
 
-		--------------------------------------------------
-		-- CONTROLLER
-		--------------------------------------------------
+            if not player then
+                return
+            end
 
-		local controller = {
+            ------------------------------------------------------------
+            -- STOP MODE LAIN
+            ------------------------------------------------------------
 
-			Active = false,
+            stopOtherModes()
 
-			Target = nil,
+            ------------------------------------------------------------
+            -- CARI INDEX BOT
+            ------------------------------------------------------------
 
-			Connection = nil,
+            local myIndex =
+                table.find(
+                    botOrder,
+                    tostring(LocalPlayer.UserId)
+                )
 
-			RespawnConnections = {},
-		}
+            ------------------------------------------------------------
+            -- JIKA BUKAN BOT
+            ------------------------------------------------------------
 
-		--------------------------------------------------
-		-- STOP
-		--------------------------------------------------
+            if not myIndex then
 
-		function controller.Stop()
+                return
 
-			controller.Active = false
-			controller.Target = nil
+            end
 
-			if controller.Connection then
+            ------------------------------------------------------------
+            -- SET ACTIVE MODE
+            ------------------------------------------------------------
 
-				controller.Connection:Disconnect()
-				controller.Connection = nil
+            _G.BotVars.ActiveMode =
+                "vanguard"
 
-			end
+            ------------------------------------------------------------
+            -- STOP CONNECTION LAMA
+            ------------------------------------------------------------
 
-			for _, connection in pairs(controller.RespawnConnections) do
+            if vanguardConnection then
 
-				pcall(function()
-					connection:Disconnect()
-				end)
+                vanguardConnection:Disconnect()
+                vanguardConnection = nil
 
-			end
+            end
 
-			controller.RespawnConnections = {}
+            ------------------------------------------------------------
+            -- SET STATE
+            ------------------------------------------------------------
 
-			if vars.ActiveMode == MODE_NAME then
-				vars.ActiveMode = nil
-			end
+            active = true
+            targetPlayer = player
 
-		end
+            ------------------------------------------------------------
+            -- CHAT
+            ------------------------------------------------------------
 
-		--------------------------------------------------
-		-- START
-		--------------------------------------------------
+            sendChat("Yes, Sir!")
 
-		function controller.Start(targetPlayer)
+            ------------------------------------------------------------
+            -- VANGUARD LOOP
+            ------------------------------------------------------------
 
-			if not targetPlayer then
-				return
-			end
+            vanguardConnection =
+                RunService.Heartbeat:Connect(
+                    function()
 
-			--------------------------------------------------
-			-- STOP MODE LAIN
-			--------------------------------------------------
+                        ------------------------------------------------
+                        -- MODE BERUBAH
+                        ------------------------------------------------
 
-			stopOtherModes()
+                        if _G.BotVars.ActiveMode
+                            ~= "vanguard" then
 
-			--------------------------------------------------
-			-- STOP VANGUARD LAMA
-			--------------------------------------------------
+                            stopVanguard()
 
-			controller.Stop()
+                            return
 
-			--------------------------------------------------
-			-- SET STATE
-			--------------------------------------------------
+                        end
 
-			controller.Active = true
-			controller.Target = targetPlayer
+                        ------------------------------------------------
+                        -- VALIDASI
+                        ------------------------------------------------
 
-			vars.ActiveMode = MODE_NAME
+                        if not active then
+                            return
+                        end
 
-			--------------------------------------------------
-			-- BOT RESPAWN HANDLER
-			--------------------------------------------------
+                        if not humanoid
+                            or not myHRP then
 
-			for _, userId in ipairs(botOrder) do
+                            return
 
-				local bot = getPlayerByUserId(userId)
+                        end
 
-				if bot then
+                        if not targetPlayer then
+                            return
+                        end
 
-					local connection
+                        ------------------------------------------------
+                        -- TARGET CHARACTER
+                        ------------------------------------------------
 
-					connection = bot.CharacterAdded:Connect(function()
+                        local targetCharacter =
+                            targetPlayer.Character
 
-						task.wait(1)
+                        if not targetCharacter then
+                            return
+                        end
 
-						if not controller.Active then
-							return
-						end
+                        local targetHRP =
+                            targetCharacter:FindFirstChild(
+                                "HumanoidRootPart"
+                            )
 
-					end)
+                        if not targetHRP then
+                            return
+                        end
 
-					table.insert(
-						controller.RespawnConnections,
-						connection
-					)
+                        ------------------------------------------------
+                        -- DISTANCE SPECIAL
+                        ------------------------------------------------
 
-				end
-			end
+                        local specialDistance =
+                            Distance:GetDistance(
+                                tostring(LocalPlayer.UserId),
+                                tostring(targetPlayer.UserId)
+                            )
 
-			--------------------------------------------------
-			-- UPDATE LOOP
-			--------------------------------------------------
+                        ------------------------------------------------
+                        -- FORMATION
+                        ------------------------------------------------
 
-			controller.Connection =
-				RunService.Heartbeat:Connect(function()
+                        local formationPosition =
+                            getFormationPosition(
+                                myIndex,
+                                targetHRP
+                            )
 
-					if not controller.Active then
-						return
-					end
+                        if not formationPosition then
+                            return
+                        end
 
-					local target = controller.Target
+                        ------------------------------------------------
+                        -- APPLY SPECIAL DISTANCE
+                        ------------------------------------------------
 
-					if not target then
+                        if specialDistance then
 
-						controller.Stop()
-						return
+                            formationPosition =
+                                formationPosition
+                                +
+                                (
+                                    targetHRP.CFrame.LookVector
+                                    *
+                                    specialDistance
+                                )
 
-					end
+                        end
 
-					--------------------------------------------------
-					-- TARGET CHARACTER
-					--------------------------------------------------
+                        ------------------------------------------------
+                        -- DISTANCE
+                        ------------------------------------------------
 
-					local targetHRP = getRoot(target)
+                        local distance =
+                            (
+                                myHRP.Position
+                                -
+                                formationPosition
+                            ).Magnitude
 
-					if not targetHRP then
-						return
-					end
+                        ------------------------------------------------
+                        -- MOVE
+                        ------------------------------------------------
 
-					--------------------------------------------------
-					-- CHECK TARGET DISTANCE
-					--------------------------------------------------
+                        if distance > stopDistance then
 
-					local localRoot = getRoot(LocalPlayer)
+                            humanoid.AutoRotate = true
 
-					if localRoot and target ~= LocalPlayer then
+                            humanoid:MoveTo(
+                                formationPosition
+                            )
 
-						local distance =
-							Distance:GetDistance(
-								LocalPlayer.UserId,
-								target.UserId
-							)
+                            return
 
-						if distance and distance > 1000 then
-							return
-						end
+                        end
 
-					end
+                        ------------------------------------------------
+                        -- SUDAH SAMPAI
+                        ------------------------------------------------
 
-					--------------------------------------------------
-					-- MOVE EVERY BOT
-					--------------------------------------------------
+                        humanoid.AutoRotate = false
 
-					for index, userId in ipairs(botOrder) do
+                        local targetRotation =
+                            targetHRP.CFrame
+                            -
+                            targetHRP.Position
 
-						local bot =
-							getPlayerByUserId(userId)
+                        myHRP.CFrame =
+                            CFrame.new(
+                                myHRP.Position
+                            )
+                            *
+                            targetRotation
 
-						if bot then
+                    end
+                )
 
-							--------------------------------------------------
-							-- BOT CHARACTER
-							--------------------------------------------------
+        end
 
-							local botHRP =
-								getBotRoot(bot)
+        ----------------------------------------------------------------
+        -- COMMAND HANDLER
+        ----------------------------------------------------------------
 
-							if botHRP then
+        local function handleCommand(
+            message,
+            sender
+        )
 
-								--------------------------------------------------
-								-- TARGET POSITION
-								--------------------------------------------------
+            ------------------------------------------------------------
+            -- VALIDASI
+            ------------------------------------------------------------
 
-								local targetPosition =
-									getVanguardPosition(
-										index,
-										targetHRP
-									)
+            if not sender then
+                return
+            end
 
-								if targetPosition then
+            if not message then
+                return
+            end
 
-									--------------------------------------------------
-									-- MOVE
-									--------------------------------------------------
+            ------------------------------------------------------------
+            -- ADMIN CHECK
+            ------------------------------------------------------------
 
-									moveBot(
-										bot,
-										targetPosition
-									)
+            if not Admin:IsAdmin(sender) then
+                return
+            end
 
-									--------------------------------------------------
-									-- FACE PLAYER
-									--------------------------------------------------
+            local lower =
+                message:lower()
 
-									faceTarget(
-										bot,
-										targetHRP
-									)
+            ------------------------------------------------------------
+            -- !VANGUARD
+            ------------------------------------------------------------
 
-								end
+            if lower == "!vanguard"
+                or lower == "!vandguard" then
 
-							end
+                startVanguard(sender)
 
-						end
+                return
 
-					end
+            end
 
-				end)
+            ------------------------------------------------------------
+            -- !VANGUARD PLAYER
+            ------------------------------------------------------------
 
-			--------------------------------------------------
-			-- START MESSAGE
-			--------------------------------------------------
+            local targetName =
+                lower:match(
+                    "^!vanguard%s+(.+)$"
+                )
 
-			pcall(function()
+            ------------------------------------------------------------
+            -- TYPO COMMAND
+            ------------------------------------------------------------
 
-				local channel =
-					TextChatService.TextChannels:FindFirstChild(
-						"RBXGeneral"
-					)
+            if not targetName then
 
-				if channel then
+                targetName =
+                    lower:match(
+                        "^!vandguard%s+(.+)$"
+                    )
 
-					channel:SendAsync(
-						"Yes, Sir!"
-					)
+            end
 
-				end
+            ------------------------------------------------------------
+            -- TARGET PLAYER
+            ------------------------------------------------------------
 
-			end)
+            if targetName then
 
-		end
+                local target =
+                    findPlayerByName(
+                        targetName
+                    )
 
-		--------------------------------------------------
-		-- COMMAND HANDLER
-		--------------------------------------------------
+                if target then
 
-		local function handleCommand(sender, message)
+                    startVanguard(
+                        target
+                    )
 
-			if not sender then
-				return
-			end
+                end
 
-			if not message then
-				return
-			end
+                return
 
-			--------------------------------------------------
-			-- ONLY ADMIN
-			--------------------------------------------------
+            end
 
-			if not Admin:IsAdmin(sender) then
-				return
-			end
+            ------------------------------------------------------------
+            -- STOP
+            ------------------------------------------------------------
 
-			local msg =
-				string.lower(
-					string.gsub(
-						message,
-						"^%s*(.-)%s*$",
-						"%1"
-					)
-				)
+            if lower == "!stop"
+                or lower == "!unvanguard" then
 
-			--------------------------------------------------
-			-- STOP
-			--------------------------------------------------
+                _G.BotVars.ActiveMode = nil
 
-			if msg == "!stop"
-				or msg == "!unvanguard" then
+                stopVanguard()
 
-				controller.Stop()
+                return
 
-				return
-			end
+            end
 
-			--------------------------------------------------
-			-- VANGUARD
-			--------------------------------------------------
+        end
 
-			if string.sub(
-				msg,
-				1,
-				9
-			) == "!vanguard" then
+        ----------------------------------------------------------------
+        -- TEXT CHAT
+        ----------------------------------------------------------------
 
-				local targetName =
-					string.sub(
-						message,
-						10
-					)
+        if TextChatService
+            and TextChatService.TextChannels then
 
-				targetName =
-					string.gsub(
-						targetName,
-						"^%s+",
-						""
-					)
+            local channel =
+                TextChatService.TextChannels:FindFirstChild(
+                    "RBXGeneral"
+                )
 
-				--------------------------------------------------
-				-- DEFAULT TARGET = ADMIN
-				--------------------------------------------------
+            if channel then
 
-				local targetPlayer = sender
+                channel.OnIncomingMessage =
+                    function(message)
 
-				--------------------------------------------------
-				-- TARGET PLAYER
-				--------------------------------------------------
+                        local userId =
+                            message.TextSource
+                            and message.TextSource.UserId
 
-				if targetName ~= "" then
+                        local sender =
+                            userId
+                            and Players:GetPlayerByUserId(
+                                userId
+                            )
 
-					local found =
-						getPlayerByName(
-							targetName
-						)
+                        if sender then
 
-					if found then
-						targetPlayer = found
-					end
+                            handleCommand(
+                                message.Text,
+                                sender
+                            )
 
-				end
+                        end
 
-				--------------------------------------------------
-				-- START
-				--------------------------------------------------
+                    end
 
-				controller.Start(
-					targetPlayer
-				)
+            end
 
-			end
+        end
 
-		end
+        ----------------------------------------------------------------
+        -- FALLBACK CHAT
+        ----------------------------------------------------------------
 
-		--------------------------------------------------
-		-- TEXT CHAT
-		--------------------------------------------------
+        for _, player in ipairs(
+            Players:GetPlayers()
+        ) do
 
-		local textConnection
+            player.Chatted:Connect(
+                function(message)
 
-		pcall(function()
+                    handleCommand(
+                        message,
+                        player
+                    )
 
-			textConnection =
-				TextChatService.MessageReceived:Connect(
-					function(message)
+                end
+            )
 
-						local textSource =
-							message.TextSource
+        end
 
-						if not textSource then
-							return
-						end
+        ----------------------------------------------------------------
+        -- PLAYER ADDED
+        ----------------------------------------------------------------
 
-						local sender =
-							Players:GetPlayerByUserId(
-								textSource.UserId
-							)
+        Players.PlayerAdded:Connect(
+            function(player)
 
-						if not sender then
-							return
-						end
+                player.Chatted:Connect(
+                    function(message)
 
-						handleCommand(
-							sender,
-							message.Text
-						)
+                        handleCommand(
+                            message,
+                            player
+                        )
 
-					end
-				)
+                    end
+                )
 
-		end)
+            end
+        )
 
-		--------------------------------------------------
-		-- OLD CHAT FALLBACK
-		--------------------------------------------------
+        ----------------------------------------------------------------
+        -- CHARACTER RESPAWN
+        ----------------------------------------------------------------
 
-		local chatConnections = {}
+        LocalPlayer.CharacterAdded:Connect(
+            function()
 
-		local function connectPlayerChat(player)
+                task.wait(1)
 
-			if chatConnections[player] then
-				return
-			end
+                updateCharacter()
 
-			local connection =
-				player.Chatted:Connect(
-					function(message)
+                if _G.BotVars.ActiveMode
+                    == "vanguard"
+                    and targetPlayer then
 
-						handleCommand(
-							player,
-							message
-						)
+                    startVanguard(
+                        targetPlayer
+                    )
 
-					end
-				)
+                end
 
-			chatConnections[player] =
-				connection
+            end
+        )
 
-		end
-
-		--------------------------------------------------
-		-- EXISTING PLAYERS
-		--------------------------------------------------
-
-		for _, player in ipairs(
-			Players:GetPlayers()
-		) do
-
-			connectPlayerChat(player)
-
-		end
-
-		--------------------------------------------------
-		-- NEW PLAYERS
-		--------------------------------------------------
-
-		Players.PlayerAdded:Connect(
-			function(player)
-
-				connectPlayerChat(
-					player
-				)
-
-			end
-		)
-
-		--------------------------------------------------
-		-- LOCAL PLAYER RESPAWN
-		--------------------------------------------------
-
-		LocalPlayer.CharacterAdded:Connect(
-			function()
-
-				task.wait(1)
-
-				if controller.Active
-					and controller.Target then
-
-					--------------------------------------------------
-					-- LOOP WILL CONTINUE
-					--------------------------------------------------
-
-				end
-
-			end
-		)
-
-		--------------------------------------------------
-		-- REGISTER CONTROLLER
-		--------------------------------------------------
-
-		vars.ModeControllers[MODE_NAME] =
-			controller
-
-	end
+    end
 }
