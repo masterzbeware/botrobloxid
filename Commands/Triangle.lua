@@ -21,6 +21,7 @@ return {
         --------------------------------------------------
 
         _G.BotVars = _G.BotVars or {}
+
         _G.BotVars.ModeControllers =
             _G.BotVars.ModeControllers or {}
 
@@ -60,6 +61,9 @@ return {
         --------------------------------------------------
         -- BOT ORDER
         --------------------------------------------------
+        -- PENTING:
+        -- Urutan ini menentukan posisi Bot.
+        --------------------------------------------------
 
         local botOrder = {
 
@@ -73,6 +77,13 @@ return {
             "11122687468", -- Bot 8
             "11122854402", -- Bot 9
 
+            -- BOT 10-14
+            "BOT10_USER_ID", -- Bot 10
+            "BOT11_USER_ID", -- Bot 11
+            "BOT12_USER_ID", -- Bot 12
+            "BOT13_USER_ID", -- Bot 13
+            "BOT14_USER_ID", -- Bot 14
+
         }
 
         --------------------------------------------------
@@ -85,11 +96,17 @@ return {
         -- Jarak maju/mundur antar baris
         local rowSpacing = 3
 
-        -- Lebar formasi
+        -- Jarak kiri/kanan baris utama
         local sideSpacing = 3
 
         -- Jarak Bot 8 dan Bot 9 dari tengah
         local innerSpacing = 2
+
+        -- Jarak Bot 12, 13, 14
+        local centerSpacing = 2
+
+        -- Jarak baris paling belakang
+        local backSpacing = 3
 
         -- Jarak minimum sebelum berhenti
         local stopThreshold = 1.5
@@ -340,21 +357,27 @@ return {
         -- GET TRIANGLE POSITION
         --------------------------------------------------
         --
-        -- FORMASI:
+        -- FORMASI 14 BOT:
+        --
         --
         --                         BOT 1
-        --                           ▲
-        --                          / \
-        --                         /   \
-        --                    BOT 2   BOT 3
-        --                      /       \
-        --                     /         \
-        --                 BOT 4         BOT 5
-        --                   /             \
-        --                  /               \
-        --              BOT 6   BOT 8  BOT 9   BOT 7
+        --                           ↑
+        --
+        --                    BOT 2       BOT 3
+        --                           ↑
+        --
+        --                 BOT 4           BOT 5
+        --                           ↑
+        --
+        --          BOT 6    BOT 8    BOT 9    BOT 7
+        --                           ↑
+        --
+        --      BOT 10    BOT 12    BOT 13    BOT 14    BOT 11
+        --
         --
         --                         PLAYER
+        --                           ↑
+        --                       arah player
         --
         --------------------------------------------------
 
@@ -385,7 +408,6 @@ return {
             if myIndex == 1 then
 
                 return origin
-
                     + forward
                     * distance
 
@@ -399,7 +421,6 @@ return {
             if myIndex == 2 then
 
                 return origin
-
                     + forward
                     * (distance - rowSpacing)
 
@@ -416,7 +437,6 @@ return {
             if myIndex == 3 then
 
                 return origin
-
                     + forward
                     * (distance - rowSpacing)
 
@@ -433,7 +453,6 @@ return {
             if myIndex == 4 then
 
                 return origin
-
                     + forward
                     * (distance - rowSpacing * 2)
 
@@ -450,7 +469,6 @@ return {
             if myIndex == 5 then
 
                 return origin
-
                     + forward
                     * (distance - rowSpacing * 2)
 
@@ -461,13 +479,12 @@ return {
 
             --------------------------------------------------
             -- BOT 6
-            -- BACK LEFT OUTER
+            -- BACK ROW OUTER LEFT
             --------------------------------------------------
 
             if myIndex == 6 then
 
                 return origin
-
                     + forward
                     * (distance - rowSpacing * 3)
 
@@ -478,13 +495,12 @@ return {
 
             --------------------------------------------------
             -- BOT 7
-            -- BACK RIGHT OUTER
+            -- BACK ROW OUTER RIGHT
             --------------------------------------------------
 
             if myIndex == 7 then
 
                 return origin
-
                     + forward
                     * (distance - rowSpacing * 3)
 
@@ -495,13 +511,12 @@ return {
 
             --------------------------------------------------
             -- BOT 8
-            -- BACK INNER LEFT
+            -- BACK ROW INNER LEFT
             --------------------------------------------------
 
             if myIndex == 8 then
 
                 return origin
-
                     + forward
                     * (distance - rowSpacing * 3)
 
@@ -512,18 +527,114 @@ return {
 
             --------------------------------------------------
             -- BOT 9
-            -- BACK INNER RIGHT
+            -- BACK ROW INNER RIGHT
             --------------------------------------------------
 
             if myIndex == 9 then
 
                 return origin
-
                     + forward
                     * (distance - rowSpacing * 3)
 
                     + right
                     * innerSpacing
+
+            end
+
+            --------------------------------------------------
+            -- BOT 10
+            -- DEEPEST ROW OUTER LEFT
+            --------------------------------------------------
+
+            if myIndex == 10 then
+
+                return origin
+                    + forward
+                    * (
+                        distance
+                        - rowSpacing * 3
+                        - backSpacing
+                    )
+
+                    - right
+                    * (sideSpacing * 3.5)
+
+            end
+
+            --------------------------------------------------
+            -- BOT 11
+            -- DEEPEST ROW OUTER RIGHT
+            --------------------------------------------------
+
+            if myIndex == 11 then
+
+                return origin
+                    + forward
+                    * (
+                        distance
+                        - rowSpacing * 3
+                        - backSpacing
+                    )
+
+                    + right
+                    * (sideSpacing * 3.5)
+
+            end
+
+            --------------------------------------------------
+            -- BOT 12
+            -- DEEPEST ROW INNER LEFT
+            --------------------------------------------------
+
+            if myIndex == 12 then
+
+                return origin
+                    + forward
+                    * (
+                        distance
+                        - rowSpacing * 3
+                        - backSpacing
+                    )
+
+                    - right
+                    * centerSpacing
+
+            end
+
+            --------------------------------------------------
+            -- BOT 13
+            -- DEEPEST ROW CENTER
+            --------------------------------------------------
+
+            if myIndex == 13 then
+
+                return origin
+                    + forward
+                    * (
+                        distance
+                        - rowSpacing * 3
+                        - backSpacing
+                    )
+
+            end
+
+            --------------------------------------------------
+            -- BOT 14
+            -- DEEPEST ROW INNER RIGHT
+            --------------------------------------------------
+
+            if myIndex == 14 then
+
+                return origin
+                    + forward
+                    * (
+                        distance
+                        - rowSpacing * 3
+                        - backSpacing
+                    )
+
+                    + right
+                    * centerSpacing
 
             end
 
@@ -617,12 +728,16 @@ return {
                         end
 
                         --------------------------------------------------
-                        -- VALIDATION
+                        -- ACTIVE CHECK
                         --------------------------------------------------
 
                         if not triangleActive then
                             return
                         end
+
+                        --------------------------------------------------
+                        -- CHARACTER CHECK
+                        --------------------------------------------------
 
                         if not humanoid
                             or not myHRP then
@@ -630,6 +745,10 @@ return {
                             return
 
                         end
+
+                        --------------------------------------------------
+                        -- TARGET CHECK
+                        --------------------------------------------------
 
                         if not targetPlayer then
                             return
@@ -684,7 +803,7 @@ return {
                         end
 
                         --------------------------------------------------
-                        -- DISTANCE TO POSITION
+                        -- DISTANCE TO TARGET POSITION
                         --------------------------------------------------
 
                         local distanceToTarget =
