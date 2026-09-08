@@ -38,6 +38,7 @@ local commandFiles = {
     "Twoline.lua",
     "Wedgetv.lua",
     "Frontline.lua",
+    "Royal.lua",
 }
 
 for _, fileName in ipairs(commandFiles) do
@@ -78,5 +79,6 @@ jalankan("twoline")
 jalankan("wedgetv")
 jalankan("triangle")
 jalankan("frontline")
+jalankan("royal")
 
 print("✅ Bot.lua loaded — All systems active.")
