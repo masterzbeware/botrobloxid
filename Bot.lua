@@ -37,7 +37,7 @@ local commandFiles = {
     "Sync.lua",
     "Twoline.lua",
     "Wedgetv.lua",
-    "Vanguard.lua"
+    "Vanguard.lua",
     "Parade.lua",
 }
 
