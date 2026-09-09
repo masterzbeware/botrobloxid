@@ -19,7 +19,7 @@ _G.BotVars = {
 
 local Window = Library:CreateWindow({
     Title = "MasterZ HUB",
-    Footer = "1.0.5",
+    Footer = "1.0.0",
     Icon = 0
 })
 
@@ -40,7 +40,7 @@ local commandFiles = {
     "Wedgetv.lua",
     "Frontline.lua",
     "Frontline2.lua",
-    "Salute.lua"
+    "Salute.lua",
 }
 
 for _, fileName in ipairs(commandFiles) do
