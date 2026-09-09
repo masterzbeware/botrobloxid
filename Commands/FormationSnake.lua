@@ -54,8 +54,8 @@ return {
         -- STATE
         --------------------------------------------------
 
-        local formationLoveActive = false
-        local formationLoveConnection = nil
+        local formationSnakeActive = false
+        local formationSnakeConnection = nil
         local targetPlayer = nil
 
         --------------------------------------------------
@@ -87,13 +87,9 @@ return {
 
         local baseDistance = 5
 
-        local rowSpacing = 3
+        local horizontalSpacing = 3
 
-        local sideSpacing = 3
-
-        local backSpacing = 3
-
-        local centerSpacing = 2
+        local verticalSpacing = 3
 
         local stopThreshold = 1.5
 
@@ -197,18 +193,18 @@ return {
         end
 
         --------------------------------------------------
-        -- STOP FORMATION LOVE
+        -- STOP FORMATION SNAKE
         --------------------------------------------------
 
-        local function stopFormationLove()
+        local function stopFormationSnake()
 
-            formationLoveActive = false
+            formationSnakeActive = false
             targetPlayer = nil
 
-            if formationLoveConnection then
+            if formationSnakeConnection then
 
-                formationLoveConnection:Disconnect()
-                formationLoveConnection = nil
+                formationSnakeConnection:Disconnect()
+                formationSnakeConnection = nil
 
             end
 
@@ -224,8 +220,8 @@ return {
         -- REGISTER CONTROLLER
         --------------------------------------------------
 
-        vars.ModeControllers.formationlove =
-            stopFormationLove
+        vars.ModeControllers.formationsnake =
+            stopFormationSnake
 
         --------------------------------------------------
         -- STOP OTHER MODES
@@ -236,7 +232,7 @@ return {
             for name, stopFunction in
                 pairs(vars.ModeControllers) do
 
-                if name ~= "formationlove"
+                if name ~= "formationsnake"
                     and type(stopFunction) == "function" then
 
                     pcall(stopFunction)
@@ -342,37 +338,27 @@ return {
         end
 
         --------------------------------------------------
-        -- GET FORMATION LOVE POSITION
+        -- GET FORMATION SNAKE POSITION
         --------------------------------------------------
         --
-        -- FORMASI 11 BOT
+        -- FORMASI SNAKE
         --
-        --                         B1
-        --                          ▲
+        -- B1 ─ B2 ─ B3
+        --              │
+        -- B6 ─ B5 ─ B4
+        -- │
+        -- B7 ─ B8 ─ B9
+        --              │
+        --            B10
+        --              │
+        --            B11
         --
-        --                    B2         B3
-        --                     ▲         ▲
-        --
-        --                B4                 B5
-        --                 ▲                 ▲
-        --
-        --           B6                              B7
-        --            ▲                              ▲
-        --
-        --      B8                              B9
-        --       ▲                              ▲
-        --
-        --                    B10      B11
-        --                      ▲        ▲
-        --
-        --                          👤
-        --                        PLAYER
-        --                          ▲
-        --                     Arah Player
+        --                    👤
+        --                  PLAYER
         --
         --------------------------------------------------
 
-        local function getFormationLovePosition(
+        local function getFormationSnakePosition(
             myIndex,
             targetHRP,
             distance
@@ -400,181 +386,133 @@ return {
                 targetHRP.Position
 
             --------------------------------------------------
-            -- BOT 1
-            -- DEPAN TENGAH
+            -- ROW 1
+            --
+            -- B1 ─ B2 ─ B3
             --------------------------------------------------
 
             if myIndex == 1 then
 
                 return origin
-                    + forward
-                    * distance
+                    + forward * distance
+                    - right * horizontalSpacing
 
             end
-
-            --------------------------------------------------
-            -- BOT 2
-            -- KIRI
-            --------------------------------------------------
 
             if myIndex == 2 then
 
                 return origin
-                    + forward
-                    * (distance - rowSpacing)
-                    - right
-                    * sideSpacing
+                    + forward * distance
 
             end
-
-            --------------------------------------------------
-            -- BOT 3
-            -- KANAN
-            --------------------------------------------------
 
             if myIndex == 3 then
 
                 return origin
-                    + forward
-                    * (distance - rowSpacing)
-                    + right
-                    * sideSpacing
+                    + forward * distance
+                    + right * horizontalSpacing
 
             end
 
             --------------------------------------------------
-            -- BOT 4
-            -- KIRI
+            -- ROW 2
+            --
+            -- B6 ─ B5 ─ B4
+            --
+            -- B4 berada di bawah B3
             --------------------------------------------------
 
             if myIndex == 4 then
 
                 return origin
                     + forward
-                    * (distance - rowSpacing * 2)
-                    - right
-                    * (sideSpacing * 1.8)
+                    * (distance - verticalSpacing)
+                    + right * horizontalSpacing
 
             end
-
-            --------------------------------------------------
-            -- BOT 5
-            -- KANAN
-            --------------------------------------------------
 
             if myIndex == 5 then
 
                 return origin
                     + forward
-                    * (distance - rowSpacing * 2)
-                    + right
-                    * (sideSpacing * 1.8)
+                    * (distance - verticalSpacing)
 
             end
-
-            --------------------------------------------------
-            -- BOT 6
-            -- LUAR KIRI
-            --------------------------------------------------
 
             if myIndex == 6 then
 
                 return origin
                     + forward
-                    * (distance - rowSpacing * 3)
-                    - right
-                    * (sideSpacing * 2.5)
+                    * (distance - verticalSpacing)
+                    - right * horizontalSpacing
 
             end
 
             --------------------------------------------------
-            -- BOT 7
-            -- LUAR KANAN
+            -- ROW 3
+            --
+            -- B7 ─ B8 ─ B9
+            --
+            -- B7 berada di bawah B6
             --------------------------------------------------
 
             if myIndex == 7 then
 
                 return origin
                     + forward
-                    * (distance - rowSpacing * 3)
-                    + right
-                    * (sideSpacing * 2.5)
+                    * (distance - verticalSpacing * 2)
+                    - right * horizontalSpacing
 
             end
-
-            --------------------------------------------------
-            -- BOT 8
-            -- BARIS PALING BELAKANG KIRI
-            --------------------------------------------------
 
             if myIndex == 8 then
 
                 return origin
                     + forward
-                    * (
-                        distance
-                        - rowSpacing * 3
-                        - backSpacing
-                    )
-                    - right
-                    * (sideSpacing * 2.5)
+                    * (distance - verticalSpacing * 2)
 
             end
-
-            --------------------------------------------------
-            -- BOT 9
-            -- BARIS PALING BELAKANG KANAN
-            --------------------------------------------------
 
             if myIndex == 9 then
 
                 return origin
                     + forward
-                    * (
-                        distance
-                        - rowSpacing * 3
-                        - backSpacing
-                    )
-                    + right
-                    * (sideSpacing * 2.5)
+                    * (distance - verticalSpacing * 2)
+                    + right * horizontalSpacing
 
             end
 
             --------------------------------------------------
-            -- BOT 10
-            -- TENGAH KIRI
+            -- B10
+            --
+            -- B9
+            -- │
+            -- B10
             --------------------------------------------------
 
             if myIndex == 10 then
 
                 return origin
                     + forward
-                    * (
-                        distance
-                        - rowSpacing * 3
-                        - backSpacing
-                    )
-                    - right
-                    * centerSpacing
+                    * (distance - verticalSpacing * 3)
+                    + right * horizontalSpacing
 
             end
 
             --------------------------------------------------
-            -- BOT 11
-            -- TENGAH KANAN
+            -- B11
+            --
+            -- B10
+            -- │
+            -- B11
             --------------------------------------------------
 
             if myIndex == 11 then
 
                 return origin
                     + forward
-                    * (
-                        distance
-                        - rowSpacing * 3
-                        - backSpacing
-                    )
-                    + right
-                    * centerSpacing
+                    * (distance - verticalSpacing * 4)
+                    + right * horizontalSpacing
 
             end
 
@@ -587,10 +525,10 @@ return {
         end
 
         --------------------------------------------------
-        -- START FORMATION LOVE
+        -- START FORMATION SNAKE
         --------------------------------------------------
 
-        local function startFormationLove(player)
+        local function startFormationSnake(player)
 
             if not player then
                 return
@@ -607,16 +545,16 @@ return {
             --------------------------------------------------
 
             vars.ActiveMode =
-                "formationlove"
+                "formationsnake"
 
             --------------------------------------------------
             -- DISCONNECT OLD LOOP
             --------------------------------------------------
 
-            if formationLoveConnection then
+            if formationSnakeConnection then
 
-                formationLoveConnection:Disconnect()
-                formationLoveConnection = nil
+                formationSnakeConnection:Disconnect()
+                formationSnakeConnection = nil
 
             end
 
@@ -624,7 +562,7 @@ return {
             -- STATE
             --------------------------------------------------
 
-            formationLoveActive = true
+            formationSnakeActive = true
             targetPlayer = player
 
             --------------------------------------------------
@@ -650,13 +588,13 @@ return {
             if not myIndex then
 
                 print(
-                    "[FORMATION LOVE]",
+                    "[FORMATION SNAKE]",
                     "Bot tidak termasuk formasi:",
                     LocalPlayer.Name,
                     LocalPlayer.UserId
                 )
 
-                stopFormationLove()
+                stopFormationSnake()
 
                 return
 
@@ -667,7 +605,7 @@ return {
             --------------------------------------------------
 
             print(
-                "[FORMATION LOVE]",
+                "[FORMATION SNAKE]",
                 "Bot Index:",
                 myIndex,
                 "UserId:",
@@ -678,7 +616,7 @@ return {
             -- HEARTBEAT
             --------------------------------------------------
 
-            formationLoveConnection =
+            formationSnakeConnection =
                 RunService.Heartbeat:Connect(
                     function()
 
@@ -687,9 +625,9 @@ return {
                         --------------------------------------------------
 
                         if vars.ActiveMode
-                            ~= "formationlove" then
+                            ~= "formationsnake" then
 
-                            stopFormationLove()
+                            stopFormationSnake()
 
                             return
 
@@ -699,7 +637,7 @@ return {
                         -- ACTIVE CHECK
                         --------------------------------------------------
 
-                        if not formationLoveActive then
+                        if not formationSnakeActive then
                             return
                         end
 
@@ -760,7 +698,7 @@ return {
                         --------------------------------------------------
 
                         local targetPosition =
-                            getFormationLovePosition(
+                            getFormationSnakePosition(
                                 myIndex,
                                 targetHRP,
                                 distance
@@ -843,12 +781,12 @@ return {
                 message:lower()
 
             --------------------------------------------------
-            -- !FORMATIONLOVE
+            -- !FORMATIONSNAKE
             --------------------------------------------------
 
-            if lower == "!formationlove" then
+            if lower == "!formationsnake" then
 
-                startFormationLove(
+                startFormationSnake(
                     sender
                 )
 
@@ -857,12 +795,12 @@ return {
             end
 
             --------------------------------------------------
-            -- !FORMATIONLOVE PLAYER
+            -- !FORMATIONSNAKE PLAYER
             --------------------------------------------------
 
             local targetName =
                 lower:match(
-                    "^!formationlove%s+(.+)$"
+                    "^!formationsnake%s+(.+)$"
                 )
 
             if targetName then
@@ -874,7 +812,7 @@ return {
 
                 if target then
 
-                    startFormationLove(
+                    startFormationSnake(
                         target
                     )
 
@@ -889,11 +827,11 @@ return {
             --------------------------------------------------
 
             if lower == "!stop"
-                or lower == "!unformationlove" then
+                or lower == "!unformationsnake" then
 
                 vars.ActiveMode = nil
 
-                stopFormationLove()
+                stopFormationSnake()
 
                 return
 
@@ -995,14 +933,14 @@ return {
                 updateCharacter()
 
                 --------------------------------------------------
-                -- RESTART FORMATION LOVE
+                -- RESTART FORMATION SNAKE
                 --------------------------------------------------
 
                 if vars.ActiveMode
-                    == "formationlove"
+                    == "formationsnake"
                     and targetPlayer then
 
-                    startFormationLove(
+                    startFormationSnake(
                         targetPlayer
                     )
 
@@ -1016,7 +954,7 @@ return {
         --------------------------------------------------
 
         print(
-            "[FORMATION LOVE] FormationLove.lua aktif!"
+            "[FORMATION SNAKE] FormationSnake.lua aktif!"
         )
 
     end
