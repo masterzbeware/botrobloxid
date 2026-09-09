@@ -1,897 +1,959 @@
 return {
-    Execute = function()
+	Execute = function()
+
+		--------------------------------------------------
+		-- SERVICES
+		--------------------------------------------------
+
+		local Players = game:GetService("Players")
+		local RunService = game:GetService("RunService")
+		local TextChatService = game:GetService("TextChatService")
+		local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+		local LocalPlayer = Players.LocalPlayer
 
-        ----------------------------------------------------------------
-        -- SERVICES
-        ----------------------------------------------------------------
+		if not LocalPlayer then
+			return
+		end
 
-        local Players = game:GetService("Players")
-        local RunService = game:GetService("RunService")
-        local TextChatService = game:GetService("TextChatService")
-        local ReplicatedStorage = game:GetService("ReplicatedStorage")
+		--------------------------------------------------
+		-- GLOBAL MODE
+		--------------------------------------------------
 
-        local LocalPlayer = Players.LocalPlayer
+		_G.BotVars = _G.BotVars or {}
 
-        if not LocalPlayer then
-            return
-        end
+		--------------------------------------------------
+		-- LOAD ADMIN MODULE
+		--------------------------------------------------
 
-        ----------------------------------------------------------------
-        -- GLOBAL MODE SYSTEM
-        ----------------------------------------------------------------
+		local Admin
 
-        _G.BotVars = _G.BotVars or {}
-        _G.BotVars.ModeControllers =
-            _G.BotVars.ModeControllers or {}
+		pcall(function()
+			Admin = loadstring(
+				game:HttpGet(
+					"https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
+				)
+			)()
+		end)
 
-        local vars = _G.BotVars
+		if not Admin then
+			warn("[FRONTLINE] Admin module gagal dimuat")
+			return
+		end
 
-        ----------------------------------------------------------------
-        -- LOAD ADMIN
-        ----------------------------------------------------------------
+		--------------------------------------------------
+		-- LOAD DISTANCE MODULE
+		--------------------------------------------------
 
-        local Admin = loadstring(game:HttpGet(
-            "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
-        ))()
+		local Distance
 
-        ----------------------------------------------------------------
-        -- LOAD DISTANCE
-        ----------------------------------------------------------------
+		pcall(function()
+			Distance = loadstring(
+				game:HttpGet(
+					"https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Distance.lua"
+				)
+			)()
+		end)
 
-        local Distance = loadstring(game:HttpGet(
-            "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Distance.lua"
-        ))()
+		if not Distance then
+			warn("[FRONTLINE] Distance module gagal dimuat")
+			return
+		end
 
-        ----------------------------------------------------------------
-        -- CHARACTER
-        ----------------------------------------------------------------
+		--------------------------------------------------
+		-- SETTINGS
+		--------------------------------------------------
 
-        local humanoid
-        local myHRP
+		local formationDistance = 5
 
-        ----------------------------------------------------------------
-        -- STATE
-        ----------------------------------------------------------------
+		-- Jarak antar bot kiri/kanan
+		local formationSpacing = 3
 
-        local frontlineActive = false
-        local frontlineConnection = nil
-        local targetPlayer = nil
+		-- Jarak antar baris
+		local rowSpacing = 3
 
-        ----------------------------------------------------------------
-        -- FORMATION SETTINGS
-        ----------------------------------------------------------------
+		-- Batas dianggap sudah sampai
+		local stopThreshold = 1.5
 
-        -- Jarak Bot dari Player
-        local formationDistance = 5
+		-- Tinggi formasi
+		local formationHeight = 0
 
-        -- Jarak antar Bot kiri / kanan
-        local formationSpacing = 3
+		--------------------------------------------------
+		-- BOT ORDER
+		--------------------------------------------------
 
-        -- Jarak minimum sebelum dianggap sudah sampai
-        local stopThreshold = 1.5
+		local botOrder = {
 
-        -- Tinggi posisi formasi
-        local formationHeight = 0
+			11611503633, -- Bot1
+			11611534165, -- Bot2
+			11611567975, -- Bot3
+			11611562042, -- Bot4
+			11611591921, -- Bot5
+			11122806815, -- Bot6
+			11122806817, -- Bot7
+			11122687468, -- Bot8
+			11122854402, -- Bot9
+			11641280895, -- Bot10
+			11641342530, -- Bot11
 
-        ----------------------------------------------------------------
-        -- BOT ORDER
-        ----------------------------------------------------------------
-        -- HANYA BOT 1 - BOT 11
-        ----------------------------------------------------------------
+		}
 
-        local botOrder = {
+		--------------------------------------------------
+		-- STATE
+		--------------------------------------------------
 
-            "11611503633", -- Bot 1
-            "11611534165", -- Bot 2
-            "11611567975", -- Bot 3
-            "11611562042", -- Bot 4
-            "11611591921", -- Bot 5
-            "11122806815", -- Bot 6
-            "11122806817", -- Bot 7
-            "11122687468", -- Bot 8
-            "11122854402", -- Bot 9
-            "11641280895", -- Bot 10
-            "11641342530", -- Bot 11
+		local frontlineActive = false
+		local frontlineConnection = nil
+		local targetPlayer = nil
+		local currentFormation = nil
 
-        }
+		--------------------------------------------------
+		-- GET BOT DISTANCE
+		--------------------------------------------------
 
-        ----------------------------------------------------------------
-        -- UPDATE CHARACTER
-        ----------------------------------------------------------------
+		local function getBotDistance(player)
 
-        local function updateCharacter()
+			local distance = 1
 
-            local character =
-                LocalPlayer.Character
-                or LocalPlayer.CharacterAdded:Wait()
+			pcall(function()
 
-            humanoid =
-                character:WaitForChild("Humanoid")
+				local result = Distance:GetDistance(
+					tostring(LocalPlayer.UserId),
+					tostring(player.UserId)
+				)
 
-            myHRP =
-                character:WaitForChild(
-                    "HumanoidRootPart"
-                )
+				if typeof(result) == "number" then
+					distance = result
+				end
 
-            humanoid.AutoRotate = true
+			end)
 
-        end
+			return distance
+		end
 
-        updateCharacter()
+		--------------------------------------------------
+		-- GET BOT INDEX
+		--------------------------------------------------
 
-        ----------------------------------------------------------------
-        -- SEND CHAT
-        ----------------------------------------------------------------
+		local function getBotIndex(player)
 
-        local function sendChat(message)
+			if not player then
+				return nil
+			end
 
-            if not message then
-                return
-            end
+			local userId = player.UserId
 
-            local success = false
+			for index, botUserId in ipairs(botOrder) do
 
-            ------------------------------------------------------------
-            -- TEXT CHAT
-            ------------------------------------------------------------
+				if botUserId == userId then
+					return index
+				end
 
-            if TextChatService
-                and TextChatService.TextChannels then
+			end
 
-                local channel =
-                    TextChatService.TextChannels:FindFirstChild(
-                        "RBXGeneral"
-                    )
+			return nil
+		end
 
-                if channel then
+		--------------------------------------------------
+		-- GET BOT CHARACTER
+		--------------------------------------------------
 
-                    pcall(function()
+		local function getCharacter(player)
 
-                        channel:SendAsync(
-                            message
-                        )
+			if not player then
+				return nil
+			end
 
-                    end)
+			return player.Character
+		end
 
-                    success = true
+		--------------------------------------------------
+		-- GET HUMANOID ROOT
+		--------------------------------------------------
 
-                end
+		local function getRoot(character)
 
-            end
+			if not character then
+				return nil
+			end
 
-            ------------------------------------------------------------
-            -- OLD CHAT FALLBACK
-            ------------------------------------------------------------
+			return character:FindFirstChild("HumanoidRootPart")
+		end
 
-            if not success then
+		--------------------------------------------------
+		-- GET HUMANOID
+		--------------------------------------------------
 
-                pcall(function()
+		local function getHumanoid(character)
 
-                    local chatEvents =
-                        ReplicatedStorage:FindFirstChild(
-                            "DefaultChatSystemChatEvents"
-                        )
+			if not character then
+				return nil
+			end
 
-                    if not chatEvents then
-                        return
-                    end
+			return character:FindFirstChildOfClass("Humanoid")
+		end
 
-                    local sayMessageRequest =
-                        chatEvents:FindFirstChild(
-                            "SayMessageRequest"
-                        )
+		--------------------------------------------------
+		-- COPY TARGET ROTATION
+		--------------------------------------------------
 
-                    if sayMessageRequest then
+		local function copyTargetRotation(myHRP, targetHRP)
 
-                        sayMessageRequest:FireServer(
-                            message,
-                            "All"
-                        )
+			if not myHRP or not targetHRP then
+				return
+			end
 
-                    end
+			local targetRotation =
+				targetHRP.CFrame
+				- targetHRP.Position
 
-                end)
+			myHRP.CFrame =
+				CFrame.new(myHRP.Position)
+				* targetRotation
 
-            end
+		end
 
-        end
+		--------------------------------------------------
+		-- GET FRONTLINE POSITION
+		--
+		-- FORMATION 1
+		--
+		-- Bot1 Bot2 Bot3 Bot4 Bot5 Bot6 Bot7
+		-- Bot8 Bot9 Bot10 Bot11
+		--------------------------------------------------
 
-        ----------------------------------------------------------------
-        -- STOP FRONTLINE
-        ----------------------------------------------------------------
+		local function getNormalFormationPosition(
+			myIndex,
+			targetHRP,
+			distance
+		)
 
-        local function stopFrontline()
+			local totalBots = #botOrder
 
-            frontlineActive = false
-            targetPlayer = nil
+			local center =
+				(totalBots + 1) / 2
 
-            if frontlineConnection then
+			local horizontalOffset =
+				(myIndex - center)
+				* formationSpacing
 
-                frontlineConnection:Disconnect()
-                frontlineConnection = nil
+			local frontPosition =
+				targetHRP.Position
+				+ targetHRP.CFrame.LookVector
+				* (formationDistance + distance)
 
-            end
+			local sidePosition =
+				targetHRP.CFrame.RightVector
+				* horizontalOffset
 
-            if humanoid then
+			return
+				frontPosition
+				+ sidePosition
+				+ Vector3.new(
+					0,
+					formationHeight,
+					0
+				)
 
-                humanoid.AutoRotate = true
+		end
 
-            end
+		--------------------------------------------------
+		-- GET TWO ROW FORMATION POSITION
+		--
+		--              Bot8 Bot9 Bot10 Bot11
+		--
+		-- Bot1 Bot2 Bot3 Bot4 Bot5 Bot6 Bot7
+		--
+		--                 PLAYER
+		--------------------------------------------------
 
-        end
+		local function getTwoRowFormationPosition(
+			myIndex,
+			targetHRP,
+			distance
+		)
 
-        ----------------------------------------------------------------
-        -- REGISTER CONTROLLER
-        ----------------------------------------------------------------
+			--------------------------------------------------
+			-- BOT 1 - 7
+			-- BARIS BELAKANG / DEKAT PLAYER
+			--------------------------------------------------
 
-        vars.ModeControllers.frontline =
-            stopFrontline
+			if myIndex <= 7 then
 
-        ----------------------------------------------------------------
-        -- STOP OTHER MODES
-        ----------------------------------------------------------------
+				local rowIndex = myIndex
 
-        local function stopOtherModes()
+				-- 7 bot:
+				-- -9 -6 -3 0 +3 +6 +9
 
-            for name, stopFunction in pairs(
-                vars.ModeControllers
-            ) do
+				local center = 4
 
-                if name ~= "frontline"
-                    and type(stopFunction) == "function" then
+				local horizontalOffset =
+					(rowIndex - center)
+					* formationSpacing
 
-                    pcall(stopFunction)
+				local frontPosition =
+					targetHRP.Position
+					+ targetHRP.CFrame.LookVector
+					* (formationDistance + distance)
 
-                end
+				local sidePosition =
+					targetHRP.CFrame.RightVector
+					* horizontalOffset
 
-            end
+				return
+					frontPosition
+					+ sidePosition
+					+ Vector3.new(
+						0,
+						formationHeight,
+						0
+					)
 
-        end
+			end
 
-        ----------------------------------------------------------------
-        -- FIND PLAYER
-        ----------------------------------------------------------------
+			--------------------------------------------------
+			-- BOT 8 - 11
+			-- BARIS DEPAN / LEBIH JAUH DARI PLAYER
+			--------------------------------------------------
 
-        local function findPlayerByName(name)
+			local rowIndex = myIndex - 7
 
-            if not name or name == "" then
-                return nil
-            end
+			-- 4 bot:
+			-- -4.5 -1.5 +1.5 +4.5
 
-            name = name:lower()
+			local center = 2.5
 
-            ------------------------------------------------------------
-            -- EXACT MATCH
-            ------------------------------------------------------------
+			local horizontalOffset =
+				(rowIndex - center)
+				* formationSpacing
 
-            for _, player in ipairs(
-                Players:GetPlayers()
-            ) do
+			--------------------------------------------------
+			-- MAJU SATU BARIS
+			--------------------------------------------------
 
-                if player.Name:lower() == name
-                    or player.DisplayName:lower() == name then
+			local frontPosition =
+				targetHRP.Position
+				+ targetHRP.CFrame.LookVector
+				* (
+					formationDistance
+					+ distance
+					+ rowSpacing
+				)
 
-                    return player
+			local sidePosition =
+				targetHRP.CFrame.RightVector
+				* horizontalOffset
 
-                end
+			return
+				frontPosition
+				+ sidePosition
+				+ Vector3.new(
+					0,
+					formationHeight,
+					0
+				)
 
-            end
+		end
 
-            ------------------------------------------------------------
-            -- PARTIAL MATCH
-            ------------------------------------------------------------
+		--------------------------------------------------
+		-- GET FORMATION POSITION
+		--------------------------------------------------
 
-            for _, player in ipairs(
-                Players:GetPlayers()
-            ) do
+		local function getFormationPosition(
+			myIndex,
+			targetHRP,
+			distance
+		)
 
-                if player.Name:lower():find(
-                    name,
-                    1,
-                    true
-                )
-                    or player.DisplayName:lower():find(
-                        name,
-                        1,
-                        true
-                    ) then
+			if currentFormation == "twoRow" then
 
-                    return player
+				return getTwoRowFormationPosition(
+					myIndex,
+					targetHRP,
+					distance
+				)
 
-                end
+			end
 
-            end
+			return getNormalFormationPosition(
+				myIndex,
+				targetHRP,
+				distance
+			)
 
-            return nil
+		end
 
-        end
+		--------------------------------------------------
+		-- STOP FRONTLINE
+		--------------------------------------------------
 
-        ----------------------------------------------------------------
-        -- GET BOT DISTANCE
-        ----------------------------------------------------------------
+		local function stopFrontline()
 
-        local function getBotDistance(player)
+			frontlineActive = false
+			targetPlayer = nil
+			currentFormation = nil
 
-            local distance = 1
+			if frontlineConnection then
 
-            ------------------------------------------------------------
-            -- ADMIN DEFAULT
-            ------------------------------------------------------------
+				frontlineConnection:Disconnect()
+				frontlineConnection = nil
 
-            if Admin:IsAdmin(player) then
+			end
 
-                distance = 1
+			--------------------------------------------------
+			-- RESET BOT MOVEMENT
+			--------------------------------------------------
 
-            end
+			for _, player in ipairs(Players:GetPlayers()) do
 
-            ------------------------------------------------------------
-            -- SPECIAL DISTANCE
-            ------------------------------------------------------------
+				if table.find(botOrder, player.UserId) then
 
-            local specialDistance =
-                Distance:GetDistance(
-                    tostring(LocalPlayer.UserId),
-                    tostring(player.UserId)
-                )
+					local character = getCharacter(player)
+					local humanoid = getHumanoid(character)
 
-            if specialDistance then
+					if humanoid then
+						humanoid.AutoRotate = true
+					end
 
-                distance = specialDistance
+				end
 
-            end
+			end
 
-            return distance
+			print("[FRONTLINE] Formasi dihentikan")
 
-        end
+		end
 
-        ----------------------------------------------------------------
-        -- GET FRONTLINE POSITION
-        ----------------------------------------------------------------
-        --
-        -- FORMASI:
-        --
-        -- B1   B2   B3   B4   B5   B6   B7   B8   B9   B10   B11
-        --
-        --                         👤
-        --                       PLAYER
-        --
-        -- Semua Bot berada di DEPAN Player.
-        --
-        ----------------------------------------------------------------
+		--------------------------------------------------
+		-- START FRONTLINE
+		--------------------------------------------------
 
-        local function getFrontlinePosition(
-            myIndex,
-            targetHRP,
-            distance
-        )
+		local function startFrontline(player, formationType)
 
-            if not myIndex
-                or not targetHRP
-                or not distance then
+			if not player then
+				return
+			end
 
-                return nil
+			local targetCharacter =
+				getCharacter(player)
 
-            end
+			local targetHRP =
+				getRoot(targetCharacter)
 
-            ------------------------------------------------------------
-            -- JUMLAH BOT
-            ------------------------------------------------------------
+			if not targetCharacter or not targetHRP then
 
-            local totalBots =
-                #botOrder
+				warn(
+					"[FRONTLINE] Character Player belum siap:",
+					player.Name
+				)
 
-            ------------------------------------------------------------
-            -- POSISI TENGAH
-            ------------------------------------------------------------
+				return
+			end
 
-            local center =
-                (totalBots + 1) / 2
+			--------------------------------------------------
+			-- STOP FORMASI SEBELUMNYA
+			--------------------------------------------------
 
-            ------------------------------------------------------------
-            -- OFFSET KIRI / KANAN
-            ------------------------------------------------------------
+			if frontlineConnection then
 
-            local horizontalOffset =
-                (myIndex - center)
-                * formationSpacing
+				frontlineConnection:Disconnect()
+				frontlineConnection = nil
 
-            ------------------------------------------------------------
-            -- DEPAN PLAYER
-            ------------------------------------------------------------
+			end
 
-            local frontPosition =
-                targetHRP.Position
-                +
-                (
-                    targetHRP.CFrame.LookVector
-                    *
-                    (
-                        formationDistance
-                        + distance
-                    )
-                )
+			--------------------------------------------------
+			-- SET STATE
+			--------------------------------------------------
 
-            ------------------------------------------------------------
-            -- KIRI / KANAN
-            ------------------------------------------------------------
+			frontlineActive = true
+			targetPlayer = player
+			currentFormation = formationType or "normal"
 
-            local sidePosition =
-                targetHRP.CFrame.RightVector
-                * horizontalOffset
+			print(
+				"[FRONTLINE] Started:",
+				currentFormation,
+				"Target:",
+				player.Name
+			)
 
-            ------------------------------------------------------------
-            -- FINAL POSITION
-            ------------------------------------------------------------
+			--------------------------------------------------
+			-- UPDATE LOOP
+			--------------------------------------------------
 
-            return frontPosition
-                + sidePosition
-                + Vector3.new(
-                    0,
-                    formationHeight,
-                    0
-                )
+			frontlineConnection =
+				RunService.Heartbeat:Connect(function()
 
-        end
+					--------------------------------------------------
+					-- VALIDASI STATE
+					--------------------------------------------------
 
-        ----------------------------------------------------------------
-        -- COPY TARGET ROTATION
-        ----------------------------------------------------------------
-        --
-        -- Bot memiliki rotasi yang SAMA PERSIS dengan target.
-        --
-        ----------------------------------------------------------------
+					if not frontlineActive then
+						return
+					end
 
-        local function copyTargetRotation(
-            targetHRP
-        )
+					if not targetPlayer then
 
-            if not targetHRP
-                or not myHRP then
+						stopFrontline()
+						return
 
-                return
+					end
 
-            end
+					--------------------------------------------------
+					-- TARGET CHARACTER
+					--------------------------------------------------
 
-            local targetRotation =
-                targetHRP.CFrame
-                - targetHRP.Position
+					local targetCharacter =
+						getCharacter(targetPlayer)
 
-            myHRP.CFrame =
-                CFrame.new(
-                    myHRP.Position
-                )
-                * targetRotation
+					local targetHRP =
+						getRoot(targetCharacter)
 
-        end
+					if not targetCharacter
+						or not targetHRP
+					then
 
-        ----------------------------------------------------------------
-        -- START FRONTLINE
-        ----------------------------------------------------------------
+						return
 
-        local function startFrontline(player)
+					end
 
-            if not player then
-                return
-            end
+					--------------------------------------------------
+					-- UPDATE SETIAP BOT
+					--------------------------------------------------
 
-            ------------------------------------------------------------
-            -- STOP MODE LAIN
-            ------------------------------------------------------------
+					for _, botUserId in ipairs(botOrder) do
 
-            stopOtherModes()
+						local bot =
+							Players:GetPlayerByUserId(
+								botUserId
+							)
 
-            ------------------------------------------------------------
-            -- ACTIVE MODE
-            ------------------------------------------------------------
+						if bot then
 
-            vars.ActiveMode =
-                "frontline"
+							local myCharacter =
+								getCharacter(bot)
 
-            ------------------------------------------------------------
-            -- DISCONNECT LOOP LAMA
-            ------------------------------------------------------------
+							local myHRP =
+								getRoot(myCharacter)
 
-            if frontlineConnection then
+							local humanoid =
+								getHumanoid(myCharacter)
 
-                frontlineConnection:Disconnect()
-                frontlineConnection = nil
+							if myCharacter
+								and myHRP
+								and humanoid
+							then
 
-            end
+								--------------------------------------------------
+								-- ADMIN CHECK
+								--------------------------------------------------
 
-            ------------------------------------------------------------
-            -- STATE
-            ------------------------------------------------------------
+								local allowed = true
 
-            frontlineActive = true
-            targetPlayer = player
+								pcall(function()
 
-            ------------------------------------------------------------
-            -- CHAT
-            ------------------------------------------------------------
+									if not Admin:IsAdmin(bot) then
+										allowed = false
+									end
 
-            sendChat("Yes, Sir!")
+								end)
 
-            ------------------------------------------------------------
-            -- FIND BOT INDEX
-            ------------------------------------------------------------
+								if allowed then
 
-            local myIndex =
-                table.find(
-                    botOrder,
-                    tostring(LocalPlayer.UserId)
-                )
+									--------------------------------------------------
+									-- INDEX BOT
+									--------------------------------------------------
 
-            ------------------------------------------------------------
-            -- BOT TIDAK ADA DI FRONTLINE
-            ------------------------------------------------------------
+									local myIndex =
+										getBotIndex(bot)
 
-            if not myIndex then
+									if myIndex then
 
-                print(
-                    "[FRONTLINE]",
-                    "Bot ini bukan Bot 1-11:",
-                    LocalPlayer.UserId
-                )
+										--------------------------------------------------
+										-- DISTANCE KHUSUS BOT
+										--------------------------------------------------
 
-                stopFrontline()
+										local botDistance =
+											getBotDistance(bot)
 
-                return
+										--------------------------------------------------
+										-- TARGET POSITION
+										--------------------------------------------------
 
-            end
+										local targetPosition =
+											getFormationPosition(
+												myIndex,
+												targetHRP,
+												botDistance
+											)
 
-            ------------------------------------------------------------
-            -- DEBUG
-            ------------------------------------------------------------
+										--------------------------------------------------
+										-- DISTANCE KE POSISI
+										--------------------------------------------------
 
-            print(
-                "[FRONTLINE]",
-                "Bot Index:",
-                myIndex,
-                "UserId:",
-                LocalPlayer.UserId
-            )
+										local distanceToTarget =
+											(
+												myHRP.Position
+												- targetPosition
+											).Magnitude
 
-            ------------------------------------------------------------
-            -- HEARTBEAT
-            ------------------------------------------------------------
+										--------------------------------------------------
+										-- MOVE
+										--------------------------------------------------
 
-            frontlineConnection =
-                RunService.Heartbeat:Connect(
-                    function()
+										if distanceToTarget
+											> stopThreshold
+										then
 
-                        ------------------------------------------------
-                        -- MODE CHECK
-                        ------------------------------------------------
+											humanoid.AutoRotate = true
 
-                        if vars.ActiveMode
-                            ~= "frontline" then
+											humanoid:MoveTo(
+												targetPosition
+											)
 
-                            stopFrontline()
+										else
 
-                            return
+											--------------------------------------------------
+											-- SUDAH SAMPAI
+											--------------------------------------------------
 
-                        end
+											humanoid:MoveTo(
+												myHRP.Position
+											)
 
-                        ------------------------------------------------
-                        -- ACTIVE CHECK
-                        ------------------------------------------------
+											humanoid.AutoRotate = false
 
-                        if not frontlineActive then
-                            return
-                        end
+											--------------------------------------------------
+											-- MENGHADAP ARAH PLAYER
+											--------------------------------------------------
 
-                        ------------------------------------------------
-                        -- CHARACTER CHECK
-                        ------------------------------------------------
+											copyTargetRotation(
+												myHRP,
+												targetHRP
+											)
 
-                        if not humanoid
-                            or not myHRP then
+										end
 
-                            return
+									end
 
-                        end
+								end
 
-                        ------------------------------------------------
-                        -- TARGET CHECK
-                        ------------------------------------------------
+							end
 
-                        if not targetPlayer then
-                            return
-                        end
+						end
 
-                        ------------------------------------------------
-                        -- TARGET CHARACTER
-                        ------------------------------------------------
+					end
 
-                        local targetCharacter =
-                            targetPlayer.Character
+				end)
 
-                        if not targetCharacter then
-                            return
-                        end
+		end
 
-                        ------------------------------------------------
-                        -- TARGET HRP
-                        ------------------------------------------------
+		--------------------------------------------------
+		-- FIND PLAYER
+		--------------------------------------------------
 
-                        local targetHRP =
-                            targetCharacter:FindFirstChild(
-                                "HumanoidRootPart"
-                            )
+		local function findPlayer(name)
 
-                        if not targetHRP then
-                            return
-                        end
+			if not name then
+				return nil
+			end
 
-                        ------------------------------------------------
-                        -- DISTANCE
-                        ------------------------------------------------
+			name = string.lower(name)
 
-                        local botDistance =
-                            getBotDistance(
-                                targetPlayer
-                            )
+			--------------------------------------------------
+			-- EXACT NAME
+			--------------------------------------------------
 
-                        ------------------------------------------------
-                        -- POSITION
-                        ------------------------------------------------
+			for _, player in ipairs(
+				Players:GetPlayers()
+			) do
 
-                        local targetPosition =
-                            getFrontlinePosition(
-                                myIndex,
-                                targetHRP,
-                                botDistance
-                            )
+				if string.lower(player.Name) == name
+					or string.lower(player.DisplayName) == name
+				then
 
-                        if not targetPosition then
-                            return
-                        end
+					return player
 
-                        ------------------------------------------------
-                        -- DISTANCE TO FORMATION
-                        ------------------------------------------------
+				end
 
-                        local distanceToTarget =
-                            (
-                                myHRP.Position
-                                -
-                                targetPosition
-                            ).Magnitude
+			end
 
-                        ------------------------------------------------
-                        -- MOVE
-                        ------------------------------------------------
+			--------------------------------------------------
+			-- PARTIAL NAME
+			--------------------------------------------------
 
-                        if distanceToTarget
-                            > stopThreshold then
+			for _, player in ipairs(
+				Players:GetPlayers()
+			) do
 
-                            ------------------------------------------------
-                            -- ROBLOX BOLEH MEMUTAR SAAT BERJALAN
-                            ------------------------------------------------
+				if string.find(
+					string.lower(player.Name),
+					name,
+					1,
+					true
+				)
+				then
 
-                            humanoid.AutoRotate = true
+					return player
 
-                            humanoid:MoveTo(
-                                targetPosition
-                            )
+				end
 
-                            return
+			end
 
-                        end
+			return nil
 
-                        ------------------------------------------------
-                        -- SUDAH SAMPAI
-                        ------------------------------------------------
+		end
 
-                        humanoid.AutoRotate = false
+		--------------------------------------------------
+		-- COMMAND HANDLER
+		--------------------------------------------------
 
-                        ------------------------------------------------
-                        -- COPY ROTATION TARGET
-                        ------------------------------------------------
-                        --
-                        -- BUKAN LOOKAT.
-                        --
-                        -- Copy CFrame rotation langsung.
-                        --
-                        ------------------------------------------------
+		local function handleCommand(message)
 
-                        copyTargetRotation(
-                            targetHRP
-                        )
+			if not message then
+				return
+			end
 
-                    end
-                )
+			local args = {}
 
-        end
+			for word in string.gmatch(
+				message,
+				"%S+"
+			) do
 
-        ----------------------------------------------------------------
-        -- HANDLE COMMAND
-        ----------------------------------------------------------------
+				table.insert(
+					args,
+					word
+				)
 
-        local function handleCommand(
-            message,
-            sender
-        )
+			end
 
-            ------------------------------------------------------------
-            -- ADMIN ONLY
-            ------------------------------------------------------------
+			local command =
+				string.lower(
+					args[1] or ""
+				)
 
-            if not Admin:IsAdmin(sender) then
-                return
-            end
+			--------------------------------------------------
+			-- !STOP
+			--------------------------------------------------
 
-            local lower =
-                message:lower()
+			if command == "!stop"
+				or command == "!unfrontline"
+			then
 
-            ------------------------------------------------------------
-            -- !FRONTLINE
-            ------------------------------------------------------------
+				stopFrontline()
+				return
 
-            if lower == "!frontline" then
+			end
 
-                startFrontline(sender)
+			--------------------------------------------------
+			-- !FRONTLINE
+			--
+			-- 1 BARIS
+			--------------------------------------------------
 
-                return
+			if command == "!frontline" then
 
-            end
+				local playerName =
+					args[2]
 
-            ------------------------------------------------------------
-            -- !FRONTLINE PLAYER
-            ------------------------------------------------------------
+				if not playerName then
 
-            local targetName =
-                lower:match(
-                    "^!frontline%s+(.+)$"
-                )
+					warn(
+						"[FRONTLINE] Gunakan:"
+					)
 
-            if targetName then
+					warn(
+						"!frontline PlayerName"
+					)
 
-                local target =
-                    findPlayerByName(
-                        targetName
-                    )
+					return
 
-                if target then
+				end
 
-                    startFrontline(
-                        target
-                    )
+				local player =
+					findPlayer(playerName)
 
-                end
+				if not player then
 
-                return
+					warn(
+						"[FRONTLINE] Player tidak ditemukan:",
+						playerName
+					)
 
-            end
+					return
 
-            ------------------------------------------------------------
-            -- !STOP
-            ------------------------------------------------------------
+				end
 
-            if lower == "!stop"
-                or lower == "!unfrontline" then
+				startFrontline(
+					player,
+					"normal"
+				)
 
-                vars.ActiveMode = nil
+				return
 
-                stopFrontline()
+			end
 
-                return
+			--------------------------------------------------
+			-- !FRONTLINE2
+			--
+			-- 2 BARIS
+			--------------------------------------------------
 
-            end
+			if command == "!frontline2" then
 
-        end
+				local playerName =
+					args[2]
 
-        ----------------------------------------------------------------
-        -- TEXT CHAT SERVICE
-        ----------------------------------------------------------------
+				if not playerName then
 
-        if TextChatService
-            and TextChatService.TextChannels then
+					warn(
+						"[FRONTLINE2] Gunakan:"
+					)
 
-            local channel =
-                TextChatService.TextChannels:FindFirstChild(
-                    "RBXGeneral"
-                )
+					warn(
+						"!frontline2 PlayerName"
+					)
 
-            if channel then
+					return
 
-                channel.OnIncomingMessage =
-                    function(message)
+				end
 
-                        local userId =
-                            message.TextSource
-                            and message.TextSource.UserId
+				local player =
+					findPlayer(playerName)
 
-                        local sender =
-                            userId
-                            and Players:GetPlayerByUserId(
-                                userId
-                            )
+				if not player then
 
-                        if sender then
+					warn(
+						"[FRONTLINE2] Player tidak ditemukan:",
+						playerName
+					)
 
-                            handleCommand(
-                                message.Text,
-                                sender
-                            )
+					return
 
-                        end
+				end
 
-                    end
+				startFrontline(
+					player,
+					"twoRow"
+				)
 
-            end
+				return
 
-        end
+			end
 
-        ----------------------------------------------------------------
-        -- OLD CHAT
-        ----------------------------------------------------------------
+		end
 
-        for _, player in ipairs(
-            Players:GetPlayers()
-        ) do
+		--------------------------------------------------
+		-- TEXT CHAT SERVICE
+		--------------------------------------------------
 
-            player.Chatted:Connect(
-                function(message)
+		pcall(function()
 
-                    handleCommand(
-                        message,
-                        player
-                    )
+			local textChannels =
+				TextChatService:WaitForChild(
+					"TextChannels"
+				)
 
-                end
-            )
+			local general =
+				textChannels:WaitForChild(
+					"RBXGeneral"
+				)
 
-        end
+			general.MessageReceived:Connect(
+				function(message)
 
-        ----------------------------------------------------------------
-        -- NEW PLAYER
-        ----------------------------------------------------------------
+					if message.TextSource
+						and message.TextSource.UserId
+							== LocalPlayer.UserId
+					then
 
-        Players.PlayerAdded:Connect(
-            function(player)
+						handleCommand(
+							message.Text
+						)
 
-                player.Chatted:Connect(
-                    function(message)
+					end
 
-                        handleCommand(
-                            message,
-                            player
-                        )
+				end
+			)
 
-                    end
-                )
+		end)
 
-            end
-        )
+		--------------------------------------------------
+		-- OLD CHAT
+		--------------------------------------------------
 
-        ----------------------------------------------------------------
-        -- RESPAWN
-        ----------------------------------------------------------------
+		LocalPlayer.Chatted:Connect(
+			function(message)
 
-        LocalPlayer.CharacterAdded:Connect(
-            function()
+				handleCommand(message)
 
-                task.wait(1)
+			end
+		)
 
-                updateCharacter()
+		--------------------------------------------------
+		-- RESPAWN TARGET
+		--------------------------------------------------
 
-                --------------------------------------------------------
-                -- RESTART FRONTLINE
-                --------------------------------------------------------
+		Players.PlayerAdded:Connect(
+			function(player)
 
-                if vars.ActiveMode
-                    == "frontline"
-                    and targetPlayer then
+				player.CharacterAdded:Connect(
+					function()
 
-                    startFrontline(
-                        targetPlayer
-                    )
+						if player == targetPlayer
+							and frontlineActive
+						then
 
-                end
+							task.wait(1)
 
-            end
-        )
+							startFrontline(
+								player,
+								currentFormation
+							)
 
-    end
+						end
+
+					end
+				)
+
+			end
+		)
+
+		--------------------------------------------------
+		-- EXISTING PLAYERS RESPAWN
+		--------------------------------------------------
+
+		for _, player in ipairs(
+			Players:GetPlayers()
+		) do
+
+			player.CharacterAdded:Connect(
+				function()
+
+					if player == targetPlayer
+						and frontlineActive
+					then
+
+						task.wait(1)
+
+						startFrontline(
+							player,
+							currentFormation
+						)
+
+					end
+
+				end
+			)
+
+		end
+
+		--------------------------------------------------
+		-- DONE
+		--------------------------------------------------
+
+		print(
+			"[FRONTLINE] Module loaded"
+		)
+
+	end
 }
