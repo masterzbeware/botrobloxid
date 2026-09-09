@@ -54,19 +54,21 @@ return {
         -- STATE
         --------------------------------------------------
 
-        local tridentActive = false
-        local tridentConnection = nil
+        local triangleActive = false
+        local triangleConnection = nil
         local targetPlayer = nil
 
         --------------------------------------------------
         -- BOT ORDER
         --------------------------------------------------
         --
-        -- BOT 1 - BOT 11 IKUT FORMASI
+        -- Semua bot yang ada di list akan ikut formasi.
         --
-        -- BOT 1-4  = FRONT / SPEARHEAD
-        -- BOT 5-7  = CIRCLE KIRI
-        -- BOT 8-11 = CIRCLE KANAN
+        -- BOT 1-2  = baris pertama
+        -- BOT 3-4  = baris kedua
+        -- BOT 5-6  = baris ketiga
+        -- BOT 7-8  = baris keempat
+        -- dst...
         --
         --------------------------------------------------
 
@@ -93,19 +95,13 @@ return {
         -- Jarak dasar dari Player
         local baseDistance = 5
 
-        -- Jarak antara BOT 1-2 dan BOT 3-4
+        -- Jarak maju/mundur setiap baris
         local rowSpacing = 3
 
-        -- Lebar formasi depan
+        -- Jarak kiri/kanan BOT
         local sideSpacing = 3
 
-        -- Jarak circle dari formasi depan
-        local circleDistance = 8
-
-        -- Radius circle
-        local circleRadius = 4
-
-        -- Jarak minimum sebelum dianggap sampai
+        -- Jarak minimum sebelum dianggap sudah sampai
         local stopThreshold = 1.5
 
         --------------------------------------------------
@@ -206,18 +202,18 @@ return {
         end
 
         --------------------------------------------------
-        -- STOP TRIDENT
+        -- STOP TRIANGLE
         --------------------------------------------------
 
-        local function stopTrident()
+        local function stopTriangle()
 
-            tridentActive = false
+            triangleActive = false
             targetPlayer = nil
 
-            if tridentConnection then
+            if triangleConnection then
 
-                tridentConnection:Disconnect()
-                tridentConnection = nil
+                triangleConnection:Disconnect()
+                triangleConnection = nil
 
             end
 
@@ -233,8 +229,8 @@ return {
         -- REGISTER CONTROLLER
         --------------------------------------------------
 
-        vars.ModeControllers.trident =
-            stopTrident
+        vars.ModeControllers.triangle =
+            stopTriangle
 
         --------------------------------------------------
         -- STOP OTHER MODES
@@ -245,7 +241,7 @@ return {
             for name, stopFunction in
                 pairs(vars.ModeControllers) do
 
-                if name ~= "trident"
+                if name ~= "triangle"
                     and type(stopFunction) == "function" then
 
                     pcall(stopFunction)
@@ -351,33 +347,46 @@ return {
         end
 
         --------------------------------------------------
-        -- GET TRIDENT POSITION
+        -- GET TRIANGLE POSITION
         --------------------------------------------------
         --
         -- FORMASI:
         --
         --
-        --                         PLAYER
-        --                           👤
+        --                    PLAYER
+        --                      👤
         --
-        --                      B1      B2
-        --                       🧍    🧍
+        --                  BOT1 BOT2
+        --                   🧍 🧍
         --
-        --                   B3          B4
-        --                    🧍        🧍
+        --                BOT3     BOT4
+        --                 🧍       🧍
+        --
+        --                BOT5     BOT6
+        --                 🧍       🧍
+        --
+        --                BOT7     BOT8
+        --                 🧍       🧍
+        --
+        --                BOT9     BOT10
+        --                 🧍       🧍
+        --
+        --                     BOT11
+        --                      🧍
         --
         --
-        --            CIRCLE KIRI       CIRCLE KANAN
+        -- Polanya:
         --
-        --                 B5              B8
-        --              B6    B7        B9    B10
-        --                 B?              B11
-        --
-        --              TENGAH BELAKANG KOSONG
+        -- BOT 1-2  = Row 0
+        -- BOT 3-4  = Row 1
+        -- BOT 5-6  = Row 2
+        -- BOT 7-8  = Row 3
+        -- BOT 9-10 = Row 4
+        -- BOT 11   = Row 5 kiri/tengah
         --
         --------------------------------------------------
 
-        local function getTridentPosition(
+        local function getTrianglePosition(
             myIndex,
             targetHRP,
             distance
@@ -405,180 +414,106 @@ return {
                 targetHRP.Position
 
             --------------------------------------------------
-            -- BOT 1
-            -- DEPAN KIRI
+            -- HITUNG BARIS
+            --------------------------------------------------
+            --
+            -- index 1,2  -> row 0
+            -- index 3,4  -> row 1
+            -- index 5,6  -> row 2
+            -- dst.
+            --
             --------------------------------------------------
 
-            if myIndex == 1 then
+            local row =
+                math.floor(
+                    (myIndex - 1) / 2
+                )
 
-                return origin
-                    + forward * distance
-                    - right * sideSpacing
+            --------------------------------------------------
+            -- POSISI DEPAN / BELAKANG
+            --------------------------------------------------
+
+            local forwardDistance =
+                distance
+                - (
+                    row
+                    * rowSpacing
+                )
+
+            --------------------------------------------------
+            -- POSISI KIRI / KANAN
+            --------------------------------------------------
+
+            local sideOffset
+
+            --------------------------------------------------
+            -- INDEX GANJIL = KIRI
+            --------------------------------------------------
+            --
+            -- 1,3,5,7,9...
+            --
+            --------------------------------------------------
+
+            if myIndex % 2 == 1 then
+
+                sideOffset =
+                    -sideSpacing
+
+            --------------------------------------------------
+            -- INDEX GENAP = KANAN
+            --------------------------------------------------
+            --
+            -- 2,4,6,8,10...
+            --
+            --------------------------------------------------
+
+            else
+
+                sideOffset =
+                    sideSpacing
 
             end
 
             --------------------------------------------------
-            -- BOT 2
-            -- DEPAN KANAN
+            -- BOT TERAKHIR JIKA JUMLAH GANJIL
+            --------------------------------------------------
+            --
+            -- Contoh BOT11:
+            --
+            -- BOT9      BOT10
+            --             ↓
+            --           BOT11
+            --
+            -- Agar tidak terlalu jauh dari tengah.
+            --
             --------------------------------------------------
 
-            if myIndex == 2 then
+            if myIndex > 1
+                and myIndex % 2 == 1
+                and myIndex
+                    == #botOrder then
 
-                return origin
-                    + forward * distance
-                    + right * sideSpacing
+                sideOffset = 0
 
             end
 
             --------------------------------------------------
-            -- BOT 3
-            -- BARIS KEDUA KIRI
+            -- RETURN POSITION
             --------------------------------------------------
 
-            if myIndex == 3 then
-
-                return origin
-                    + forward
-                    * (distance - rowSpacing)
-                    - right
-                    * (sideSpacing * 1.8)
-
-            end
-
-            --------------------------------------------------
-            -- BOT 4
-            -- BARIS KEDUA KANAN
-            --------------------------------------------------
-
-            if myIndex == 4 then
-
-                return origin
-                    + forward
-                    * (distance - rowSpacing)
-                    + right
-                    * (sideSpacing * 1.8)
-
-            end
-
-            --------------------------------------------------
-            -- CIRCLE KIRI
-            --------------------------------------------------
-            --
-            -- BOT 5-7
-            --
-            -- Posisi berada di sisi kiri.
-            --
-            --------------------------------------------------
-
-            if myIndex >= 5
-                and myIndex <= 7 then
-
-                local circleIndex =
-                    myIndex - 5
-
-                local total =
-                    3
-
-                local angle =
-                    math.rad(
-                        135
-                        + (
-                            90
-                            * circleIndex
-                            / (total - 1)
-                        )
-                    )
-
-                local center =
-                    origin
-                    + forward
-                    * (
-                        distance
-                        - circleDistance
-                    )
-                    - right
-                    * circleDistance
-
-                return center
-                    + right
-                    * (
-                        math.cos(angle)
-                        * circleRadius
-                    )
-                    + forward
-                    * (
-                        math.sin(angle)
-                        * circleRadius
-                    )
-
-            end
-
-            --------------------------------------------------
-            -- CIRCLE KANAN
-            --------------------------------------------------
-            --
-            -- BOT 8-11
-            --
-            -- Posisi berada di sisi kanan.
-            --
-            --------------------------------------------------
-
-            if myIndex >= 8
-                and myIndex <= 11 then
-
-                local circleIndex =
-                    myIndex - 8
-
-                local total =
-                    4
-
-                local angle =
-                    math.rad(
-                        45
-                        + (
-                            90
-                            * circleIndex
-                            / (total - 1)
-                        )
-                    )
-
-                local center =
-                    origin
-                    + forward
-                    * (
-                        distance
-                        - circleDistance
-                    )
-                    + right
-                    * circleDistance
-
-                return center
-                    + right
-                    * (
-                        math.cos(angle)
-                        * circleRadius
-                    )
-                    + forward
-                    * (
-                        math.sin(angle)
-                        * circleRadius
-                    )
-
-            end
-
-            --------------------------------------------------
-            -- INVALID INDEX
-            --------------------------------------------------
-
-            return nil
+            return origin
+                + forward
+                * forwardDistance
+                + right
+                * sideOffset
 
         end
 
         --------------------------------------------------
-        -- START TRIDENT
+        -- START TRIANGLE
         --------------------------------------------------
 
-        local function startTrident(player)
+        local function startTriangle(player)
 
             if not player then
                 return
@@ -594,16 +529,16 @@ return {
             -- ACTIVE MODE
             --------------------------------------------------
 
-            vars.ActiveMode = "trident"
+            vars.ActiveMode = "triangle"
 
             --------------------------------------------------
             -- DISCONNECT OLD LOOP
             --------------------------------------------------
 
-            if tridentConnection then
+            if triangleConnection then
 
-                tridentConnection:Disconnect()
-                tridentConnection = nil
+                triangleConnection:Disconnect()
+                triangleConnection = nil
 
             end
 
@@ -611,7 +546,7 @@ return {
             -- STATE
             --------------------------------------------------
 
-            tridentActive = true
+            triangleActive = true
             targetPlayer = player
 
             --------------------------------------------------
@@ -637,12 +572,12 @@ return {
             if not myIndex then
 
                 print(
-                    "[TRIDENT] Bot tidak termasuk formasi:",
+                    "[TRIANGLE] Bot tidak termasuk formasi:",
                     LocalPlayer.Name,
                     LocalPlayer.UserId
                 )
 
-                stopTrident()
+                stopTriangle()
 
                 return
 
@@ -653,7 +588,7 @@ return {
             --------------------------------------------------
 
             print(
-                "[TRIDENT]",
+                "[TRIANGLE]",
                 "Bot Index:",
                 myIndex,
                 "UserId:",
@@ -664,7 +599,7 @@ return {
             -- HEARTBEAT
             --------------------------------------------------
 
-            tridentConnection =
+            triangleConnection =
                 RunService.Heartbeat:Connect(
                     function()
 
@@ -673,9 +608,9 @@ return {
                         --------------------------------------------------
 
                         if vars.ActiveMode
-                            ~= "trident" then
+                            ~= "triangle" then
 
-                            stopTrident()
+                            stopTriangle()
 
                             return
 
@@ -685,7 +620,7 @@ return {
                         -- ACTIVE CHECK
                         --------------------------------------------------
 
-                        if not tridentActive then
+                        if not triangleActive then
                             return
                         end
 
@@ -746,7 +681,7 @@ return {
                         --------------------------------------------------
 
                         local targetPosition =
-                            getTridentPosition(
+                            getTrianglePosition(
                                 myIndex,
                                 targetHRP,
                                 distance
@@ -757,7 +692,7 @@ return {
                         end
 
                         --------------------------------------------------
-                        -- DISTANCE TO TARGET POSITION
+                        -- DISTANCE TO FORMATION POSITION
                         --------------------------------------------------
 
                         local distanceToTarget =
@@ -829,24 +764,24 @@ return {
                 message:lower()
 
             --------------------------------------------------
-            -- !TRIDENT
+            -- !TRIANGLE
             --------------------------------------------------
 
-            if lower == "!trident" then
+            if lower == "!triangle" then
 
-                startTrident(sender)
+                startTriangle(sender)
 
                 return
 
             end
 
             --------------------------------------------------
-            -- !TRIDENT PLAYER
+            -- !TRIANGLE PLAYER
             --------------------------------------------------
 
             local targetName =
                 lower:match(
-                    "^!trident%s+(.+)$"
+                    "^!triangle%s+(.+)$"
                 )
 
             if targetName then
@@ -858,7 +793,7 @@ return {
 
                 if target then
 
-                    startTrident(
+                    startTriangle(
                         target
                     )
 
@@ -873,11 +808,11 @@ return {
             --------------------------------------------------
 
             if lower == "!stop"
-                or lower == "!untrident" then
+                or lower == "!untriangle" then
 
                 vars.ActiveMode = nil
 
-                stopTrident()
+                stopTriangle()
 
                 return
 
@@ -979,14 +914,14 @@ return {
                 updateCharacter()
 
                 --------------------------------------------------
-                -- RESTART TRIDENT
+                -- RESTART TRIANGLE
                 --------------------------------------------------
 
                 if vars.ActiveMode
-                    == "trident"
+                    == "triangle"
                     and targetPlayer then
 
-                    startTrident(
+                    startTriangle(
                         targetPlayer
                     )
 
