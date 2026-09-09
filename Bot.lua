@@ -19,7 +19,7 @@ _G.BotVars = {
 
 local Window = Library:CreateWindow({
     Title = "MasterZ HUB",
-    Footer = "1.0.2",
+    Footer = "1.0.3",
     Icon = 0
 })
 
@@ -34,12 +34,12 @@ local commandFiles = {
     "Follow.lua",
     "Pushup.lua",
     "Triangle.lua",
+    "Triangle2.lua",
     "Sync.lua",
     "Twoline.lua",
     "Wedgetv.lua",
     "Frontline.lua",
     "Frontline2.lua",
-    "Trident.lua"
 }
 
 for _, fileName in ipairs(commandFiles) do
@@ -79,8 +79,8 @@ jalankan("sync")
 jalankan("twoline") 
 jalankan("wedgetv")
 jalankan("triangle")
+jalankan("triangle2")
 jalankan("frontline")
 jalankan("frontline2")
-jalankan("trident")
 
 print("✅ Bot.lua loaded — All systems active.")

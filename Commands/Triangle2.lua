@@ -54,21 +54,20 @@ return {
         -- STATE
         --------------------------------------------------
 
-        local triangleActive = false
-        local triangleConnection = nil
+        local triangle2Active = false
+        local triangle2Connection = nil
         local targetPlayer = nil
 
         --------------------------------------------------
         -- BOT ORDER
         --------------------------------------------------
         --
-        -- Semua bot yang ada di list akan ikut formasi.
-        --
-        -- BOT 1-2  = baris pertama
-        -- BOT 3-4  = baris kedua
-        -- BOT 5-6  = baris ketiga
-        -- BOT 7-8  = baris keempat
-        -- dst...
+        -- BOT 1  BOT 2
+        -- BOT 3  BOT 4
+        -- BOT 5  BOT 6
+        -- BOT 7  BOT 8
+        -- BOT 9  BOT 10
+        -- BOT 11
         --
         --------------------------------------------------
 
@@ -92,16 +91,16 @@ return {
         -- FORMATION SETTINGS
         --------------------------------------------------
 
-        -- Jarak dasar dari Player
+        -- Jarak BOT dari PLAYER
         local baseDistance = 5
 
-        -- Jarak maju/mundur setiap baris
+        -- Jarak antar baris
         local rowSpacing = 3
 
-        -- Jarak kiri/kanan BOT
+        -- Jarak kiri / kanan
         local sideSpacing = 3
 
-        -- Jarak minimum sebelum dianggap sudah sampai
+        -- Jarak minimum untuk dianggap sudah sampai
         local stopThreshold = 1.5
 
         --------------------------------------------------
@@ -151,13 +150,15 @@ return {
 
                 if channel then
 
-                    pcall(function()
+                    local ok = pcall(function()
 
                         channel:SendAsync(message)
 
                     end)
 
-                    success = true
+                    if ok then
+                        success = true
+                    end
 
                 end
 
@@ -202,20 +203,28 @@ return {
         end
 
         --------------------------------------------------
-        -- STOP TRIANGLE
+        -- STOP TRIANGLE2
         --------------------------------------------------
 
-        local function stopTriangle()
+        local function stopTriangle2()
 
-            triangleActive = false
+            triangle2Active = false
             targetPlayer = nil
 
-            if triangleConnection then
+            --------------------------------------------------
+            -- DISCONNECT LOOP
+            --------------------------------------------------
 
-                triangleConnection:Disconnect()
-                triangleConnection = nil
+            if triangle2Connection then
+
+                triangle2Connection:Disconnect()
+                triangle2Connection = nil
 
             end
+
+            --------------------------------------------------
+            -- RESET CHARACTER
+            --------------------------------------------------
 
             if humanoid then
 
@@ -226,11 +235,11 @@ return {
         end
 
         --------------------------------------------------
-        -- REGISTER CONTROLLER
+        -- REGISTER TRIANGLE2 CONTROLLER
         --------------------------------------------------
 
-        vars.ModeControllers.triangle =
-            stopTriangle
+        vars.ModeControllers.triangle2 =
+            stopTriangle2
 
         --------------------------------------------------
         -- STOP OTHER MODES
@@ -241,7 +250,7 @@ return {
             for name, stopFunction in
                 pairs(vars.ModeControllers) do
 
-                if name ~= "triangle"
+                if name ~= "triangle2"
                     and type(stopFunction) == "function" then
 
                     pcall(stopFunction)
@@ -317,16 +326,6 @@ return {
             local distance = baseDistance
 
             --------------------------------------------------
-            -- ADMIN DISTANCE
-            --------------------------------------------------
-
-            if Admin:IsAdmin(player) then
-
-                distance = baseDistance
-
-            end
-
-            --------------------------------------------------
             -- SPECIAL DISTANCE
             --------------------------------------------------
 
@@ -347,46 +346,35 @@ return {
         end
 
         --------------------------------------------------
-        -- GET TRIANGLE POSITION
+        -- GET TRIANGLE2 POSITION
         --------------------------------------------------
         --
         -- FORMASI:
         --
+        --                 PLAYER
+        --                   👤
         --
-        --                    PLAYER
-        --                      👤
+        --              BOT1   BOT2
+        --               🧍     🧍
         --
-        --                  BOT1 BOT2
-        --                   🧍 🧍
+        --           BOT3       BOT4
+        --            🧍         🧍
         --
-        --                BOT3     BOT4
-        --                 🧍       🧍
+        --           BOT5       BOT6
+        --            🧍         🧍
         --
-        --                BOT5     BOT6
-        --                 🧍       🧍
+        --           BOT7       BOT8
+        --            🧍         🧍
         --
-        --                BOT7     BOT8
-        --                 🧍       🧍
+        --           BOT9      BOT10
+        --            🧍        🧍
         --
-        --                BOT9     BOT10
-        --                 🧍       🧍
-        --
-        --                     BOT11
-        --                      🧍
-        --
-        --
-        -- Polanya:
-        --
-        -- BOT 1-2  = Row 0
-        -- BOT 3-4  = Row 1
-        -- BOT 5-6  = Row 2
-        -- BOT 7-8  = Row 3
-        -- BOT 9-10 = Row 4
-        -- BOT 11   = Row 5 kiri/tengah
+        --                 BOT11
+        --                   🧍
         --
         --------------------------------------------------
 
-        local function getTrianglePosition(
+        local function getTriangle2Position(
             myIndex,
             targetHRP,
             distance
@@ -401,7 +389,7 @@ return {
             end
 
             --------------------------------------------------
-            -- LOCAL AXIS
+            -- PLAYER AXIS
             --------------------------------------------------
 
             local forward =
@@ -414,13 +402,15 @@ return {
                 targetHRP.Position
 
             --------------------------------------------------
-            -- HITUNG BARIS
+            -- ROW
             --------------------------------------------------
             --
-            -- index 1,2  -> row 0
-            -- index 3,4  -> row 1
-            -- index 5,6  -> row 2
-            -- dst.
+            -- BOT1  BOT2  = row 0
+            -- BOT3  BOT4  = row 1
+            -- BOT5  BOT6  = row 2
+            -- BOT7  BOT8  = row 3
+            -- BOT9 BOT10  = row 4
+            -- BOT11       = row 5
             --
             --------------------------------------------------
 
@@ -430,7 +420,7 @@ return {
                 )
 
             --------------------------------------------------
-            -- POSISI DEPAN / BELAKANG
+            -- FORWARD DISTANCE
             --------------------------------------------------
 
             local forwardDistance =
@@ -441,33 +431,38 @@ return {
                 )
 
             --------------------------------------------------
-            -- POSISI KIRI / KANAN
+            -- BOT 11
+            --------------------------------------------------
+            --
+            -- BOT11 berada di tengah.
+            --
+            --------------------------------------------------
+
+            if myIndex == #botOrder
+                and myIndex % 2 == 1 then
+
+                return origin
+                    + forward
+                    * forwardDistance
+
+            end
+
+            --------------------------------------------------
+            -- KIRI / KANAN
             --------------------------------------------------
 
             local sideOffset
 
-            --------------------------------------------------
-            -- INDEX GANJIL = KIRI
-            --------------------------------------------------
-            --
-            -- 1,3,5,7,9...
-            --
-            --------------------------------------------------
-
             if myIndex % 2 == 1 then
+
+                -- GANJIL = KIRI
 
                 sideOffset =
                     -sideSpacing
 
-            --------------------------------------------------
-            -- INDEX GENAP = KANAN
-            --------------------------------------------------
-            --
-            -- 2,4,6,8,10...
-            --
-            --------------------------------------------------
-
             else
+
+                -- GENAP = KANAN
 
                 sideOffset =
                     sideSpacing
@@ -475,30 +470,7 @@ return {
             end
 
             --------------------------------------------------
-            -- BOT TERAKHIR JIKA JUMLAH GANJIL
-            --------------------------------------------------
-            --
-            -- Contoh BOT11:
-            --
-            -- BOT9      BOT10
-            --             ↓
-            --           BOT11
-            --
-            -- Agar tidak terlalu jauh dari tengah.
-            --
-            --------------------------------------------------
-
-            if myIndex > 1
-                and myIndex % 2 == 1
-                and myIndex
-                    == #botOrder then
-
-                sideOffset = 0
-
-            end
-
-            --------------------------------------------------
-            -- RETURN POSITION
+            -- RETURN
             --------------------------------------------------
 
             return origin
@@ -510,10 +482,10 @@ return {
         end
 
         --------------------------------------------------
-        -- START TRIANGLE
+        -- START TRIANGLE2
         --------------------------------------------------
 
-        local function startTriangle(player)
+        local function startTriangle2(player)
 
             if not player then
                 return
@@ -529,16 +501,16 @@ return {
             -- ACTIVE MODE
             --------------------------------------------------
 
-            vars.ActiveMode = "triangle"
+            vars.ActiveMode = "triangle2"
 
             --------------------------------------------------
-            -- DISCONNECT OLD LOOP
+            -- DISCONNECT LOOP LAMA
             --------------------------------------------------
 
-            if triangleConnection then
+            if triangle2Connection then
 
-                triangleConnection:Disconnect()
-                triangleConnection = nil
+                triangle2Connection:Disconnect()
+                triangle2Connection = nil
 
             end
 
@@ -546,7 +518,7 @@ return {
             -- STATE
             --------------------------------------------------
 
-            triangleActive = true
+            triangle2Active = true
             targetPlayer = player
 
             --------------------------------------------------
@@ -566,18 +538,18 @@ return {
                 )
 
             --------------------------------------------------
-            -- BOT TIDAK TERDAFTAR
+            -- BOT TIDAK ADA DI FORMASI
             --------------------------------------------------
 
             if not myIndex then
 
                 print(
-                    "[TRIANGLE] Bot tidak termasuk formasi:",
+                    "[TRIANGLE2] Bot tidak termasuk formasi:",
                     LocalPlayer.Name,
                     LocalPlayer.UserId
                 )
 
-                stopTriangle()
+                stopTriangle2()
 
                 return
 
@@ -588,7 +560,7 @@ return {
             --------------------------------------------------
 
             print(
-                "[TRIANGLE]",
+                "[TRIANGLE2]",
                 "Bot Index:",
                 myIndex,
                 "UserId:",
@@ -599,18 +571,18 @@ return {
             -- HEARTBEAT
             --------------------------------------------------
 
-            triangleConnection =
+            triangle2Connection =
                 RunService.Heartbeat:Connect(
                     function()
 
                         --------------------------------------------------
-                        -- MODE CHANGED
+                        -- MODE CHECK
                         --------------------------------------------------
 
                         if vars.ActiveMode
-                            ~= "triangle" then
+                            ~= "triangle2" then
 
-                            stopTriangle()
+                            stopTriangle2()
 
                             return
 
@@ -620,7 +592,7 @@ return {
                         -- ACTIVE CHECK
                         --------------------------------------------------
 
-                        if not triangleActive then
+                        if not triangle2Active then
                             return
                         end
 
@@ -681,7 +653,7 @@ return {
                         --------------------------------------------------
 
                         local targetPosition =
-                            getTrianglePosition(
+                            getTriangle2Position(
                                 myIndex,
                                 targetHRP,
                                 distance
@@ -692,7 +664,7 @@ return {
                         end
 
                         --------------------------------------------------
-                        -- DISTANCE TO FORMATION POSITION
+                        -- DISTANCE TO TARGET
                         --------------------------------------------------
 
                         local distanceToTarget =
@@ -719,13 +691,13 @@ return {
                         end
 
                         --------------------------------------------------
-                        -- REACHED FORMATION
+                        -- SUDAH SAMPAI
                         --------------------------------------------------
 
                         humanoid.AutoRotate = false
 
                         --------------------------------------------------
-                        -- COPY PLAYER ROTATION
+                        -- IKUT ROTASI PLAYER
                         --------------------------------------------------
 
                         local targetRotation =
@@ -760,28 +732,32 @@ return {
                 return
             end
 
+            if not message then
+                return
+            end
+
             local lower =
                 message:lower()
 
             --------------------------------------------------
-            -- !TRIANGLE
+            -- !TRIANGLE2
             --------------------------------------------------
 
-            if lower == "!triangle" then
+            if lower == "!triangle2" then
 
-                startTriangle(sender)
+                startTriangle2(sender)
 
                 return
 
             end
 
             --------------------------------------------------
-            -- !TRIANGLE PLAYER
+            -- !TRIANGLE2 PLAYER
             --------------------------------------------------
 
             local targetName =
                 lower:match(
-                    "^!triangle%s+(.+)$"
+                    "^!triangle2%s+(.+)$"
                 )
 
             if targetName then
@@ -793,8 +769,15 @@ return {
 
                 if target then
 
-                    startTriangle(
+                    startTriangle2(
                         target
+                    )
+
+                else
+
+                    print(
+                        "[TRIANGLE2] Player tidak ditemukan:",
+                        targetName
                     )
 
                 end
@@ -804,15 +787,20 @@ return {
             end
 
             --------------------------------------------------
-            -- !STOP
+            -- STOP TRIANGLE2
             --------------------------------------------------
 
-            if lower == "!stop"
-                or lower == "!untriangle" then
+            if lower == "!stoptriangle2"
+                or lower == "!untriangle2" then
 
-                vars.ActiveMode = nil
+                if vars.ActiveMode
+                    == "triangle2" then
 
-                stopTriangle()
+                    vars.ActiveMode = nil
+
+                    stopTriangle2()
+
+                end
 
                 return
 
@@ -914,20 +902,28 @@ return {
                 updateCharacter()
 
                 --------------------------------------------------
-                -- RESTART TRIANGLE
+                -- RESTART TRIANGLE2
                 --------------------------------------------------
 
                 if vars.ActiveMode
-                    == "triangle"
+                    == "triangle2"
                     and targetPlayer then
 
-                    startTriangle(
+                    startTriangle2(
                         targetPlayer
                     )
 
                 end
 
             end
+        )
+
+        --------------------------------------------------
+        -- READY
+        --------------------------------------------------
+
+        print(
+            "[TRIANGLE2] Loaded successfully."
         )
 
     end
