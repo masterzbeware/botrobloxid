@@ -76,6 +76,8 @@ return {
         ----------------------------------------------------------------
         -- BOT ORDER
         ----------------------------------------------------------------
+        -- HANYA BOT 1 - BOT 11
+        ----------------------------------------------------------------
 
         local botOrder = {
 
@@ -90,9 +92,6 @@ return {
             "11122854402", -- Bot 9
             "11641280895", -- Bot 10
             "11641342530", -- Bot 11
-            "11001607521", -- Bot 12
-            "11001608049", -- Bot 13
-            "11001625681", -- Bot 14
 
         }
 
@@ -351,10 +350,10 @@ return {
         --
         -- FORMASI:
         --
-        -- B1   B2   B3   B4   B5   B6 ... B14
+        -- B1   B2   B3   B4   B5   B6   B7   B8   B9   B10   B11
         --
-        --                 👤
-        --               PLAYER
+        --                         👤
+        --                       PLAYER
         --
         -- Semua Bot berada di DEPAN Player.
         --
@@ -375,11 +374,15 @@ return {
             end
 
             ------------------------------------------------------------
-            -- POSISI TENGAH
+            -- JUMLAH BOT
             ------------------------------------------------------------
 
             local totalBots =
                 #botOrder
+
+            ------------------------------------------------------------
+            -- POSISI TENGAH
+            ------------------------------------------------------------
 
             local center =
                 (totalBots + 1) / 2
@@ -401,7 +404,8 @@ return {
                 +
                 (
                     targetHRP.CFrame.LookVector
-                    * (
+                    *
+                    (
                         formationDistance
                         + distance
                     )
@@ -433,9 +437,7 @@ return {
         -- COPY TARGET ROTATION
         ----------------------------------------------------------------
         --
-        -- INI BAGIAN PENTING.
-        --
-        -- Bot akan memiliki rotasi yang SAMA PERSIS dengan target.
+        -- Bot memiliki rotasi yang SAMA PERSIS dengan target.
         --
         ----------------------------------------------------------------
 
@@ -519,7 +521,17 @@ return {
                     tostring(LocalPlayer.UserId)
                 )
 
+            ------------------------------------------------------------
+            -- BOT TIDAK ADA DI FRONTLINE
+            ------------------------------------------------------------
+
             if not myIndex then
+
+                print(
+                    "[FRONTLINE]",
+                    "Bot ini bukan Bot 1-11:",
+                    LocalPlayer.UserId
+                )
 
                 stopFrontline()
 
@@ -654,7 +666,7 @@ return {
                             > stopThreshold then
 
                             ------------------------------------------------
-                            -- BIARKAN ROBLOX MEMUTAR SAAT BERJALAN
+                            -- ROBLOX BOLEH MEMUTAR SAAT BERJALAN
                             ------------------------------------------------
 
                             humanoid.AutoRotate = true
@@ -679,7 +691,7 @@ return {
                         --
                         -- BUKAN LOOKAT.
                         --
-                        -- COPY CFrame rotation langsung.
+                        -- Copy CFrame rotation langsung.
                         --
                         ------------------------------------------------
 
