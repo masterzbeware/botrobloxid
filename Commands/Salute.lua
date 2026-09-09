@@ -1,55 +1,64 @@
 return {
-    Execute = function()
+Execute = function()
+    --------------------------------------------------
+    -- SERVICES
+    --------------------------------------------------
+
+    local Players = game:GetService("Players")
+    local TextChatService = game:GetService("TextChatService")
+    local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+    local LocalPlayer = Players.LocalPlayer
+
+    if not LocalPlayer then
+        return
+    end
+
+    --------------------------------------------------
+    -- LOAD ADMIN
+    --------------------------------------------------
+
+    local Admin = loadstring(game:HttpGet(
+        "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
+    ))()
+
+    --------------------------------------------------
+    -- SEND CHAT
+    --------------------------------------------------
+
+    local function sendChat(message)
+
+        local success = false
 
         --------------------------------------------------
-        -- SERVICES
+        -- TEXT CHAT
         --------------------------------------------------
 
-        local TextChatService = game:GetService("TextChatService")
-        local ReplicatedStorage = game:GetService("ReplicatedStorage")
+        if TextChatService
+            and TextChatService.TextChannels then
 
-        --------------------------------------------------
-        -- SEND /E SALUTE
-        --------------------------------------------------
+            local channel =
+                TextChatService.TextChannels:FindFirstChild(
+                    "RBXGeneral"
+                )
 
-        local function sendSalute()
+            if channel then
 
-            local message = "/e salute"
-
-            --------------------------------------------------
-            -- TEXT CHAT SERVICE
-            --------------------------------------------------
-
-            local success = false
-
-            pcall(function()
-
-                local textChannels = TextChatService:FindFirstChild("TextChannels")
-
-                if not textChannels then
-                    return
-                end
-
-                local channel =
-                    textChannels:FindFirstChild("RBXGeneral")
-
-                if not channel then
-                    return
-                end
-
-                channel:SendAsync(message)
+                pcall(function()
+                    channel:SendAsync(message)
+                end)
 
                 success = true
 
-            end)
-
-            if success then
-                return true
             end
 
-            --------------------------------------------------
-            -- FALLBACK OLD CHAT
-            --------------------------------------------------
+        end
+
+        --------------------------------------------------
+        -- FALLBACK CHAT
+        --------------------------------------------------
+
+        if not success then
 
             pcall(function()
 
@@ -58,37 +67,142 @@ return {
                         "DefaultChatSystemChatEvents"
                     )
 
-                if not chatEvents then
-                    return
+                if chatEvents then
+
+                    local sayMessageRequest =
+                        chatEvents:FindFirstChild(
+                            "SayMessageRequest"
+                        )
+
+                    if sayMessageRequest then
+
+                        sayMessageRequest:FireServer(
+                            message,
+                            "All"
+                        )
+
+                    end
+
                 end
-
-                local sayMessageRequest =
-                    chatEvents:FindFirstChild(
-                        "SayMessageRequest"
-                    )
-
-                if not sayMessageRequest then
-                    return
-                end
-
-                sayMessageRequest:FireServer(
-                    message,
-                    "All"
-                )
-
-                success = true
 
             end)
 
-            return success
+        end
 
+    end
+
+    --------------------------------------------------
+    -- COMMAND HANDLER
+    --------------------------------------------------
+
+    local function handleCommand(
+        message,
+        sender
+    )
+
+        --------------------------------------------------
+        -- HANYA ADMIN
+        --------------------------------------------------
+
+        if not Admin:IsAdmin(sender) then
+            return
         end
 
         --------------------------------------------------
-        -- EXECUTE
+        -- !SALUTE
         --------------------------------------------------
 
-        sendSalute()
+        if message:lower() == "!salute" then
+
+            sendChat("Salute, Sir!")
+
+        end
 
     end
+
+    --------------------------------------------------
+    -- TEXT CHAT
+    --------------------------------------------------
+
+    if TextChatService
+        and TextChatService.TextChannels then
+
+        local channel =
+            TextChatService.TextChannels:FindFirstChild(
+                "RBXGeneral"
+            )
+
+        if channel then
+
+            channel.OnIncomingMessage =
+                function(message)
+
+                    local userId =
+                        message.TextSource
+                        and message.TextSource.UserId
+
+                    local sender =
+                        userId
+                        and Players:GetPlayerByUserId(
+                            userId
+                        )
+
+                    if sender then
+
+                        handleCommand(
+                            message.Text,
+                            sender
+                        )
+
+                    end
+
+                end
+
+        end
+
+    end
+
+    --------------------------------------------------
+    -- FALLBACK CHAT
+    --------------------------------------------------
+
+    for _, player in ipairs(
+        Players:GetPlayers()
+    ) do
+
+        player.Chatted:Connect(
+            function(message)
+
+                handleCommand(
+                    message,
+                    player
+                )
+
+            end
+        )
+
+    end
+
+    --------------------------------------------------
+    -- PLAYER ADDED
+    --------------------------------------------------
+
+    Players.PlayerAdded:Connect(
+        function(player)
+
+            player.Chatted:Connect(
+                function(message)
+
+                    handleCommand(
+                        message,
+                        player
+                    )
+
+                end
+            )
+
+        end
+    )
+
+end
 }
