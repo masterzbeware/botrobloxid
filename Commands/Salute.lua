@@ -39,9 +39,11 @@ Execute = function()
 
         if not channel then
 
-            warn("[Salute] RBXGeneral tidak ditemukan")
+            warn(
+                "[Salute] RBXGeneral tidak ditemukan"
+            )
 
-            return
+            return false
 
         end
 
@@ -58,7 +60,11 @@ Execute = function()
                 err
             )
 
+            return false
+
         end
+
+        return true
 
     end
 
@@ -73,35 +79,15 @@ Execute = function()
         end
 
         --------------------------------------------------
-        -- DEBUG
-        --------------------------------------------------
-
-        print(
-            "[Salute] Chat:",
-            message,
-            "| Sender:",
-            sender.Name,
-            "| UserId:",
-            sender.UserId
-        )
-
-        --------------------------------------------------
         -- ADMIN CHECK
         --------------------------------------------------
 
         if not Admin:IsAdmin(sender) then
-
-            print(
-                "[Salute] Bukan admin:",
-                sender.Name
-            )
-
             return
-
         end
 
         --------------------------------------------------
-        -- SALUTE COMMAND
+        -- !SALUTE
         --------------------------------------------------
 
         if message:lower():match("^%s*!salute%s*$") then
@@ -111,7 +97,25 @@ Execute = function()
                 sender.Name
             )
 
-            sendChat("Salute, Sir!")
+            --------------------------------------------------
+            -- PESAN PERTAMA
+            --------------------------------------------------
+
+            sendChat("Salute!")
+
+            --------------------------------------------------
+            -- TUNGGU 2 DETIK
+            --------------------------------------------------
+
+            task.delay(2, function()
+
+                --------------------------------------------------
+                -- PESAN KEDUA
+                --------------------------------------------------
+
+                sendChat("/e salute")
+
+            end)
 
         end
 
@@ -132,7 +136,9 @@ Execute = function()
                 message.TextSource.UserId
 
             local sender =
-                Players:GetPlayerByUserId(userId)
+                Players:GetPlayerByUserId(
+                    userId
+                )
 
             if not sender then
                 return
@@ -147,48 +153,6 @@ Execute = function()
     )
 
     --------------------------------------------------
-    -- FALLBACK PLAYER.CHATTED
-    --------------------------------------------------
-
-    for _, player in ipairs(
-        Players:GetPlayers()
-    ) do
-
-        player.Chatted:Connect(
-            function(message)
-
-                handleCommand(
-                    message,
-                    player
-                )
-
-            end
-        )
-
-    end
-
-    --------------------------------------------------
-    -- PLAYER ADDED
-    --------------------------------------------------
-
-    Players.PlayerAdded:Connect(
-        function(player)
-
-            player.Chatted:Connect(
-                function(message)
-
-                    handleCommand(
-                        message,
-                        player
-                    )
-
-                end
-            )
-
-        end
-    )
-
-    --------------------------------------------------
     -- READY
     --------------------------------------------------
 
@@ -197,5 +161,4 @@ Execute = function()
     )
 
 end
-
 }
