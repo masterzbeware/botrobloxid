@@ -41,6 +41,7 @@ local commandFiles = {
     "Frontline.lua",
     "Frontline2.lua",
     "FrontlineLeft.lua",
+    "FrontlineRight.lua",
     "Salute.lua",
 }
 
@@ -85,6 +86,7 @@ jalankan("triangle2")
 jalankan("frontline")
 jalankan("frontline2")
 jalankan("frontlineleft")
+jalankan("frontlineright")
 jalankan("salute")
 
 print("✅ Bot.lua loaded — All systems active.")
