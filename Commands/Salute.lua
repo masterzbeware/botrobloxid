@@ -101,7 +101,7 @@ Execute = function()
             -- PESAN PERTAMA
             --------------------------------------------------
 
-            sendChat("Salute!")
+            sendChat("Yes, Sir!")
 
             --------------------------------------------------
             -- TUNGGU 2 DETIK
