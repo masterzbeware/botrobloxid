@@ -1,6 +1,10 @@
 return {
     Execute = function()
 
+        --------------------------------------------------
+        -- SERVICES
+        --------------------------------------------------
+
         local TextChatService = game:GetService("TextChatService")
         local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -12,30 +16,41 @@ return {
 
             local message = "/e salute"
 
-            -- TextChatService
-            if TextChatService
-                and TextChatService.TextChannels then
+            --------------------------------------------------
+            -- TEXT CHAT SERVICE
+            --------------------------------------------------
 
-                local channel =
-                    TextChatService.TextChannels:FindFirstChild(
-                        "RBXGeneral"
-                    )
+            local success = false
 
-                if channel then
+            pcall(function()
 
-                    local success = pcall(function()
-                        channel:SendAsync(message)
-                    end)
+                local textChannels = TextChatService:FindFirstChild("TextChannels")
 
-                    if success then
-                        return
-                    end
-
+                if not textChannels then
+                    return
                 end
 
+                local channel =
+                    textChannels:FindFirstChild("RBXGeneral")
+
+                if not channel then
+                    return
+                end
+
+                channel:SendAsync(message)
+
+                success = true
+
+            end)
+
+            if success then
+                return true
             end
 
-            -- Fallback
+            --------------------------------------------------
+            -- FALLBACK OLD CHAT
+            --------------------------------------------------
+
             pcall(function()
 
                 local chatEvents =
@@ -43,25 +58,29 @@ return {
                         "DefaultChatSystemChatEvents"
                     )
 
-                if chatEvents then
-
-                    local sayMessageRequest =
-                        chatEvents:FindFirstChild(
-                            "SayMessageRequest"
-                        )
-
-                    if sayMessageRequest then
-
-                        sayMessageRequest:FireServer(
-                            message,
-                            "All"
-                        )
-
-                    end
-
+                if not chatEvents then
+                    return
                 end
 
+                local sayMessageRequest =
+                    chatEvents:FindFirstChild(
+                        "SayMessageRequest"
+                    )
+
+                if not sayMessageRequest then
+                    return
+                end
+
+                sayMessageRequest:FireServer(
+                    message,
+                    "All"
+                )
+
+                success = true
+
             end)
+
+            return success
 
         end
 
