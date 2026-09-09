@@ -61,7 +61,8 @@ return {
         --------------------------------------------------
         -- BOT ORDER
         --------------------------------------------------
-        -- HANYA BOT 1 - BOT 11
+        -- BOT 1 - BOT 11 IKUT FORMASI
+        -- BOT 12 - BOT 14 TIDAK IKUT
         --------------------------------------------------
 
         local botOrder = {
@@ -93,10 +94,13 @@ return {
         -- Jarak kiri / kanan utama
         local sideSpacing = 3
 
-        -- Jarak B10 dan B11 dari tengah
+        -- Jarak tambahan baris paling belakang
+        local backSpacing = 3
+
+        -- Jarak Bot 10 dan Bot 11 dari tengah
         local centerSpacing = 2
 
-        -- Jarak minimum sebelum berhenti
+        -- Jarak minimum sebelum dianggap sampai
         local stopThreshold = 1.5
 
         --------------------------------------------------
@@ -345,7 +349,7 @@ return {
         -- GET TRIANGLE POSITION
         --------------------------------------------------
         --
-        -- FORMASI 11 BOT:
+        -- FORMASI 11 BOT
         --
         --
         --                         B1
@@ -402,7 +406,7 @@ return {
 
             --------------------------------------------------
             -- BOT 1
-            -- FRONT CENTER
+            -- DEPAN TENGAH
             --------------------------------------------------
 
             if myIndex == 1 then
@@ -415,7 +419,7 @@ return {
 
             --------------------------------------------------
             -- BOT 2
-            -- FRONT LEFT
+            -- KIRI
             --------------------------------------------------
 
             if myIndex == 2 then
@@ -430,7 +434,7 @@ return {
 
             --------------------------------------------------
             -- BOT 3
-            -- FRONT RIGHT
+            -- KANAN
             --------------------------------------------------
 
             if myIndex == 3 then
@@ -445,7 +449,7 @@ return {
 
             --------------------------------------------------
             -- BOT 4
-            -- MIDDLE LEFT
+            -- KIRI
             --------------------------------------------------
 
             if myIndex == 4 then
@@ -460,7 +464,7 @@ return {
 
             --------------------------------------------------
             -- BOT 5
-            -- MIDDLE RIGHT
+            -- KANAN
             --------------------------------------------------
 
             if myIndex == 5 then
@@ -475,7 +479,7 @@ return {
 
             --------------------------------------------------
             -- BOT 6
-            -- BACK ROW OUTER LEFT
+            -- LUAR KIRI
             --------------------------------------------------
 
             if myIndex == 6 then
@@ -490,7 +494,7 @@ return {
 
             --------------------------------------------------
             -- BOT 7
-            -- BACK ROW OUTER RIGHT
+            -- LUAR KANAN
             --------------------------------------------------
 
             if myIndex == 7 then
@@ -505,8 +509,8 @@ return {
 
             --------------------------------------------------
             -- BOT 8
-            -- SAMA SEPERTI BOT 6
-            -- OUTER LEFT
+            -- BARIS PALING BELAKANG KIRI
+            -- POLA SAMA DENGAN BOT 6
             --------------------------------------------------
 
             if myIndex == 8 then
@@ -525,8 +529,8 @@ return {
 
             --------------------------------------------------
             -- BOT 9
-            -- SAMA SEPERTI BOT 7
-            -- OUTER RIGHT
+            -- BARIS PALING BELAKANG KANAN
+            -- POLA SAMA DENGAN BOT 7
             --------------------------------------------------
 
             if myIndex == 9 then
@@ -546,7 +550,6 @@ return {
             --------------------------------------------------
             -- BOT 10
             -- TENGAH KIRI
-            -- POSISI PENGGANTI BOT 12
             --------------------------------------------------
 
             if myIndex == 10 then
@@ -566,7 +569,6 @@ return {
             --------------------------------------------------
             -- BOT 11
             -- TENGAH KANAN
-            -- POSISI PENGGANTI BOT 14
             --------------------------------------------------
 
             if myIndex == 11 then
@@ -582,6 +584,10 @@ return {
                     * centerSpacing
 
             end
+
+            --------------------------------------------------
+            -- INVALID INDEX
+            --------------------------------------------------
 
             return nil
 
@@ -643,7 +649,17 @@ return {
                     tostring(LocalPlayer.UserId)
                 )
 
+            --------------------------------------------------
+            -- BOT TIDAK TERDAFTAR
+            --------------------------------------------------
+
             if not myIndex then
+
+                print(
+                    "[TRIANGLE] Bot tidak termasuk formasi:",
+                    LocalPlayer.Name,
+                    LocalPlayer.UserId
+                )
 
                 stopTriangle()
 
@@ -745,7 +761,7 @@ return {
                             )
 
                         --------------------------------------------------
-                        -- POSITION
+                        -- FORMATION POSITION
                         --------------------------------------------------
 
                         local targetPosition =
@@ -760,7 +776,7 @@ return {
                         end
 
                         --------------------------------------------------
-                        -- DISTANCE TO POSITION
+                        -- DISTANCE TO FORMATION POSITION
                         --------------------------------------------------
 
                         local distanceToTarget =
@@ -787,7 +803,7 @@ return {
                         end
 
                         --------------------------------------------------
-                        -- REACHED
+                        -- REACHED FORMATION
                         --------------------------------------------------
 
                         humanoid.AutoRotate = false
