@@ -687,7 +687,7 @@ return {
             -- !CRICLE
             --------------------------------------------------
 
-            if lower == "!cricle" then
+            if lower == "!circle" then
 
                 startCricle(
                     sender
