@@ -6,13 +6,6 @@ Execute = function()
 
     local Players = game:GetService("Players")
     local TextChatService = game:GetService("TextChatService")
-    local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-    local LocalPlayer = Players.LocalPlayer
-
-    if not LocalPlayer then
-        return
-    end
 
     --------------------------------------------------
     -- LOAD ADMIN
@@ -23,69 +16,47 @@ Execute = function()
     ))()
 
     --------------------------------------------------
+    -- LOCAL PLAYER
+    --------------------------------------------------
+
+    local LocalPlayer = Players.LocalPlayer
+
+    if not LocalPlayer then
+        warn("[Salute] LocalPlayer tidak ditemukan")
+        return
+    end
+
+    --------------------------------------------------
     -- SEND CHAT
     --------------------------------------------------
 
     local function sendChat(message)
 
-        local success = false
+        local channel =
+            TextChatService.TextChannels:FindFirstChild(
+                "RBXGeneral"
+            )
 
-        --------------------------------------------------
-        -- TEXT CHAT
-        --------------------------------------------------
+        if not channel then
 
-        if TextChatService
-            and TextChatService.TextChannels then
+            warn("[Salute] RBXGeneral tidak ditemukan")
 
-            local channel =
-                TextChatService.TextChannels:FindFirstChild(
-                    "RBXGeneral"
-                )
-
-            if channel then
-
-                pcall(function()
-                    channel:SendAsync(message)
-                end)
-
-                success = true
-
-            end
+            return
 
         end
 
-        --------------------------------------------------
-        -- FALLBACK CHAT
-        --------------------------------------------------
+        local success, err = pcall(function()
+
+            channel:SendAsync(message)
+
+        end)
 
         if not success then
 
-            pcall(function()
-
-                local chatEvents =
-                    ReplicatedStorage:FindFirstChild(
-                        "DefaultChatSystemChatEvents"
-                    )
-
-                if chatEvents then
-
-                    local sayMessageRequest =
-                        chatEvents:FindFirstChild(
-                            "SayMessageRequest"
-                        )
-
-                    if sayMessageRequest then
-
-                        sayMessageRequest:FireServer(
-                            message,
-                            "All"
-                        )
-
-                    end
-
-                end
-
-            end)
+            warn(
+                "[Salute] Gagal mengirim chat:",
+                err
+            )
 
         end
 
@@ -95,24 +66,50 @@ Execute = function()
     -- COMMAND HANDLER
     --------------------------------------------------
 
-    local function handleCommand(
-        message,
-        sender
-    )
+    local function handleCommand(message, sender)
 
-        --------------------------------------------------
-        -- HANYA ADMIN
-        --------------------------------------------------
-
-        if not Admin:IsAdmin(sender) then
+        if not sender then
             return
         end
 
         --------------------------------------------------
-        -- !SALUTE
+        -- DEBUG
         --------------------------------------------------
 
-        if message:lower() == "!salute" then
+        print(
+            "[Salute] Chat:",
+            message,
+            "| Sender:",
+            sender.Name,
+            "| UserId:",
+            sender.UserId
+        )
+
+        --------------------------------------------------
+        -- ADMIN CHECK
+        --------------------------------------------------
+
+        if not Admin:IsAdmin(sender) then
+
+            print(
+                "[Salute] Bukan admin:",
+                sender.Name
+            )
+
+            return
+
+        end
+
+        --------------------------------------------------
+        -- SALUTE COMMAND
+        --------------------------------------------------
+
+        if message:lower():match("^%s*!salute%s*$") then
+
+            print(
+                "[Salute] Command !salute diterima dari:",
+                sender.Name
+            )
 
             sendChat("Salute, Sir!")
 
@@ -124,46 +121,33 @@ Execute = function()
     -- TEXT CHAT
     --------------------------------------------------
 
-    if TextChatService
-        and TextChatService.TextChannels then
+    TextChatService.MessageReceived:Connect(
+        function(message)
 
-        local channel =
-            TextChatService.TextChannels:FindFirstChild(
-                "RBXGeneral"
+            if not message.TextSource then
+                return
+            end
+
+            local userId =
+                message.TextSource.UserId
+
+            local sender =
+                Players:GetPlayerByUserId(userId)
+
+            if not sender then
+                return
+            end
+
+            handleCommand(
+                message.Text,
+                sender
             )
 
-        if channel then
-
-            channel.OnIncomingMessage =
-                function(message)
-
-                    local userId =
-                        message.TextSource
-                        and message.TextSource.UserId
-
-                    local sender =
-                        userId
-                        and Players:GetPlayerByUserId(
-                            userId
-                        )
-
-                    if sender then
-
-                        handleCommand(
-                            message.Text,
-                            sender
-                        )
-
-                    end
-
-                end
-
         end
-
-    end
+    )
 
     --------------------------------------------------
-    -- FALLBACK CHAT
+    -- FALLBACK PLAYER.CHATTED
     --------------------------------------------------
 
     for _, player in ipairs(
@@ -204,5 +188,14 @@ Execute = function()
         end
     )
 
+    --------------------------------------------------
+    -- READY
+    --------------------------------------------------
+
+    print(
+        "[Salute] Salute.lua aktif!"
+    )
+
 end
+
 }
