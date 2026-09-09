@@ -54,8 +54,8 @@ return {
         -- STATE
         --------------------------------------------------
 
-        local formationSnakeActive = false
-        local formationSnakeConnection = nil
+        local cricleActive = false
+        local cricleConnection = nil
         local targetPlayer = nil
 
         --------------------------------------------------
@@ -87,11 +87,14 @@ return {
 
         local baseDistance = 5
 
-        local horizontalSpacing = 3
-
-        local verticalSpacing = 3
-
         local stopThreshold = 1.5
+
+        --------------------------------------------------
+        -- CIRCLE SETTINGS
+        --------------------------------------------------
+
+        -- Jarak bot dari player
+        local circleRadius = 8
 
         --------------------------------------------------
         -- UPDATE CHARACTER
@@ -193,18 +196,18 @@ return {
         end
 
         --------------------------------------------------
-        -- STOP FORMATION SNAKE
+        -- STOP CRICLE
         --------------------------------------------------
 
-        local function stopFormationSnake()
+        local function stopCricle()
 
-            formationSnakeActive = false
+            cricleActive = false
             targetPlayer = nil
 
-            if formationSnakeConnection then
+            if cricleConnection then
 
-                formationSnakeConnection:Disconnect()
-                formationSnakeConnection = nil
+                cricleConnection:Disconnect()
+                cricleConnection = nil
 
             end
 
@@ -220,8 +223,8 @@ return {
         -- REGISTER CONTROLLER
         --------------------------------------------------
 
-        vars.ModeControllers.formationsnake =
-            stopFormationSnake
+        vars.ModeControllers.cricle =
+            stopCricle
 
         --------------------------------------------------
         -- STOP OTHER MODES
@@ -232,7 +235,7 @@ return {
             for name, stopFunction in
                 pairs(vars.ModeControllers) do
 
-                if name ~= "formationsnake"
+                if name ~= "cricle"
                     and type(stopFunction) == "function" then
 
                     pcall(stopFunction)
@@ -338,27 +341,22 @@ return {
         end
 
         --------------------------------------------------
-        -- GET FORMATION SNAKE POSITION
+        -- GET CIRCLE POSITION
         --------------------------------------------------
         --
-        -- FORMASI SNAKE
+        --              B1
+        --         B11       B2
         --
-        -- B1 ─ B2 ─ B3
-        --              │
-        -- B6 ─ B5 ─ B4
-        -- │
-        -- B7 ─ B8 ─ B9
-        --              │
-        --            B10
-        --              │
-        --            B11
+        --     B10             B3
         --
-        --                    👤
-        --                  PLAYER
+        --   B9        PLAYER      B4
+        --
+        --     B8             B5
+        --         B7       B6
         --
         --------------------------------------------------
 
-        local function getFormationSnakePosition(
+        local function getCriclePosition(
             myIndex,
             targetHRP,
             distance
@@ -386,149 +384,51 @@ return {
                 targetHRP.Position
 
             --------------------------------------------------
-            -- ROW 1
-            --
-            -- B1 ─ B2 ─ B3
+            -- CIRCLE RADIUS
             --------------------------------------------------
 
-            if myIndex == 1 then
-
-                return origin
-                    + forward * distance
-                    - right * horizontalSpacing
-
-            end
-
-            if myIndex == 2 then
-
-                return origin
-                    + forward * distance
-
-            end
-
-            if myIndex == 3 then
-
-                return origin
-                    + forward * distance
-                    + right * horizontalSpacing
-
-            end
+            local radius = circleRadius
 
             --------------------------------------------------
-            -- ROW 2
-            --
-            -- B6 ─ B5 ─ B4
-            --
-            -- B4 berada di bawah B3
+            -- TOTAL BOT
             --------------------------------------------------
 
-            if myIndex == 4 then
-
-                return origin
-                    + forward
-                    * (distance - verticalSpacing)
-                    + right * horizontalSpacing
-
-            end
-
-            if myIndex == 5 then
-
-                return origin
-                    + forward
-                    * (distance - verticalSpacing)
-
-            end
-
-            if myIndex == 6 then
-
-                return origin
-                    + forward
-                    * (distance - verticalSpacing)
-                    - right * horizontalSpacing
-
-            end
+            local totalBots =
+                #botOrder
 
             --------------------------------------------------
-            -- ROW 3
-            --
-            -- B7 ─ B8 ─ B9
-            --
-            -- B7 berada di bawah B6
+            -- ANGLE
             --------------------------------------------------
 
-            if myIndex == 7 then
-
-                return origin
-                    + forward
-                    * (distance - verticalSpacing * 2)
-                    - right * horizontalSpacing
-
-            end
-
-            if myIndex == 8 then
-
-                return origin
-                    + forward
-                    * (distance - verticalSpacing * 2)
-
-            end
-
-            if myIndex == 9 then
-
-                return origin
-                    + forward
-                    * (distance - verticalSpacing * 2)
-                    + right * horizontalSpacing
-
-            end
+            local angle =
+                ((myIndex - 1) / totalBots)
+                * math.pi * 2
 
             --------------------------------------------------
-            -- B10
-            --
-            -- B9
-            -- │
-            -- B10
+            -- CIRCLE OFFSET
             --------------------------------------------------
 
-            if myIndex == 10 then
+            local forwardOffset =
+                math.cos(angle) * radius
 
-                return origin
-                    + forward
-                    * (distance - verticalSpacing * 3)
-                    + right * horizontalSpacing
-
-            end
+            local rightOffset =
+                math.sin(angle) * radius
 
             --------------------------------------------------
-            -- B11
-            --
-            -- B10
-            -- │
-            -- B11
+            -- POSITION
             --------------------------------------------------
 
-            if myIndex == 11 then
-
-                return origin
-                    + forward
-                    * (distance - verticalSpacing * 4)
-                    + right * horizontalSpacing
-
-            end
-
-            --------------------------------------------------
-            -- INVALID INDEX
-            --------------------------------------------------
-
-            return nil
+            return origin
+                + forward * forwardOffset
+                + right * rightOffset
 
         end
 
         --------------------------------------------------
-        -- START FORMATION SNAKE
+        -- START CRICLE
         --------------------------------------------------
 
-        local function startFormationSnake(player)
+        local function startCricle(player)
 
             if not player then
                 return
@@ -545,16 +445,16 @@ return {
             --------------------------------------------------
 
             vars.ActiveMode =
-                "formationsnake"
+                "cricle"
 
             --------------------------------------------------
             -- DISCONNECT OLD LOOP
             --------------------------------------------------
 
-            if formationSnakeConnection then
+            if cricleConnection then
 
-                formationSnakeConnection:Disconnect()
-                formationSnakeConnection = nil
+                cricleConnection:Disconnect()
+                cricleConnection = nil
 
             end
 
@@ -562,7 +462,7 @@ return {
             -- STATE
             --------------------------------------------------
 
-            formationSnakeActive = true
+            cricleActive = true
             targetPlayer = player
 
             --------------------------------------------------
@@ -588,13 +488,13 @@ return {
             if not myIndex then
 
                 print(
-                    "[FORMATION SNAKE]",
+                    "[CRICLE]",
                     "Bot tidak termasuk formasi:",
                     LocalPlayer.Name,
                     LocalPlayer.UserId
                 )
 
-                stopFormationSnake()
+                stopCricle()
 
                 return
 
@@ -605,7 +505,7 @@ return {
             --------------------------------------------------
 
             print(
-                "[FORMATION SNAKE]",
+                "[CRICLE]",
                 "Bot Index:",
                 myIndex,
                 "UserId:",
@@ -616,7 +516,7 @@ return {
             -- HEARTBEAT
             --------------------------------------------------
 
-            formationSnakeConnection =
+            cricleConnection =
                 RunService.Heartbeat:Connect(
                     function()
 
@@ -625,9 +525,9 @@ return {
                         --------------------------------------------------
 
                         if vars.ActiveMode
-                            ~= "formationsnake" then
+                            ~= "cricle" then
 
-                            stopFormationSnake()
+                            stopCricle()
 
                             return
 
@@ -637,7 +537,7 @@ return {
                         -- ACTIVE CHECK
                         --------------------------------------------------
 
-                        if not formationSnakeActive then
+                        if not cricleActive then
                             return
                         end
 
@@ -694,11 +594,11 @@ return {
                             )
 
                         --------------------------------------------------
-                        -- FORMATION POSITION
+                        -- CIRCLE POSITION
                         --------------------------------------------------
 
                         local targetPosition =
-                            getFormationSnakePosition(
+                            getCriclePosition(
                                 myIndex,
                                 targetHRP,
                                 distance
@@ -742,18 +642,21 @@ return {
                         humanoid.AutoRotate = false
 
                         --------------------------------------------------
-                        -- COPY PLAYER ROTATION
+                        -- FACE CENTER / PLAYER
                         --------------------------------------------------
 
-                        local targetRotation =
-                            targetHRP.CFrame
-                            - targetHRP.Position
+                        local lookPosition =
+                            targetHRP.Position
 
                         myHRP.CFrame =
-                            CFrame.new(
-                                myHRP.Position
+                            CFrame.lookAt(
+                                myHRP.Position,
+                                Vector3.new(
+                                    lookPosition.X,
+                                    myHRP.Position.Y,
+                                    lookPosition.Z
+                                )
                             )
-                            * targetRotation
 
                     end
                 )
@@ -781,12 +684,12 @@ return {
                 message:lower()
 
             --------------------------------------------------
-            -- !FORMATIONSNAKE
+            -- !CRICLE
             --------------------------------------------------
 
-            if lower == "!formationsnake" then
+            if lower == "!cricle" then
 
-                startFormationSnake(
+                startCricle(
                     sender
                 )
 
@@ -795,12 +698,12 @@ return {
             end
 
             --------------------------------------------------
-            -- !FORMATIONSNAKE PLAYER
+            -- !CRICLE PLAYER
             --------------------------------------------------
 
             local targetName =
                 lower:match(
-                    "^!formationsnake%s+(.+)$"
+                    "^!cricle%s+(.+)$"
                 )
 
             if targetName then
@@ -812,7 +715,7 @@ return {
 
                 if target then
 
-                    startFormationSnake(
+                    startCricle(
                         target
                     )
 
@@ -827,11 +730,11 @@ return {
             --------------------------------------------------
 
             if lower == "!stop"
-                or lower == "!unformationsnake" then
+                or lower == "!uncricle" then
 
                 vars.ActiveMode = nil
 
-                stopFormationSnake()
+                stopCricle()
 
                 return
 
@@ -933,14 +836,14 @@ return {
                 updateCharacter()
 
                 --------------------------------------------------
-                -- RESTART FORMATION SNAKE
+                -- RESTART CRICLE
                 --------------------------------------------------
 
                 if vars.ActiveMode
-                    == "formationsnake"
+                    == "cricle"
                     and targetPlayer then
 
-                    startFormationSnake(
+                    startCricle(
                         targetPlayer
                     )
 
@@ -954,7 +857,7 @@ return {
         --------------------------------------------------
 
         print(
-            "[FORMATION SNAKE] FormationSnake.lua aktif!"
+            "[CRICLE] Cricle.lua aktif!"
         )
 
     end
