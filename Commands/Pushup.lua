@@ -50,6 +50,9 @@ return {
         vars.PushupActive = false
         vars.PushupConnection = nil
 
+        -- Menyimpan track Push Up yang terdeteksi
+        vars.PushupTracks = {}
+
         ----------------------------------------------------------------
         -- SEND CHAT
         ----------------------------------------------------------------
@@ -117,26 +120,32 @@ return {
         end
 
         ----------------------------------------------------------------
-        -- STOP PUSH UP ANIMATION
-        ----------------------------------------------------------------
-        --
-        -- Mencari AnimationTrack Push Up yang sedang dimainkan
-        -- lalu menghentikannya secara langsung.
+        -- GET HUMANOID
         ----------------------------------------------------------------
 
-        local function stopPushupAnimation()
+        local function getHumanoid()
 
             local character =
                 LocalPlayer.Character
 
             if not character then
-                return
+                return nil
             end
 
+            return character:FindFirstChildOfClass(
+                "Humanoid"
+            )
+
+        end
+
+        ----------------------------------------------------------------
+        -- STOP PUSH UP ANIMATION
+        ----------------------------------------------------------------
+
+        local function stopPushupAnimation()
+
             local humanoid =
-                character:FindFirstChildOfClass(
-                    "Humanoid"
-                )
+                getHumanoid()
 
             if not humanoid then
                 return
@@ -152,7 +161,30 @@ return {
             end
 
             ------------------------------------------------------------
-            -- CARI ANIMATION TRACK
+            -- STOP TRACK YANG SUDAH DISIMPAN
+            ------------------------------------------------------------
+
+            for track, _ in pairs(vars.PushupTracks) do
+
+                if track then
+
+                    pcall(function()
+
+                        if track.IsPlaying then
+                            track:Stop(0)
+                        end
+
+                    end)
+
+                end
+
+            end
+
+            table.clear(vars.PushupTracks)
+
+            ------------------------------------------------------------
+            -- FALLBACK:
+            -- CARI SEMUA TRACK YANG BERHUBUNGAN DENGAN PUSH UP
             ------------------------------------------------------------
 
             for _, track in ipairs(
@@ -162,16 +194,29 @@ return {
                 local trackName =
                     tostring(track.Name):lower()
 
+                local animation =
+                    track.Animation
+
+                local animationName = ""
+
+                if animation then
+                    animationName =
+                        tostring(animation.Name):lower()
+                end
+
                 --------------------------------------------------------
-                -- PUSH UP
+                -- DETEKSI PUSH UP
                 --------------------------------------------------------
 
-                if trackName == "push up"
-                    or trackName:find("push") then
+                local isPushup =
+                    trackName:find("push") ~= nil
+                    or animationName:find("push") ~= nil
+
+                if isPushup then
 
                     pcall(function()
 
-                        track:Stop(0.15)
+                        track:Stop(0)
 
                     end)
 
@@ -184,11 +229,25 @@ return {
         ----------------------------------------------------------------
         -- PLAY PUSH UP
         ----------------------------------------------------------------
-        --
-        -- DIPANGGIL HANYA SATU KALI.
-        ----------------------------------------------------------------
 
         local function playPushup()
+
+            local humanoid =
+                getHumanoid()
+
+            if not humanoid then
+                return
+            end
+
+            ------------------------------------------------------------
+            -- BERSIHKAN TRACK PUSH UP LAMA
+            ------------------------------------------------------------
+
+            stopPushupAnimation()
+
+            ------------------------------------------------------------
+            -- PLAY VIA REMOTE
+            ------------------------------------------------------------
 
             pcall(function()
 
@@ -198,6 +257,55 @@ return {
                 )
 
             end)
+
+            ------------------------------------------------------------
+            -- TUNGGU SEBENTAR AGAR TRACK MUNCUL
+            ------------------------------------------------------------
+
+            task.wait(0.15)
+
+            ------------------------------------------------------------
+            -- AMBIL ANIMATOR TERBARU
+            ------------------------------------------------------------
+
+            local animator =
+                humanoid:FindFirstChildOfClass(
+                    "Animator"
+                )
+
+            if not animator then
+                return
+            end
+
+            ------------------------------------------------------------
+            -- SIMPAN TRACK PUSH UP
+            ------------------------------------------------------------
+
+            for _, track in ipairs(
+                animator:GetPlayingAnimationTracks()
+            ) do
+
+                local trackName =
+                    tostring(track.Name):lower()
+
+                local animation =
+                    track.Animation
+
+                local animationName = ""
+
+                if animation then
+                    animationName =
+                        tostring(animation.Name):lower()
+                end
+
+                if trackName:find("push")
+                    or animationName:find("push") then
+
+                    vars.PushupTracks[track] = true
+
+                end
+
+            end
 
         end
 
@@ -219,9 +327,13 @@ return {
 
             if vars.PushupConnection then
 
-                task.cancel(
-                    vars.PushupConnection
-                )
+                pcall(function()
+
+                    task.cancel(
+                        vars.PushupConnection
+                    )
+
+                end)
 
                 vars.PushupConnection = nil
 
@@ -340,10 +452,6 @@ return {
             ------------------------------------------------------------
             -- MULAI ANIMASI
             ------------------------------------------------------------
-            --
-            -- PENTING:
-            -- Hanya dipanggil SATU KALI.
-            ------------------------------------------------------------
 
             playPushup()
 
@@ -355,7 +463,7 @@ return {
                 task.spawn(function()
 
                     ----------------------------------------------------
-                    -- HITUNG 1 SAMPAI JUMLAH
+                    -- HITUNG
                     ----------------------------------------------------
 
                     for i = 1, jumlah do
@@ -401,22 +509,19 @@ return {
                     end
 
                     ----------------------------------------------------
-                    -- SUDAH SELESAI
+                    -- SELESAI
                     ----------------------------------------------------
 
-                    ----------------------------------------------------
-                    -- STOP ANIMATION
-                    ----------------------------------------------------
+                    print(
+                        "[PUSHUP] Selesai:",
+                        jumlah
+                    )
 
-                    stopPushupAnimation()
-
                     ----------------------------------------------------
-                    -- MATIKAN STATUS
+                    -- MATIKAN STATUS DULU
                     ----------------------------------------------------
 
                     vars.PushupActive = false
-
-                    vars.PushupConnection = nil
 
                     ----------------------------------------------------
                     -- RESET ACTIVE MODE
@@ -425,6 +530,22 @@ return {
                     if vars.ActiveMode == "pushup" then
                         vars.ActiveMode = nil
                     end
+
+                    ----------------------------------------------------
+                    -- HAPUS CONNECTION
+                    ----------------------------------------------------
+
+                    vars.PushupConnection = nil
+
+                    ----------------------------------------------------
+                    -- STOP ANIMASI
+                    ----------------------------------------------------
+
+                    stopPushupAnimation()
+
+                    print(
+                        "[PUSHUP] Animasi dihentikan."
+                    )
 
                 end)
 
@@ -474,15 +595,7 @@ return {
 
             if msg == "!stop" then
 
-                --------------------------------------------------------
-                -- RESET ACTIVE MODE
-                --------------------------------------------------------
-
                 vars.ActiveMode = nil
-
-                --------------------------------------------------------
-                -- STOP PUSHUP
-                --------------------------------------------------------
 
                 stopPushup()
 
