@@ -1,4 +1,3 @@
-```lua
 return {
     Execute = function()
 
@@ -29,8 +28,6 @@ return {
         _G.BotVars.ModeControllers =
             _G.BotVars.ModeControllers or {}
 
-        local vars = _G.BotVars
-
         --------------------------------------------------
         -- LOAD ADMIN
         --------------------------------------------------
@@ -52,22 +49,10 @@ return {
         local currentTrack = nil
 
         --------------------------------------------------
-        -- STATE
-        --------------------------------------------------
-
-        local saluteActive = false
-
-        --------------------------------------------------
         -- STOP EMOTE
         --------------------------------------------------
 
         local function stopEmote()
-
-            --------------------------------------------------
-            -- DISABLE SALUTE STATE
-            --------------------------------------------------
-
-            saluteActive = false
 
             --------------------------------------------------
             -- GET CHARACTER
@@ -100,8 +85,8 @@ return {
 
             if not character then
 
-                if vars.ActiveMode == "salute" then
-                    vars.ActiveMode = nil
+                if _G.BotVars.ActiveMode == "salute" then
+                    _G.BotVars.ActiveMode = nil
                 end
 
                 return
@@ -119,8 +104,8 @@ return {
 
             if not humanoid then
 
-                if vars.ActiveMode == "salute" then
-                    vars.ActiveMode = nil
+                if _G.BotVars.ActiveMode == "salute" then
+                    _G.BotVars.ActiveMode = nil
                 end
 
                 return
@@ -166,7 +151,9 @@ return {
                 ) do
 
                     pcall(function()
+
                         track:Stop(0)
+
                     end)
 
                 end
@@ -183,17 +170,17 @@ return {
 
             --------------------------------------------------
             -- CLEAR ACTIVE MODE
-            --
-            -- Hanya clear jika Salute memang mode aktif.
-            -- Jangan menghapus "sync" atau mode lain.
             --------------------------------------------------
 
-            if vars.ActiveMode == "salute" then
-                vars.ActiveMode = nil
+            if _G.BotVars.ActiveMode == "salute" then
+                _G.BotVars.ActiveMode = nil
             end
 
             --------------------------------------------------
             -- WAIT SEBENTAR
+            --
+            -- Memberikan waktu kepada Animate untuk
+            -- membuat kembali animation track default.
             --------------------------------------------------
 
             task.wait(0.05)
@@ -208,7 +195,7 @@ return {
         -- REGISTER GLOBAL CONTROLLER
         --------------------------------------------------
 
-        vars.ModeControllers.salute =
+        _G.BotVars.ModeControllers.salute =
             stopEmote
 
         --------------------------------------------------
@@ -218,7 +205,7 @@ return {
         local function stopOtherModes()
 
             for name, stopFunction in pairs(
-                vars.ModeControllers
+                _G.BotVars.ModeControllers
             ) do
 
                 if name ~= "salute"
@@ -229,121 +216,6 @@ return {
                 end
 
             end
-
-        end
-
-        --------------------------------------------------
-        -- PLAY EMOTE INTERNAL
-        --------------------------------------------------
-        --
-        -- Fungsi ini hanya memainkan Salute.
-        --
-        -- PENTING:
-        -- Fungsi ini TIDAK memanggil stopOtherModes().
-        --
-        -- Digunakan saat respawn supaya Salute dapat
-        -- kembali bermain tanpa mematikan Sync.
-        --
-        --------------------------------------------------
-
-        local function playEmoteInternal()
-
-            --------------------------------------------------
-            -- GET CHARACTER
-            --------------------------------------------------
-
-            local character =
-                LocalPlayer.Character
-
-            if not character then
-
-                warn(
-                    "[Salute] Character tidak ditemukan"
-                )
-
-                return false
-
-            end
-
-            --------------------------------------------------
-            -- GET HUMANOID
-            --------------------------------------------------
-
-            local humanoid =
-                character:FindFirstChildOfClass(
-                    "Humanoid"
-                )
-
-            if not humanoid then
-
-                warn(
-                    "[Salute] Humanoid tidak ditemukan"
-                )
-
-                return false
-
-            end
-
-            --------------------------------------------------
-            -- PLAY EMOTE
-            --------------------------------------------------
-
-            local success, track =
-                pcall(function()
-
-                    return humanoid:
-                        PlayEmoteAndGetAnimTrackById(
-                            EMOTE_ID
-                        )
-
-                end)
-
-            --------------------------------------------------
-            -- PLAY FAILED
-            --------------------------------------------------
-
-            if not success then
-
-                warn(
-                    "[Salute] Gagal memainkan emote:",
-                    track
-                )
-
-                return false
-
-            end
-
-            --------------------------------------------------
-            -- TRACK TIDAK DITEMUKAN
-            --------------------------------------------------
-
-            if not track then
-
-                warn(
-                    "[Salute] Emote tidak dapat dimainkan:",
-                    EMOTE_ID
-                )
-
-                return false
-
-            end
-
-            --------------------------------------------------
-            -- SAVE TRACK
-            --------------------------------------------------
-
-            currentTrack = track
-
-            --------------------------------------------------
-            -- SUCCESS
-            --------------------------------------------------
-
-            print(
-                "[Salute] Emote berhasil dimainkan:",
-                EMOTE_ID
-            )
-
-            return true
 
         end
 
@@ -391,10 +263,6 @@ return {
 
             --------------------------------------------------
             -- STOP MODE LAIN
-            --
-            -- Hanya dilakukan ketika user benar-benar
-            -- menjalankan !salute.
-            --
             --------------------------------------------------
 
             stopOtherModes()
@@ -406,26 +274,27 @@ return {
             stopEmote()
 
             --------------------------------------------------
-            -- SET ACTIVE STATE
-            --------------------------------------------------
-
-            saluteActive = true
-
-            --------------------------------------------------
             -- SET ACTIVE MODE
             --
             -- Dilakukan setelah stopEmote()
             -- supaya tidak langsung di-clear.
             --------------------------------------------------
 
-            vars.ActiveMode = "salute"
+            _G.BotVars.ActiveMode = "salute"
 
             --------------------------------------------------
             -- PLAY EMOTE
             --------------------------------------------------
 
-            local success =
-                playEmoteInternal()
+            local success, track =
+                pcall(function()
+
+                    return humanoid:
+                        PlayEmoteAndGetAnimTrackById(
+                            EMOTE_ID
+                        )
+
+                end)
 
             --------------------------------------------------
             -- PLAY FAILED
@@ -433,15 +302,48 @@ return {
 
             if not success then
 
-                saluteActive = false
+                warn(
+                    "[Salute] Gagal memainkan emote:",
+                    track
+                )
 
-                if vars.ActiveMode == "salute" then
-                    vars.ActiveMode = nil
-                end
+                _G.BotVars.ActiveMode = nil
 
                 return
 
             end
+
+            --------------------------------------------------
+            -- TRACK TIDAK DITEMUKAN
+            --------------------------------------------------
+
+            if not track then
+
+                warn(
+                    "[Salute] Emote tidak dapat dimainkan:",
+                    EMOTE_ID
+                )
+
+                _G.BotVars.ActiveMode = nil
+
+                return
+
+            end
+
+            --------------------------------------------------
+            -- SAVE TRACK
+            --------------------------------------------------
+
+            currentTrack = track
+
+            --------------------------------------------------
+            -- SUCCESS
+            --------------------------------------------------
+
+            print(
+                "[Salute] Emote berhasil dimainkan:",
+                EMOTE_ID
+            )
 
         end
 
@@ -512,7 +414,7 @@ return {
                 --------------------------------------------------
 
                 for _, stopFunction in pairs(
-                    vars.ModeControllers
+                    _G.BotVars.ModeControllers
                 ) do
 
                     if type(stopFunction) == "function" then
@@ -529,7 +431,7 @@ return {
                 -- CLEAR ACTIVE MODE
                 --------------------------------------------------
 
-                vars.ActiveMode = nil
+                _G.BotVars.ActiveMode = nil
 
                 print(
                     "[Salute] Semua mode dihentikan"
@@ -596,22 +498,18 @@ return {
             function()
 
                 --------------------------------------------------
-                -- SIMPAN STATUS SALUTE
-                --
-                -- saluteActive sengaja tidak menggunakan
-                -- vars.ActiveMode karena Sync dapat mengubah
-                -- ActiveMode menjadi "sync".
-                --
-                --------------------------------------------------
-
-                local shouldResumeSalute =
-                    saluteActive
-
-                --------------------------------------------------
                 -- CLEAR OLD TRACK
                 --------------------------------------------------
 
                 currentTrack = nil
+
+                --------------------------------------------------
+                -- CLEAR ACTIVE MODE
+                --------------------------------------------------
+
+                if _G.BotVars.ActiveMode == "salute" then
+                    _G.BotVars.ActiveMode = nil
+                end
 
                 --------------------------------------------------
                 -- WAIT CHARACTER READY
@@ -639,36 +537,6 @@ return {
 
                 if animate then
                     animate.Disabled = false
-                end
-
-                --------------------------------------------------
-                -- RESUME SALUTE
-                --------------------------------------------------
-                --
-                -- Jangan menggunakan:
-                --
-                -- playEmote()
-                --
-                -- karena playEmote() memanggil
-                -- stopOtherModes() dan bisa mematikan Sync.
-                --
-                --------------------------------------------------
-
-                if shouldResumeSalute then
-
-                    local success =
-                        playEmoteInternal()
-
-                    if not success then
-
-                        saluteActive = false
-
-                        if vars.ActiveMode == "salute" then
-                            vars.ActiveMode = nil
-                        end
-
-                    end
-
                 end
 
             end

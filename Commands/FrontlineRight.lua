@@ -1,6 +1,5 @@
 return {
     Execute = function()
-
         ----------------------------------------------------------------
         -- SERVICES
         ----------------------------------------------------------------
@@ -70,6 +69,7 @@ return {
         ----------------------------------------------------------------
 
         local botOrder = {
+
             "11611503633", -- Bot 1
             "11611534165", -- Bot 2
             "11611567975", -- Bot 3
@@ -81,6 +81,7 @@ return {
             "11122854402", -- Bot 9
             "11641280895", -- Bot 10
             "11641342530", -- Bot 11
+
         }
 
         ----------------------------------------------------------------
@@ -97,7 +98,9 @@ return {
                 character:WaitForChild("Humanoid")
 
             myHRP =
-                character:WaitForChild("HumanoidRootPart")
+                character:WaitForChild(
+                    "HumanoidRootPart"
+                )
 
             humanoid.AutoRotate = true
 
@@ -151,11 +154,6 @@ return {
 
             if humanoid then
                 humanoid.AutoRotate = true
-            end
-
-            -- Jangan menghapus mode lain seperti Sync
-            if vars.ActiveMode == "frontlineright" then
-                vars.ActiveMode = nil
             end
 
         end
@@ -406,15 +404,31 @@ return {
         end
 
         ----------------------------------------------------------------
-        -- CONNECT FRONTLINE RIGHT LOOP
-        ----------------------------------------------------------------
-        --
-        -- Dipisahkan dari startFrontlineRight()
-        -- supaya respawn tidak memanggil start lagi.
-        --
+        -- START FRONTLINE RIGHT
         ----------------------------------------------------------------
 
-        local function connectFrontlineRightLoop(myIndex)
+        local function startFrontlineRight(player)
+
+            if not player then
+                return
+            end
+
+            ------------------------------------------------------------
+            -- STOP MODE LAIN
+            ------------------------------------------------------------
+
+            stopOtherModes()
+
+            ------------------------------------------------------------
+            -- ACTIVE MODE
+            ------------------------------------------------------------
+
+            vars.ActiveMode =
+                "frontlineright"
+
+            ------------------------------------------------------------
+            -- DISCONNECT LOOP LAMA
+            ------------------------------------------------------------
 
             if frontlineRightConnection then
 
@@ -423,26 +437,82 @@ return {
 
             end
 
+            ------------------------------------------------------------
+            -- STATE
+            ------------------------------------------------------------
+
+            frontlineRightActive = true
+            targetPlayer = player
+
+            ------------------------------------------------------------
+            -- CHAT
+            ------------------------------------------------------------
+
+            sendChat("Yes, Sir!")
+
+            ------------------------------------------------------------
+            -- FIND BOT INDEX
+            ------------------------------------------------------------
+
+            local myIndex =
+                table.find(
+                    botOrder,
+                    tostring(LocalPlayer.UserId)
+                )
+
+            ------------------------------------------------------------
+            -- BOT TIDAK ADA DI FRONTLINE
+            ------------------------------------------------------------
+
             if not myIndex then
+
+                print(
+                    "[FRONTLINE RIGHT]",
+                    "Bot ini bukan Bot 1-11:",
+                    LocalPlayer.UserId
+                )
+
+                stopFrontlineRight()
+
                 return
+
             end
+
+            ------------------------------------------------------------
+            -- DEBUG
+            ------------------------------------------------------------
+
+            print(
+                "[FRONTLINE RIGHT]",
+                "Bot Index:",
+                myIndex,
+                "UserId:",
+                LocalPlayer.UserId
+            )
+
+            ------------------------------------------------------------
+            -- HEARTBEAT
+            ------------------------------------------------------------
 
             frontlineRightConnection =
                 RunService.Heartbeat:Connect(
                     function()
 
                         ------------------------------------------------
-                        -- ACTIVE CHECK
+                        -- MODE CHECK
                         ------------------------------------------------
-                        --
-                        -- Jangan gunakan vars.ActiveMode di sini.
-                        --
-                        -- Karena Sync menggunakan:
-                        -- vars.ActiveMode = "sync"
-                        --
-                        -- FrontlineRight tetap harus berjalan
-                        -- bersamaan dengan Sync.
-                        --
+
+                        if vars.ActiveMode
+                            ~= "frontlineright" then
+
+                            stopFrontlineRight()
+
+                            return
+
+                        end
+
+                        ------------------------------------------------
+                        -- ACTIVE CHECK
                         ------------------------------------------------
 
                         if not frontlineRightActive then
@@ -564,103 +634,6 @@ return {
         end
 
         ----------------------------------------------------------------
-        -- START FRONTLINE RIGHT
-        ----------------------------------------------------------------
-
-        local function startFrontlineRight(player)
-
-            if not player then
-                return
-            end
-
-            ------------------------------------------------------------
-            -- STOP MODE LAIN
-            ------------------------------------------------------------
-
-            stopOtherModes()
-
-            ------------------------------------------------------------
-            -- ACTIVE MODE
-            ------------------------------------------------------------
-
-            vars.ActiveMode =
-                "frontlineright"
-
-            ------------------------------------------------------------
-            -- DISCONNECT LOOP LAMA
-            ------------------------------------------------------------
-
-            if frontlineRightConnection then
-
-                frontlineRightConnection:Disconnect()
-                frontlineRightConnection = nil
-
-            end
-
-            ------------------------------------------------------------
-            -- STATE
-            ------------------------------------------------------------
-
-            frontlineRightActive = true
-            targetPlayer = player
-
-            ------------------------------------------------------------
-            -- CHAT
-            ------------------------------------------------------------
-
-            sendChat("Yes, Sir!")
-
-            ------------------------------------------------------------
-            -- FIND BOT INDEX
-            ------------------------------------------------------------
-
-            local myIndex =
-                table.find(
-                    botOrder,
-                    tostring(LocalPlayer.UserId)
-                )
-
-            ------------------------------------------------------------
-            -- BOT TIDAK ADA DI FRONTLINE
-            ------------------------------------------------------------
-
-            if not myIndex then
-
-                print(
-                    "[FRONTLINE RIGHT]",
-                    "Bot ini bukan Bot 1-11:",
-                    LocalPlayer.UserId
-                )
-
-                stopFrontlineRight()
-
-                return
-
-            end
-
-            ------------------------------------------------------------
-            -- DEBUG
-            ------------------------------------------------------------
-
-            print(
-                "[FRONTLINE RIGHT]",
-                "Bot Index:",
-                myIndex,
-                "UserId:",
-                LocalPlayer.UserId
-            )
-
-            ------------------------------------------------------------
-            -- START LOOP
-            ------------------------------------------------------------
-
-            connectFrontlineRightLoop(
-                myIndex
-            )
-
-        end
-
-        ----------------------------------------------------------------
         -- HANDLE COMMAND
         ----------------------------------------------------------------
 
@@ -729,6 +702,8 @@ return {
             if lower == "!stop"
                 or lower == "!unfrontlineright" then
 
+                vars.ActiveMode = nil
+
                 stopFrontlineRight()
 
                 return
@@ -780,31 +755,16 @@ return {
                 updateCharacter()
 
                 --------------------------------------------------------
-                -- RECONNECT FRONTLINE RIGHT
-                --------------------------------------------------------
-                --
-                -- Jangan panggil startFrontlineRight()
-                -- karena start akan stopOtherModes()
-                -- dan bisa mematikan Sync.
-                --
+                -- RESTART FRONTLINE RIGHT
                 --------------------------------------------------------
 
-                if frontlineRightActive
+                if vars.ActiveMode
+                    == "frontlineright"
                     and targetPlayer then
 
-                    local myIndex =
-                        table.find(
-                            botOrder,
-                            tostring(LocalPlayer.UserId)
-                        )
-
-                    if myIndex then
-
-                        connectFrontlineRightLoop(
-                            myIndex
-                        )
-
-                    end
+                    startFrontlineRight(
+                        targetPlayer
+                    )
 
                 end
 
