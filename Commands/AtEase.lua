@@ -9,14 +9,6 @@ return {
         local TextChatService = game:GetService("TextChatService")
 
         --------------------------------------------------
-        -- LOAD ADMIN
-        --------------------------------------------------
-
-        local Admin = loadstring(game:HttpGet(
-            "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
-        ))()
-
-        --------------------------------------------------
         -- LOCAL PLAYER
         --------------------------------------------------
 
@@ -26,6 +18,22 @@ return {
             warn("[AtEase] LocalPlayer tidak ditemukan")
             return
         end
+
+        --------------------------------------------------
+        -- GLOBAL MODE SYSTEM
+        --------------------------------------------------
+
+        _G.BotVars = _G.BotVars or {}
+        _G.BotVars.ModeControllers =
+            _G.BotVars.ModeControllers or {}
+
+        --------------------------------------------------
+        -- LOAD ADMIN
+        --------------------------------------------------
+
+        local Admin = loadstring(game:HttpGet(
+            "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
+        ))()
 
         --------------------------------------------------
         -- EMOTE ID
@@ -48,8 +56,13 @@ return {
             if currentTrack then
 
                 pcall(function()
-                    currentTrack:Stop()
+
+                    if currentTrack.IsPlaying then
+                        currentTrack:Stop(0.15)
+                    end
+
                     currentTrack:Destroy()
+
                 end)
 
                 currentTrack = nil
@@ -61,12 +74,40 @@ return {
         end
 
         --------------------------------------------------
+        -- REGISTER CONTROLLER
+        --------------------------------------------------
+
+        _G.BotVars.ModeControllers.atease = stopEmote
+
+        --------------------------------------------------
+        -- STOP SEMUA MODE LAIN
+        --------------------------------------------------
+
+        local function stopOtherModes()
+
+            for name, stopFunction in pairs(
+                _G.BotVars.ModeControllers
+            ) do
+
+                if name ~= "atease"
+                    and type(stopFunction) == "function" then
+
+                    pcall(stopFunction)
+
+                end
+
+            end
+
+        end
+
+        --------------------------------------------------
         -- PLAY EMOTE
         --------------------------------------------------
 
         local function playEmote()
 
-            local character = LocalPlayer.Character
+            local character =
+                LocalPlayer.Character
 
             if not character then
                 warn("[AtEase] Character tidak ditemukan")
@@ -74,7 +115,9 @@ return {
             end
 
             local humanoid =
-                character:FindFirstChildOfClass("Humanoid")
+                character:FindFirstChildOfClass(
+                    "Humanoid"
+                )
 
             if not humanoid then
                 warn("[AtEase] Humanoid tidak ditemukan")
@@ -82,7 +125,19 @@ return {
             end
 
             --------------------------------------------------
-            -- HENTIKAN EMOTE SEBELUMNYA
+            -- STOP MODE LAIN
+            --------------------------------------------------
+
+            stopOtherModes()
+
+            --------------------------------------------------
+            -- ACTIVE MODE
+            --------------------------------------------------
+
+            _G.BotVars.ActiveMode = "atease"
+
+            --------------------------------------------------
+            -- STOP ATEASE LAMA
             --------------------------------------------------
 
             stopEmote()
@@ -93,9 +148,10 @@ return {
 
             local success, track = pcall(function()
 
-                return humanoid:PlayEmoteAndGetAnimTrackById(
-                    EMOTE_ID
-                )
+                return humanoid:
+                    PlayEmoteAndGetAnimTrackById(
+                        EMOTE_ID
+                    )
 
             end)
 
@@ -106,6 +162,8 @@ return {
                     track
                 )
 
+                _G.BotVars.ActiveMode = nil
+
                 return
             end
 
@@ -115,6 +173,8 @@ return {
                     "[AtEase] Emote tidak dapat dimainkan:",
                     EMOTE_ID
                 )
+
+                _G.BotVars.ActiveMode = nil
 
                 return
             end
@@ -136,7 +196,10 @@ return {
         -- COMMAND HANDLER
         --------------------------------------------------
 
-        local function handleCommand(message, sender)
+        local function handleCommand(
+            message,
+            sender
+        )
 
             if not sender then
                 return
@@ -150,7 +213,10 @@ return {
                 return
             end
 
-            local command = message:lower():match("^%s*(.-)%s*$")
+            local command =
+                message:lower():match(
+                    "^%s*(.-)%s*$"
+                )
 
             --------------------------------------------------
             -- !ATEASE
@@ -165,19 +231,39 @@ return {
 
                 playEmote()
 
+                return
+            end
+
             --------------------------------------------------
             -- !STOP
             --------------------------------------------------
 
-            elseif command == "!stop" then
+            if command == "!stop" then
 
                 print(
                     "[AtEase] Command !Stop diterima dari:",
                     sender.Name
                 )
 
-                stopEmote()
+                --------------------------------------------------
+                -- STOP SEMUA MODE
+                --------------------------------------------------
 
+                for _, stopFunction in pairs(
+                    _G.BotVars.ModeControllers
+                ) do
+
+                    if type(stopFunction) == "function" then
+
+                        pcall(stopFunction)
+
+                    end
+
+                end
+
+                _G.BotVars.ActiveMode = nil
+
+                return
             end
 
         end
@@ -217,11 +303,13 @@ return {
         -- CHARACTER RESPAWN
         --------------------------------------------------
 
-        LocalPlayer.CharacterAdded:Connect(function()
+        LocalPlayer.CharacterAdded:Connect(
+            function()
 
-            currentTrack = nil
+                currentTrack = nil
 
-        end)
+            end
+        )
 
         --------------------------------------------------
         -- READY
