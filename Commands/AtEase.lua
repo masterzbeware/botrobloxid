@@ -24,6 +24,7 @@ return {
         --------------------------------------------------
 
         _G.BotVars = _G.BotVars or {}
+
         _G.BotVars.ModeControllers =
             _G.BotVars.ModeControllers or {}
 
@@ -53,6 +54,10 @@ return {
 
         local function stopEmote()
 
+            --------------------------------------------------
+            -- STOP CURRENT TRACK
+            --------------------------------------------------
+
             if currentTrack then
 
                 pcall(function()
@@ -67,9 +72,113 @@ return {
 
                 currentTrack = nil
 
-                print("[AtEase] Emote dihentikan")
+            end
+
+            --------------------------------------------------
+            -- GET CHARACTER
+            --------------------------------------------------
+
+            local character =
+                LocalPlayer.Character
+
+            if not character then
+                return
+            end
+
+            --------------------------------------------------
+            -- RESET ACTIVE MODE
+            --------------------------------------------------
+
+            if _G.BotVars.ActiveMode == "atease" then
+                _G.BotVars.ActiveMode = nil
+            end
+
+            --------------------------------------------------
+            -- ENABLE DEFAULT ANIMATE
+            --------------------------------------------------
+
+            local animate =
+                character:FindFirstChild("Animate")
+
+            if animate then
+
+                --------------------------------------------------
+                -- RESTART DEFAULT ANIMATION SCRIPT
+                --------------------------------------------------
+
+                animate.Disabled = true
+
+                task.wait()
+
+                animate.Disabled = false
 
             end
+
+            --------------------------------------------------
+            -- RESET HUMANOID
+            --------------------------------------------------
+
+            local humanoid =
+                character:FindFirstChildOfClass(
+                    "Humanoid"
+                )
+
+            if humanoid then
+
+                --------------------------------------------------
+                -- STOP REMAINING CUSTOM TRACKS
+                --------------------------------------------------
+
+                local animator =
+                    humanoid:FindFirstChildOfClass(
+                        "Animator"
+                    )
+
+                if animator then
+
+                    for _, track in ipairs(
+                        animator:GetPlayingAnimationTracks()
+                    ) do
+
+                        pcall(function()
+
+                            track:Stop(0.15)
+
+                        end)
+
+                    end
+
+                end
+
+            end
+
+            --------------------------------------------------
+            -- WAIT FOR DEFAULT ANIMATION
+            --------------------------------------------------
+
+            task.delay(0.1, function()
+
+                if not LocalPlayer.Character then
+                    return
+                end
+
+                local currentCharacter =
+                    LocalPlayer.Character
+
+                local currentAnimate =
+                    currentCharacter:FindFirstChild(
+                        "Animate"
+                    )
+
+                if currentAnimate then
+                    currentAnimate.Disabled = false
+                end
+
+            end)
+
+            print(
+                "[AtEase] Emote dihentikan dan pose dikembalikan"
+            )
 
         end
 
@@ -77,7 +186,8 @@ return {
         -- REGISTER CONTROLLER
         --------------------------------------------------
 
-        _G.BotVars.ModeControllers.atease = stopEmote
+        _G.BotVars.ModeControllers.atease =
+            stopEmote
 
         --------------------------------------------------
         -- STOP SEMUA MODE LAIN
@@ -106,13 +216,26 @@ return {
 
         local function playEmote()
 
+            --------------------------------------------------
+            -- CHARACTER
+            --------------------------------------------------
+
             local character =
                 LocalPlayer.Character
 
             if not character then
-                warn("[AtEase] Character tidak ditemukan")
+
+                warn(
+                    "[AtEase] Character tidak ditemukan"
+                )
+
                 return
+
             end
+
+            --------------------------------------------------
+            -- HUMANOID
+            --------------------------------------------------
 
             local humanoid =
                 character:FindFirstChildOfClass(
@@ -120,8 +243,13 @@ return {
                 )
 
             if not humanoid then
-                warn("[AtEase] Humanoid tidak ditemukan")
+
+                warn(
+                    "[AtEase] Humanoid tidak ditemukan"
+                )
+
                 return
+
             end
 
             --------------------------------------------------
@@ -131,7 +259,7 @@ return {
             stopOtherModes()
 
             --------------------------------------------------
-            -- ACTIVE MODE
+            -- SET ACTIVE MODE
             --------------------------------------------------
 
             _G.BotVars.ActiveMode = "atease"
@@ -143,17 +271,28 @@ return {
             stopEmote()
 
             --------------------------------------------------
+            -- SET ACTIVE MODE AGAIN
+            --------------------------------------------------
+
+            _G.BotVars.ActiveMode = "atease"
+
+            --------------------------------------------------
             -- PLAY EMOTE
             --------------------------------------------------
 
-            local success, track = pcall(function()
+            local success, track =
+                pcall(function()
 
-                return humanoid:
-                    PlayEmoteAndGetAnimTrackById(
-                        EMOTE_ID
-                    )
+                    return humanoid:
+                        PlayEmoteAndGetAnimTrackById(
+                            EMOTE_ID
+                        )
 
-            end)
+                end)
+
+            --------------------------------------------------
+            -- FAILED
+            --------------------------------------------------
 
             if not success then
 
@@ -165,7 +304,12 @@ return {
                 _G.BotVars.ActiveMode = nil
 
                 return
+
             end
+
+            --------------------------------------------------
+            -- TRACK NOT FOUND
+            --------------------------------------------------
 
             if not track then
 
@@ -177,10 +321,11 @@ return {
                 _G.BotVars.ActiveMode = nil
 
                 return
+
             end
 
             --------------------------------------------------
-            -- SIMPAN TRACK
+            -- SAVE TRACK
             --------------------------------------------------
 
             currentTrack = track
@@ -212,6 +357,10 @@ return {
             if not Admin:IsAdmin(sender) then
                 return
             end
+
+            --------------------------------------------------
+            -- NORMALIZE COMMAND
+            --------------------------------------------------
 
             local command =
                 message:lower():match(
@@ -261,6 +410,10 @@ return {
 
                 end
 
+                --------------------------------------------------
+                -- RESET ACTIVE MODE
+                --------------------------------------------------
+
                 _G.BotVars.ActiveMode = nil
 
                 return
@@ -279,8 +432,16 @@ return {
                     return
                 end
 
+                --------------------------------------------------
+                -- GET USER ID
+                --------------------------------------------------
+
                 local userId =
                     message.TextSource.UserId
+
+                --------------------------------------------------
+                -- GET PLAYER
+                --------------------------------------------------
 
                 local sender =
                     Players:GetPlayerByUserId(
@@ -290,6 +451,10 @@ return {
                 if not sender then
                     return
                 end
+
+                --------------------------------------------------
+                -- HANDLE COMMAND
+                --------------------------------------------------
 
                 handleCommand(
                     message.Text,
@@ -307,6 +472,26 @@ return {
             function()
 
                 currentTrack = nil
+
+                task.wait(1)
+
+                --------------------------------------------------
+                -- DEFAULT ANIMATION
+                --------------------------------------------------
+
+                local character =
+                    LocalPlayer.Character
+
+                if not character then
+                    return
+                end
+
+                local animate =
+                    character:FindFirstChild("Animate")
+
+                if animate then
+                    animate.Disabled = false
+                end
 
             end
         )
