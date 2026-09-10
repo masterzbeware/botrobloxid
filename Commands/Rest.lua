@@ -16,7 +16,7 @@ return {
         local LocalPlayer = Players.LocalPlayer
 
         if not LocalPlayer then
-            warn("[AtEase] LocalPlayer tidak ditemukan")
+            warn("[Rest] LocalPlayer tidak ditemukan")
             return
         end
 
@@ -86,7 +86,7 @@ return {
 
             if not character then
 
-                if _G.BotVars.ActiveMode == "atease" then
+                if _G.BotVars.ActiveMode == "rest" then
                     _G.BotVars.ActiveMode = nil
                 end
 
@@ -105,7 +105,7 @@ return {
 
             if not humanoid then
 
-                if _G.BotVars.ActiveMode == "atease" then
+                if _G.BotVars.ActiveMode == "rest" then
                     _G.BotVars.ActiveMode = nil
                 end
 
@@ -140,9 +140,9 @@ return {
             --------------------------------------------------
             -- STOP SEMUA TRACK
             --
-            -- Animate sudah disabled terlebih dahulu
-            -- supaya animation default tidak langsung
-            -- bermain kembali ketika kita melakukan reset.
+            -- Animate dimatikan terlebih dahulu agar
+            -- animation default tidak langsung bermain
+            -- kembali ketika track dihentikan.
             --------------------------------------------------
 
             if animator then
@@ -173,21 +173,18 @@ return {
             -- CLEAR ACTIVE MODE
             --------------------------------------------------
 
-            if _G.BotVars.ActiveMode == "atease" then
+            if _G.BotVars.ActiveMode == "rest" then
                 _G.BotVars.ActiveMode = nil
             end
 
             --------------------------------------------------
             -- WAIT SEBENTAR
-            --
-            -- Memberikan waktu kepada Animate untuk
-            -- membuat kembali animation track default.
             --------------------------------------------------
 
             task.wait(0.05)
 
             print(
-                "[AtEase] Emote dihentikan dan pose di-reset"
+                "[Rest] Emote dihentikan dan pose di-reset"
             )
 
         end
@@ -196,7 +193,7 @@ return {
         -- REGISTER GLOBAL CONTROLLER
         --------------------------------------------------
 
-        _G.BotVars.ModeControllers.atease =
+        _G.BotVars.ModeControllers.rest =
             stopEmote
 
         --------------------------------------------------
@@ -209,10 +206,12 @@ return {
                 _G.BotVars.ModeControllers
             ) do
 
-                if name ~= "atease"
+                if name ~= "rest"
                     and type(stopFunction) == "function" then
 
-                    pcall(stopFunction)
+                    pcall(function()
+                        stopFunction()
+                    end)
 
                 end
 
@@ -236,7 +235,7 @@ return {
             if not character then
 
                 warn(
-                    "[AtEase] Character tidak ditemukan"
+                    "[Rest] Character tidak ditemukan"
                 )
 
                 return
@@ -255,7 +254,7 @@ return {
             if not humanoid then
 
                 warn(
-                    "[AtEase] Humanoid tidak ditemukan"
+                    "[Rest] Humanoid tidak ditemukan"
                 )
 
                 return
@@ -269,7 +268,7 @@ return {
             stopOtherModes()
 
             --------------------------------------------------
-            -- STOP ATEASE YANG SEDANG BERJALAN
+            -- STOP REST YANG SEDANG BERJALAN
             --------------------------------------------------
 
             stopEmote()
@@ -277,12 +276,11 @@ return {
             --------------------------------------------------
             -- SET ACTIVE MODE
             --
-            -- Harus dilakukan SETELAH stopEmote()
-            -- karena stopEmote() akan membersihkan
-            -- ActiveMode.
+            -- Dilakukan setelah stopEmote()
+            -- agar tidak langsung dihapus.
             --------------------------------------------------
 
-            _G.BotVars.ActiveMode = "atease"
+            _G.BotVars.ActiveMode = "rest"
 
             --------------------------------------------------
             -- PLAY EMOTE
@@ -305,7 +303,7 @@ return {
             if not success then
 
                 warn(
-                    "[AtEase] Gagal memainkan emote:",
+                    "[Rest] Gagal memainkan emote:",
                     track
                 )
 
@@ -322,7 +320,7 @@ return {
             if not track then
 
                 warn(
-                    "[AtEase] Emote tidak dapat dimainkan:",
+                    "[Rest] Emote tidak dapat dimainkan:",
                     EMOTE_ID
                 )
 
@@ -343,7 +341,7 @@ return {
             --------------------------------------------------
 
             print(
-                "[AtEase] Emote berhasil dimainkan:",
+                "[Rest] Emote berhasil dimainkan:",
                 EMOTE_ID
             )
 
@@ -384,13 +382,13 @@ return {
                 )
 
             --------------------------------------------------
-            -- !ATEASE
+            -- !REST
             --------------------------------------------------
 
-            if command == "!atease" then
+            if command == "!rest" then
 
                 print(
-                    "[AtEase] Command !AtEase diterima dari:",
+                    "[Rest] Command !Rest diterima dari:",
                     sender.Name
                 )
 
@@ -407,7 +405,7 @@ return {
             if command == "!stop" then
 
                 print(
-                    "[AtEase] Command !Stop diterima dari:",
+                    "[Rest] Command !Stop diterima dari:",
                     sender.Name
                 )
 
@@ -436,7 +434,7 @@ return {
                 _G.BotVars.ActiveMode = nil
 
                 print(
-                    "[AtEase] Semua mode dihentikan"
+                    "[Rest] Semua mode dihentikan"
                 )
 
                 return
@@ -509,7 +507,7 @@ return {
                 -- CLEAR ACTIVE MODE
                 --------------------------------------------------
 
-                if _G.BotVars.ActiveMode == "atease" then
+                if _G.BotVars.ActiveMode == "rest" then
                     _G.BotVars.ActiveMode = nil
                 end
 
@@ -549,7 +547,7 @@ return {
         --------------------------------------------------
 
         print(
-            "[AtEase] AtEase.lua aktif!"
+            "[Rest] Rest.lua aktif!"
         )
 
     end
