@@ -31,7 +31,34 @@ return {
         -- EMOTE ID
         --------------------------------------------------
 
-        local EMOTE_ID = "115880435130348"
+        local EMOTE_ID = "132843854962577"
+
+        --------------------------------------------------
+        -- CURRENT EMOTE TRACK
+        --------------------------------------------------
+
+        local currentTrack = nil
+
+        --------------------------------------------------
+        -- STOP EMOTE
+        --------------------------------------------------
+
+        local function stopEmote()
+
+            if currentTrack then
+
+                pcall(function()
+                    currentTrack:Stop()
+                    currentTrack:Destroy()
+                end)
+
+                currentTrack = nil
+
+                print("[AtEase] Emote dihentikan")
+
+            end
+
+        end
 
         --------------------------------------------------
         -- PLAY EMOTE
@@ -54,7 +81,17 @@ return {
                 return
             end
 
-            local success, result = pcall(function()
+            --------------------------------------------------
+            -- HENTIKAN EMOTE SEBELUMNYA
+            --------------------------------------------------
+
+            stopEmote()
+
+            --------------------------------------------------
+            -- PLAY EMOTE
+            --------------------------------------------------
+
+            local success, track = pcall(function()
 
                 return humanoid:PlayEmoteAndGetAnimTrackById(
                     EMOTE_ID
@@ -66,27 +103,32 @@ return {
 
                 warn(
                     "[AtEase] Gagal memainkan emote:",
-                    result
+                    track
                 )
 
                 return
             end
 
-            if result then
-
-                print(
-                    "[AtEase] Emote berhasil dimainkan:",
-                    EMOTE_ID
-                )
-
-            else
+            if not track then
 
                 warn(
                     "[AtEase] Emote tidak dapat dimainkan:",
                     EMOTE_ID
                 )
 
+                return
             end
+
+            --------------------------------------------------
+            -- SIMPAN TRACK
+            --------------------------------------------------
+
+            currentTrack = track
+
+            print(
+                "[AtEase] Emote berhasil dimainkan:",
+                EMOTE_ID
+            )
 
         end
 
@@ -108,11 +150,13 @@ return {
                 return
             end
 
+            local command = message:lower():match("^%s*(.-)%s*$")
+
             --------------------------------------------------
             -- !ATEASE
             --------------------------------------------------
 
-            if message:lower():match("^%s*!atease%s*$") then
+            if command == "!atease" then
 
                 print(
                     "[AtEase] Command !AtEase diterima dari:",
@@ -120,6 +164,19 @@ return {
                 )
 
                 playEmote()
+
+            --------------------------------------------------
+            -- !STOP
+            --------------------------------------------------
+
+            elseif command == "!stop" then
+
+                print(
+                    "[AtEase] Command !Stop diterima dari:",
+                    sender.Name
+                )
+
+                stopEmote()
 
             end
 
@@ -155,6 +212,16 @@ return {
 
             end
         )
+
+        --------------------------------------------------
+        -- CHARACTER RESPAWN
+        --------------------------------------------------
+
+        LocalPlayer.CharacterAdded:Connect(function()
+
+            currentTrack = nil
+
+        end)
 
         --------------------------------------------------
         -- READY
