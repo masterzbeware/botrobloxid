@@ -1,164 +1,236 @@
 return {
-Execute = function()
-    --------------------------------------------------
-    -- SERVICES
-    --------------------------------------------------
+    Execute = function()
 
-    local Players = game:GetService("Players")
-    local TextChatService = game:GetService("TextChatService")
+        --------------------------------------------------
+        -- SERVICES
+        --------------------------------------------------
 
-    --------------------------------------------------
-    -- LOAD ADMIN
-    --------------------------------------------------
+        local Players = game:GetService("Players")
+        local TextChatService = game:GetService("TextChatService")
 
-    local Admin = loadstring(game:HttpGet(
-        "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
-    ))()
+        --------------------------------------------------
+        -- LOAD ADMIN
+        --------------------------------------------------
 
-    --------------------------------------------------
-    -- LOCAL PLAYER
-    --------------------------------------------------
+        local Admin = loadstring(game:HttpGet(
+            "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
+        ))()
 
-    local LocalPlayer = Players.LocalPlayer
+        --------------------------------------------------
+        -- LOCAL PLAYER
+        --------------------------------------------------
 
-    if not LocalPlayer then
-        warn("[Salute] LocalPlayer tidak ditemukan")
-        return
-    end
+        local LocalPlayer = Players.LocalPlayer
 
-    --------------------------------------------------
-    -- SEND CHAT
-    --------------------------------------------------
-
-    local function sendChat(message)
-
-        local channel =
-            TextChatService.TextChannels:FindFirstChild(
-                "RBXGeneral"
-            )
-
-        if not channel then
-
-            warn(
-                "[Salute] RBXGeneral tidak ditemukan"
-            )
-
-            return false
-
-        end
-
-        local success, err = pcall(function()
-
-            channel:SendAsync(message)
-
-        end)
-
-        if not success then
-
-            warn(
-                "[Salute] Gagal mengirim chat:",
-                err
-            )
-
-            return false
-
-        end
-
-        return true
-
-    end
-
-    --------------------------------------------------
-    -- COMMAND HANDLER
-    --------------------------------------------------
-
-    local function handleCommand(message, sender)
-
-        if not sender then
+        if not LocalPlayer then
+            warn("[Salute] LocalPlayer tidak ditemukan")
             return
         end
 
         --------------------------------------------------
-        -- ADMIN CHECK
+        -- EMOTE ID
         --------------------------------------------------
 
-        if not Admin:IsAdmin(sender) then
-            return
+        local EMOTE_ID = "135931155753335"
+
+        --------------------------------------------------
+        -- CURRENT EMOTE TRACK
+        --------------------------------------------------
+
+        local currentTrack = nil
+
+        --------------------------------------------------
+        -- STOP EMOTE
+        --------------------------------------------------
+
+        local function stopEmote()
+
+            if currentTrack then
+
+                pcall(function()
+                    currentTrack:Stop()
+                    currentTrack:Destroy()
+                end)
+
+                currentTrack = nil
+
+                print("[Salute] Emote dihentikan")
+
+            end
+
         end
 
         --------------------------------------------------
-        -- !SALUTE
+        -- PLAY EMOTE
         --------------------------------------------------
 
-        if message:lower():match("^%s*!salute%s*$") then
+        local function playEmote()
 
-            print(
-                "[Salute] Command !salute diterima dari:",
-                sender.Name
-            )
+            local character = LocalPlayer.Character
 
-            --------------------------------------------------
-            -- PESAN PERTAMA
-            --------------------------------------------------
-
-            sendChat("Yes, Sir!")
-
-            --------------------------------------------------
-            -- TUNGGU 2 DETIK
-            --------------------------------------------------
-
-            task.delay(2, function()
-
-                --------------------------------------------------
-                -- PESAN KEDUA
-                --------------------------------------------------
-
-                sendChat("/e salute")
-
-            end)
-
-        end
-
-    end
-
-    --------------------------------------------------
-    -- TEXT CHAT
-    --------------------------------------------------
-
-    TextChatService.MessageReceived:Connect(
-        function(message)
-
-            if not message.TextSource then
+            if not character then
+                warn("[Salute] Character tidak ditemukan")
                 return
             end
 
-            local userId =
-                message.TextSource.UserId
+            local humanoid =
+                character:FindFirstChildOfClass("Humanoid")
 
-            local sender =
-                Players:GetPlayerByUserId(
-                    userId
+            if not humanoid then
+                warn("[Salute] Humanoid tidak ditemukan")
+                return
+            end
+
+            --------------------------------------------------
+            -- HENTIKAN EMOTE SEBELUMNYA
+            --------------------------------------------------
+
+            stopEmote()
+
+            --------------------------------------------------
+            -- PLAY EMOTE
+            --------------------------------------------------
+
+            local success, track = pcall(function()
+
+                return humanoid:PlayEmoteAndGetAnimTrackById(
+                    EMOTE_ID
                 )
+
+            end)
+
+            if not success then
+
+                warn(
+                    "[Salute] Gagal memainkan emote:",
+                    track
+                )
+
+                return
+            end
+
+            if not track then
+
+                warn(
+                    "[Salute] Emote tidak dapat dimainkan:",
+                    EMOTE_ID
+                )
+
+                return
+            end
+
+            --------------------------------------------------
+            -- SIMPAN TRACK
+            --------------------------------------------------
+
+            currentTrack = track
+
+            print(
+                "[Salute] Emote berhasil dimainkan:",
+                EMOTE_ID
+            )
+
+        end
+
+        --------------------------------------------------
+        -- COMMAND HANDLER
+        --------------------------------------------------
+
+        local function handleCommand(message, sender)
 
             if not sender then
                 return
             end
 
-            handleCommand(
-                message.Text,
-                sender
-            )
+            --------------------------------------------------
+            -- ADMIN CHECK
+            --------------------------------------------------
+
+            if not Admin:IsAdmin(sender) then
+                return
+            end
+
+            local command =
+                message:lower():match("^%s*(.-)%s*$")
+
+            --------------------------------------------------
+            -- !SALUTE
+            --------------------------------------------------
+
+            if command == "!salute" then
+
+                print(
+                    "[Salute] Command !Salute diterima dari:",
+                    sender.Name
+                )
+
+                playEmote()
+
+            --------------------------------------------------
+            -- !STOP
+            --------------------------------------------------
+
+            elseif command == "!stop" then
+
+                print(
+                    "[Salute] Command !Stop diterima dari:",
+                    sender.Name
+                )
+
+                stopEmote()
+
+            end
 
         end
-    )
 
-    --------------------------------------------------
-    -- READY
-    --------------------------------------------------
+        --------------------------------------------------
+        -- TEXT CHAT
+        --------------------------------------------------
 
-    print(
-        "[Salute] Salute.lua aktif!"
-    )
+        TextChatService.MessageReceived:Connect(
+            function(message)
 
-end
+                if not message.TextSource then
+                    return
+                end
+
+                local userId =
+                    message.TextSource.UserId
+
+                local sender =
+                    Players:GetPlayerByUserId(
+                        userId
+                    )
+
+                if not sender then
+                    return
+                end
+
+                handleCommand(
+                    message.Text,
+                    sender
+                )
+
+            end
+        )
+
+        --------------------------------------------------
+        -- CHARACTER RESPAWN
+        --------------------------------------------------
+
+        LocalPlayer.CharacterAdded:Connect(function()
+
+            currentTrack = nil
+
+        end)
+
+        --------------------------------------------------
+        -- READY
+        --------------------------------------------------
+
+        print(
+            "[Salute] Salute.lua aktif!"
+        )
+
+    end
 }
