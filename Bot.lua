@@ -48,7 +48,7 @@ local commandFiles = {
     "TurnLeft.lua",
     "TurnRight.lua",
     "Square.lua",
-    "AtEase.lua"
+    "AtEase.lua",
 }
 
 for _, fileName in ipairs(commandFiles) do
