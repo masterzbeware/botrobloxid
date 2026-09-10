@@ -199,6 +199,16 @@ return {
         ----------------------------------------------------------------
         -- STOP FRONTLINE
         ----------------------------------------------------------------
+        --
+        -- Frontline hanya dihentikan jika fungsi ini benar-benar
+        -- dipanggil.
+        --
+        -- IMPORTANT:
+        -- Jangan mengandalkan vars.ActiveMode untuk menghentikan
+        -- Frontline karena Sync boleh aktif bersamaan dengan
+        -- Frontline.
+        --
+        ----------------------------------------------------------------
 
         local function stopFrontline()
 
@@ -218,10 +228,20 @@ return {
 
             end
 
+            print(
+                "[FRONTLINE] Frontline stopped."
+            )
+
         end
 
         ----------------------------------------------------------------
         -- REGISTER CONTROLLER
+        ----------------------------------------------------------------
+        --
+        -- Mode lain bisa menghentikan Frontline dengan:
+        --
+        -- vars.ModeControllers.frontline()
+        --
         ----------------------------------------------------------------
 
         vars.ModeControllers.frontline =
@@ -229,6 +249,25 @@ return {
 
         ----------------------------------------------------------------
         -- STOP OTHER MODES
+        ----------------------------------------------------------------
+        --
+        -- Dipanggil HANYA ketika user menjalankan !frontline.
+        --
+        -- Contoh:
+        --
+        -- !follow
+        -- -> stop Follow
+        -- -> stop Sync
+        -- -> start Frontline
+        --
+        -- Tetapi ketika:
+        --
+        -- !frontline
+        -- !sync
+        --
+        -- Sync TIDAK memanggil fungsi ini.
+        -- Karena itu Frontline tetap hidup.
+        --
         ----------------------------------------------------------------
 
         local function stopOtherModes()
@@ -483,6 +522,13 @@ return {
             ------------------------------------------------------------
             -- ACTIVE MODE
             ------------------------------------------------------------
+            --
+            -- Ini hanya digunakan sebagai informasi mode utama.
+            --
+            -- Heartbeat Frontline TIDAK akan berhenti ketika
+            -- ActiveMode berubah menjadi "sync".
+            --
+            ------------------------------------------------------------
 
             vars.ActiveMode =
                 "frontline"
@@ -560,20 +606,28 @@ return {
                     function()
 
                         ------------------------------------------------
-                        -- MODE CHECK
+                        -- JANGAN CEK ActiveMode DI SINI
                         ------------------------------------------------
-
-                        if vars.ActiveMode
-                            ~= "frontline" then
-
-                            stopFrontline()
-
-                            return
-
-                        end
-
-                        ------------------------------------------------
-                        -- ACTIVE CHECK
+                        --
+                        -- SEBELUMNYA:
+                        --
+                        -- if vars.ActiveMode ~= "frontline" then
+                        --     stopFrontline()
+                        --     return
+                        -- end
+                        --
+                        -- BAGIAN TERSEBUT DIHAPUS.
+                        --
+                        -- Alasannya:
+                        --
+                        -- !frontline
+                        --     -> ActiveMode = frontline
+                        --
+                        -- !sync
+                        --     -> ActiveMode = sync
+                        --
+                        -- Tetapi Frontline HARUS TETAP AKTIF.
+                        --
                         ------------------------------------------------
 
                         if not frontlineActive then
@@ -721,6 +775,10 @@ return {
                 return
             end
 
+            if not message then
+                return
+            end
+
             local lower =
                 message:lower()
 
@@ -771,7 +829,17 @@ return {
             if lower == "!stop"
                 or lower == "!unfrontline" then
 
-                vars.ActiveMode = nil
+                --------------------------------------------------------
+                -- Hanya reset ActiveMode jika Frontline memang
+                -- merupakan mode utama saat ini.
+                --------------------------------------------------------
+
+                if vars.ActiveMode ==
+                    "frontline" then
+
+                    vars.ActiveMode = nil
+
+                end
 
                 stopFrontline()
 
@@ -797,6 +865,10 @@ return {
 
                 channel.OnIncomingMessage =
                     function(message)
+
+                        if not message then
+                            return
+                        end
 
                         local userId =
                             message.TextSource
@@ -879,18 +951,158 @@ return {
                 --------------------------------------------------------
                 -- RESTART FRONTLINE
                 --------------------------------------------------------
+                --
+                -- Jangan cek ActiveMode.
+                --
+                -- Yang menentukan apakah Frontline masih aktif
+                -- adalah frontlineActive + targetPlayer.
+                --
+                --------------------------------------------------------
 
-                if vars.ActiveMode
-                    == "frontline"
+                if frontlineActive
                     and targetPlayer then
 
-                    startFrontline(
+                    local oldTarget =
                         targetPlayer
-                    )
+
+                    ----------------------------------------------------
+                    -- Reset connection lama
+                    ----------------------------------------------------
+
+                    if frontlineConnection then
+
+                        frontlineConnection:Disconnect()
+                        frontlineConnection = nil
+
+                    end
+
+                    ----------------------------------------------------
+                    -- Cari index bot
+                    ----------------------------------------------------
+
+                    local myIndex =
+                        table.find(
+                            botOrder,
+                            tostring(LocalPlayer.UserId)
+                        )
+
+                    if not myIndex then
+                        return
+                    end
+
+                    ----------------------------------------------------
+                    -- Restart Heartbeat
+                    ----------------------------------------------------
+
+                    frontlineConnection =
+                        RunService.Heartbeat:Connect(
+                            function()
+
+                                if not frontlineActive then
+                                    return
+                                end
+
+                                if not humanoid
+                                    or not myHRP then
+                                    return
+                                end
+
+                                if not oldTarget then
+                                    return
+                                end
+
+                                local targetCharacter =
+                                    oldTarget.Character
+
+                                if not targetCharacter then
+                                    return
+                                end
+
+                                local targetHRP =
+                                    targetCharacter:FindFirstChild(
+                                        "HumanoidRootPart"
+                                    )
+
+                                if not targetHRP then
+                                    return
+                                end
+
+                                ------------------------------------------------
+                                -- DISTANCE
+                                ------------------------------------------------
+
+                                local botDistance =
+                                    getBotDistance(
+                                        oldTarget
+                                    )
+
+                                ------------------------------------------------
+                                -- POSITION
+                                ------------------------------------------------
+
+                                local targetPosition =
+                                    getFrontlinePosition(
+                                        myIndex,
+                                        targetHRP,
+                                        botDistance
+                                    )
+
+                                if not targetPosition then
+                                    return
+                                end
+
+                                ------------------------------------------------
+                                -- DISTANCE
+                                ------------------------------------------------
+
+                                local distanceToTarget =
+                                    (
+                                        myHRP.Position
+                                        -
+                                        targetPosition
+                                    ).Magnitude
+
+                                ------------------------------------------------
+                                -- MOVE
+                                ------------------------------------------------
+
+                                if distanceToTarget
+                                    > stopThreshold then
+
+                                    humanoid.AutoRotate = true
+
+                                    humanoid:MoveTo(
+                                        targetPosition
+                                    )
+
+                                    return
+
+                                end
+
+                                ------------------------------------------------
+                                -- SUDAH SAMPAI
+                                ------------------------------------------------
+
+                                humanoid.AutoRotate = false
+
+                                copyTargetRotation(
+                                    targetHRP
+                                )
+
+                            end
+                        )
 
                 end
 
             end
+        )
+
+        ----------------------------------------------------------------
+        -- READY
+        ----------------------------------------------------------------
+
+        print(
+            "[FRONTLINE] Frontline.lua aktif!"
         )
 
     end

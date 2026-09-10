@@ -223,6 +223,14 @@ return {
 
             end
 
+            --------------------------------------------------
+            -- JANGAN HAPUS MODE LAIN
+            --------------------------------------------------
+
+            if vars.ActiveMode == "square" then
+                vars.ActiveMode = nil
+            end
+
         end
 
         --------------------------------------------------
@@ -539,30 +547,21 @@ return {
         end
 
         --------------------------------------------------
-        -- START SQUARE
+        -- CONNECT SQUARE LOOP
+        --------------------------------------------------
+        --
+        -- Dipisahkan dari startSquare()
+        -- supaya respawn tidak memanggil startSquare().
+        --
+        -- Dengan begitu stopOtherModes() tidak dipanggil
+        -- ulang dan Sync tetap berjalan.
+        --
         --------------------------------------------------
 
-        local function startSquare(player)
-
-            if not player then
-                return
-            end
+        local function connectSquareLoop(myIndex)
 
             --------------------------------------------------
-            -- STOP MODE LAIN
-            --------------------------------------------------
-
-            stopOtherModes()
-
-            --------------------------------------------------
-            -- ACTIVE MODE
-            --------------------------------------------------
-
-            vars.ActiveMode =
-                "square"
-
-            --------------------------------------------------
-            -- DISCONNECT OLD LOOP
+            -- DISCONNECT LOOP LAMA
             --------------------------------------------------
 
             if squareConnection then
@@ -572,59 +571,9 @@ return {
 
             end
 
-            --------------------------------------------------
-            -- STATE
-            --------------------------------------------------
-
-            squareActive = true
-            targetPlayer = player
-
-            --------------------------------------------------
-            -- CHAT
-            --------------------------------------------------
-
-            sendChat("Yes, Sir!")
-
-            --------------------------------------------------
-            -- FIND BOT INDEX
-            --------------------------------------------------
-
-            local myIndex =
-                table.find(
-                    botOrder,
-                    tostring(LocalPlayer.UserId)
-                )
-
-            --------------------------------------------------
-            -- BOT TIDAK TERDAFTAR
-            --------------------------------------------------
-
             if not myIndex then
-
-                print(
-                    "[SQUARE]",
-                    "Bot tidak termasuk formasi:",
-                    LocalPlayer.Name,
-                    LocalPlayer.UserId
-                )
-
-                stopSquare()
-
                 return
-
             end
-
-            --------------------------------------------------
-            -- DEBUG
-            --------------------------------------------------
-
-            print(
-                "[SQUARE]",
-                "Bot Index:",
-                myIndex,
-                "UserId:",
-                LocalPlayer.UserId
-            )
 
             --------------------------------------------------
             -- HEARTBEAT
@@ -635,20 +584,18 @@ return {
                     function()
 
                         --------------------------------------------------
-                        -- MODE CHANGED
-                        --------------------------------------------------
-
-                        if vars.ActiveMode
-                            ~= "square" then
-
-                            stopSquare()
-
-                            return
-
-                        end
-
-                        --------------------------------------------------
                         -- ACTIVE CHECK
+                        --------------------------------------------------
+                        --
+                        -- JANGAN menggunakan vars.ActiveMode
+                        -- di sini.
+                        --
+                        -- Sync dapat mengubah:
+                        --
+                        -- vars.ActiveMode = "sync"
+                        --
+                        -- tetapi Square tetap harus berjalan.
+                        --
                         --------------------------------------------------
 
                         if not squareActive then
@@ -778,6 +725,104 @@ return {
         end
 
         --------------------------------------------------
+        -- START SQUARE
+        --------------------------------------------------
+
+        local function startSquare(player)
+
+            if not player then
+                return
+            end
+
+            --------------------------------------------------
+            -- STOP MODE LAIN
+            --------------------------------------------------
+
+            stopOtherModes()
+
+            --------------------------------------------------
+            -- ACTIVE MODE
+            --------------------------------------------------
+
+            vars.ActiveMode =
+                "square"
+
+            --------------------------------------------------
+            -- DISCONNECT OLD LOOP
+            --------------------------------------------------
+
+            if squareConnection then
+
+                squareConnection:Disconnect()
+                squareConnection = nil
+
+            end
+
+            --------------------------------------------------
+            -- STATE
+            --------------------------------------------------
+
+            squareActive = true
+            targetPlayer = player
+
+            --------------------------------------------------
+            -- CHAT
+            --------------------------------------------------
+
+            sendChat("Yes, Sir!")
+
+            --------------------------------------------------
+            -- FIND BOT INDEX
+            --------------------------------------------------
+
+            local myIndex =
+                table.find(
+                    botOrder,
+                    tostring(LocalPlayer.UserId)
+                )
+
+            --------------------------------------------------
+            -- BOT TIDAK TERDAFTAR
+            --------------------------------------------------
+
+            if not myIndex then
+
+                print(
+                    "[SQUARE]",
+                    "Bot tidak termasuk formasi:",
+                    LocalPlayer.Name,
+                    LocalPlayer.UserId
+                )
+
+                stopSquare()
+
+                return
+
+            end
+
+            --------------------------------------------------
+            -- DEBUG
+            --------------------------------------------------
+
+            print(
+                "[SQUARE]",
+                "Bot Index:",
+                myIndex,
+                "UserId:",
+                LocalPlayer.UserId
+            )
+
+            --------------------------------------------------
+            -- START LOOP
+            --------------------------------------------------
+
+            connectSquareLoop(
+                myIndex
+            )
+
+        end
+
+        --------------------------------------------------
         -- HANDLE COMMAND
         --------------------------------------------------
 
@@ -845,8 +890,6 @@ return {
 
             if lower == "!stop"
                 or lower == "!unsquare" then
-
-                vars.ActiveMode = nil
 
                 stopSquare()
 
@@ -950,16 +993,32 @@ return {
                 updateCharacter()
 
                 --------------------------------------------------
-                -- RESTART SQUARE
+                -- RECONNECT SQUARE
+                --------------------------------------------------
+                --
+                -- Jangan panggil startSquare().
+                --
+                -- startSquare() akan menjalankan
+                -- stopOtherModes() dan dapat mematikan Sync.
+                --
                 --------------------------------------------------
 
-                if vars.ActiveMode
-                    == "square"
+                if squareActive
                     and targetPlayer then
 
-                    startSquare(
-                        targetPlayer
-                    )
+                    local myIndex =
+                        table.find(
+                            botOrder,
+                            tostring(LocalPlayer.UserId)
+                        )
+
+                    if myIndex then
+
+                        connectSquareLoop(
+                            myIndex
+                        )
+
+                    end
 
                 end
 

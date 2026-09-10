@@ -21,7 +21,6 @@ return {
         --------------------------------------------------
 
         _G.BotVars = _G.BotVars or {}
-
         _G.BotVars.ModeControllers =
             _G.BotVars.ModeControllers or {}
 
@@ -220,6 +219,14 @@ return {
 
                 humanoid.AutoRotate = true
 
+            end
+
+            --------------------------------------------------
+            -- HANYA CLEAR ACTIVE MODE JIKA MEMANG TRIANGLE
+            --------------------------------------------------
+
+            if vars.ActiveMode == "triangle" then
+                vars.ActiveMode = nil
             end
 
         end
@@ -594,30 +601,13 @@ return {
         end
 
         --------------------------------------------------
-        -- START TRIANGLE
+        -- CONNECT TRIANGLE LOOP
+        --------------------------------------------------
+        -- Digunakan untuk start awal dan respawn.
+        -- Tidak memanggil stopOtherModes().
         --------------------------------------------------
 
-        local function startTriangle(player)
-
-            if not player then
-                return
-            end
-
-            --------------------------------------------------
-            -- STOP MODE LAIN
-            --------------------------------------------------
-
-            stopOtherModes()
-
-            --------------------------------------------------
-            -- ACTIVE MODE
-            --------------------------------------------------
-
-            vars.ActiveMode = "triangle"
-
-            --------------------------------------------------
-            -- DISCONNECT OLD LOOP
-            --------------------------------------------------
+        local function connectTriangleLoop(myIndex)
 
             if triangleConnection then
 
@@ -626,82 +616,19 @@ return {
 
             end
 
-            --------------------------------------------------
-            -- STATE
-            --------------------------------------------------
-
-            triangleActive = true
-            targetPlayer = player
-
-            --------------------------------------------------
-            -- CHAT
-            --------------------------------------------------
-
-            sendChat("Yes, Sir!")
-
-            --------------------------------------------------
-            -- FIND BOT INDEX
-            --------------------------------------------------
-
-            local myIndex =
-                table.find(
-                    botOrder,
-                    tostring(LocalPlayer.UserId)
-                )
-
-            --------------------------------------------------
-            -- BOT TIDAK TERDAFTAR
-            --------------------------------------------------
-
             if not myIndex then
-
-                print(
-                    "[TRIANGLE] Bot tidak termasuk formasi:",
-                    LocalPlayer.Name,
-                    LocalPlayer.UserId
-                )
-
-                stopTriangle()
-
                 return
-
             end
-
-            --------------------------------------------------
-            -- DEBUG
-            --------------------------------------------------
-
-            print(
-                "[TRIANGLE]",
-                "Bot Index:",
-                myIndex,
-                "UserId:",
-                LocalPlayer.UserId
-            )
-
-            --------------------------------------------------
-            -- HEARTBEAT
-            --------------------------------------------------
 
             triangleConnection =
                 RunService.Heartbeat:Connect(
                     function()
 
                         --------------------------------------------------
-                        -- MODE CHANGED
-                        --------------------------------------------------
-
-                        if vars.ActiveMode
-                            ~= "triangle" then
-
-                            stopTriangle()
-
-                            return
-
-                        end
-
-                        --------------------------------------------------
                         -- ACTIVE CHECK
+                        --------------------------------------------------
+                        -- JANGAN cek vars.ActiveMode di sini.
+                        -- Triangle boleh berjalan bersamaan dengan Sync.
                         --------------------------------------------------
 
                         if not triangleActive then
@@ -828,6 +755,89 @@ return {
         end
 
         --------------------------------------------------
+        -- START TRIANGLE
+        --------------------------------------------------
+
+        local function startTriangle(player)
+
+            if not player then
+                return
+            end
+
+            --------------------------------------------------
+            -- STOP MODE LAIN
+            --------------------------------------------------
+
+            stopOtherModes()
+
+            --------------------------------------------------
+            -- ACTIVE MODE
+            --------------------------------------------------
+
+            vars.ActiveMode = "triangle"
+
+            --------------------------------------------------
+            -- STATE
+            --------------------------------------------------
+
+            triangleActive = true
+            targetPlayer = player
+
+            --------------------------------------------------
+            -- CHAT
+            --------------------------------------------------
+
+            sendChat("Yes, Sir!")
+
+            --------------------------------------------------
+            -- FIND BOT INDEX
+            --------------------------------------------------
+
+            local myIndex =
+                table.find(
+                    botOrder,
+                    tostring(LocalPlayer.UserId)
+                )
+
+            --------------------------------------------------
+            -- BOT TIDAK TERDAFTAR
+            --------------------------------------------------
+
+            if not myIndex then
+
+                print(
+                    "[TRIANGLE] Bot tidak termasuk formasi:",
+                    LocalPlayer.Name,
+                    LocalPlayer.UserId
+                )
+
+                stopTriangle()
+
+                return
+
+            end
+
+            --------------------------------------------------
+            -- DEBUG
+            --------------------------------------------------
+
+            print(
+                "[TRIANGLE]",
+                "Bot Index:",
+                myIndex,
+                "UserId:",
+                LocalPlayer.UserId
+            )
+
+            --------------------------------------------------
+            -- CONNECT LOOP
+            --------------------------------------------------
+
+            connectTriangleLoop(myIndex)
+
+        end
+
+        --------------------------------------------------
         -- HANDLE COMMAND
         --------------------------------------------------
 
@@ -893,8 +903,6 @@ return {
 
             if lower == "!stop"
                 or lower == "!untriangle" then
-
-                vars.ActiveMode = nil
 
                 stopTriangle()
 
@@ -998,16 +1006,29 @@ return {
                 updateCharacter()
 
                 --------------------------------------------------
-                -- RESTART TRIANGLE
+                -- RECONNECT TRIANGLE
+                --------------------------------------------------
+                -- Jangan panggil startTriangle().
+                -- Karena startTriangle() akan menjalankan
+                -- stopOtherModes() dan bisa menghentikan Sync.
                 --------------------------------------------------
 
-                if vars.ActiveMode
-                    == "triangle"
+                if triangleActive
                     and targetPlayer then
 
-                    startTriangle(
-                        targetPlayer
-                    )
+                    local myIndex =
+                        table.find(
+                            botOrder,
+                            tostring(LocalPlayer.UserId)
+                        )
+
+                    if myIndex then
+
+                        connectTriangleLoop(
+                            myIndex
+                        )
+
+                    end
 
                 end
 
