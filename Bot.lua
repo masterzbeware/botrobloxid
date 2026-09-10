@@ -46,6 +46,7 @@ local commandFiles = {
     "Circle.lua",
     "Backline.lua",
     "TurnLeft.lua",
+    "TurnRight.lua",
 }
 
 for _, fileName in ipairs(commandFiles) do
@@ -94,5 +95,6 @@ jalankan("salute")
 jalankan("circle")
 jalankan("backline")
 jalankan("turnleft")
+jalankan("turnright")
 
 print("✅ Bot.lua loaded — All systems active.")
