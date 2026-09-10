@@ -21,7 +21,8 @@ return {
         ----------------------------------------------------------------
 
         _G.BotVars = _G.BotVars or {}
-        _G.BotVars.ModeControllers = _G.BotVars.ModeControllers or {}
+        _G.BotVars.ModeControllers =
+            _G.BotVars.ModeControllers or {}
 
         ----------------------------------------------------------------
         -- LOAD ADMIN
@@ -178,16 +179,44 @@ return {
                 humanoid.AutoRotate = true
             end
 
+            print("[FOLLOW] Follow stopped.")
+
         end
 
         ----------------------------------------------------------------
         -- REGISTER CONTROLLER
         ----------------------------------------------------------------
+        --
+        -- Mode lain seperti:
+        -- Frontline
+        -- FrontlineLeft
+        -- FrontlineRight
+        --
+        -- dapat menghentikan Follow melalui controller ini.
+        --
+        ----------------------------------------------------------------
 
-        _G.BotVars.ModeControllers.follow = stopFollow
+        _G.BotVars.ModeControllers.follow =
+            stopFollow
 
         ----------------------------------------------------------------
         -- STOP SEMUA MODE LAIN
+        ----------------------------------------------------------------
+        --
+        -- Hanya dipanggil ketika USER MEMULAI FOLLOW.
+        --
+        -- Jadi:
+        --
+        -- !follow
+        --     -> stop mode lain
+        --     -> mulai follow
+        --
+        -- Tetapi:
+        --
+        -- !sync
+        --     -> TIDAK memanggil fungsi ini
+        --     -> Follow tetap hidup
+        --
         ----------------------------------------------------------------
 
         local function stopOtherModes()
@@ -212,6 +241,10 @@ return {
         ----------------------------------------------------------------
 
         local function findPlayerByName(name)
+
+            if not name or name == "" then
+                return nil
+            end
 
             name = name:lower()
 
@@ -249,7 +282,7 @@ return {
             stopOtherModes()
 
             ------------------------------------------------------------
-            -- SET ACTIVE MODE
+            -- SET FOLLOW STATE
             ------------------------------------------------------------
 
             _G.BotVars.ActiveMode = "follow"
@@ -297,24 +330,27 @@ return {
                     function()
 
                         ------------------------------------------------
-                        -- JIKA MODE SUDAH BERGANTI
+                        -- JANGAN CEK ActiveMode DI SINI
                         ------------------------------------------------
-
-                        if _G.BotVars.ActiveMode ~= "follow" then
-
-                            stopFollow()
-
-                            return
-
-                        end
-
-                        ------------------------------------------------
-                        -- VALIDASI
+                        --
+                        -- PENTING:
+                        --
+                        -- Sync akan mengubah ActiveMode menjadi "sync".
+                        --
+                        -- Follow HARUS tetap berjalan.
+                        --
+                        -- Follow hanya dihentikan oleh:
+                        -- stopFollow()
+                        --
                         ------------------------------------------------
 
                         if not following then
                             return
                         end
+
+                        ------------------------------------------------
+                        -- VALIDASI CHARACTER
+                        ------------------------------------------------
 
                         if not humanoid
                             or not myHRP then
@@ -322,6 +358,10 @@ return {
                             return
 
                         end
+
+                        ------------------------------------------------
+                        -- VALIDASI TARGET
+                        ------------------------------------------------
 
                         if not targetPlayer then
                             return
@@ -417,6 +457,10 @@ return {
                         ------------------------------------------------
                         -- SUDAH SAMPAI
                         ------------------------------------------------
+                        --
+                        -- Tetap pertahankan posisi dan arah.
+                        --
+                        ------------------------------------------------
 
                         humanoid.AutoRotate = false
 
@@ -435,6 +479,11 @@ return {
                     end
                 )
 
+            print(
+                "[FOLLOW] Following:",
+                player.Name
+            )
+
         end
 
         ----------------------------------------------------------------
@@ -447,6 +496,10 @@ return {
         )
 
             if not Admin:IsAdmin(sender) then
+                return
+            end
+
+            if not message then
                 return
             end
 
@@ -498,7 +551,13 @@ return {
             if lower == "!stop"
                 or lower == "!unfollow" then
 
-                _G.BotVars.ActiveMode = nil
+                --------------------------------------------------------
+                -- Hanya hapus ActiveMode jika Follow yang aktif
+                --------------------------------------------------------
+
+                if _G.BotVars.ActiveMode == "follow" then
+                    _G.BotVars.ActiveMode = nil
+                end
 
                 stopFollow()
 
@@ -603,16 +662,150 @@ return {
 
                 updateCharacter()
 
-                if _G.BotVars.ActiveMode == "follow"
+                --------------------------------------------------------
+                -- FOLLOW BOLEH DIHIDUPKAN KEMBALI
+                --------------------------------------------------------
+                --
+                -- Kita cek variabel `following`, bukan ActiveMode,
+                -- karena Sync boleh aktif bersamaan dengan Follow.
+                --
+                --------------------------------------------------------
+
+                if following
                     and targetPlayer then
 
-                    startFollow(
+                    local oldTarget =
                         targetPlayer
-                    )
+
+                    ----------------------------------------------------
+                    -- Reconnect follow tanpa mematikan mode lain.
+                    ----------------------------------------------------
+
+                    if followConnection then
+
+                        followConnection:Disconnect()
+                        followConnection = nil
+
+                    end
+
+                    local myIndex =
+                        table.find(
+                            botOrder,
+                            tostring(LocalPlayer.UserId)
+                        )
+
+                    if myIndex then
+
+                        followConnection =
+                            RunService.Heartbeat:Connect(
+                                function()
+
+                                    if not following then
+                                        return
+                                    end
+
+                                    if not humanoid
+                                        or not myHRP then
+                                        return
+                                    end
+
+                                    if not oldTarget then
+                                        return
+                                    end
+
+                                    local targetCharacter =
+                                        oldTarget.Character
+
+                                    if not targetCharacter then
+                                        return
+                                    end
+
+                                    local targetHRP =
+                                        targetCharacter:FindFirstChild(
+                                            "HumanoidRootPart"
+                                        )
+
+                                    if not targetHRP then
+                                        return
+                                    end
+
+                                    local distance =
+                                        defaultBotFollowDistance
+
+                                    if Admin:IsAdmin(oldTarget) then
+                                        distance =
+                                            adminFollowDistance
+                                    end
+
+                                    local specialDistance =
+                                        Distance:GetDistance(
+                                            tostring(LocalPlayer.UserId),
+                                            tostring(oldTarget.UserId)
+                                        )
+
+                                    if specialDistance then
+                                        distance =
+                                            specialDistance
+                                    end
+
+                                    local targetPosition =
+                                        targetHRP.Position
+                                        -
+                                        (
+                                            targetHRP.CFrame.LookVector
+                                            *
+                                            (distance * myIndex)
+                                        )
+
+                                    local distanceToTarget =
+                                        (
+                                            myHRP.Position
+                                            -
+                                            targetPosition
+                                        ).Magnitude
+
+                                    if distanceToTarget > 1.5 then
+
+                                        humanoid.AutoRotate = true
+
+                                        humanoid:MoveTo(
+                                            targetPosition
+                                        )
+
+                                        return
+
+                                    end
+
+                                    humanoid.AutoRotate = false
+
+                                    local adminRotation =
+                                        targetHRP.CFrame
+                                        -
+                                        targetHRP.Position
+
+                                    myHRP.CFrame =
+                                        CFrame.new(
+                                            myHRP.Position
+                                        )
+                                        *
+                                        adminRotation
+
+                                end
+                            )
+
+                    end
 
                 end
 
             end
+        )
+
+        ----------------------------------------------------------------
+        -- READY
+        ----------------------------------------------------------------
+
+        print(
+            "[FOLLOW] Follow.lua aktif!"
         )
 
     end
