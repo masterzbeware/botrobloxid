@@ -61,7 +61,7 @@ return {
         -- TWOWINGS CONFIG
         ----------------------------------------------------------------
 
-        -- Jarak kiri / kanan antar bot
+        -- Jarak antar bot dalam satu baris
         local sideSpacing = 2.5
 
         -- Jarak minimum sebelum bot berhenti
@@ -70,13 +70,19 @@ return {
         ----------------------------------------------------------------
         -- BOT ORDER
         ----------------------------------------------------------------
-        -- Hanya 5 bot
         --
-        -- BOT 1 = TENGAH BELAKANG
-        -- BOT 2 = KIRI
-        -- BOT 3 = KANAN
-        -- BOT 4 = KIRI
-        -- BOT 5 = KANAN
+        -- 1  = Bot 1
+        -- 2  = Bot 2
+        -- 3  = Bot 3
+        -- 4  = Bot 4
+        -- 5  = Bot 5
+        -- 6  = Bot 6
+        -- 7  = Bot 7
+        -- 8  = Bot 8
+        -- 9  = Bot 9
+        -- 10 = Bot 10
+        -- 11 = Bot 11
+        --
         ----------------------------------------------------------------
 
         local botOrder = {
@@ -86,6 +92,12 @@ return {
             "11611567975", -- Bot 3
             "11611562042", -- Bot 4
             "11611591921", -- Bot 5
+            "11122806815", -- Bot 6
+            "11122806817", -- Bot 7
+            "11122687468", -- Bot 8
+            "11122854402", -- Bot 9
+            "11641280895", -- Bot 10
+            "11641342530", -- Bot 11
 
         }
 
@@ -285,6 +297,204 @@ return {
         end
 
         ----------------------------------------------------------------
+        -- GET FORMATION POSITION
+        ----------------------------------------------------------------
+        --
+        -- FORMASI:
+        --
+        --                         PLAYER
+        --                           |
+        --                         BOT 1
+        --                           |
+        --                    BOT 2       BOT 3
+        --                           |
+        --                    BOT 4       BOT 5
+        --                           |
+        -- BOT 6   BOT 8   BOT 9     BOT 7   BOT 10   BOT 11
+        --
+        ----------------------------------------------------------------
+
+        local function getFormationOffset(
+            myIndex,
+            distance
+        )
+
+            ------------------------------------------------------------
+            -- BOT 1
+            -- TENGAH, BELAKANG PLAYER
+            ------------------------------------------------------------
+
+            if myIndex == 1 then
+
+                return Vector3.new(
+                    0,
+                    0,
+                    -distance
+                )
+
+            end
+
+            ------------------------------------------------------------
+            -- BOT 2
+            -- KIRI BOT 1
+            ------------------------------------------------------------
+
+            if myIndex == 2 then
+
+                return Vector3.new(
+                    -sideSpacing,
+                    0,
+                    -(distance * 2)
+                )
+
+            end
+
+            ------------------------------------------------------------
+            -- BOT 3
+            -- KANAN BOT 1
+            ------------------------------------------------------------
+
+            if myIndex == 3 then
+
+                return Vector3.new(
+                    sideSpacing,
+                    0,
+                    -(distance * 2)
+                )
+
+            end
+
+            ------------------------------------------------------------
+            -- BOT 4
+            -- KIRI BOT 1
+            ------------------------------------------------------------
+
+            if myIndex == 4 then
+
+                return Vector3.new(
+                    -sideSpacing,
+                    0,
+                    -(distance * 3)
+                )
+
+            end
+
+            ------------------------------------------------------------
+            -- BOT 5
+            -- KANAN BOT 1
+            ------------------------------------------------------------
+
+            if myIndex == 5 then
+
+                return Vector3.new(
+                    sideSpacing,
+                    0,
+                    -(distance * 3)
+                )
+
+            end
+
+            ------------------------------------------------------------
+            -- BOT 6
+            -- SEJAJAR DENGAN BOT 4
+            -- POSISI LEBIH KIRI
+            ------------------------------------------------------------
+
+            if myIndex == 6 then
+
+                return Vector3.new(
+                    -(sideSpacing * 2),
+                    0,
+                    -(distance * 3)
+                )
+
+            end
+
+            ------------------------------------------------------------
+            -- BOT 7
+            -- SEJAJAR DENGAN BOT 5
+            -- POSISI LEBIH KANAN
+            ------------------------------------------------------------
+
+            if myIndex == 7 then
+
+                return Vector3.new(
+                    sideSpacing * 2,
+                    0,
+                    -(distance * 3)
+                )
+
+            end
+
+            ------------------------------------------------------------
+            -- BOT 8
+            -- SEJAJAR DENGAN BOT 4
+            -- LEBIH KIRI DARI BOT 6
+            ------------------------------------------------------------
+
+            if myIndex == 8 then
+
+                return Vector3.new(
+                    -(sideSpacing * 3),
+                    0,
+                    -(distance * 3)
+                )
+
+            end
+
+            ------------------------------------------------------------
+            -- BOT 9
+            -- SEJAJAR DENGAN BOT 4
+            -- LEBIH KIRI DARI BOT 8
+            ------------------------------------------------------------
+
+            if myIndex == 9 then
+
+                return Vector3.new(
+                    -(sideSpacing * 4),
+                    0,
+                    -(distance * 3)
+                )
+
+            end
+
+            ------------------------------------------------------------
+            -- BOT 10
+            -- SEJAJAR DENGAN BOT 5
+            -- LEBIH KANAN DARI BOT 7
+            ------------------------------------------------------------
+
+            if myIndex == 10 then
+
+                return Vector3.new(
+                    sideSpacing * 3,
+                    0,
+                    -(distance * 3)
+                )
+
+            end
+
+            ------------------------------------------------------------
+            -- BOT 11
+            -- SEJAJAR DENGAN BOT 5
+            -- LEBIH KANAN DARI BOT 10
+            ------------------------------------------------------------
+
+            if myIndex == 11 then
+
+                return Vector3.new(
+                    sideSpacing * 4,
+                    0,
+                    -(distance * 3)
+                )
+
+            end
+
+            return nil
+
+        end
+
+        ----------------------------------------------------------------
         -- START TWOWINGS
         ----------------------------------------------------------------
 
@@ -441,103 +651,41 @@ return {
                         end
 
                         ------------------------------------------------
-                        -- FORMASI TWOWINGS
-                        ------------------------------------------------
-                        --
-                        -- BOT 1
-                        -- Tengah belakang
-                        --
-                        -- BOT 2 / BOT 3
-                        -- Kiri / kanan
-                        --
-                        -- BOT 4 / BOT 5
-                        -- Kiri / kanan
+                        -- GET FORMATION OFFSET
                         ------------------------------------------------
 
-                        local backDistance
-                        local sideOffset
-
-                        ------------------------------------------------
-                        -- BOT 1
-                        -- TENGAH BELAKANG
-                        ------------------------------------------------
-
-                        if myIndex == 1 then
-
-                            backDistance =
+                        local offset =
+                            getFormationOffset(
+                                myIndex,
                                 distance
+                            )
 
-                            sideOffset =
-                                Vector3.zero
-
-                        ------------------------------------------------
-                        -- BOT 2 & BOT 3
-                        -- BARIS KEDUA
-                        ------------------------------------------------
-
-                        elseif myIndex == 2 then
-
-                            backDistance =
-                                distance * 2
-
-                            sideOffset =
-                                targetHRP.CFrame.RightVector
-                                * -sideSpacing
-
-                        elseif myIndex == 3 then
-
-                            backDistance =
-                                distance * 2
-
-                            sideOffset =
-                                targetHRP.CFrame.RightVector
-                                * sideSpacing
-
-                        ------------------------------------------------
-                        -- BOT 4 & BOT 5
-                        -- BARIS KETIGA
-                        ------------------------------------------------
-
-                        elseif myIndex == 4 then
-
-                            backDistance =
-                                distance * 3
-
-                            sideOffset =
-                                targetHRP.CFrame.RightVector
-                                * -sideSpacing
-
-                        elseif myIndex == 5 then
-
-                            backDistance =
-                                distance * 3
-
-                            sideOffset =
-                                targetHRP.CFrame.RightVector
-                                * sideSpacing
-
-                        else
-
+                        if not offset then
                             return
-
                         end
 
                         ------------------------------------------------
-                        -- POSISI BELAKANG
-                        ------------------------------------------------
-
-                        local backOffset =
-                            targetHRP.CFrame.LookVector
-                            * -backDistance
-
-                        ------------------------------------------------
-                        -- POSISI AKHIR
+                        -- KONVERSI LOCAL OFFSET
+                        -- KE WORLD POSITION
                         ------------------------------------------------
 
                         local targetPosition =
                             targetHRP.Position
-                            + backOffset
-                            + sideOffset
+
+                            + (
+                                targetHRP.CFrame.RightVector
+                                * offset.X
+                            )
+
+                            + (
+                                targetHRP.CFrame.UpVector
+                                * offset.Y
+                            )
+
+                            + (
+                                targetHRP.CFrame.LookVector
+                                * offset.Z
+                            )
 
                         ------------------------------------------------
                         -- JARAK BOT KE POSISI
@@ -636,7 +784,9 @@ return {
 
                 if target then
 
-                    startTwowings(target)
+                    startTwowings(
+                        target
+                    )
 
                 end
 
