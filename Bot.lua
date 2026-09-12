@@ -93,6 +93,6 @@ jalankan("frontlineright")
 jalankan("salute")
 jalankan("circle")
 jalankan("backline")
-jalankan("square")j
+jalankan("square")
 
 print("✅ Bot.lua loaded — All systems active.")
