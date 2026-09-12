@@ -93,14 +93,14 @@ return {
         -- TWOWINGS SETTINGS
         --------------------------------------------------
 
-        -- Jarak antar bot secara horizontal
-        local wingSpacing = 4
+        -- Jarak dasar formasi dari PLAYER
+        local formationDistance = 6
 
-        -- Jarak formasi dari player
-        local wingDistance = 6
+        -- Jarak antar bot kiri/kanan
+        local wingSpacing = 3
 
-        -- Jarak antar tingkat / posisi belakang
-        local rowSpacing = 4
+        -- Jarak antar baris
+        local rowSpacing = 3
 
         -- Tinggi formasi
         local formationHeight = 0
@@ -350,21 +350,19 @@ return {
         end
 
         --------------------------------------------------
-        -- GET TWO WINGS POSITION
+        -- GET TWOWINGS POSITION
         --------------------------------------------------
         --
         -- FORMASI:
         --
         -- B1  B2  B3             B9  B10  B11
-        --        B4             B8
-        --           B5       B7
-        --              B6
-        --             PLAYER
+        --       B4             B8
+        --          B5       B7
+        --             B6
+        --            PLAYER
         --
-        -- CATATAN:
-        --
-        -- B3 berada DI BELAKANG B4
-        -- B9 berada DI BELAKANG B8
+        -- B3 = DI BELAKANG B4
+        -- B9 = DI BELAKANG B8
         --
         --------------------------------------------------
 
@@ -383,7 +381,7 @@ return {
             end
 
             --------------------------------------------------
-            -- LOCAL AXIS
+            -- TARGET AXIS
             --------------------------------------------------
 
             local forward =
@@ -399,185 +397,147 @@ return {
             -- BASE DISTANCE
             --------------------------------------------------
 
-            local offset =
-                wingDistance + distance
-
-            --------------------------------------------------
-            -- SPACING
-            --------------------------------------------------
-
-            local spacing =
-                wingSpacing
-
-            local row =
-                rowSpacing
+            local baseZ =
+                formationDistance + distance
 
             --------------------------------------------------
             -- POSITION
             --------------------------------------------------
 
-            local localOffset
+            local forwardOffset = 0
+            local rightOffset = 0
 
             --------------------------------------------------
-            -- BARIS BELAKANG ATAS KIRI
+            -- BARIS PALING BELAKANG
             --------------------------------------------------
             --
-            -- B1
+            -- B1  B2  B3       B9  B10  B11
             --
             --------------------------------------------------
 
             if myIndex == 1 then
 
-                localOffset =
-                    forward * offset
-                    - right * (spacing * 2)
+                forwardOffset =
+                    baseZ + (rowSpacing * 2)
 
-            --------------------------------------------------
-            -- B2
-            --------------------------------------------------
-            --
-            -- B2
-            --
-            --------------------------------------------------
+                rightOffset =
+                    -wingSpacing * 2
 
             elseif myIndex == 2 then
 
-                localOffset =
-                    forward * offset
-                    - right * spacing
+                forwardOffset =
+                    baseZ + (rowSpacing * 2)
 
-            --------------------------------------------------
-            -- B3
-            --------------------------------------------------
-            --
-            -- B3
-            -- berada di belakang B4
-            --
-            --------------------------------------------------
+                rightOffset =
+                    -wingSpacing
 
             elseif myIndex == 3 then
 
-                localOffset =
-                    forward * (offset - row)
-                    - right * spacing
+                -- B3 DI BELAKANG B4
+                forwardOffset =
+                    baseZ + (rowSpacing * 3)
+
+                rightOffset =
+                    0
+
+            elseif myIndex == 9 then
+
+                -- B9 DI BELAKANG B8
+                forwardOffset =
+                    baseZ + (rowSpacing * 3)
+
+                rightOffset =
+                    0
+
+            elseif myIndex == 10 then
+
+                forwardOffset =
+                    baseZ + (rowSpacing * 2)
+
+                rightOffset =
+                    wingSpacing
+
+            elseif myIndex == 11 then
+
+                forwardOffset =
+                    baseZ + (rowSpacing * 2)
+
+                rightOffset =
+                    wingSpacing * 2
 
             --------------------------------------------------
-            -- B4
+            -- BARIS KEDUA
             --------------------------------------------------
             --
-            -- B4
+            --       B4             B8
             --
             --------------------------------------------------
 
             elseif myIndex == 4 then
 
-                localOffset =
-                    forward * (offset - row)
-                    - right * 0
+                forwardOffset =
+                    baseZ + rowSpacing
+
+                rightOffset =
+                    -wingSpacing * 0.5
+
+            elseif myIndex == 8 then
+
+                forwardOffset =
+                    baseZ + rowSpacing
+
+                rightOffset =
+                    wingSpacing * 0.5
 
             --------------------------------------------------
-            -- B5
+            -- BARIS KETIGA
             --------------------------------------------------
             --
-            -- B5
+            --          B5       B7
             --
             --------------------------------------------------
 
             elseif myIndex == 5 then
 
-                localOffset =
-                    forward * (offset - row * 2)
-                    - right * (spacing * 0.5)
+                forwardOffset =
+                    baseZ
+
+                rightOffset =
+                    -wingSpacing * 0.75
+
+            elseif myIndex == 7 then
+
+                forwardOffset =
+                    baseZ
+
+                rightOffset =
+                    wingSpacing * 0.75
 
             --------------------------------------------------
-            -- B6
+            -- TENGAH DEPAN
             --------------------------------------------------
             --
-            -- B6
+            --             B6
             --
             --------------------------------------------------
 
             elseif myIndex == 6 then
 
-                localOffset =
-                    forward * (offset - row * 3)
+                forwardOffset =
+                    baseZ - rowSpacing
 
-            --------------------------------------------------
-            -- B7
-            --------------------------------------------------
-            --
-            -- B7
-            --
-            --------------------------------------------------
-
-            elseif myIndex == 7 then
-
-                localOffset =
-                    forward * (offset - row * 2)
-                    + right * (spacing * 0.5)
-
-            --------------------------------------------------
-            -- B8
-            --------------------------------------------------
-            --
-            -- B8
-            --
-            --------------------------------------------------
-
-            elseif myIndex == 8 then
-
-                localOffset =
-                    forward * (offset - row)
-                    + right * 0
-
-            --------------------------------------------------
-            -- B9
-            --------------------------------------------------
-            --
-            -- B9
-            -- berada di belakang B8
-            --
-            --------------------------------------------------
-
-            elseif myIndex == 9 then
-
-                localOffset =
-                    forward * (offset - row * 2)
-                    + right * spacing
-
-            --------------------------------------------------
-            -- B10
-            --------------------------------------------------
-            --
-            -- B10
-            --
-            --------------------------------------------------
-
-            elseif myIndex == 10 then
-
-                localOffset =
-                    forward * offset
-                    + right * spacing
-
-            --------------------------------------------------
-            -- B11
-            --------------------------------------------------
-            --
-            -- B11
-            --
-            --------------------------------------------------
-
-            elseif myIndex == 11 then
-
-                localOffset =
-                    forward * offset
-                    + right * (spacing * 2)
+                rightOffset =
+                    0
 
             end
 
-            if not localOffset then
-                return nil
-            end
+            --------------------------------------------------
+            -- BUILD POSITION
+            --------------------------------------------------
+
+            local localOffset =
+                forward * forwardOffset
+                + right * rightOffset
 
             --------------------------------------------------
             -- FINAL POSITION
@@ -811,7 +771,7 @@ return {
                         humanoid.AutoRotate = false
 
                         --------------------------------------------------
-                        -- FACE CENTER / PLAYER
+                        -- FACE PLAYER
                         --------------------------------------------------
 
                         local lookPosition =
