@@ -70,20 +70,6 @@ return {
         ----------------------------------------------------------------
         -- BOT ORDER
         ----------------------------------------------------------------
-        --
-        -- 1  = Bot 1
-        -- 2  = Bot 2
-        -- 3  = Bot 3
-        -- 4  = Bot 4
-        -- 5  = Bot 5
-        -- 6  = Bot 6
-        -- 7  = Bot 7
-        -- 8  = Bot 8
-        -- 9  = Bot 9
-        -- 10 = Bot 10
-        -- 11 = Bot 11
-        --
-        ----------------------------------------------------------------
 
         local botOrder = {
 
@@ -310,7 +296,7 @@ return {
         --                           |
         --                    BOT 4       BOT 5
         --                           |
-        -- BOT 6   BOT 8   BOT 9     BOT 7   BOT 10   BOT 11
+        --             BOT 9  BOT 8  BOT 6   BOT 7  BOT 10  BOT 11
         --
         ----------------------------------------------------------------
 
@@ -396,11 +382,42 @@ return {
 
             ------------------------------------------------------------
             -- BOT 6
-            -- SEJAJAR DENGAN BOT 4
-            -- POSISI LEBIH KIRI
+            -- BARIS BELAKANG
+            -- KIRI TENGAH
             ------------------------------------------------------------
 
             if myIndex == 6 then
+
+                return Vector3.new(
+                    -sideSpacing,
+                    0,
+                    -(distance * 3)
+                )
+
+            end
+
+            ------------------------------------------------------------
+            -- BOT 7
+            -- BARIS BELAKANG
+            -- KANAN TENGAH
+            ------------------------------------------------------------
+
+            if myIndex == 7 then
+
+                return Vector3.new(
+                    sideSpacing,
+                    0,
+                    -(distance * 3)
+                )
+
+            end
+
+            ------------------------------------------------------------
+            -- BOT 8
+            -- LEBIH KIRI DARI BOT 6
+            ------------------------------------------------------------
+
+            if myIndex == 8 then
 
                 return Vector3.new(
                     -(sideSpacing * 2),
@@ -411,28 +428,11 @@ return {
             end
 
             ------------------------------------------------------------
-            -- BOT 7
-            -- SEJAJAR DENGAN BOT 5
-            -- POSISI LEBIH KANAN
+            -- BOT 9
+            -- LEBIH KIRI DARI BOT 8
             ------------------------------------------------------------
 
-            if myIndex == 7 then
-
-                return Vector3.new(
-                    sideSpacing * 2,
-                    0,
-                    -(distance * 3)
-                )
-
-            end
-
-            ------------------------------------------------------------
-            -- BOT 8
-            -- SEJAJAR DENGAN BOT 4
-            -- LEBIH KIRI DARI BOT 6
-            ------------------------------------------------------------
-
-            if myIndex == 8 then
+            if myIndex == 9 then
 
                 return Vector3.new(
                     -(sideSpacing * 3),
@@ -443,31 +443,14 @@ return {
             end
 
             ------------------------------------------------------------
-            -- BOT 9
-            -- SEJAJAR DENGAN BOT 4
-            -- LEBIH KIRI DARI BOT 8
-            ------------------------------------------------------------
-
-            if myIndex == 9 then
-
-                return Vector3.new(
-                    -(sideSpacing * 4),
-                    0,
-                    -(distance * 3)
-                )
-
-            end
-
-            ------------------------------------------------------------
             -- BOT 10
-            -- SEJAJAR DENGAN BOT 5
             -- LEBIH KANAN DARI BOT 7
             ------------------------------------------------------------
 
             if myIndex == 10 then
 
                 return Vector3.new(
-                    sideSpacing * 3,
+                    sideSpacing * 2,
                     0,
                     -(distance * 3)
                 )
@@ -476,14 +459,13 @@ return {
 
             ------------------------------------------------------------
             -- BOT 11
-            -- SEJAJAR DENGAN BOT 5
             -- LEBIH KANAN DARI BOT 10
             ------------------------------------------------------------
 
             if myIndex == 11 then
 
                 return Vector3.new(
-                    sideSpacing * 4,
+                    sideSpacing * 3,
                     0,
                     -(distance * 3)
                 )
