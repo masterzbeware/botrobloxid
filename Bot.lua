@@ -45,6 +45,7 @@ local commandFiles = {
     "Salute.lua",
     "Circle.lua",
     "Backline.lua",
+    "Rest.lua",
     "Square.lua",
 }
 
@@ -94,5 +95,6 @@ jalankan("salute")
 jalankan("circle")
 jalankan("backline")
 jalankan("square")
+jalankan("rest")
 
 print("✅ Bot.lua loaded — All systems active.")
