@@ -1,908 +1,458 @@
 return {
-    Execute = function()
+	Execute = function()
+
+		--------------------------------------------------
+		-- SERVICES
+		--------------------------------------------------
+
+		local Players = game:GetService("Players")
+		local RunService = game:GetService("RunService")
+		local TextChatService = game:GetService("TextChatService")
+		local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+		local LocalPlayer = Players.LocalPlayer
+
+		--------------------------------------------------
+		-- MODULES
+		--------------------------------------------------
+
+		local Admin = loadstring(
+			game:HttpGet(
+				"https://raw.githubusercontent.com/..."
+			)
+		)()
+
+		local Distance = loadstring(
+			game:HttpGet(
+				"https://raw.githubusercontent.com/..."
+			)
+		)()
+
+		--------------------------------------------------
+		-- CONFIG
+		--------------------------------------------------
+
+		local botIds = {
+			"11611503633",
+			"11611534165",
+			"11611567975",
+			"11611562042",
+			"11611591921",
+			"11122806815",
+			"11122806817",
+			"11122687468",
+			"11122854402",
+			"11641280895",
+			"11641342530"
+		}
+
+		local sideSpacing = 2.5
+		local stopThreshold = 1.5
+
+		--------------------------------------------------
+		-- MODE CONTROLLER
+		--------------------------------------------------
+
+		_G.BotVars = _G.BotVars or {}
+		_G.BotVars.ModeControllers = _G.BotVars.ModeControllers or {}
+
+		--------------------------------------------------
+		-- GET CHARACTER
+		--------------------------------------------------
+
+		local function getCharacter()
+			local character = LocalPlayer.Character
+
+			if not character then
+				return nil
+			end
+
+			local humanoid = character:FindFirstChildOfClass("Humanoid")
+			local hrp = character:FindFirstChild("HumanoidRootPart")
+
+			if not humanoid or not hrp then
+				return nil
+			end
+
+			return character, humanoid, hrp
+		end
+
+		--------------------------------------------------
+		-- GET FOLLOW DISTANCE
+		--------------------------------------------------
+
+		local function getFollowDistance(botUserId, targetUserId)
+
+			local defaultDistance = 2
+
+			-- Admin mendapatkan jarak lebih jauh
+			if Admin and Admin.IsAdmin then
+				local success, result = pcall(function()
+					return Admin:IsAdmin(targetUserId)
+				end)
+
+				if success and result then
+					defaultDistance = 3
+				end
+			end
+
+			-- Distance module override
+			if Distance then
+				local success, result = pcall(function()
+					return Distance:GetDistance(
+						tostring(botUserId),
+						tostring(targetUserId)
+					)
+				end)
+
+				if success and typeof(result) == "number" then
+					return result
+				end
+			end
+
+			return defaultDistance
+		end
+
+		--------------------------------------------------
+		-- FORMATION
+		--------------------------------------------------
+
+		local function getFormationOffset(index, distance)
+
+			if index == 1 then
+
+				-- B1
+				-- Tepat di belakang player
+				return Vector3.new(
+					0,
+					0,
+					-distance
+				)
+
+			elseif index == 2 then
+
+				-- B2
+				-- Kiri B1
+				return Vector3.new(
+					-sideSpacing,
+					0,
+					-(distance * 2)
+				)
+
+			elseif index == 3 then
+
+				-- B3
+				-- Kanan B1
+				return Vector3.new(
+					sideSpacing,
+					0,
+					-(distance * 2)
+				)
+
+			elseif index == 4 then
+
+				-- B4
+				-- Tepat di belakang B2
+				return Vector3.new(
+					-sideSpacing,
+					0,
+					-(distance * 3)
+				)
+
+			elseif index == 5 then
+
+				-- B5
+				-- Tepat di belakang B3
+				return Vector3.new(
+					sideSpacing,
+					0,
+					-(distance * 3)
+				)
+
+			elseif index == 6 then
+
+				-- B6
+				-- Tepat di belakang B4
+				return Vector3.new(
+					-sideSpacing,
+					0,
+					-(distance * 4)
+				)
+
+			elseif index == 7 then
+
+				-- B7
+				-- Di sebelah kiri B6
+				return Vector3.new(
+					-(sideSpacing * 2),
+					0,
+					-(distance * 4)
+				)
+
+			elseif index == 8 then
+
+				-- B8
+				-- Di sebelah kiri B7
+				return Vector3.new(
+					-(sideSpacing * 3),
+					0,
+					-(distance * 4)
+				)
+
+			elseif index == 9 then
+
+				-- B9
+				-- Tepat di belakang B5
+				return Vector3.new(
+					sideSpacing,
+					0,
+					-(distance * 4)
+				)
+
+			elseif index == 10 then
+
+				-- B10
+				-- Di sebelah kanan B9
+				return Vector3.new(
+					sideSpacing * 2,
+					0,
+					-(distance * 4)
+				)
+
+			elseif index == 11 then
+
+				-- B11
+				-- Di sebelah kanan B10
+				return Vector3.new(
+					sideSpacing * 3,
+					0,
+					-(distance * 4)
+				)
+			end
+
+			return Vector3.zero
+		end
+
+		--------------------------------------------------
+		-- GET BOT PLAYER
+		--------------------------------------------------
+
+		local function getBotPlayer(userId)
+
+			local targetId = tonumber(userId)
+
+			if not targetId then
+				return nil
+			end
+
+			return Players:GetPlayerByUserId(targetId)
+		end
+
+		--------------------------------------------------
+		-- MOVE BOT
+		--------------------------------------------------
+
+		local function moveBot(botPlayer, targetHRP, index)
+
+			if not botPlayer then
+				return
+			end
+
+			local character = botPlayer.Character
 
-        ----------------------------------------------------------------
-        -- SERVICES
-        ----------------------------------------------------------------
+			if not character then
+				return
+			end
 
-        local Players = game:GetService("Players")
-        local RunService = game:GetService("RunService")
-        local TextChatService = game:GetService("TextChatService")
-        local ReplicatedStorage = game:GetService("ReplicatedStorage")
+			local humanoid = character:FindFirstChildOfClass("Humanoid")
+			local hrp = character:FindFirstChild("HumanoidRootPart")
 
-        local LocalPlayer = Players.LocalPlayer
+			if not humanoid or not hrp then
+				return
+			end
 
-        if not LocalPlayer then
-            return
-        end
+			if humanoid.Health <= 0 then
+				return
+			end
 
-        ----------------------------------------------------------------
-        -- GLOBAL MODE SYSTEM
-        ----------------------------------------------------------------
+			--------------------------------------------------
+			-- DISTANCE
+			--------------------------------------------------
 
-        _G.BotVars = _G.BotVars or {}
-        _G.BotVars.ModeControllers = _G.BotVars.ModeControllers or {}
+			local distance = getFollowDistance(
+				botPlayer.UserId,
+				LocalPlayer.UserId
+			)
 
-        ----------------------------------------------------------------
-        -- LOAD ADMIN
-        ----------------------------------------------------------------
+			--------------------------------------------------
+			-- FORMATION OFFSET
+			--------------------------------------------------
 
-        local Admin = loadstring(game:HttpGet(
-            "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
-        ))()
+			local offset = getFormationOffset(
+				index,
+				distance
+			)
 
-        ----------------------------------------------------------------
-        -- LOAD DISTANCE
-        ----------------------------------------------------------------
+			--------------------------------------------------
+			-- WORLD POSITION
+			--------------------------------------------------
 
-        local Distance = loadstring(game:HttpGet(
-            "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Distance.lua"
-        ))()
+			local targetPosition =
+				targetHRP.Position
+				+ targetHRP.CFrame.RightVector * offset.X
+				+ targetHRP.CFrame.UpVector * offset.Y
+				+ targetHRP.CFrame.LookVector * offset.Z
 
-        ----------------------------------------------------------------
-        -- VARIABLES
-        ----------------------------------------------------------------
+			--------------------------------------------------
+			-- DISTANCE TO TARGET
+			--------------------------------------------------
 
-        local humanoid
-        local myHRP
+			local difference =
+				targetPosition - hrp.Position
 
-        local following = false
-        local targetPlayer = nil
-        local followConnection = nil
+			local magnitude =
+				difference.Magnitude
 
-        ----------------------------------------------------------------
-        -- DISTANCE
-        ----------------------------------------------------------------
+			--------------------------------------------------
+			-- STOP IF CLOSE ENOUGH
+			--------------------------------------------------
 
-        local adminFollowDistance = 3
-        local defaultBotFollowDistance = 2
+			if magnitude <= stopThreshold then
+				humanoid:Move(Vector3.zero)
+				return
+			end
 
-        ----------------------------------------------------------------
-        -- TWOWINGS CONFIG
-        ----------------------------------------------------------------
+			--------------------------------------------------
+			-- MOVE
+			--------------------------------------------------
 
-        -- Jarak antar bot dalam satu baris
-        local sideSpacing = 2.5
+			local direction =
+				difference.Unit
 
-        -- Jarak minimum sebelum bot berhenti
-        local stopThreshold = 1.5
+			humanoid:Move(direction)
 
-        ----------------------------------------------------------------
-        -- BOT ORDER
-        ----------------------------------------------------------------
+		end
 
-        local botOrder = {
+		--------------------------------------------------
+		-- START TWO WINGS
+		--------------------------------------------------
 
-            "11611503633", -- Bot 1
-            "11611534165", -- Bot 2
-            "11611567975", -- Bot 3
-            "11611562042", -- Bot 4
-            "11611591921", -- Bot 5
-            "11122806815", -- Bot 6
-            "11122806817", -- Bot 7
-            "11122687468", -- Bot 8
-            "11122854402", -- Bot 9
-            "11641280895", -- Bot 10
-            "11641342530", -- Bot 11
+		local function startTwoWings()
 
-        }
+			if _G.BotVars.ModeControllers.twowings then
+				return
+			end
 
-        ----------------------------------------------------------------
-        -- UPDATE CHARACTER
-        ----------------------------------------------------------------
+			_G.BotVars.ModeControllers.twowings = true
 
-        local function updateCharacter()
+			local connection
 
-            local character =
-                LocalPlayer.Character
-                or LocalPlayer.CharacterAdded:Wait()
+			connection = RunService.Heartbeat:Connect(function()
 
-            humanoid =
-                character:WaitForChild("Humanoid")
+				--------------------------------------------------
+				-- CHECK MODE
+				--------------------------------------------------
 
-            myHRP =
-                character:WaitForChild("HumanoidRootPart")
+				if not _G.BotVars.ModeControllers.twowings then
 
-            humanoid.AutoRotate = true
+					if connection then
+						connection:Disconnect()
+					end
 
-        end
+					return
+				end
 
-        updateCharacter()
+				--------------------------------------------------
+				-- GET LOCAL PLAYER
+				--------------------------------------------------
 
-        ----------------------------------------------------------------
-        -- SEND CHAT
-        ----------------------------------------------------------------
+				local character, humanoid, targetHRP =
+					getCharacter()
 
-        local function sendChat(message)
+				if not character or not humanoid or not targetHRP then
+					return
+				end
 
-            local success = false
+				if humanoid.Health <= 0 then
+					return
+				end
 
-            if TextChatService
-                and TextChatService.TextChannels then
+				--------------------------------------------------
+				-- MOVE ALL BOTS
+				--------------------------------------------------
 
-                local channel =
-                    TextChatService.TextChannels:FindFirstChild(
-                        "RBXGeneral"
-                    )
+				for index, userId in ipairs(botIds) do
 
-                if channel then
+					local botPlayer =
+						getBotPlayer(userId)
 
-                    pcall(function()
+					if botPlayer then
 
-                        channel:SendAsync(message)
+						moveBot(
+							botPlayer,
+							targetHRP,
+							index
+						)
 
-                    end)
+					end
 
-                    success = true
+				end
 
-                end
+			end)
 
-            end
+		end
 
-            if not success then
+		--------------------------------------------------
+		-- STOP TWO WINGS
+		--------------------------------------------------
 
-                pcall(function()
+		local function stopTwoWings()
 
-                    local chatEvents =
-                        ReplicatedStorage:FindFirstChild(
-                            "DefaultChatSystemChatEvents"
-                        )
+			_G.BotVars.ModeControllers.twowings = nil
 
-                    if chatEvents then
+		end
 
-                        local sayMessageRequest =
-                            chatEvents:FindFirstChild(
-                                "SayMessageRequest"
-                            )
+		--------------------------------------------------
+		-- COMMAND
+		--------------------------------------------------
 
-                        if sayMessageRequest then
+		local function handleCommand(message)
 
-                            sayMessageRequest:FireServer(
-                                message,
-                                "All"
-                            )
+			local command =
+				message:lower()
 
-                        end
+			if command == "!twowings" then
 
-                    end
+				startTwoWings()
 
-                end)
+			elseif command == "!stoptwowings" then
 
-            end
+				stopTwoWings()
 
-        end
+			end
 
-        ----------------------------------------------------------------
-        -- STOP TWOWINGS
-        ----------------------------------------------------------------
+		end
 
-        local function stopTwowings()
+		--------------------------------------------------
+		-- CHAT LISTENER
+		--------------------------------------------------
 
-            following = false
-            targetPlayer = nil
+		if TextChatService.ChatVersion
+			== Enum.ChatVersion.TextChatService then
 
-            if followConnection then
+			TextChatService.MessageReceived:Connect(function(message)
 
-                followConnection:Disconnect()
-                followConnection = nil
+				if message.TextSource
+					and message.TextSource.UserId
+					== LocalPlayer.UserId then
 
-            end
+					handleCommand(message.Text)
 
-            if humanoid then
+				end
 
-                humanoid.AutoRotate = true
+			end)
 
-            end
+		end
 
-        end
-
-        ----------------------------------------------------------------
-        -- REGISTER CONTROLLER
-        ----------------------------------------------------------------
-
-        _G.BotVars.ModeControllers.twowings =
-            stopTwowings
-
-        ----------------------------------------------------------------
-        -- STOP SEMUA MODE LAIN
-        ----------------------------------------------------------------
-
-        local function stopOtherModes()
-
-            for name, stopFunction in pairs(
-                _G.BotVars.ModeControllers
-            ) do
-
-                if name ~= "twowings"
-                    and type(stopFunction) == "function" then
-
-                    pcall(stopFunction)
-
-                end
-
-            end
-
-        end
-
-        ----------------------------------------------------------------
-        -- FIND PLAYER
-        ----------------------------------------------------------------
-
-        local function findPlayerByName(name)
-
-            if not name or name == "" then
-                return nil
-            end
-
-            name = name:lower()
-
-            ------------------------------------------------------------
-            -- EXACT MATCH
-            ------------------------------------------------------------
-
-            for _, player in ipairs(
-                Players:GetPlayers()
-            ) do
-
-                if player.Name:lower() == name
-                    or player.DisplayName:lower() == name then
-
-                    return player
-
-                end
-
-            end
-
-            ------------------------------------------------------------
-            -- PARTIAL MATCH
-            ------------------------------------------------------------
-
-            for _, player in ipairs(
-                Players:GetPlayers()
-            ) do
-
-                if player.Name:lower():find(
-                    name,
-                    1,
-                    true
-                )
-                    or player.DisplayName:lower():find(
-                        name,
-                        1,
-                        true
-                    ) then
-
-                    return player
-
-                end
-
-            end
-
-            return nil
-
-        end
-
-        ----------------------------------------------------------------
-        -- GET FORMATION POSITION
-        ----------------------------------------------------------------
-        --
-        -- FORMASI:
-        --
-        --                         PLAYER
-        --                           |
-        --                         BOT 1
-        --                           |
-        --                    BOT 2       BOT 3
-        --                           |
-        --                    BOT 4       BOT 5
-        --                           |
-        --             BOT 9  BOT 8  BOT 6   BOT 7  BOT 10  BOT 11
-        --
-        ----------------------------------------------------------------
-
-        local function getFormationOffset(
-            myIndex,
-            distance
-        )
-
-            ------------------------------------------------------------
-            -- BOT 1
-            -- TENGAH, BELAKANG PLAYER
-            ------------------------------------------------------------
-
-            if myIndex == 1 then
-
-                return Vector3.new(
-                    0,
-                    0,
-                    -distance
-                )
-
-            end
-
-            ------------------------------------------------------------
-            -- BOT 2
-            -- KIRI BOT 1
-            ------------------------------------------------------------
-
-            if myIndex == 2 then
-
-                return Vector3.new(
-                    -sideSpacing,
-                    0,
-                    -(distance * 2)
-                )
-
-            end
-
-            ------------------------------------------------------------
-            -- BOT 3
-            -- KANAN BOT 1
-            ------------------------------------------------------------
-
-            if myIndex == 3 then
-
-                return Vector3.new(
-                    sideSpacing,
-                    0,
-                    -(distance * 2)
-                )
-
-            end
-
-            ------------------------------------------------------------
-            -- BOT 4
-            -- KIRI BOT 1
-            ------------------------------------------------------------
-
-            if myIndex == 4 then
-
-                return Vector3.new(
-                    -sideSpacing,
-                    0,
-                    -(distance * 3)
-                )
-
-            end
-
-            ------------------------------------------------------------
-            -- BOT 5
-            -- KANAN BOT 1
-            ------------------------------------------------------------
-
-            if myIndex == 5 then
-
-                return Vector3.new(
-                    sideSpacing,
-                    0,
-                    -(distance * 3)
-                )
-
-            end
-
-            ------------------------------------------------------------
-            -- BOT 6
-            -- BARIS BELAKANG
-            -- KIRI TENGAH
-            ------------------------------------------------------------
-
-            if myIndex == 6 then
-
-                return Vector3.new(
-                    -sideSpacing,
-                    0,
-                    -(distance * 3.5)
-                )
-
-            end
-
-            ------------------------------------------------------------
-            -- BOT 7
-            -- BARIS BELAKANG
-            -- KANAN TENGAH
-            ------------------------------------------------------------
-
-            if myIndex == 7 then
-
-                return Vector3.new(
-                    sideSpacing,
-                    0,
-                    -(distance * 3.5)
-                )
-
-            end
-
-            ------------------------------------------------------------
-            -- BOT 8
-            -- LEBIH KIRI DARI BOT 6
-            ------------------------------------------------------------
-
-            if myIndex == 8 then
-
-                return Vector3.new(
-                    -(sideSpacing * 2),
-                    0,
-                    -(distance * 3.5)
-                )
-
-            end
-
-            ------------------------------------------------------------
-            -- BOT 9
-            -- LEBIH KIRI DARI BOT 8
-            ------------------------------------------------------------
-
-            if myIndex == 9 then
-
-                return Vector3.new(
-                    -(sideSpacing * 3),
-                    0,
-                    -(distance * 3.5)
-                )
-
-            end
-
-            ------------------------------------------------------------
-            -- BOT 10
-            -- LEBIH KANAN DARI BOT 7
-            ------------------------------------------------------------
-
-            if myIndex == 10 then
-
-                return Vector3.new(
-                    sideSpacing * 2,
-                    0,
-                    -(distance * 3.5)
-                )
-
-            end
-
-            ------------------------------------------------------------
-            -- BOT 11
-            -- LEBIH KANAN DARI BOT 10
-            ------------------------------------------------------------
-
-            if myIndex == 11 then
-
-                return Vector3.new(
-                    sideSpacing * 3,
-                    0,
-                    -(distance * 3.5)
-                )
-
-            end
-
-            return nil
-
-        end
-
-        ----------------------------------------------------------------
-        -- START TWOWINGS
-        ----------------------------------------------------------------
-
-        local function startTwowings(player)
-
-            if not player then
-                return
-            end
-
-            ------------------------------------------------------------
-            -- STOP MODE LAIN
-            ------------------------------------------------------------
-
-            stopOtherModes()
-
-            ------------------------------------------------------------
-            -- SET ACTIVE MODE
-            ------------------------------------------------------------
-
-            _G.BotVars.ActiveMode = "twowings"
-
-            ------------------------------------------------------------
-            -- STOP CONNECTION LAMA
-            ------------------------------------------------------------
-
-            if followConnection then
-
-                followConnection:Disconnect()
-                followConnection = nil
-
-            end
-
-            ------------------------------------------------------------
-            -- STATE
-            ------------------------------------------------------------
-
-            following = true
-            targetPlayer = player
-
-            ------------------------------------------------------------
-            -- CHAT
-            ------------------------------------------------------------
-
-            sendChat("Yes, Sir!")
-
-            ------------------------------------------------------------
-            -- CARI INDEX BOT
-            ------------------------------------------------------------
-
-            local myIndex =
-                table.find(
-                    botOrder,
-                    tostring(LocalPlayer.UserId)
-                )
-
-            if not myIndex then
-
-                stopTwowings()
-
-                return
-
-            end
-
-            ----------------------------------------------------------------
-            -- TWOWINGS LOOP
-            ----------------------------------------------------------------
-
-            followConnection =
-                RunService.Heartbeat:Connect(
-                    function()
-
-                        ------------------------------------------------
-                        -- JIKA MODE BERGANTI
-                        ------------------------------------------------
-
-                        if _G.BotVars.ActiveMode ~= "twowings" then
-
-                            stopTwowings()
-
-                            return
-
-                        end
-
-                        ------------------------------------------------
-                        -- VALIDASI
-                        ------------------------------------------------
-
-                        if not following then
-                            return
-                        end
-
-                        if not humanoid
-                            or not myHRP then
-
-                            return
-
-                        end
-
-                        if not targetPlayer then
-                            return
-                        end
-
-                        ------------------------------------------------
-                        -- TARGET CHARACTER
-                        ------------------------------------------------
-
-                        local targetCharacter =
-                            targetPlayer.Character
-
-                        if not targetCharacter then
-                            return
-                        end
-
-                        local targetHRP =
-                            targetCharacter:FindFirstChild(
-                                "HumanoidRootPart"
-                            )
-
-                        if not targetHRP then
-                            return
-                        end
-
-                        ------------------------------------------------
-                        -- DISTANCE
-                        -- SAMA SEPERTI FOLLOW.LUA
-                        ------------------------------------------------
-
-                        local distance =
-                            defaultBotFollowDistance
-
-                        if Admin:IsAdmin(targetPlayer) then
-
-                            distance =
-                                adminFollowDistance
-
-                        end
-
-                        ------------------------------------------------
-                        -- SPECIAL DISTANCE
-                        -- SAMA SEPERTI FOLLOW.LUA
-                        ------------------------------------------------
-
-                        local specialDistance =
-                            Distance:GetDistance(
-                                tostring(LocalPlayer.UserId),
-                                tostring(targetPlayer.UserId)
-                            )
-
-                        if specialDistance then
-
-                            distance =
-                                specialDistance
-
-                        end
-
-                        ------------------------------------------------
-                        -- GET FORMATION OFFSET
-                        ------------------------------------------------
-
-                        local offset =
-                            getFormationOffset(
-                                myIndex,
-                                distance
-                            )
-
-                        if not offset then
-                            return
-                        end
-
-                        ------------------------------------------------
-                        -- KONVERSI LOCAL OFFSET
-                        -- KE WORLD POSITION
-                        ------------------------------------------------
-
-                        local targetPosition =
-                            targetHRP.Position
-
-                            + (
-                                targetHRP.CFrame.RightVector
-                                * offset.X
-                            )
-
-                            + (
-                                targetHRP.CFrame.UpVector
-                                * offset.Y
-                            )
-
-                            + (
-                                targetHRP.CFrame.LookVector
-                                * offset.Z
-                            )
-
-                        ------------------------------------------------
-                        -- JARAK BOT KE POSISI
-                        ------------------------------------------------
-
-                        local distanceToTarget =
-                            (
-                                myHRP.Position
-                                - targetPosition
-                            ).Magnitude
-
-                        ------------------------------------------------
-                        -- JALAN
-                        ------------------------------------------------
-
-                        if distanceToTarget > stopThreshold then
-
-                            humanoid.AutoRotate = true
-
-                            humanoid:MoveTo(
-                                targetPosition
-                            )
-
-                            return
-
-                        end
-
-                        ------------------------------------------------
-                        -- SUDAH SAMPAI
-                        ------------------------------------------------
-
-                        humanoid.AutoRotate = false
-
-                        ------------------------------------------------
-                        -- ROTASI SAMA SEPERTI FOLLOW.LUA
-                        ------------------------------------------------
-
-                        local adminRotation =
-                            targetHRP.CFrame
-                            - targetHRP.Position
-
-                        myHRP.CFrame =
-                            CFrame.new(
-                                myHRP.Position
-                            )
-                            * adminRotation
-
-                    end
-                )
-
-        end
-
-        ----------------------------------------------------------------
-        -- COMMAND HANDLER
-        ----------------------------------------------------------------
-
-        local function handleCommand(
-            message,
-            sender
-        )
-
-            if not Admin:IsAdmin(sender) then
-                return
-            end
-
-            local lower =
-                message:lower()
-
-            ------------------------------------------------------------
-            -- !TWOWINGS
-            ------------------------------------------------------------
-
-            if lower == "!twowings" then
-
-                startTwowings(sender)
-
-                return
-
-            end
-
-            ------------------------------------------------------------
-            -- !TWOWINGS PLAYER
-            ------------------------------------------------------------
-
-            local targetName =
-                lower:match(
-                    "^!twowings%s+(.+)$"
-                )
-
-            if targetName then
-
-                local target =
-                    findPlayerByName(
-                        targetName
-                    )
-
-                if target then
-
-                    startTwowings(
-                        target
-                    )
-
-                end
-
-                return
-
-            end
-
-            ------------------------------------------------------------
-            -- !STOP
-            ------------------------------------------------------------
-
-            if lower == "!stop"
-                or lower == "!untwowings" then
-
-                _G.BotVars.ActiveMode = nil
-
-                stopTwowings()
-
-                return
-
-            end
-
-        end
-
-        ----------------------------------------------------------------
-        -- TEXT CHAT
-        ----------------------------------------------------------------
-
-        if TextChatService
-            and TextChatService.TextChannels then
-
-            local channel =
-                TextChatService.TextChannels:FindFirstChild(
-                    "RBXGeneral"
-                )
-
-            if channel then
-
-                channel.OnIncomingMessage =
-                    function(message)
-
-                        local userId =
-                            message.TextSource
-                            and message.TextSource.UserId
-
-                        local sender =
-                            userId
-                            and Players:GetPlayerByUserId(
-                                userId
-                            )
-
-                        if sender then
-
-                            handleCommand(
-                                message.Text,
-                                sender
-                            )
-
-                        end
-
-                    end
-
-            end
-
-        end
-
-        ----------------------------------------------------------------
-        -- FALLBACK CHAT
-        ----------------------------------------------------------------
-
-        for _, player in ipairs(
-            Players:GetPlayers()
-        ) do
-
-            player.Chatted:Connect(
-                function(message)
-
-                    handleCommand(
-                        message,
-                        player
-                    )
-
-                end
-            )
-
-        end
-
-        ----------------------------------------------------------------
-        -- PLAYER ADDED
-        ----------------------------------------------------------------
-
-        Players.PlayerAdded:Connect(
-            function(player)
-
-                player.Chatted:Connect(
-                    function(message)
-
-                        handleCommand(
-                            message,
-                            player
-                        )
-
-                    end
-                )
-
-            end
-        )
-
-        ----------------------------------------------------------------
-        -- CHARACTER RESPAWN
-        ----------------------------------------------------------------
-
-        LocalPlayer.CharacterAdded:Connect(
-            function()
-
-                task.wait(1)
-
-                updateCharacter()
-
-                --------------------------------------------------------
-                -- JIKA TWOWINGS MASIH AKTIF
-                --------------------------------------------------------
-
-                if _G.BotVars.ActiveMode == "twowings"
-                    and targetPlayer then
-
-                    startTwowings(
-                        targetPlayer
-                    )
-
-                end
-
-            end
-        )
-
-    end
+	end
 }
