@@ -19,7 +19,7 @@ _G.BotVars = {
 
 local Window = Library:CreateWindow({
     Title = "MasterZ HUB",
-    Footer = "1.0.0",
+    Footer = "1.0.2",
     Icon = 0
 })
 
@@ -47,7 +47,7 @@ local commandFiles = {
     "Backline.lua",
     "Rest.lua",
     "Square.lua",
-    "TwoWings.lua"
+    "TwoWings.lua",
 }
 
 for _, fileName in ipairs(commandFiles) do
