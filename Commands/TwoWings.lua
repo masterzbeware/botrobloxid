@@ -391,7 +391,7 @@ return {
                 return Vector3.new(
                     -sideSpacing,
                     0,
-                    -(distance * 3)
+                    -(distance * 3.5)
                 )
 
             end
@@ -407,7 +407,7 @@ return {
                 return Vector3.new(
                     sideSpacing,
                     0,
-                    -(distance * 3)
+                    -(distance * 3.5)
                 )
 
             end
@@ -422,7 +422,7 @@ return {
                 return Vector3.new(
                     -(sideSpacing * 2),
                     0,
-                    -(distance * 3)
+                    -(distance * 3.5)
                 )
 
             end
@@ -437,7 +437,7 @@ return {
                 return Vector3.new(
                     -(sideSpacing * 3),
                     0,
-                    -(distance * 3)
+                    -(distance * 3.5)
                 )
 
             end
@@ -452,7 +452,7 @@ return {
                 return Vector3.new(
                     sideSpacing * 2,
                     0,
-                    -(distance * 3)
+                    -(distance * 3.5)
                 )
 
             end
@@ -467,7 +467,7 @@ return {
                 return Vector3.new(
                     sideSpacing * 3,
                     0,
-                    -(distance * 3)
+                    -(distance * 3.5)
                 )
 
             end
