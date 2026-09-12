@@ -105,13 +105,13 @@ return {
 		-- FORMATION SETTINGS
 		----------------------------------------------------------------
 
-		-- Jarak dasar dari Player
+		-- Jarak PLAYER ke baris pertama
 		local formationDistance = 5
 
 		-- Jarak antar Bot kiri / kanan
 		local formationSpacing = 3
 
-		-- Jarak antara baris Bot1-7 dan Bot8-11
+		-- Jarak antara baris pertama dan baris kedua
 		local rowSpacing = 3
 
 		-- Toleransi sampai posisi
@@ -124,13 +124,13 @@ return {
 		-- BOT ORDER
 		----------------------------------------------------------------
 		--
-		-- BARIS 1:
+		-- FORMASI:
 		--
-		-- Bot1 Bot2 Bot3 Bot4 Bot5 Bot6 Bot7
+		--                 B8   B9   B10   B11
 		--
-		-- BARIS 2:
+		--          B1   B2   B3   B4   B5   B6   B7
 		--
-		--       Bot8 Bot9 Bot10 Bot11
+		--                       PLAYER
 		--
 		----------------------------------------------------------------
 
@@ -412,11 +412,11 @@ return {
 		--
 		-- HASIL:
 		--
-		--             B8   B9   B10   B11
+		--                 B8   B9   B10   B11
 		--
-		--      B1   B2   B3   B4   B5   B6   B7
+		--          B1   B2   B3   B4   B5   B6   B7
 		--
-		--                    PLAYER
+		--                       PLAYER
 		--
 		----------------------------------------------------------------
 
@@ -436,48 +436,83 @@ return {
 			end
 
 			----------------------------------------------------------------
-			-- BOT1 - BOT7
+			-- TARGET BASIS
+			----------------------------------------------------------------
+			--
+			-- LookVector = arah DEPAN player
+			-- RightVector = arah KANAN player
+			--
+			----------------------------------------------------------------
+
+			local targetPosition =
+				targetHRP.Position
+
+			local forward =
+				targetHRP.CFrame.LookVector
+
+			local right =
+				targetHRP.CFrame.RightVector
+
+			----------------------------------------------------------------
+			-- BARIS 1
+			--
+			-- B1   B2   B3   B4   B5   B6   B7
+			--
 			----------------------------------------------------------------
 
 			if myIndex <= 7 then
 
 				------------------------------------------------------------
-				-- 7 BOT
-				--
-				-- -9 -6 -3 0 +3 +6 +9
+				-- POSISI TENGAH = BOT4
 				------------------------------------------------------------
 
-				local center = 4
+				local centerIndex = 4
+
+				------------------------------------------------------------
+				-- OFFSET HORIZONTAL
+				--
+				-- B1 = -9
+				-- B2 = -6
+				-- B3 = -3
+				-- B4 =  0
+				-- B5 = +3
+				-- B6 = +6
+				-- B7 = +9
+				------------------------------------------------------------
 
 				local horizontalOffset =
 					(
 						myIndex
-						- center
+						- centerIndex
 					)
 					* formationSpacing
 
-				local forwardDistance =
+				------------------------------------------------------------
+				-- JARAK DEPAN
+				------------------------------------------------------------
+
+				local forwardOffset =
 					formationDistance
 					+ distance
 
-				local frontPosition =
-					targetHRP.Position
-					+
-					(
-						targetHRP.CFrame.LookVector
-						*
-						forwardDistance
-					)
-
-				local sidePosition =
-					targetHRP.CFrame.RightVector
-					*
-					horizontalOffset
+				------------------------------------------------------------
+				-- POSISI BARIS 1
+				------------------------------------------------------------
 
 				return
-					frontPosition
+					targetPosition
 					+
-					sidePosition
+					(
+						forward
+						*
+						forwardOffset
+					)
+					+
+					(
+						right
+						*
+						horizontalOffset
+					)
 					+
 					Vector3.new(
 						0,
@@ -488,54 +523,63 @@ return {
 			end
 
 			----------------------------------------------------------------
-			-- BOT8 - BOT11
+			-- BARIS 2
+			--
+			-- B8   B9   B10   B11
+			--
 			----------------------------------------------------------------
 
 			local rowIndex =
 				myIndex - 7
 
 			------------------------------------------------------------
-			-- 4 BOT
+			-- POSISI TENGAH BARIS 2
 			--
-			-- -4.5 -1.5 +1.5 +4.5
+			-- Karena ada 4 bot:
+			--
+			-- B8  = -4.5
+			-- B9  = -1.5
+			-- B10 = +1.5
+			-- B11 = +4.5
+			--
 			------------------------------------------------------------
 
-			local center = 2.5
+			local centerIndex = 2.5
 
 			local horizontalOffset =
 				(
 					rowIndex
-					- center
+					- centerIndex
 				)
 				* formationSpacing
 
 			------------------------------------------------------------
-			-- BARIS KEDUA LEBIH DEPAN
+			-- BARIS 2 LEBIH JAUH KE DEPAN
 			------------------------------------------------------------
 
-			local forwardDistance =
+			local forwardOffset =
 				formationDistance
 				+ distance
 				+ rowSpacing
 
-			local frontPosition =
-				targetHRP.Position
-				+
-				(
-					targetHRP.CFrame.LookVector
-					*
-					forwardDistance
-				)
-
-			local sidePosition =
-				targetHRP.CFrame.RightVector
-				*
-				horizontalOffset
+			------------------------------------------------------------
+			-- POSISI BARIS 2
+			------------------------------------------------------------
 
 			return
-				frontPosition
+				targetPosition
 				+
-				sidePosition
+				(
+					forward
+					*
+					forwardOffset
+				)
+				+
+				(
+					right
+					*
+					horizontalOffset
+				)
 				+
 				Vector3.new(
 					0,
@@ -889,9 +933,7 @@ return {
 			end
 
 			if not Admin:IsAdmin(sender) then
-
 				return
-
 			end
 
 			----------------------------------------------------------------
@@ -914,7 +956,7 @@ return {
 				message:lower()
 
 			----------------------------------------------------------------
-			-- !FRONTLINE2
+			-- !FRONTLINE2 PLAYER
 			----------------------------------------------------------------
 
 			local targetName =
