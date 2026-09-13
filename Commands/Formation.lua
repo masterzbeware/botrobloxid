@@ -250,38 +250,18 @@ return {
         --
         ----------------------------------------------------------------
 
-        local function getFormationOffset(myIndex)
+local function getFormationOffset(myIndex)
 
-            if myIndex == 1 then
-                return 0
-            end
+    local totalBots = #botOrder
 
-            local positionIndex =
-                math.ceil(
-                    (myIndex - 1) / 2
-                )
+    local centerIndex =
+        (totalBots + 1) / 2
 
-            if myIndex % 2 == 0 then
+    return (
+        myIndex - centerIndex
+    ) * formationSpacing
 
-                return -
-                    (
-                        positionIndex
-                        *
-                        formationSpacing
-                    )
-
-            else
-
-                return
-                    (
-                        positionIndex
-                        *
-                        formationSpacing
-                    )
-
-            end
-
-        end
+end
 
         ----------------------------------------------------------------
         -- START FORMATION
