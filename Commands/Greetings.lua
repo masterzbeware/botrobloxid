@@ -20,7 +20,6 @@ return {
 		----------------------------------------------------------------
 
 		_G.BotVars = _G.BotVars or {}
-
 		_G.BotVars.ModeControllers =
 			_G.BotVars.ModeControllers or {}
 
@@ -55,11 +54,10 @@ return {
 		end
 
 		----------------------------------------------------------------
-		-- EMOTE SETTINGS
+		-- SETTINGS
 		----------------------------------------------------------------
 
-		local EMOTE_ID =
-			"111972708539890"
+		local EMOTE_ID = "111972708539890"
 
 		----------------------------------------------------------------
 		-- STATE
@@ -67,18 +65,10 @@ return {
 
 		local greetingsActive = false
 		local currentTrack = nil
-
-		----------------------------------------------------------------
-		-- MODE TOKEN
-		----------------------------------------------------------------
-
 		local modeToken = 0
 
-		----------------------------------------------------------------
-		-- CHARACTER
-		----------------------------------------------------------------
-
 		local humanoid = nil
+		local animator = nil
 
 		----------------------------------------------------------------
 		-- UPDATE CHARACTER
@@ -95,11 +85,54 @@ return {
 					"Humanoid"
 				)
 
+			animator =
+				humanoid:FindFirstChildOfClass(
+					"Animator"
+				)
+
+			if not animator then
+
+				animator =
+					Instance.new(
+						"Animator"
+					)
+
+				animator.Parent =
+					humanoid
+
+			end
+
 			return character
 
 		end
 
 		updateCharacter()
+
+		----------------------------------------------------------------
+		-- STOP CURRENT TRACK
+		----------------------------------------------------------------
+
+		local function stopCurrentTrack()
+
+			if currentTrack then
+
+				pcall(function()
+
+					currentTrack:Stop(0.15)
+
+				end)
+
+				pcall(function()
+
+					currentTrack:Destroy()
+
+				end)
+
+				currentTrack = nil
+
+			end
+
+		end
 
 		----------------------------------------------------------------
 		-- STOP GREETINGS
@@ -120,23 +153,13 @@ return {
 			greetingsActive = false
 
 			------------------------------------------------------------
-			-- STOP TRACK
+			-- STOP ANIMATION
 			------------------------------------------------------------
 
-			if currentTrack then
-
-				pcall(function()
-
-					currentTrack:Stop(0.15)
-
-				end)
-
-				currentTrack = nil
-
-			end
+			stopCurrentTrack()
 
 			------------------------------------------------------------
-			-- RESTORE CHARACTER
+			-- RESTORE
 			------------------------------------------------------------
 
 			if humanoid then
@@ -149,7 +172,9 @@ return {
 			-- CLEAR MODE
 			------------------------------------------------------------
 
-			if vars.ActiveMode == "greetings" then
+			if vars.ActiveMode
+				== "greetings"
+			then
 
 				vars.ActiveMode = nil
 
@@ -191,7 +216,7 @@ return {
 		end
 
 		----------------------------------------------------------------
-		-- PLAY GREETINGS EMOTE
+		-- PLAY GREETINGS
 		----------------------------------------------------------------
 
 		local function playGreetings()
@@ -203,7 +228,7 @@ return {
 			stopOtherModes()
 
 			------------------------------------------------------------
-			-- STOP PREVIOUS
+			-- STOP PREVIOUS GREETINGS
 			------------------------------------------------------------
 
 			stopGreetings()
@@ -266,7 +291,7 @@ return {
 			-- ANIMATOR
 			------------------------------------------------------------
 
-			local animator =
+			animator =
 				humanoid:FindFirstChildOfClass(
 					"Animator"
 				)
@@ -284,7 +309,7 @@ return {
 			end
 
 			------------------------------------------------------------
-			-- ANIMATION
+			-- CREATE ANIMATION
 			------------------------------------------------------------
 
 			local animation =
@@ -292,11 +317,14 @@ return {
 					"Animation"
 				)
 
+			animation.Name =
+				"GreetingsAnimation"
+
 			animation.AnimationId =
 				"rbxassetid://" .. EMOTE_ID
 
 			------------------------------------------------------------
-			-- LOAD
+			-- LOAD ANIMATION
 			------------------------------------------------------------
 
 			local success, track =
@@ -309,27 +337,52 @@ return {
 				end)
 
 			------------------------------------------------------------
-			-- CLEAN ANIMATION INSTANCE
+			-- DESTROY OBJECT
 			------------------------------------------------------------
 
 			animation:Destroy()
 
 			------------------------------------------------------------
-			-- LOAD FAILED
+			-- FAILED
 			------------------------------------------------------------
 
-			if not success
-				or not track
-			then
+			if not success then
 
 				warn(
-					"[GREETINGS] Gagal load emote:",
-					EMOTE_ID
+					"[GREETINGS] LoadAnimation error:",
+					track
 				)
 
 				return
 
 			end
+
+			if not track then
+
+				warn(
+					"[GREETINGS] AnimationTrack tidak dibuat"
+				)
+
+				return
+
+			end
+
+			------------------------------------------------------------
+			-- PRIORITY
+			------------------------------------------------------------
+
+			pcall(function()
+
+				track.Priority =
+					Enum.AnimationPriority.Action4
+
+			end)
+
+			------------------------------------------------------------
+			-- LOOP
+			------------------------------------------------------------
+
+			track.Looped = true
 
 			------------------------------------------------------------
 			-- STATE
@@ -345,33 +398,67 @@ return {
 				"greetings"
 
 			------------------------------------------------------------
-			-- PRIORITY
-			------------------------------------------------------------
-
-			pcall(function()
-
-				track.Priority =
-					Enum.AnimationPriority.Action
-
-			end)
-
-			------------------------------------------------------------
 			-- PLAY
 			------------------------------------------------------------
 
-			track:Play(
-				0.15,
-				1,
-				1
+			local playSuccess, playError =
+				pcall(function()
+
+					track:Play(
+						0.15,
+						1,
+						1
+					)
+
+				end)
+
+			if not playSuccess then
+
+				warn(
+					"[GREETINGS] Gagal Play:",
+					playError
+				)
+
+				stopGreetings()
+
+				return
+
+			end
+
+			------------------------------------------------------------
+			-- DEBUG
+			------------------------------------------------------------
+
+			print(
+				"[GREETINGS] ==========================="
 			)
 
 			print(
-				"[GREETINGS] Emote dimainkan:",
+				"[GREETINGS] Emote:",
 				EMOTE_ID
 			)
 
+			print(
+				"[GREETINGS] Playing:",
+				track.IsPlaying
+			)
+
+			print(
+				"[GREETINGS] Looped:",
+				track.Looped
+			)
+
+			print(
+				"[GREETINGS] Length:",
+				track.Length
+			)
+
+			print(
+				"[GREETINGS] ==========================="
+			)
+
 			------------------------------------------------------------
-			-- CHECK STOP
+			-- MONITOR
 			------------------------------------------------------------
 
 			task.spawn(function()
@@ -382,7 +469,15 @@ return {
 					and currentToken == modeToken
 				do
 
+					----------------------------------------------------
+					-- TRACK STOPPED
+					----------------------------------------------------
+
 					if not track.IsPlaying then
+
+						warn(
+							"[GREETINGS] Track berhenti sendiri."
+						)
 
 						break
 
@@ -392,10 +487,12 @@ return {
 
 				end
 
-				if currentToken
-					== modeToken
-					and currentTrack
-						== track
+				--------------------------------------------------------
+				-- CLEAN
+				--------------------------------------------------------
+
+				if currentTrack == track
+					and currentToken == modeToken
 				then
 
 					currentTrack = nil
@@ -491,17 +588,17 @@ return {
 			sender
 		)
 
-			if not message then
+			if not message
+				or not sender
+			then
+
 				return
+
 			end
 
 			------------------------------------------------------------
 			-- ADMIN ONLY
 			------------------------------------------------------------
-
-			if not sender then
-				return
-			end
 
 			if not Admin:IsAdmin(sender) then
 				return
@@ -533,13 +630,46 @@ return {
 			if lower == "!greetings" then
 
 				print(
-					"[GREETINGS] Command diterima dari:",
+					"[GREETINGS] Command dari:",
 					sender.Name
 				)
 
+				playGreetings()
+
+				return
+
+			end
+
+			------------------------------------------------------------
+			-- !GREETINGS PLAYER
+			------------------------------------------------------------
+
+			local targetName =
+				lower:match(
+					"^!greetings%s+(.+)$"
+				)
+
+			if targetName then
+
+				local target =
+					findPlayerByName(
+						targetName
+					)
+
+				if not target then
+
+					warn(
+						"[GREETINGS] Player tidak ditemukan:",
+						targetName
+					)
+
+					return
+
+				end
+
 				--------------------------------------------------------
-				-- Jika command dijalankan oleh Admin,
-				-- bot akan memainkan emote.
+				-- Untuk saat ini emote tetap dimainkan
+				-- oleh LocalPlayer/Bot yang menerima command.
 				--------------------------------------------------------
 
 				playGreetings()
@@ -553,11 +683,6 @@ return {
 			------------------------------------------------------------
 
 			if lower == "!stop" then
-
-				print(
-					"[GREETINGS] Stop command diterima dari:",
-					sender.Name
-				)
 
 				stopGreetings()
 
@@ -669,12 +794,12 @@ return {
 				updateCharacter()
 
 				--------------------------------------------------------
-				-- PLAY AGAIN AFTER RESPAWN
+				-- RESTART GREETINGS
 				--------------------------------------------------------
 
-				if vars.ActiveMode
-					== "greetings"
-					and greetingsActive
+				if greetingsActive
+					and vars.ActiveMode
+						== "greetings"
 				then
 
 					task.wait(0.2)
