@@ -50,7 +50,7 @@ return {
 		if not Admin then
 
 			warn(
-				"[FRONTLINE2] Gagal load Admin.lua"
+				"[VANGUARD] Gagal load Admin.lua"
 			)
 
 			return
@@ -79,7 +79,7 @@ return {
 		if not Distance then
 
 			warn(
-				"[FRONTLINE2] Gagal load Distance.lua"
+				"[VANGUARD] Gagal load Distance.lua"
 			)
 
 			return
@@ -96,38 +96,34 @@ return {
 		-- STATE
 		----------------------------------------------------------------
 
-		local frontline2Active = false
-		local frontline2Connection = nil
+		local vanguardActive = false
+		local vanguardConnection = nil
 		local targetPlayer = nil
 
 		----------------------------------------------------------------
 		-- MODE TOKEN
 		----------------------------------------------------------------
 		--
-		-- Setiap kali mode berubah / Frontline2 dimulai ulang,
-		-- token berubah.
+		-- Digunakan agar loop lama tidak ikut menggerakkan bot
+		-- setelah mode berganti.
 		--
-		-- Loop lama yang masih sempat berjalan akan langsung
-		-- dianggap invalid.
-		--
-		----------------------------------------------------------------
 
 		local modeToken = 0
 
 		----------------------------------------------------------------
-		-- FORMATION SETTINGS
+		-- VANGUARD FORMATION SETTINGS
 		----------------------------------------------------------------
 
-		-- Jarak PLAYER ke baris pertama
+		-- Jarak bot paling depan dari Player
 		local formationDistance = 5
 
-		-- Jarak antar Bot kiri / kanan
-		local formationSpacing = 3
+		-- Jarak bot dari garis tengah Player
+		local sideSpacing = 4
 
-		-- Jarak antara baris pertama dan baris kedua
-		local rowSpacing = 3
+		-- Jarak antar bot dari depan ke belakang
+		local rowSpacing = 4
 
-		-- Toleransi sampai posisi
+		-- Toleransi posisi
 		local stopThreshold = 1.5
 
 		-- Tinggi formasi
@@ -139,11 +135,17 @@ return {
 		--
 		-- FORMASI:
 		--
-		--                 B8   B9   B10   B11
+		--                   ARAH JALAN ↑
 		--
-		--          B1   B2   B3   B4   B5   B6   B7
+		--              B1             B2
+		--              B3             B4
+		--              B5             B6
+		--              B7             B8
+		--              B9             B10
 		--
-		--                       PLAYER
+		--                       B11
+		--
+		--                     PLAYER
 		--
 		----------------------------------------------------------------
 
@@ -156,7 +158,6 @@ return {
 			"11611591921", -- Bot5
 			"11122806815", -- Bot6
 			"11122806817", -- Bot7
-
 			"11122687468", -- Bot8
 			"11122854402", -- Bot9
 			"11641280895", -- Bot10
@@ -270,13 +271,13 @@ return {
 		end
 
 		----------------------------------------------------------------
-		-- STOP FRONTLINE2
+		-- STOP VANGUARD
 		----------------------------------------------------------------
 
-		local function stopFrontline2()
+		local function stopVanguard()
 
 			------------------------------------------------------------
-			-- INVALIDATE SEMUA LOOP LAMA
+			-- INVALIDATE LOOP LAMA
 			------------------------------------------------------------
 
 			modeToken += 1
@@ -285,18 +286,18 @@ return {
 			-- STATE
 			------------------------------------------------------------
 
-			frontline2Active = false
+			vanguardActive = false
 			targetPlayer = nil
 
 			------------------------------------------------------------
 			-- DISCONNECT HEARTBEAT
 			------------------------------------------------------------
 
-			if frontline2Connection then
+			if vanguardConnection then
 
-				frontline2Connection:Disconnect()
+				vanguardConnection:Disconnect()
 
-				frontline2Connection = nil
+				vanguardConnection = nil
 
 			end
 
@@ -314,7 +315,7 @@ return {
 			-- CLEAR ACTIVE MODE
 			------------------------------------------------------------
 
-			if vars.ActiveMode == "frontline2" then
+			if vars.ActiveMode == "vanguard" then
 
 				vars.ActiveMode = nil
 
@@ -323,11 +324,11 @@ return {
 		end
 
 		----------------------------------------------------------------
-		-- REGISTER CONTROLLER
+		-- REGISTER MODE CONTROLLER
 		----------------------------------------------------------------
 
-		vars.ModeControllers.frontline2 =
-			stopFrontline2
+		vars.ModeControllers.vanguard =
+			stopVanguard
 
 		----------------------------------------------------------------
 		-- STOP OTHER MODES
@@ -339,7 +340,7 @@ return {
 				vars.ModeControllers
 			) do
 
-				if name ~= "frontline2"
+				if name ~= "vanguard"
 					and type(stopFunction) == "function"
 				then
 
@@ -445,7 +446,28 @@ return {
 		end
 
 		----------------------------------------------------------------
-		-- GET FORMATION POSITION
+		-- GET VANGUARD FORMATION POSITION
+		----------------------------------------------------------------
+		--
+		-- BOT 1 - 10:
+		--
+		-- KIRI:
+		-- B1
+		-- B3
+		-- B5
+		-- B7
+		-- B9
+		--
+		-- KANAN:
+		-- B2
+		-- B4
+		-- B6
+		-- B8
+		-- B10
+		--
+		-- BOT 11:
+		-- Tengah paling belakang
+		--
 		----------------------------------------------------------------
 
 		local function getFormationPosition(
@@ -463,9 +485,9 @@ return {
 
 			end
 
-			----------------------------------------------------------------
-			-- TARGET BASIS
-			----------------------------------------------------------------
+			------------------------------------------------------------
+			-- TARGET
+			------------------------------------------------------------
 
 			local targetPosition =
 				targetHRP.Position
@@ -476,28 +498,32 @@ return {
 			local right =
 				targetHRP.CFrame.RightVector
 
-			----------------------------------------------------------------
-			-- BARIS 1
-			----------------------------------------------------------------
-			--
-			-- B1   B2   B3   B4   B5   B6   B7
-			--
-			----------------------------------------------------------------
+			------------------------------------------------------------
+			-- BOT KIRI
+			------------------------------------------------------------
 
-			if myIndex <= 7 then
+			if myIndex % 2 == 1
+				and myIndex <= 10
+			then
 
-				local centerIndex = 4
-
-				local horizontalOffset =
-					(
-						myIndex
-						- centerIndex
+				local row =
+					math.ceil(
+						myIndex / 2
 					)
-					* formationSpacing
 
 				local forwardOffset =
 					formationDistance
-					+ distance
+					+
+					distance
+					+
+					(
+						(row - 1)
+						*
+						rowSpacing
+					)
+
+				local horizontalOffset =
+					-sideSpacing
 
 				return
 					targetPosition
@@ -522,51 +548,89 @@ return {
 
 			end
 
-			----------------------------------------------------------------
-			-- BARIS 2
-			----------------------------------------------------------------
-			--
-			-- B8   B9   B10   B11
-			--
-			----------------------------------------------------------------
+			------------------------------------------------------------
+			-- BOT KANAN
+			------------------------------------------------------------
 
-			local rowIndex =
-				myIndex - 7
+			if myIndex % 2 == 0
+				and myIndex <= 10
+			then
 
-			local centerIndex = 2.5
+				local row =
+					myIndex / 2
 
-			local horizontalOffset =
-				(
-					rowIndex
-					- centerIndex
-				)
-				* formationSpacing
+				local forwardOffset =
+					formationDistance
+					+
+					distance
+					+
+					(
+						(row - 1)
+						*
+						rowSpacing
+					)
 
-			local forwardOffset =
-				formationDistance
-				+ distance
-				+ rowSpacing
+				local horizontalOffset =
+					sideSpacing
 
-			return
-				targetPosition
-				+
-				(
-					forward
-					*
-					forwardOffset
-				)
-				+
-				(
-					right
-					*
-					horizontalOffset
-				)
-				+
-				Vector3.new(
-					0,
-					formationHeight,
-					0
-				)
+				return
+					targetPosition
+					+
+					(
+						forward
+						*
+						forwardOffset
+					)
+					+
+					(
+						right
+						*
+						horizontalOffset
+					)
+					+
+					Vector3.new(
+						0,
+						formationHeight,
+						0
+					)
+
+			end
+
+			------------------------------------------------------------
+			-- BOT 11
+			------------------------------------------------------------
+
+			if myIndex == 11 then
+
+				local forwardOffset =
+					formationDistance
+					+
+					distance
+					+
+					(
+						5
+						*
+						rowSpacing
+					)
+
+				return
+					targetPosition
+					+
+					(
+						forward
+						*
+						forwardOffset
+					)
+					+
+					Vector3.new(
+						0,
+						formationHeight,
+						0
+					)
+
+			end
+
+			return nil
 
 		end
 
@@ -600,10 +664,10 @@ return {
 		end
 
 		----------------------------------------------------------------
-		-- START FRONTLINE2
+		-- START VANGUARD
 		----------------------------------------------------------------
 
-		local function startFrontline2(
+		local function startVanguard(
 			player
 		)
 
@@ -611,9 +675,9 @@ return {
 				return
 			end
 
-			----------------------------------------------------------------
+			------------------------------------------------------------
 			-- TARGET CHARACTER
-			----------------------------------------------------------------
+			------------------------------------------------------------
 
 			local targetCharacter =
 				player.Character
@@ -621,7 +685,7 @@ return {
 			if not targetCharacter then
 
 				warn(
-					"[FRONTLINE2] Target belum memiliki Character:",
+					"[VANGUARD] Target belum memiliki Character:",
 					player.Name
 				)
 
@@ -637,7 +701,7 @@ return {
 			if not targetHRP then
 
 				warn(
-					"[FRONTLINE2] Target HRP tidak ditemukan:",
+					"[VANGUARD] Target HRP tidak ditemukan:",
 					player.Name
 				)
 
@@ -645,46 +709,46 @@ return {
 
 			end
 
-			----------------------------------------------------------------
+			------------------------------------------------------------
 			-- STOP MODE LAIN
-			----------------------------------------------------------------
+			------------------------------------------------------------
 
 			stopOtherModes()
 
-			----------------------------------------------------------------
-			-- INVALIDATE FRONTLINE2 LOOP SEBELUMNYA
-			----------------------------------------------------------------
+			------------------------------------------------------------
+			-- INVALIDATE LOOP LAMA
+			------------------------------------------------------------
 
 			modeToken += 1
 
 			local currentToken =
 				modeToken
 
-			----------------------------------------------------------------
+			------------------------------------------------------------
 			-- DISCONNECT LOOP LAMA
-			----------------------------------------------------------------
+			------------------------------------------------------------
 
-			if frontline2Connection then
+			if vanguardConnection then
 
-				frontline2Connection:Disconnect()
+				vanguardConnection:Disconnect()
 
-				frontline2Connection = nil
+				vanguardConnection = nil
 
 			end
 
-			----------------------------------------------------------------
-			-- ACTIVE MODE
-			----------------------------------------------------------------
+			------------------------------------------------------------
+			-- SET ACTIVE MODE
+			------------------------------------------------------------
 
 			vars.ActiveMode =
-				"frontline2"
+				"vanguard"
 
-			frontline2Active = true
+			vanguardActive = true
 			targetPlayer = player
 
-			----------------------------------------------------------------
+			------------------------------------------------------------
 			-- UPDATE CHARACTER
-			----------------------------------------------------------------
+			------------------------------------------------------------
 
 			if not humanoid
 				or not myHRP
@@ -695,9 +759,9 @@ return {
 
 			end
 
-			----------------------------------------------------------------
+			------------------------------------------------------------
 			-- FIND BOT INDEX
-			----------------------------------------------------------------
+			------------------------------------------------------------
 
 			local myIndex =
 				table.find(
@@ -705,99 +769,99 @@ return {
 					tostring(LocalPlayer.UserId)
 				)
 
-			----------------------------------------------------------------
+			------------------------------------------------------------
 			-- DEBUG
-			----------------------------------------------------------------
+			------------------------------------------------------------
 
 			print(
-				"[FRONTLINE2] Command diterima"
+				"[VANGUARD] Command diterima"
 			)
 
 			print(
-				"[FRONTLINE2] Target:",
+				"[VANGUARD] Target:",
 				player.Name
 			)
 
 			print(
-				"[FRONTLINE2] LocalPlayer:",
+				"[VANGUARD] LocalPlayer:",
 				LocalPlayer.Name
 			)
 
 			print(
-				"[FRONTLINE2] UserId:",
+				"[VANGUARD] UserId:",
 				LocalPlayer.UserId
 			)
 
 			print(
-				"[FRONTLINE2] Bot Index:",
+				"[VANGUARD] Bot Index:",
 				myIndex
 			)
 
-			----------------------------------------------------------------
+			------------------------------------------------------------
 			-- BOT TIDAK TERDAFTAR
-			----------------------------------------------------------------
+			------------------------------------------------------------
 
 			if not myIndex then
 
-				print(
-					"[FRONTLINE2] LocalPlayer bukan Bot1-11"
+				warn(
+					"[VANGUARD] LocalPlayer bukan Bot1-11"
 				)
 
-				stopFrontline2()
+				stopVanguard()
 
 				return
 
 			end
 
-			----------------------------------------------------------------
+			------------------------------------------------------------
 			-- CHAT
-			----------------------------------------------------------------
+			------------------------------------------------------------
 
 			sendChat("Yes, Sir!")
 
-			----------------------------------------------------------------
+			------------------------------------------------------------
 			-- HEARTBEAT
-			----------------------------------------------------------------
+			------------------------------------------------------------
 
-			frontline2Connection =
+			vanguardConnection =
 				RunService.Heartbeat:Connect(
 					function()
 
-						----------------------------------------------------
+						------------------------------------------------
 						-- TOKEN CHECK
-						----------------------------------------------------
-						--
-						-- Kalau ini loop lama, jangan lakukan apa-apa.
-						--
-						----------------------------------------------------
+						------------------------------------------------
 
 						if currentToken ~= modeToken then
+
 							return
+
 						end
 
-						----------------------------------------------------
+						------------------------------------------------
 						-- MODE CHECK
-						----------------------------------------------------
+						------------------------------------------------
 
 						if vars.ActiveMode
-							~= "frontline2"
+							~= "vanguard"
 						then
 
 							return
 
 						end
 
-						----------------------------------------------------
+						------------------------------------------------
 						-- ACTIVE CHECK
-						----------------------------------------------------
+						------------------------------------------------
 
-						if not frontline2Active then
+						if not vanguardActive then
+
 							return
+
 						end
 
-						----------------------------------------------------
+						------------------------------------------------
 						-- CHARACTER CHECK
-						----------------------------------------------------
+						------------------------------------------------
 
 						if not humanoid
 							or not myHRP
@@ -808,68 +872,73 @@ return {
 
 						end
 
-						----------------------------------------------------
+						------------------------------------------------
 						-- TARGET CHECK
-						----------------------------------------------------
+						------------------------------------------------
 
-						local currentTarget =
-							targetPlayer
+						if not targetPlayer then
 
-						if not currentTarget then
 							return
+
 						end
 
-						----------------------------------------------------
+						------------------------------------------------
 						-- TARGET CHARACTER
-						----------------------------------------------------
+						------------------------------------------------
 
 						local currentCharacter =
-							currentTarget.Character
+							targetPlayer.Character
 
 						if not currentCharacter then
+
 							return
+
 						end
 
-						----------------------------------------------------
+						------------------------------------------------
 						-- TARGET ROOT
-						----------------------------------------------------
+						------------------------------------------------
 
-						local currentTargetRoot =
+						local targetRoot =
 							currentCharacter:FindFirstChild(
 								"HumanoidRootPart"
 							)
 
-						if not currentTargetRoot then
+						if not targetRoot then
+
 							return
+
 						end
 
-						----------------------------------------------------
+						------------------------------------------------
 						-- DISTANCE
-						----------------------------------------------------
+						------------------------------------------------
 
 						local botDistance =
 							getBotDistance(
-								currentTarget
+								targetPlayer
 							)
 
-						----------------------------------------------------
+						------------------------------------------------
 						-- FORMATION POSITION
-						----------------------------------------------------
+						------------------------------------------------
 
 						local targetPosition =
 							getFormationPosition(
 								myIndex,
-								currentTargetRoot,
+								targetRoot,
 								botDistance
 							)
 
 						if not targetPosition then
+
 							return
+
 						end
 
-						----------------------------------------------------
+						------------------------------------------------
 						-- DISTANCE TO POSITION
-						----------------------------------------------------
+						------------------------------------------------
 
 						local distanceToTarget =
 							(
@@ -878,9 +947,9 @@ return {
 								targetPosition
 							).Magnitude
 
-						----------------------------------------------------
+						------------------------------------------------
 						-- MOVE
-						----------------------------------------------------
+						------------------------------------------------
 
 						if distanceToTarget
 							> stopThreshold
@@ -897,32 +966,19 @@ return {
 
 						end
 
-						----------------------------------------------------
+						------------------------------------------------
 						-- SUDAH SAMPAI
-						----------------------------------------------------
+						------------------------------------------------
 
 						humanoid.AutoRotate =
 							false
 
-						----------------------------------------------------
-						-- JANGAN MoveTo KE POSISI SENDIRI
-						----------------------------------------------------
-						--
-						-- Versi sebelumnya:
-						--
-						-- humanoid:MoveTo(myHRP.Position)
-						--
-						-- tidak diperlukan dan bisa membuat Humanoid
-						-- terus menerima command movement baru.
-						--
-						----------------------------------------------------
-
-						----------------------------------------------------
+						------------------------------------------------
 						-- HADAP SESUAI PLAYER
-						----------------------------------------------------
+						------------------------------------------------
 
 						copyTargetRotation(
-							currentTargetRoot
+							targetRoot
 						)
 
 					end
@@ -940,24 +996,30 @@ return {
 		)
 
 			if not message then
+
 				return
+
 			end
 
-			----------------------------------------------------------------
+			------------------------------------------------------------
 			-- ADMIN ONLY
-			----------------------------------------------------------------
+			------------------------------------------------------------
 
 			if not sender then
+
 				return
+
 			end
 
 			if not Admin:IsAdmin(sender) then
+
 				return
+
 			end
 
-			----------------------------------------------------------------
+			------------------------------------------------------------
 			-- CLEAN MESSAGE
-			----------------------------------------------------------------
+			------------------------------------------------------------
 
 			message =
 				message:gsub(
@@ -974,25 +1036,20 @@ return {
 			local lower =
 				message:lower()
 
-			----------------------------------------------------------------
-			-- !FRONTLINE2 PLAYER
-			----------------------------------------------------------------
+			------------------------------------------------------------
+			-- !VANGUARD PLAYER
+			------------------------------------------------------------
 
 			local targetName =
 				lower:match(
-					"^!frontline2%s+(.+)$"
+					"^!vanguard%s+(.+)$"
 				)
 
 			if targetName then
 
 				print(
-					"[FRONTLINE2] Command:",
+					"[VANGUARD] Command:",
 					message
-				)
-
-				print(
-					"[FRONTLINE2] Target Name:",
-					targetName
 				)
 
 				local target =
@@ -1003,7 +1060,7 @@ return {
 				if not target then
 
 					warn(
-						"[FRONTLINE2] Player tidak ditemukan:",
+						"[VANGUARD] Player tidak ditemukan:",
 						targetName
 					)
 
@@ -1011,7 +1068,7 @@ return {
 
 				end
 
-				startFrontline2(
+				startVanguard(
 					target
 				)
 
@@ -1019,13 +1076,13 @@ return {
 
 			end
 
-			----------------------------------------------------------------
-			-- !FRONTLINE2 TANPA NAMA
-			----------------------------------------------------------------
+			------------------------------------------------------------
+			-- !VANGUARD TANPA NAMA
+			------------------------------------------------------------
 
-			if lower == "!frontline2" then
+			if lower == "!vanguard" then
 
-				startFrontline2(
+				startVanguard(
 					sender
 				)
 
@@ -1033,15 +1090,13 @@ return {
 
 			end
 
-			----------------------------------------------------------------
+			------------------------------------------------------------
 			-- !STOP
-			----------------------------------------------------------------
+			------------------------------------------------------------
 
-			if lower == "!stop"
-				or lower == "!unfrontline"
-			then
+			if lower == "!stop" then
 
-				stopFrontline2()
+				stopVanguard()
 
 				return
 
@@ -1072,7 +1127,9 @@ return {
 						message.TextSource
 
 					if not textSource then
+
 						return
+
 					end
 
 					local sender =
@@ -1081,12 +1138,10 @@ return {
 						)
 
 					if not sender then
-						return
-					end
 
-					--------------------------------------------------------
-					-- SEMUA BOT MENERIMA CHAT ADMIN
-					--------------------------------------------------------
+						return
+
+					end
 
 					handleCommand(
 						message.Text,
@@ -1130,7 +1185,7 @@ return {
 		end
 
 		----------------------------------------------------------------
-		-- NEW PLAYER CHAT
+		-- NEW PLAYER
 		----------------------------------------------------------------
 
 		Players.PlayerAdded:Connect(
@@ -1148,22 +1203,18 @@ return {
 					function()
 
 						if player == targetPlayer
-							and frontline2Active
-							and vars.ActiveMode == "frontline2"
+							and vanguardActive
+							and vars.ActiveMode == "vanguard"
 						then
 
 							task.wait(1)
 
-							------------------------------------------------
-							-- CHECK ULANG SEBELUM RESTART
-							------------------------------------------------
-
 							if player == targetPlayer
-								and frontline2Active
-								and vars.ActiveMode == "frontline2"
+								and vanguardActive
+								and vars.ActiveMode == "vanguard"
 							then
 
-								startFrontline2(
+								startVanguard(
 									player
 								)
 
@@ -1189,22 +1240,18 @@ return {
 				function()
 
 					if player == targetPlayer
-						and frontline2Active
-						and vars.ActiveMode == "frontline2"
+						and vanguardActive
+						and vars.ActiveMode == "vanguard"
 					then
 
 						task.wait(1)
 
-						------------------------------------------------
-						-- CHECK ULANG SEBELUM RESTART
-						------------------------------------------------
-
 						if player == targetPlayer
-							and frontline2Active
-							and vars.ActiveMode == "frontline2"
+							and vanguardActive
+							and vars.ActiveMode == "vanguard"
 						then
 
-							startFrontline2(
+							startVanguard(
 								player
 							)
 
@@ -1229,31 +1276,27 @@ return {
 				updateCharacter()
 
 				--------------------------------------------------------
-				-- RESTART FORMATION
+				-- RESTART VANGUARD
 				--------------------------------------------------------
 
 				if vars.ActiveMode
-					== "frontline2"
-					and frontline2Active
+					== "vanguard"
+					and vanguardActive
 					and targetPlayer
 				then
 
 					local savedTarget =
 						targetPlayer
 
-					----------------------------------------------------
-					-- PASTIKAN MODE MASIH FRONTLINE2
-					----------------------------------------------------
-
 					task.wait(0.2)
 
 					if vars.ActiveMode
-						== "frontline2"
-						and frontline2Active
+						== "vanguard"
+						and vanguardActive
 						and targetPlayer == savedTarget
 					then
 
-						startFrontline2(
+						startVanguard(
 							savedTarget
 						)
 
@@ -1269,7 +1312,7 @@ return {
 		----------------------------------------------------------------
 
 		print(
-			"[FRONTLINE2] Module loaded:",
+			"[VANGUARD] Module loaded:",
 			LocalPlayer.Name,
 			LocalPlayer.UserId
 		)
