@@ -1,113 +1,613 @@
 return {
-Execute = function()
-    ----------------------------------------------------------------
-    -- SERVICES
-    ----------------------------------------------------------------
+    Execute = function()
 
-    local Players = game:GetService("Players")
-    local RunService = game:GetService("RunService")
-    local TextChatService = game:GetService("TextChatService")
-    local ReplicatedStorage = game:GetService("ReplicatedStorage")
+        ----------------------------------------------------------------
+        -- SERVICES
+        ----------------------------------------------------------------
 
-    local LocalPlayer = Players.LocalPlayer
+        local Players = game:GetService("Players")
+        local RunService = game:GetService("RunService")
+        local TextChatService = game:GetService("TextChatService")
+        local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-    if not LocalPlayer then
-        return
-    end
+        local LocalPlayer = Players.LocalPlayer
 
-    ----------------------------------------------------------------
-    -- GLOBAL MODE SYSTEM
-    ----------------------------------------------------------------
+        if not LocalPlayer then
+            return
+        end
 
-    _G.BotVars = _G.BotVars or {}
-    _G.BotVars.ModeControllers = _G.BotVars.ModeControllers or {}
+        ----------------------------------------------------------------
+        -- GLOBAL MODE SYSTEM
+        ----------------------------------------------------------------
 
-    ----------------------------------------------------------------
-    -- LOAD ADMIN
-    ----------------------------------------------------------------
+        _G.BotVars = _G.BotVars or {}
+        _G.BotVars.ModeControllers = _G.BotVars.ModeControllers or {}
 
-    local Admin = loadstring(game:HttpGet(
-        "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
-    ))()
+        ----------------------------------------------------------------
+        -- LOAD ADMIN
+        ----------------------------------------------------------------
 
-    ----------------------------------------------------------------
-    -- LOAD DISTANCE
-    ----------------------------------------------------------------
+        local Admin = loadstring(game:HttpGet(
+            "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
+        ))()
 
-    local Distance = loadstring(game:HttpGet(
-        "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Distance.lua"
-    ))()
+        ----------------------------------------------------------------
+        -- LOAD DISTANCE
+        ----------------------------------------------------------------
 
-    ----------------------------------------------------------------
-    -- VARIABLES
-    ----------------------------------------------------------------
+        local Distance = loadstring(game:HttpGet(
+            "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Distance.lua"
+        ))()
 
-    local humanoid
-    local myHRP
+        ----------------------------------------------------------------
+        -- VARIABLES
+        ----------------------------------------------------------------
 
-    local forming = false
-    local targetPlayer = nil
-    local formationConnection = nil
+        local humanoid
+        local myHRP
 
-    ----------------------------------------------------------------
-    -- FORMATION SETTINGS
-    ----------------------------------------------------------------
+        local forming = false
+        local targetPlayer = nil
+        local formationConnection = nil
 
-    -- Jarak garis bot dari Player/Admin
-    local adminFormationDistance = 6
-    local defaultBotFormationDistance = 5
+        ----------------------------------------------------------------
+        -- FORMATION SETTINGS
+        ----------------------------------------------------------------
 
-    -- Jarak antar bot
-    local formationSpacing = 4
+        -- Jarak garis bot dari Player/Admin
+        local adminFormationDistance = 6
+        local defaultBotFormationDistance = 5
 
-    ----------------------------------------------------------------
-    -- BOT ORDER
-    ----------------------------------------------------------------
+        -- Jarak antar bot
+        local formationSpacing = 4
 
-    local botOrder = {
+        ----------------------------------------------------------------
+        -- BOT ORDER
+        ----------------------------------------------------------------
 
-        "11611503633", -- Bot 1
-        "11611534165", -- Bot 2
-        "11611567975", -- Bot 3
-        "11611562042", -- Bot 4
-        "11611591921", -- Bot 5
-        "11122806815", -- Bot 6
-        "11122806817", -- Bot 7
-        "11122687468", -- Bot 8
-        "11122854402", -- Bot 9
-        "11641280895", -- Bot 10
-        "11641342530", -- Bot 11
-    }
+        local botOrder = {
 
-    ----------------------------------------------------------------
-    -- UPDATE CHARACTER
-    ----------------------------------------------------------------
+            "11611503633", -- Bot 1
+            "11611534165", -- Bot 2
+            "11611567975", -- Bot 3
+            "11611562042", -- Bot 4
+            "11611591921", -- Bot 5
+            "11122806815", -- Bot 6
+            "11122806817", -- Bot 7
+            "11122687468", -- Bot 8
+            "11122854402", -- Bot 9
+            "11641280895", -- Bot 10
+            "11641342530", -- Bot 11
+        }
 
-    local function updateCharacter()
+        ----------------------------------------------------------------
+        -- UPDATE CHARACTER
+        ----------------------------------------------------------------
 
-        local character =
-            LocalPlayer.Character
-            or LocalPlayer.CharacterAdded:Wait()
+        local function updateCharacter()
 
-        humanoid =
-            character:WaitForChild("Humanoid")
+            local character =
+                LocalPlayer.Character
+                or LocalPlayer.CharacterAdded:Wait()
 
-        myHRP =
-            character:WaitForChild("HumanoidRootPart")
+            humanoid =
+                character:WaitForChild("Humanoid")
 
-        humanoid.AutoRotate = true
+            myHRP =
+                character:WaitForChild("HumanoidRootPart")
 
-    end
+            humanoid.AutoRotate = true
 
-    updateCharacter()
+        end
 
-    ----------------------------------------------------------------
-    -- SEND CHAT
-    ----------------------------------------------------------------
+        updateCharacter()
 
-    local function sendChat(message)
+        ----------------------------------------------------------------
+        -- SEND CHAT
+        ----------------------------------------------------------------
 
-        local success = false
+        local function sendChat(message)
+
+            local success = false
+
+            if TextChatService
+                and TextChatService.TextChannels then
+
+                local channel =
+                    TextChatService.TextChannels:FindFirstChild(
+                        "RBXGeneral"
+                    )
+
+                if channel then
+
+                    pcall(function()
+                        channel:SendAsync(message)
+                    end)
+
+                    success = true
+
+                end
+
+            end
+
+            if not success then
+
+                pcall(function()
+
+                    local chatEvents =
+                        ReplicatedStorage:FindFirstChild(
+                            "DefaultChatSystemChatEvents"
+                        )
+
+                    if chatEvents then
+
+                        local sayMessageRequest =
+                            chatEvents:FindFirstChild(
+                                "SayMessageRequest"
+                            )
+
+                        if sayMessageRequest then
+
+                            sayMessageRequest:FireServer(
+                                message,
+                                "All"
+                            )
+
+                        end
+
+                    end
+
+                end)
+
+            end
+
+        end
+
+        ----------------------------------------------------------------
+        -- STOP FORMATION
+        ----------------------------------------------------------------
+
+        local function stopFormation()
+
+            forming = false
+            targetPlayer = nil
+
+            if formationConnection then
+
+                formationConnection:Disconnect()
+                formationConnection = nil
+
+            end
+
+            if humanoid then
+                humanoid.AutoRotate = true
+            end
+
+        end
+
+        ----------------------------------------------------------------
+        -- REGISTER CONTROLLER
+        ----------------------------------------------------------------
+
+        _G.BotVars.ModeControllers.formation =
+            stopFormation
+
+        ----------------------------------------------------------------
+        -- STOP SEMUA MODE LAIN
+        ----------------------------------------------------------------
+
+        local function stopOtherModes()
+
+            for name, stopFunction in pairs(
+                _G.BotVars.ModeControllers
+            ) do
+
+                if name ~= "formation"
+                    and type(stopFunction) == "function" then
+
+                    pcall(stopFunction)
+
+                end
+
+            end
+
+        end
+
+        ----------------------------------------------------------------
+        -- FIND PLAYER
+        ----------------------------------------------------------------
+
+        local function findPlayerByName(name)
+
+            name = name:lower()
+
+            for _, player in ipairs(
+                Players:GetPlayers()
+            ) do
+
+                if player.Name:lower() == name
+                    or player.DisplayName:lower() == name then
+
+                    return player
+
+                end
+
+            end
+
+            return nil
+
+        end
+
+        ----------------------------------------------------------------
+        -- GET HORIZONTAL OFFSET
+        ----------------------------------------------------------------
+        --
+        -- FORMASI:
+        --
+        -- BOT 1   BOT 2   BOT 3   BOT 4   ...   BOT 11
+        --   ↓       ↓       ↓       ↓              ↓
+        --                  PLAYER
+        --
+        -- Semua bot berada pada SATU GARIS.
+        --
+        ----------------------------------------------------------------
+
+        local function getHorizontalOffset(myIndex)
+
+            local totalBots =
+                #botOrder
+
+            local center =
+                (totalBots + 1) / 2
+
+            return (
+                myIndex - center
+            ) * formationSpacing
+
+        end
+
+        ----------------------------------------------------------------
+        -- START FORMATION
+        ----------------------------------------------------------------
+
+        local function startFormation(player)
+
+            if not player then
+                return
+            end
+
+            ------------------------------------------------------------
+            -- STOP MODE LAIN
+            ------------------------------------------------------------
+
+            stopOtherModes()
+
+            ------------------------------------------------------------
+            -- SET ACTIVE MODE
+            ------------------------------------------------------------
+
+            _G.BotVars.ActiveMode =
+                "formation"
+
+            ------------------------------------------------------------
+            -- STOP CONNECTION LAMA
+            ------------------------------------------------------------
+
+            if formationConnection then
+
+                formationConnection:Disconnect()
+                formationConnection = nil
+
+            end
+
+            ------------------------------------------------------------
+            -- CARI INDEX BOT
+            ------------------------------------------------------------
+
+            local myIndex =
+                table.find(
+                    botOrder,
+                    tostring(LocalPlayer.UserId)
+                )
+
+            if not myIndex then
+
+                stopFormation()
+
+                return
+
+            end
+
+            ------------------------------------------------------------
+            -- AKTIFKAN FORMATION
+            ------------------------------------------------------------
+
+            forming = true
+            targetPlayer = player
+
+            sendChat("Formation!")
+
+            ------------------------------------------------------------
+            -- FORMATION LOOP
+            ------------------------------------------------------------
+
+            formationConnection =
+                RunService.Heartbeat:Connect(
+                    function()
+
+                        ------------------------------------------------
+                        -- MODE BERUBAH
+                        ------------------------------------------------
+
+                        if _G.BotVars.ActiveMode
+                            ~= "formation" then
+
+                            stopFormation()
+
+                            return
+
+                        end
+
+                        ------------------------------------------------
+                        -- VALIDASI
+                        ------------------------------------------------
+
+                        if not forming then
+                            return
+                        end
+
+                        if not humanoid
+                            or not myHRP then
+
+                            return
+
+                        end
+
+                        if not targetPlayer then
+                            return
+                        end
+
+                        ------------------------------------------------
+                        -- TARGET CHARACTER
+                        ------------------------------------------------
+
+                        local targetCharacter =
+                            targetPlayer.Character
+
+                        if not targetCharacter then
+                            return
+                        end
+
+                        local targetHRP =
+                            targetCharacter:FindFirstChild(
+                                "HumanoidRootPart"
+                            )
+
+                        if not targetHRP then
+                            return
+                        end
+
+                        ------------------------------------------------
+                        -- DISTANCE
+                        ------------------------------------------------
+
+                        local distance =
+                            defaultBotFormationDistance
+
+                        if Admin:IsAdmin(targetPlayer) then
+
+                            distance =
+                                adminFormationDistance
+
+                        end
+
+                        ------------------------------------------------
+                        -- SPECIAL DISTANCE
+                        ------------------------------------------------
+
+                        local specialDistance =
+                            Distance:GetDistance(
+                                tostring(LocalPlayer.UserId),
+                                tostring(targetPlayer.UserId)
+                            )
+
+                        if specialDistance then
+
+                            distance =
+                                specialDistance
+
+                        end
+
+                        ------------------------------------------------
+                        -- HORIZONTAL OFFSET
+                        ------------------------------------------------
+
+                        local horizontalOffset =
+                            getHorizontalOffset(
+                                myIndex
+                            )
+
+                        ------------------------------------------------
+                        -- TARGET DIRECTION
+                        ------------------------------------------------
+
+                        local lookVector =
+                            targetHRP.CFrame.LookVector
+
+                        local rightVector =
+                            targetHRP.CFrame.RightVector
+
+                        ------------------------------------------------
+                        -- POSISI DEPAN TARGET
+                        ------------------------------------------------
+                        --
+                        -- LookVector = arah depan Player
+                        --
+                        -- Bot berada di depan Player
+                        --
+
+                        local frontPosition =
+                            targetHRP.Position
+                            +
+                            (
+                                lookVector
+                                *
+                                distance
+                            )
+
+                        ------------------------------------------------
+                        -- POSISI FINAL BOT
+                        ------------------------------------------------
+                        --
+                        -- RightVector digunakan untuk membuat
+                        -- garis kiri -> kanan.
+                        --
+
+                        local targetPosition =
+                            frontPosition
+                            +
+                            (
+                                rightVector
+                                *
+                                horizontalOffset
+                            )
+
+                        ------------------------------------------------
+                        -- CEK JARAK
+                        ------------------------------------------------
+
+                        local distanceToTarget =
+                            (
+                                myHRP.Position
+                                -
+                                targetPosition
+                            ).Magnitude
+
+                        ------------------------------------------------
+                        -- MENUJU POSISI
+                        ------------------------------------------------
+
+                        if distanceToTarget > 1.5 then
+
+                            humanoid.AutoRotate = true
+
+                            humanoid:MoveTo(
+                                targetPosition
+                            )
+
+                            return
+
+                        end
+
+                        ------------------------------------------------
+                        -- SUDAH SAMPAI
+                        ------------------------------------------------
+
+                        humanoid.AutoRotate = false
+
+                        ------------------------------------------------
+                        -- MENGHADAP PLAYER / ADMIN
+                        ------------------------------------------------
+
+                        local direction =
+                            targetHRP.Position
+                            -
+                            myHRP.Position
+
+                        if direction.Magnitude > 0.01 then
+
+                            myHRP.CFrame =
+                                CFrame.lookAt(
+                                    myHRP.Position,
+                                    myHRP.Position
+                                    +
+                                    direction.Unit
+                                )
+
+                        end
+
+                    end
+                )
+
+        end
+
+        ----------------------------------------------------------------
+        -- COMMAND HANDLER
+        ----------------------------------------------------------------
+
+        local function handleCommand(
+            message,
+            sender
+        )
+
+            ------------------------------------------------------------
+            -- HANYA ADMIN
+            ------------------------------------------------------------
+
+            if not Admin:IsAdmin(sender) then
+                return
+            end
+
+            local lower =
+                message:lower()
+
+            ------------------------------------------------------------
+            -- !FORMATION
+            ------------------------------------------------------------
+
+            if lower == "!formation" then
+
+                startFormation(sender)
+
+                return
+
+            end
+
+            ------------------------------------------------------------
+            -- !FORMATION PLAYER
+            ------------------------------------------------------------
+
+            local targetName =
+                lower:match(
+                    "^!formation%s+(.+)$"
+                )
+
+            if targetName then
+
+                local target =
+                    findPlayerByName(
+                        targetName
+                    )
+
+                if target then
+
+                    startFormation(target)
+
+                end
+
+                return
+
+            end
+
+            ------------------------------------------------------------
+            -- !STOP
+            ------------------------------------------------------------
+
+            if lower == "!stop" then
+
+                _G.BotVars.ActiveMode = nil
+
+                stopFormation()
+
+                return
+
+            end
+
+        end
+
+        ----------------------------------------------------------------
+        -- TEXT CHAT
+        ----------------------------------------------------------------
 
         if TextChatService
             and TextChatService.TextChannels then
@@ -119,561 +619,41 @@ Execute = function()
 
             if channel then
 
-                pcall(function()
-                    channel:SendAsync(message)
-                end)
+                channel.OnIncomingMessage =
+                    function(message)
 
-                success = true
+                        local userId =
+                            message.TextSource
+                            and message.TextSource.UserId
 
-            end
-        end
+                        local sender =
+                            userId
+                            and Players:GetPlayerByUserId(
+                                userId
+                            )
 
-        if not success then
+                        if sender then
 
-            pcall(function()
+                            handleCommand(
+                                message.Text,
+                                sender
+                            )
 
-                local chatEvents =
-                    ReplicatedStorage:FindFirstChild(
-                        "DefaultChatSystemChatEvents"
-                    )
-
-                if chatEvents then
-
-                    local sayMessageRequest =
-                        chatEvents:FindFirstChild(
-                            "SayMessageRequest"
-                        )
-
-                    if sayMessageRequest then
-
-                        sayMessageRequest:FireServer(
-                            message,
-                            "All"
-                        )
+                        end
 
                     end
 
-                end
-
-            end)
-
-        end
-
-    end
-
-    ----------------------------------------------------------------
-    -- STOP FORMATION
-    ----------------------------------------------------------------
-
-    local function stopFormation()
-
-        forming = false
-        targetPlayer = nil
-
-        if formationConnection then
-
-            formationConnection:Disconnect()
-            formationConnection = nil
-
-        end
-
-        if humanoid then
-            humanoid.AutoRotate = true
-        end
-
-    end
-
-    ----------------------------------------------------------------
-    -- REGISTER CONTROLLER
-    ----------------------------------------------------------------
-
-    _G.BotVars.ModeControllers.formation =
-        stopFormation
-
-    ----------------------------------------------------------------
-    -- STOP SEMUA MODE LAIN
-    ----------------------------------------------------------------
-
-    local function stopOtherModes()
-
-        for name, stopFunction in pairs(
-            _G.BotVars.ModeControllers
-        ) do
-
-            if name ~= "formation"
-                and type(stopFunction) == "function" then
-
-                pcall(stopFunction)
-
             end
 
         end
 
-    end
-
-    ----------------------------------------------------------------
-    -- FIND PLAYER
-    ----------------------------------------------------------------
-
-    local function findPlayerByName(name)
-
-        name = name:lower()
+        ----------------------------------------------------------------
+        -- FALLBACK CHAT
+        ----------------------------------------------------------------
 
         for _, player in ipairs(
             Players:GetPlayers()
         ) do
-
-            if player.Name:lower() == name
-                or player.DisplayName:lower() == name then
-
-                return player
-
-            end
-
-        end
-
-        return nil
-
-    end
-
-    ----------------------------------------------------------------
-    -- GET FORMATION OFFSET
-    ----------------------------------------------------------------
-    --
-    -- Formasi selalu satu garis lurus.
-    --
-    -- Contoh 5 bot:
-    --
-    -- BOT 1   BOT 2   BOT 3   BOT 4   BOT 5
-    --
-    -- Bot 3 berada di tengah.
-    --
-    -- Contoh 11 bot:
-    --
-    -- BOT 1 ... BOT 6 ... BOT 11
-    --
-    -- Bot 6 berada di tengah.
-    --
-    ----------------------------------------------------------------
-
-    local function getFormationOffset(myIndex)
-
-        local totalBots = #botOrder
-
-        local centerIndex =
-            (totalBots + 1) / 2
-
-        return (
-            myIndex - centerIndex
-        ) * formationSpacing
-
-    end
-
-    ----------------------------------------------------------------
-    -- START FORMATION
-    ----------------------------------------------------------------
-
-    local function startFormation(player)
-
-        if not player then
-            return
-        end
-
-        ------------------------------------------------------------
-        -- STOP MODE LAIN
-        ------------------------------------------------------------
-
-        stopOtherModes()
-
-        ------------------------------------------------------------
-        -- SET ACTIVE MODE
-        ------------------------------------------------------------
-
-        _G.BotVars.ActiveMode = "formation"
-
-        ------------------------------------------------------------
-        -- STOP CONNECTION LAMA
-        ------------------------------------------------------------
-
-        if formationConnection then
-
-            formationConnection:Disconnect()
-            formationConnection = nil
-
-        end
-
-        ------------------------------------------------------------
-        -- CARI INDEX BOT
-        ------------------------------------------------------------
-
-        local myIndex =
-            table.find(
-                botOrder,
-                tostring(LocalPlayer.UserId)
-            )
-
-        if not myIndex then
-
-            stopFormation()
-
-            return
-
-        end
-
-        ------------------------------------------------------------
-        -- AKTIFKAN FORMATION
-        ------------------------------------------------------------
-
-        forming = true
-        targetPlayer = player
-
-        sendChat("Formation!")
-
-        ------------------------------------------------------------
-        -- LOOP FORMATION
-        ------------------------------------------------------------
-
-        formationConnection =
-            RunService.Heartbeat:Connect(
-                function()
-
-                    ------------------------------------------------
-                    -- JIKA MODE SUDAH BERGANTI
-                    ------------------------------------------------
-
-                    if _G.BotVars.ActiveMode
-                        ~= "formation" then
-
-                        stopFormation()
-
-                        return
-
-                    end
-
-                    ------------------------------------------------
-                    -- VALIDASI
-                    ------------------------------------------------
-
-                    if not forming then
-                        return
-                    end
-
-                    if not humanoid
-                        or not myHRP then
-
-                        return
-
-                    end
-
-                    if not targetPlayer then
-                        return
-                    end
-
-                    ------------------------------------------------
-                    -- TARGET CHARACTER
-                    ------------------------------------------------
-
-                    local targetCharacter =
-                        targetPlayer.Character
-
-                    if not targetCharacter then
-                        return
-                    end
-
-                    local targetHRP =
-                        targetCharacter:FindFirstChild(
-                            "HumanoidRootPart"
-                        )
-
-                    if not targetHRP then
-                        return
-                    end
-
-                    ------------------------------------------------
-                    -- DISTANCE
-                    ------------------------------------------------
-
-                    local distance =
-                        defaultBotFormationDistance
-
-                    if Admin:IsAdmin(targetPlayer) then
-
-                        distance =
-                            adminFormationDistance
-
-                    end
-
-                    ------------------------------------------------
-                    -- SPECIAL DISTANCE
-                    ------------------------------------------------
-
-                    local specialDistance =
-                        Distance:GetDistance(
-                            tostring(LocalPlayer.UserId),
-                            tostring(targetPlayer.UserId)
-                        )
-
-                    if specialDistance then
-
-                        distance =
-                            specialDistance
-
-                    end
-
-                    ------------------------------------------------
-                    -- TARGET DIRECTION
-                    ------------------------------------------------
-                    --
-                    -- LookVector = arah depan Player/Admin
-                    -- RightVector = garis kiri/kanan
-                    --
-                    -- Bot ditempatkan di DEPAN target.
-                    --
-                    ------------------------------------------------
-
-                    local lookVector =
-                        targetHRP.CFrame.LookVector
-
-                    local rightVector =
-                        targetHRP.CFrame.RightVector
-
-                    ------------------------------------------------
-                    -- POSISI DASAR DI DEPAN PLAYER
-                    ------------------------------------------------
-
-                    local frontPosition =
-                        targetHRP.Position
-                        +
-                        (
-                            lookVector
-                            *
-                            distance
-                        )
-
-                    ------------------------------------------------
-                    -- OFFSET GARIS LURUS
-                    ------------------------------------------------
-
-                    local horizontalOffset =
-                        getFormationOffset(
-                            myIndex
-                        )
-
-                    ------------------------------------------------
-                    -- POSISI AKHIR BOT
-                    ------------------------------------------------
-
-                    local targetPosition =
-                        frontPosition
-                        +
-                        (
-                            rightVector
-                            *
-                            horizontalOffset
-                        )
-
-                    ------------------------------------------------
-                    -- JARAK BOT KE POSISI
-                    ------------------------------------------------
-
-                    local distanceToTarget =
-                        (
-                            myHRP.Position
-                            -
-                            targetPosition
-                        ).Magnitude
-
-                    ------------------------------------------------
-                    -- JALAN MENUJU POSISI
-                    ------------------------------------------------
-
-                    if distanceToTarget > 1.5 then
-
-                        humanoid.AutoRotate = true
-
-                        humanoid:MoveTo(
-                            targetPosition
-                        )
-
-                        return
-
-                    end
-
-                    ------------------------------------------------
-                    -- SUDAH SAMPAI
-                    ------------------------------------------------
-
-                    humanoid.AutoRotate = false
-
-                    ------------------------------------------------
-                    -- HADAP KE PLAYER / ADMIN
-                    ------------------------------------------------
-
-                    local direction =
-                        targetHRP.Position
-                        -
-                        myHRP.Position
-
-                    if direction.Magnitude > 0.01 then
-
-                        myHRP.CFrame =
-                            CFrame.lookAt(
-                                myHRP.Position,
-                                myHRP.Position
-                                +
-                                direction.Unit
-                            )
-
-                    end
-
-                end
-            )
-
-    end
-
-    ----------------------------------------------------------------
-    -- COMMAND HANDLER
-    ----------------------------------------------------------------
-
-    local function handleCommand(
-        message,
-        sender
-    )
-
-        ------------------------------------------------------------
-        -- ONLY ADMIN
-        ------------------------------------------------------------
-
-        if not Admin:IsAdmin(sender) then
-            return
-        end
-
-        local lower =
-            message:lower()
-
-        ------------------------------------------------------------
-        -- !FORMATION
-        ------------------------------------------------------------
-
-        if lower == "!formation" then
-
-            startFormation(sender)
-
-            return
-
-        end
-
-        ------------------------------------------------------------
-        -- !FORMATION PLAYER
-        ------------------------------------------------------------
-
-        local targetName =
-            lower:match(
-                "^!formation%s+(.+)$"
-            )
-
-        if targetName then
-
-            local target =
-                findPlayerByName(
-                    targetName
-                )
-
-            if target then
-
-                startFormation(target)
-
-            end
-
-            return
-
-        end
-
-        ------------------------------------------------------------
-        -- !STOP
-        ------------------------------------------------------------
-
-        if lower == "!stop" then
-
-            _G.BotVars.ActiveMode = nil
-
-            stopFormation()
-
-            return
-
-        end
-
-    end
-
-    ----------------------------------------------------------------
-    -- TEXT CHAT
-    ----------------------------------------------------------------
-
-    if TextChatService
-        and TextChatService.TextChannels then
-
-        local channel =
-            TextChatService.TextChannels:FindFirstChild(
-                "RBXGeneral"
-            )
-
-        if channel then
-
-            channel.OnIncomingMessage =
-                function(message)
-
-                    local userId =
-                        message.TextSource
-                        and message.TextSource.UserId
-
-                    local sender =
-                        userId
-                        and Players:GetPlayerByUserId(
-                            userId
-                        )
-
-                    if sender then
-
-                        handleCommand(
-                            message.Text,
-                            sender
-                        )
-
-                    end
-
-                end
-
-        end
-
-    end
-
-    ----------------------------------------------------------------
-    -- FALLBACK CHAT
-    ----------------------------------------------------------------
-
-    for _, player in ipairs(
-        Players:GetPlayers()
-    ) do
-
-        player.Chatted:Connect(
-            function(message)
-
-                handleCommand(
-                    message,
-                    player
-                )
-
-            end
-        )
-
-    end
-
-    ----------------------------------------------------------------
-    -- PLAYER ADDED
-    ----------------------------------------------------------------
-
-    Players.PlayerAdded:Connect(
-        function(player)
 
             player.Chatted:Connect(
                 function(message)
@@ -687,32 +667,51 @@ Execute = function()
             )
 
         end
-    )
 
-    ----------------------------------------------------------------
-    -- CHARACTER RESPAWN
-    ----------------------------------------------------------------
+        ----------------------------------------------------------------
+        -- PLAYER ADDED
+        ----------------------------------------------------------------
 
-    LocalPlayer.CharacterAdded:Connect(
-        function()
+        Players.PlayerAdded:Connect(
+            function(player)
 
-            task.wait(1)
+                player.Chatted:Connect(
+                    function(message)
 
-            updateCharacter()
+                        handleCommand(
+                            message,
+                            player
+                        )
 
-            if _G.BotVars.ActiveMode
-                == "formation"
-                and targetPlayer then
-
-                startFormation(
-                    targetPlayer
+                    end
                 )
 
             end
+        )
 
-        end
-    )
+        ----------------------------------------------------------------
+        -- CHARACTER RESPAWN
+        ----------------------------------------------------------------
 
-end
+        LocalPlayer.CharacterAdded:Connect(
+            function()
 
+                task.wait(1)
+
+                updateCharacter()
+
+                if _G.BotVars.ActiveMode
+                    == "formation"
+                    and targetPlayer then
+
+                    startFormation(
+                        targetPlayer
+                    )
+
+                end
+
+            end
+        )
+
+    end
 }
