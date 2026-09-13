@@ -106,7 +106,7 @@ return {
 		-- SPEARHEAD SETTINGS
 		----------------------------------------------------------------
 
-		-- Jarak baris pertama dari Player
+		-- Jarak Player/Admin dari B9/B10
 		local formationDistance = 6
 
 		-- Jarak horizontal antar bot
@@ -125,12 +125,13 @@ return {
 		-- BOT ORDER
 		----------------------------------------------------------------
 		--
-		-- B1 B2
-		-- B3 B4
-		-- B5 B6
-		-- B7 B8
-		-- B9 B10
-		--    B11
+		--                    B11
+		--               B1       B2
+		--          B3               B4
+		--     B5                       B6
+		-- B7                               B8
+		--          B9           B10
+		--                 PLAYER
 		--
 		----------------------------------------------------------------
 
@@ -434,16 +435,15 @@ return {
 		-- GET SPEARHEAD POSITION
 		----------------------------------------------------------------
 		--
-		-- Formasi:
+		-- Posisi final:
 		--
-		--                 B1 B2
-		--              B3      B4
-		--           B5          B6
-		--        B7              B8
-		--           B9          B10
-		--                 B11
-		--
-		--               PLAYER
+		--                         B11
+		--                    B1       B2
+		--               B3               B4
+		--          B5                       B6
+		--     B7                               B8
+		--               B9           B10
+		--                       PLAYER
 		--
 		----------------------------------------------------------------
 
@@ -476,61 +476,14 @@ return {
 				targetHRP.CFrame.RightVector
 
 			------------------------------------------------------------
-			-- B1 / B2
+			-- B1
+			------------------------------------------------------------
+			--
+			-- Depan Player, kiri dekat
+			--
 			------------------------------------------------------------
 
-			if myIndex == 1
-				or myIndex == 2
-			then
-
-				local side =
-					(myIndex == 1)
-					and -1
-					or 1
-
-				local forwardOffset =
-					formationDistance
-
-				local horizontalOffset =
-					sideSpacing * side
-
-				return
-					targetPosition
-					+
-					(
-						forward
-						*
-						(
-							forwardOffset
-						)
-					)
-					+
-					(
-						right
-						*
-						horizontalOffset
-					)
-					+
-					Vector3.new(
-						0,
-						formationHeight,
-						0
-					)
-
-			end
-
-			------------------------------------------------------------
-			-- B3 / B4
-			------------------------------------------------------------
-
-			if myIndex == 3
-				or myIndex == 4
-			then
-
-				local side =
-					(myIndex == 3)
-					and -1
-					or 1
+			if myIndex == 1 then
 
 				local forwardOffset =
 					formationDistance
@@ -538,7 +491,7 @@ return {
 					rowSpacing
 
 				local horizontalOffset =
-					sideSpacing * 2 * side
+					-sideSpacing
 
 				return
 					targetPosition
@@ -564,17 +517,47 @@ return {
 			end
 
 			------------------------------------------------------------
-			-- B5 / B6
+			-- B2
 			------------------------------------------------------------
 
-			if myIndex == 5
-				or myIndex == 6
-			then
+			if myIndex == 2 then
 
-				local side =
-					(myIndex == 5)
-					and -1
-					or 1
+				local forwardOffset =
+					formationDistance
+					+
+					rowSpacing
+
+				local horizontalOffset =
+					sideSpacing
+
+				return
+					targetPosition
+					+
+					(
+						forward
+						*
+						forwardOffset
+					)
+					+
+					(
+						right
+						*
+						horizontalOffset
+					)
+					+
+					Vector3.new(
+						0,
+						formationHeight,
+						0
+					)
+
+			end
+
+			------------------------------------------------------------
+			-- B3
+			------------------------------------------------------------
+
+			if myIndex == 3 then
 
 				local forwardOffset =
 					formationDistance
@@ -584,7 +567,7 @@ return {
 					)
 
 				local horizontalOffset =
-					sideSpacing * 3 * side
+					-(sideSpacing * 2)
 
 				return
 					targetPosition
@@ -610,17 +593,49 @@ return {
 			end
 
 			------------------------------------------------------------
-			-- B7 / B8
+			-- B4
 			------------------------------------------------------------
 
-			if myIndex == 7
-				or myIndex == 8
-			then
+			if myIndex == 4 then
 
-				local side =
-					(myIndex == 7)
-					and -1
-					or 1
+				local forwardOffset =
+					formationDistance
+					+
+					(
+						rowSpacing * 2
+					)
+
+				local horizontalOffset =
+					sideSpacing * 2
+
+				return
+					targetPosition
+					+
+					(
+						forward
+						*
+						forwardOffset
+					)
+					+
+					(
+						right
+						*
+						horizontalOffset
+					)
+					+
+					Vector3.new(
+						0,
+						formationHeight,
+						0
+					)
+
+			end
+
+			------------------------------------------------------------
+			-- B5
+			------------------------------------------------------------
+
+			if myIndex == 5 then
 
 				local forwardOffset =
 					formationDistance
@@ -630,7 +645,7 @@ return {
 					)
 
 				local horizontalOffset =
-					sideSpacing * 4 * side
+					-(sideSpacing * 3)
 
 				return
 					targetPosition
@@ -656,17 +671,49 @@ return {
 			end
 
 			------------------------------------------------------------
-			-- B9 / B10
+			-- B6
 			------------------------------------------------------------
 
-			if myIndex == 9
-				or myIndex == 10
-			then
+			if myIndex == 6 then
 
-				local side =
-					(myIndex == 9)
-					and -1
-					or 1
+				local forwardOffset =
+					formationDistance
+					+
+					(
+						rowSpacing * 3
+					)
+
+				local horizontalOffset =
+					sideSpacing * 3
+
+				return
+					targetPosition
+					+
+					(
+						forward
+						*
+						forwardOffset
+					)
+					+
+					(
+						right
+						*
+						horizontalOffset
+					)
+					+
+					Vector3.new(
+						0,
+						formationHeight,
+						0
+					)
+
+			end
+
+			------------------------------------------------------------
+			-- B7
+			------------------------------------------------------------
+
+			if myIndex == 7 then
 
 				local forwardOffset =
 					formationDistance
@@ -676,7 +723,124 @@ return {
 					)
 
 				local horizontalOffset =
-					sideSpacing * 3 * side
+					-(sideSpacing * 4)
+
+				return
+					targetPosition
+					+
+					(
+						forward
+						*
+						forwardOffset
+					)
+					+
+					(
+						right
+						*
+						horizontalOffset
+					)
+					+
+					Vector3.new(
+						0,
+						formationHeight,
+						0
+					)
+
+			end
+
+			------------------------------------------------------------
+			-- B8
+			------------------------------------------------------------
+
+			if myIndex == 8 then
+
+				local forwardOffset =
+					formationDistance
+					+
+					(
+						rowSpacing * 4
+					)
+
+				local horizontalOffset =
+					sideSpacing * 4
+
+				return
+					targetPosition
+					+
+					(
+						forward
+						*
+						forwardOffset
+					)
+					+
+					(
+						right
+						*
+						horizontalOffset
+					)
+					+
+					Vector3.new(
+						0,
+						formationHeight,
+						0
+					)
+
+			end
+
+			------------------------------------------------------------
+			-- B9
+			------------------------------------------------------------
+
+			if myIndex == 9 then
+
+				local forwardOffset =
+					formationDistance
+					+
+					(
+						rowSpacing * 5
+					)
+
+				local horizontalOffset =
+					-(sideSpacing * 2)
+
+				return
+					targetPosition
+					+
+					(
+						forward
+						*
+						forwardOffset
+					)
+					+
+					(
+						right
+						*
+						horizontalOffset
+					)
+					+
+					Vector3.new(
+						0,
+						formationHeight,
+						0
+					)
+
+			end
+
+			------------------------------------------------------------
+			-- B10
+			------------------------------------------------------------
+
+			if myIndex == 10 then
+
+				local forwardOffset =
+					formationDistance
+					+
+					(
+						rowSpacing * 5
+					)
+
+				local horizontalOffset =
+					sideSpacing * 2
 
 				return
 					targetPosition
@@ -704,15 +868,18 @@ return {
 			------------------------------------------------------------
 			-- B11
 			------------------------------------------------------------
+			--
+			-- B11 berada di tengah antara B1 dan B2.
+			--
+			------------------------------------------------------------
 
 			if myIndex == 11 then
 
 				local forwardOffset =
 					formationDistance
-					+
-					(
-						rowSpacing * 5
-					)
+
+				local horizontalOffset =
+					0
 
 				return
 					targetPosition
@@ -721,6 +888,12 @@ return {
 						forward
 						*
 						forwardOffset
+					)
+					+
+					(
+						right
+						*
+						horizontalOffset
 					)
 					+
 					Vector3.new(
@@ -739,7 +912,7 @@ return {
 		-- SET SPEARHEAD ROTATION
 		----------------------------------------------------------------
 		--
-		-- Semua bot menghadap ke arah jalan Player.
+		-- Semua bot menghadap arah jalan Player/Admin.
 		--
 		----------------------------------------------------------------
 
