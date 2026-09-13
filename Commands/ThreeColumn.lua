@@ -1,4 +1,3 @@
-```lua
 return {
 	Execute = function()
 
@@ -22,7 +21,6 @@ return {
 		----------------------------------------------------------------
 
 		_G.BotVars = _G.BotVars or {}
-
 		_G.BotVars.ModeControllers =
 			_G.BotVars.ModeControllers or {}
 
@@ -50,7 +48,7 @@ return {
 
 		if not Admin then
 
-			warn("[COLUMN] Gagal load Admin.lua")
+			warn("[THREECOLUMN] Gagal load Admin.lua")
 
 			return
 
@@ -78,7 +76,7 @@ return {
 
 		if not Distance then
 
-			warn("[COLUMN] Gagal load Distance.lua")
+			warn("[THREECOLUMN] Gagal load Distance.lua")
 
 			return
 
@@ -95,10 +93,9 @@ return {
 		-- STATE
 		----------------------------------------------------------------
 
-		local columnActive = false
-		local columnConnection = nil
+		local threeColumnActive = false
+		local threeColumnConnection = nil
 		local targetPlayer = nil
-		local columnCount = 3
 
 		----------------------------------------------------------------
 		-- MODE TOKEN
@@ -107,7 +104,7 @@ return {
 		local modeToken = 0
 
 		----------------------------------------------------------------
-		-- COLUMN SETTINGS
+		-- FORMATION SETTINGS
 		----------------------------------------------------------------
 
 		-- Jarak baris pertama dari Player/Admin
@@ -172,10 +169,10 @@ return {
 		updateCharacter()
 
 		----------------------------------------------------------------
-		-- STOP COLUMN
+		-- STOP THREE COLUMN
 		----------------------------------------------------------------
 
-		local function stopColumn()
+		local function stopThreeColumn()
 
 			------------------------------------------------------------
 			-- INVALIDATE LOOP
@@ -187,18 +184,18 @@ return {
 			-- STATE
 			------------------------------------------------------------
 
-			columnActive = false
+			threeColumnActive = false
 			targetPlayer = nil
 
 			------------------------------------------------------------
 			-- DISCONNECT
 			------------------------------------------------------------
 
-			if columnConnection then
+			if threeColumnConnection then
 
-				columnConnection:Disconnect()
+				threeColumnConnection:Disconnect()
 
-				columnConnection = nil
+				threeColumnConnection = nil
 
 			end
 
@@ -216,7 +213,7 @@ return {
 			-- CLEAR MODE
 			------------------------------------------------------------
 
-			if vars.ActiveMode == "column" then
+			if vars.ActiveMode == "threecolumn" then
 
 				vars.ActiveMode = nil
 
@@ -228,8 +225,8 @@ return {
 		-- REGISTER MODE
 		----------------------------------------------------------------
 
-		vars.ModeControllers.column =
-			stopColumn
+		vars.ModeControllers.threecolumn =
+			stopThreeColumn
 
 		----------------------------------------------------------------
 		-- STOP OTHER MODES
@@ -241,7 +238,7 @@ return {
 				vars.ModeControllers
 			) do
 
-				if name ~= "column"
+				if name ~= "threecolumn"
 					and type(stopFunction) == "function"
 				then
 
@@ -347,28 +344,16 @@ return {
 		end
 
 		----------------------------------------------------------------
-		-- GET COLUMN POSITION
+		-- GET FORMATION POSITION
 		----------------------------------------------------------------
 		--
-		-- COLUMN 3
+		--                 PLAYER
+		--                / ADMIN
 		--
-		--             PLAYER
-		--
-		--       B1      B2      B3
-		--       B4      B5      B6
-		--       B7      B8      B9
-		--       B10     B11
-		--
-		--
-		-- COLUMN 2
-		--
-		--             PLAYER
-		--
-		--       B1      B2
-		--       B4      B5
-		--       B7      B8
-		--       B9      B10
-		--              B11
+		--          B1      B2      B3
+		--          B4      B5      B6
+		--          B7      B8      B9
+		--          B10     B11
 		--
 		----------------------------------------------------------------
 
@@ -397,127 +382,25 @@ return {
 				targetHRP.CFrame.RightVector
 
 			------------------------------------------------------------
-			-- COLUMN 1
+			-- B1 / B2 / B3
 			------------------------------------------------------------
 
-			if columnCount == 1 then
+			if myIndex >= 1
+				and myIndex <= 3
+			then
 
-				local forwardOffset =
-					formationDistance
-					+
-					(
-						(myIndex - 1)
-						*
-						rowSpacing
-					)
-
-				return
-					targetPosition
-					+
-					(
-						forward
-						*
-						forwardOffset
-					)
-					+
-					Vector3.new(
-						0,
-						formationHeight,
-						0
-					)
-
-			end
-
-			------------------------------------------------------------
-			-- COLUMN 2
-			------------------------------------------------------------
-
-			if columnCount == 2 then
-
-				local row
-				local side
-
-				--------------------------------------------------------
-				-- B1 B2
-				-- B4 B5
-				-- B7 B8
-				-- B9 B10
-				-- B11
-				--------------------------------------------------------
-
-				if myIndex == 1 then
-
-					row = 0
-					side = -0.5
-
-				elseif myIndex == 2 then
-
-					row = 0
-					side = 0.5
-
-				elseif myIndex == 3 then
-
-					-- B3 tidak dipakai dalam pola Column 2
-					return nil
-
-				elseif myIndex == 4 then
-
-					row = 1
-					side = -0.5
-
-				elseif myIndex == 5 then
-
-					row = 1
-					side = 0.5
-
-				elseif myIndex == 6 then
-
-					return nil
-
-				elseif myIndex == 7 then
-
-					row = 2
-					side = -0.5
-
-				elseif myIndex == 8 then
-
-					row = 2
-					side = 0.5
-
-				elseif myIndex == 9 then
-
-					row = 3
-					side = -0.5
-
-				elseif myIndex == 10 then
-
-					row = 3
-					side = 0.5
-
-				elseif myIndex == 11 then
-
-					row = 4
-					side = 0
-
-				else
-
-					return nil
-
-				end
-
-				local forwardOffset =
-					formationDistance
-					+
-					(
-						row
-						*
-						rowSpacing
-					)
+				local column =
+					myIndex - 1
 
 				local horizontalOffset =
-					side
+					(
+						column - 1
+					)
 					*
 					columnSpacing
+
+				local forwardOffset =
+					formationDistance
 
 				return
 					targetPosition
@@ -543,94 +426,126 @@ return {
 			end
 
 			------------------------------------------------------------
-			-- COLUMN 3
+			-- B4 / B5 / B6
 			------------------------------------------------------------
 
-			if columnCount == 3 then
+			if myIndex >= 4
+				and myIndex <= 6
+			then
 
-				local row
-				local column
+				local column =
+					myIndex - 4
 
-				--------------------------------------------------------
-				-- B1 B2 B3
-				-- B4 B5 B6
-				-- B7 B8 B9
-				-- B10 B11
-				--------------------------------------------------------
+				local horizontalOffset =
+					(
+						column - 1
+					)
+					*
+					columnSpacing
 
-				if myIndex >= 1
-					and myIndex <= 3
-				then
+				local forwardOffset =
+					formationDistance
+					+
+					rowSpacing
 
-					row = 0
-					column = myIndex
-
-				elseif myIndex >= 4
-					and myIndex <= 6
-				then
-
-					row = 1
-					column =
-						myIndex - 3
-
-				elseif myIndex >= 7
-					and myIndex <= 9
-				then
-
-					row = 2
-					column =
-						myIndex - 6
-
-				elseif myIndex == 10 then
-
-					row = 3
-					column = 1
-
-				elseif myIndex == 11 then
-
-					row = 3
-					column = 2
-
-				else
-
-					return nil
-
-				end
-
-				--------------------------------------------------------
-				-- COLUMN OFFSET
-				--------------------------------------------------------
-
-				local horizontalOffset
-
-				if column == 1 then
-
-					horizontalOffset =
-						-columnSpacing
-
-				elseif column == 2 then
-
-					horizontalOffset =
+				return
+					targetPosition
+					+
+					(
+						forward
+						*
+						forwardOffset
+					)
+					+
+					(
+						right
+						*
+						horizontalOffset
+					)
+					+
+					Vector3.new(
+						0,
+						formationHeight,
 						0
+					)
 
-				elseif column == 3 then
+			end
 
-					horizontalOffset =
-						columnSpacing
+			------------------------------------------------------------
+			-- B7 / B8 / B9
+			------------------------------------------------------------
 
-				end
+			if myIndex >= 7
+				and myIndex <= 9
+			then
 
-				--------------------------------------------------------
-				-- FORWARD OFFSET
-				--------------------------------------------------------
+				local column =
+					myIndex - 7
+
+				local horizontalOffset =
+					(
+						column - 1
+					)
+					*
+					columnSpacing
 
 				local forwardOffset =
 					formationDistance
 					+
 					(
-						row
+						rowSpacing * 2
+					)
+
+				return
+					targetPosition
+					+
+					(
+						forward
 						*
-						rowSpacing
+						forwardOffset
+					)
+					+
+					(
+						right
+						*
+						horizontalOffset
+					)
+					+
+					Vector3.new(
+						0,
+						formationHeight,
+						0
+					)
+
+			end
+
+			------------------------------------------------------------
+			-- B10 / B11
+			------------------------------------------------------------
+
+			if myIndex == 10
+				or myIndex == 11
+			then
+
+				local horizontalOffset
+
+				if myIndex == 10 then
+
+					horizontalOffset =
+						-columnSpacing / 2
+
+				else
+
+					horizontalOffset =
+						columnSpacing / 2
+
+				end
+
+				local forwardOffset =
+					formationDistance
+					+
+					(
+						rowSpacing * 3
 					)
 
 				return
@@ -673,6 +588,7 @@ return {
 			then
 
 				return
+
 			end
 
 			local lookDirection =
@@ -689,33 +605,15 @@ return {
 		end
 
 		----------------------------------------------------------------
-		-- START COLUMN
+		-- START THREE COLUMN
 		----------------------------------------------------------------
 
-		local function startColumn(
-			player,
-			requestedColumn
+		local function startThreeColumn(
+			player
 		)
 
 			if not player then
 				return
-			end
-
-			------------------------------------------------------------
-			-- VALID COLUMN
-			------------------------------------------------------------
-
-			if requestedColumn ~= 1
-				and requestedColumn ~= 2
-				and requestedColumn ~= 3
-			then
-
-				warn(
-					"[COLUMN] Gunakan !column 1, !column 2, atau !column 3"
-				)
-
-				return
-
 			end
 
 			------------------------------------------------------------
@@ -728,7 +626,7 @@ return {
 			if not targetCharacter then
 
 				warn(
-					"[COLUMN] Target belum memiliki Character:",
+					"[THREECOLUMN] Target belum memiliki Character:",
 					player.Name
 				)
 
@@ -748,7 +646,7 @@ return {
 			if not targetHRP then
 
 				warn(
-					"[COLUMN] Target HRP tidak ditemukan:",
+					"[THREECOLUMN] Target HRP tidak ditemukan:",
 					player.Name
 				)
 
@@ -775,29 +673,22 @@ return {
 			-- DISCONNECT OLD LOOP
 			------------------------------------------------------------
 
-			if columnConnection then
+			if threeColumnConnection then
 
-				columnConnection:Disconnect()
+				threeColumnConnection:Disconnect()
 
-				columnConnection = nil
+				threeColumnConnection = nil
 
 			end
 
 			------------------------------------------------------------
-			-- SET COLUMN
-			------------------------------------------------------------
-
-			columnCount =
-				requestedColumn
-
-			------------------------------------------------------------
-			-- ACTIVE
+			-- ACTIVE MODE
 			------------------------------------------------------------
 
 			vars.ActiveMode =
-				"column"
+				"threecolumn"
 
-			columnActive =
+			threeColumnActive =
 				true
 
 			targetPlayer =
@@ -833,41 +724,35 @@ return {
 			------------------------------------------------------------
 
 			print(
-				"[COLUMN] ==========================="
+				"[THREECOLUMN] ==========================="
 			)
 
 			print(
-				"[COLUMN] Command: !column",
-				columnCount
+				"[THREECOLUMN] Command: !threeline"
 			)
 
 			print(
-				"[COLUMN] Target:",
+				"[THREECOLUMN] Target:",
 				player.Name
 			)
 
 			print(
-				"[COLUMN] LocalPlayer:",
+				"[THREECOLUMN] LocalPlayer:",
 				LocalPlayer.Name
 			)
 
 			print(
-				"[COLUMN] UserId:",
+				"[THREECOLUMN] UserId:",
 				LocalPlayer.UserId
 			)
 
 			print(
-				"[COLUMN] Bot Index:",
+				"[THREECOLUMN] Bot Index:",
 				myIndex
 			)
 
 			print(
-				"[COLUMN] Column Count:",
-				columnCount
-			)
-
-			print(
-				"[COLUMN] ==========================="
+				"[THREECOLUMN] ==========================="
 			)
 
 			------------------------------------------------------------
@@ -877,20 +762,62 @@ return {
 			if not myIndex then
 
 				warn(
-					"[COLUMN] LocalPlayer bukan Bot1-11"
+					"[THREECOLUMN] LocalPlayer bukan Bot1-11"
 				)
 
-				stopColumn()
+				stopThreeColumn()
 
 				return
 
 			end
 
 			------------------------------------------------------------
+			-- CHAT
+			------------------------------------------------------------
+
+			sendChat = sendChat or function(message)
+
+				if not message then
+					return
+				end
+
+				pcall(function()
+
+					local textChannels =
+						TextChatService:FindFirstChild(
+							"TextChannels"
+						)
+
+					if not textChannels then
+						return
+					end
+
+					local channel =
+						textChannels:FindFirstChild(
+							"RBXGeneral"
+						)
+
+					if channel then
+
+						channel:SendAsync(
+							message
+						)
+
+					end
+
+				end)
+
+			end
+
+			sendChat(
+				"Yes, Sir!"
+			)
+
+			------------------------------------------------------------
 			-- HEARTBEAT
 			------------------------------------------------------------
 
-			columnConnection =
+			threeColumnConnection =
 				RunService.Heartbeat:Connect(
 					function()
 
@@ -911,7 +838,7 @@ return {
 						------------------------------------------------
 
 						if vars.ActiveMode
-							~= "column"
+							~= "threecolumn"
 						then
 
 							return
@@ -922,7 +849,7 @@ return {
 						-- ACTIVE
 						------------------------------------------------
 
-						if not columnActive then
+						if not threeColumnActive then
 
 							return
 
@@ -999,10 +926,6 @@ return {
 								botDistance
 							)
 
-						------------------------------------------------
-						-- BOT TIDAK DIPAKAI
-						------------------------------------------------
-
 						if not targetPosition then
 
 							return
@@ -1010,7 +933,7 @@ return {
 						end
 
 						------------------------------------------------
-						-- DISTANCE TO TARGET
+						-- DISTANCE TO POSITION
 						------------------------------------------------
 
 						local distanceToTarget =
@@ -1104,46 +1027,17 @@ return {
 				message:lower()
 
 			------------------------------------------------------------
-			-- !COLUMN 1/2/3
+			-- !THREELINE
 			------------------------------------------------------------
 
-			local columnNumber =
-				lower:match(
-					"^!column%s+([123])$"
-				)
-
-			if columnNumber then
-
-				local requestedColumn =
-					tonumber(
-						columnNumber
-					)
+			if lower == "!threeline" then
 
 				print(
-					"[COLUMN] Command:",
-					message
+					"[THREECOLUMN] Command diterima"
 				)
 
-				startColumn(
-					sender,
-					requestedColumn
-				)
-
-				return
-
-			end
-
-			------------------------------------------------------------
-			-- INVALID COLUMN COMMAND
-			------------------------------------------------------------
-
-			if lower:match(
-				"^!column"
-			)
-			then
-
-				warn(
-					"[COLUMN] Command salah. Gunakan: !column 1 / !column 2 / !column 3"
+				startThreeColumn(
+					sender
 				)
 
 				return
@@ -1156,7 +1050,7 @@ return {
 
 			if lower == "!stop" then
 
-				stopColumn()
+				stopThreeColumn()
 
 				return
 
@@ -1259,22 +1153,21 @@ return {
 					function()
 
 						if player == targetPlayer
-							and columnActive
+							and threeColumnActive
 							and vars.ActiveMode
-								== "column"
+								== "threecolumn"
 						then
 
 							task.wait(1)
 
 							if player == targetPlayer
-								and columnActive
+								and threeColumnActive
 								and vars.ActiveMode
-									== "column"
+									== "threecolumn"
 							then
 
-								startColumn(
-									player,
-									columnCount
+								startThreeColumn(
+									player
 								)
 
 							end
@@ -1299,22 +1192,21 @@ return {
 				function()
 
 					if player == targetPlayer
-						and columnActive
+						and threeColumnActive
 						and vars.ActiveMode
-							== "column"
+							== "threecolumn"
 					then
 
 						task.wait(1)
 
 						if player == targetPlayer
-							and columnActive
+							and threeColumnActive
 							and vars.ActiveMode
-								== "column"
+								== "threecolumn"
 						then
 
-							startColumn(
-								player,
-								columnCount
+							startThreeColumn(
+								player
 							)
 
 						end
@@ -1338,33 +1230,29 @@ return {
 				updateCharacter()
 
 				--------------------------------------------------------
-				-- RESTART COLUMN
+				-- RESTART THREE COLUMN
 				--------------------------------------------------------
 
 				if vars.ActiveMode
-					== "column"
-					and columnActive
+					== "threecolumn"
+					and threeColumnActive
 					and targetPlayer
 				then
 
 					local savedTarget =
 						targetPlayer
 
-					local savedColumn =
-						columnCount
-
 					task.wait(0.2)
 
 					if vars.ActiveMode
-						== "column"
-						and columnActive
+						== "threecolumn"
+						and threeColumnActive
 						and targetPlayer
 							== savedTarget
 					then
 
-						startColumn(
-							savedTarget,
-							savedColumn
+						startThreeColumn(
+							savedTarget
 						)
 
 					end
@@ -1379,11 +1267,10 @@ return {
 		----------------------------------------------------------------
 
 		print(
-			"[COLUMN] Module loaded:",
+			"[THREECOLUMN] Module loaded:",
 			LocalPlayer.Name,
 			LocalPlayer.UserId
 		)
 
 	end
 }
-```
