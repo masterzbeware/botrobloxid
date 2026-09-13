@@ -49,7 +49,7 @@ return {
 		if not Admin then
 
 			warn(
-				"[TWOCOLUMN] Gagal load Admin.lua"
+				"[FOURCOLUMN] Gagal load Admin.lua"
 			)
 
 			return
@@ -79,7 +79,7 @@ return {
 		if not Distance then
 
 			warn(
-				"[TWOCOLUMN] Gagal load Distance.lua"
+				"[FOURCOLUMN] Gagal load Distance.lua"
 			)
 
 			return
@@ -97,8 +97,8 @@ return {
 		-- STATE
 		----------------------------------------------------------------
 
-		local twoColumnActive = false
-		local twoColumnConnection = nil
+		local fourColumnActive = false
+		local fourColumnConnection = nil
 		local targetPlayer = nil
 
 		----------------------------------------------------------------
@@ -108,7 +108,7 @@ return {
 		local modeToken = 0
 
 		----------------------------------------------------------------
-		-- TWO COLUMN SETTINGS
+		-- FOUR COLUMN SETTINGS
 		----------------------------------------------------------------
 
 		-- Jarak baris pertama dari Player/Admin
@@ -130,15 +130,12 @@ return {
 		-- BOT ORDER
 		----------------------------------------------------------------
 		--
-		--             PLAYER
-		--            / ADMIN
+		--                 PLAYER
+		--                / ADMIN
 		--
-		--          B1      B2
-		--          B3      B4
-		--          B5      B6
-		--          B7      B8
-		--          B9      B10
-		--          B11
+		--        B1    B2    B3    B4
+		--        B5    B6    B7    B8
+		--        B9    B10   B11
 		--
 		----------------------------------------------------------------
 
@@ -266,10 +263,10 @@ return {
 		end
 
 		----------------------------------------------------------------
-		-- STOP TWO COLUMN
+		-- STOP FOUR COLUMN
 		----------------------------------------------------------------
 
-		local function stopTwoColumn()
+		local function stopFourColumn()
 
 			------------------------------------------------------------
 			-- INVALIDATE LOOP
@@ -281,18 +278,18 @@ return {
 			-- STATE
 			------------------------------------------------------------
 
-			twoColumnActive = false
+			fourColumnActive = false
 			targetPlayer = nil
 
 			------------------------------------------------------------
 			-- DISCONNECT
 			------------------------------------------------------------
 
-			if twoColumnConnection then
+			if fourColumnConnection then
 
-				twoColumnConnection:Disconnect()
+				fourColumnConnection:Disconnect()
 
-				twoColumnConnection = nil
+				fourColumnConnection = nil
 
 			end
 
@@ -311,7 +308,7 @@ return {
 			------------------------------------------------------------
 
 			if vars.ActiveMode
-				== "twocolumn"
+				== "fourcolumn"
 			then
 
 				vars.ActiveMode = nil
@@ -324,8 +321,8 @@ return {
 		-- REGISTER MODE
 		----------------------------------------------------------------
 
-		vars.ModeControllers.twocolumn =
-			stopTwoColumn
+		vars.ModeControllers.fourcolumn =
+			stopFourColumn
 
 		----------------------------------------------------------------
 		-- STOP OTHER MODES
@@ -337,7 +334,7 @@ return {
 				vars.ModeControllers
 			) do
 
-				if name ~= "twocolumn"
+				if name ~= "fourcolumn"
 					and type(stopFunction) == "function"
 				then
 
@@ -457,7 +454,7 @@ return {
 		end
 
 		----------------------------------------------------------------
-		-- GET TWO COLUMN POSITION
+		-- GET FOUR COLUMN POSITION
 		----------------------------------------------------------------
 		--
 		-- FORMASI DI BELAKANG PLAYER
@@ -465,12 +462,9 @@ return {
 		--                 PLAYER
 		--                / ADMIN
 		--
-		--           B1       B2
-		--           B3       B4
-		--           B5       B6
-		--           B7       B8
-		--           B9       B10
-		--           B11
+		--        B1    B2    B3    B4
+		--        B5    B6    B7    B8
+		--        B9    B10   B11
 		--
 		----------------------------------------------------------------
 
@@ -507,59 +501,61 @@ return {
 				targetHRP.CFrame.RightVector
 
 			------------------------------------------------------------
-			-- BELAKANG PLAYER
+			-- FORMATION KE BELAKANG
 			------------------------------------------------------------
 
 			local backward =
 				-forward
 
 			------------------------------------------------------------
-			-- DETERMINE ROW
+			-- ROW
 			------------------------------------------------------------
 
 			local row =
 				math.floor(
-					(myIndex - 1) / 2
+					(myIndex - 1) / 4
 				)
 
 			------------------------------------------------------------
-			-- DETERMINE COLUMN
+			-- COLUMN
 			------------------------------------------------------------
 
 			local column =
-				(myIndex - 1) % 2
+				(myIndex - 1) % 4
 
 			------------------------------------------------------------
-			-- HORIZONTAL POSITION
+			-- CENTERED COLUMN
 			------------------------------------------------------------
 
-			local horizontalOffset
+			-- Column 0 = paling kiri
+			-- Column 1 = kiri tengah
+			-- Column 2 = kanan tengah
+			-- Column 3 = paling kanan
 
-			if column == 0 then
-
-				horizontalOffset =
-					-columnSpacing / 2
-
-			else
-
-				horizontalOffset =
-					columnSpacing / 2
-
-			end
+			local horizontalOffset =
+				(
+					column
+					-
+					1.5
+				)
+				*
+				columnSpacing
 
 			------------------------------------------------------------
-			-- BACKWARD POSITION
+			-- BACKWARD OFFSET
 			------------------------------------------------------------
 
 			local backwardOffset =
 				formationDistance
 				+
 				(
-					rowSpacing * row
+					rowSpacing
+					*
+					row
 				)
 
 			------------------------------------------------------------
-			-- POSITION
+			-- FINAL POSITION
 			------------------------------------------------------------
 
 			return
@@ -588,10 +584,6 @@ return {
 		----------------------------------------------------------------
 		-- SET FORMATION ROTATION
 		----------------------------------------------------------------
-		--
-		-- Semua bot menghadap ke arah jalan Player/Admin.
-		--
-		----------------------------------------------------------------
 
 		local function setFormationRotation(
 			targetHRP
@@ -619,10 +611,10 @@ return {
 		end
 
 		----------------------------------------------------------------
-		-- START TWO COLUMN
+		-- START FOUR COLUMN
 		----------------------------------------------------------------
 
-		local function startTwoColumn(
+		local function startFourColumn(
 			player
 		)
 
@@ -640,7 +632,7 @@ return {
 			if not targetCharacter then
 
 				warn(
-					"[TWOCOLUMN] Target belum memiliki Character:",
+					"[FOURCOLUMN] Target belum memiliki Character:",
 					player.Name
 				)
 
@@ -660,7 +652,7 @@ return {
 			if not targetHRP then
 
 				warn(
-					"[TWOCOLUMN] Target HRP tidak ditemukan:",
+					"[FOURCOLUMN] Target HRP tidak ditemukan:",
 					player.Name
 				)
 
@@ -687,11 +679,11 @@ return {
 			-- DISCONNECT OLD LOOP
 			------------------------------------------------------------
 
-			if twoColumnConnection then
+			if fourColumnConnection then
 
-				twoColumnConnection:Disconnect()
+				fourColumnConnection:Disconnect()
 
-				twoColumnConnection = nil
+				fourColumnConnection = nil
 
 			end
 
@@ -700,9 +692,9 @@ return {
 			------------------------------------------------------------
 
 			vars.ActiveMode =
-				"twocolumn"
+				"fourcolumn"
 
-			twoColumnActive =
+			fourColumnActive =
 				true
 
 			targetPlayer =
@@ -738,39 +730,43 @@ return {
 			------------------------------------------------------------
 
 			print(
-				"[TWOCOLUMN] ==========================="
+				"[FOURCOLUMN] ==========================="
 			)
 
 			print(
-				"[TWOCOLUMN] Command: !twoline"
+				"[FOURCOLUMN] Command: !fourline"
 			)
 
 			print(
-				"[TWOCOLUMN] Target:",
+				"[FOURCOLUMN] Target:",
 				player.Name
 			)
 
 			print(
-				"[TWOCOLUMN] LocalPlayer:",
+				"[FOURCOLUMN] LocalPlayer:",
 				LocalPlayer.Name
 			)
 
 			print(
-				"[TWOCOLUMN] UserId:",
+				"[FOURCOLUMN] UserId:",
 				LocalPlayer.UserId
 			)
 
 			print(
-				"[TWOCOLUMN] Bot Index:",
+				"[FOURCOLUMN] Bot Index:",
 				myIndex
 			)
 
 			print(
-				"[TWOCOLUMN] Formation: BEHIND"
+				"[FOURCOLUMN] Formation: 4 COLUMN"
 			)
 
 			print(
-				"[TWOCOLUMN] ==========================="
+				"[FOURCOLUMN] Position: BEHIND"
+			)
+
+			print(
+				"[FOURCOLUMN] ==========================="
 			)
 
 			------------------------------------------------------------
@@ -780,10 +776,10 @@ return {
 			if not myIndex then
 
 				warn(
-					"[TWOCOLUMN] LocalPlayer bukan Bot1-11"
+					"[FOURCOLUMN] LocalPlayer bukan Bot1-11"
 				)
 
-				stopTwoColumn()
+				stopFourColumn()
 
 				return
 
@@ -801,7 +797,7 @@ return {
 			-- HEARTBEAT
 			------------------------------------------------------------
 
-			twoColumnConnection =
+			fourColumnConnection =
 				RunService.Heartbeat:Connect(
 					function()
 
@@ -822,7 +818,7 @@ return {
 						------------------------------------------------
 
 						if vars.ActiveMode
-							~= "twocolumn"
+							~= "fourcolumn"
 						then
 
 							return
@@ -833,7 +829,7 @@ return {
 						-- ACTIVE
 						------------------------------------------------
 
-						if not twoColumnActive then
+						if not fourColumnActive then
 
 							return
 
@@ -1011,33 +1007,20 @@ return {
 				message:lower()
 
 			------------------------------------------------------------
-			-- !TWOLINE
-			------------------------------------------------------------
-
-			if lower == "!twoline" then
-
-				print(
-					"[TWOCOLUMN] Command diterima"
-				)
-
-				startTwoColumn(
-					sender
-				)
-
-				return
-
-			end
-
-			------------------------------------------------------------
-			-- !TWOLINE PLAYER
+			-- !FOURLINE PLAYER
 			------------------------------------------------------------
 
 			local targetName =
 				lower:match(
-					"^!twoline%s+(.+)$"
+					"^!fourline%s+(.+)$"
 				)
 
 			if targetName then
+
+				print(
+					"[FOURCOLUMN] Command:",
+					message
+				)
 
 				local target =
 					findPlayerByName(
@@ -1047,7 +1030,7 @@ return {
 				if not target then
 
 					warn(
-						"[TWOCOLUMN] Player tidak ditemukan:",
+						"[FOURCOLUMN] Player tidak ditemukan:",
 						targetName
 					)
 
@@ -1055,8 +1038,26 @@ return {
 
 				end
 
-				startTwoColumn(
+				startFourColumn(
 					target
+				)
+
+				return
+
+			end
+
+			------------------------------------------------------------
+			-- !FOURLINE
+			------------------------------------------------------------
+
+			if lower == "!fourline" then
+
+				print(
+					"[FOURCOLUMN] Command diterima"
+				)
+
+				startFourColumn(
+					sender
 				)
 
 				return
@@ -1069,7 +1070,7 @@ return {
 
 			if lower == "!stop" then
 
-				stopTwoColumn()
+				stopFourColumn()
 
 				return
 
@@ -1172,20 +1173,20 @@ return {
 					function()
 
 						if player == targetPlayer
-							and twoColumnActive
+							and fourColumnActive
 							and vars.ActiveMode
-								== "twocolumn"
+								== "fourcolumn"
 						then
 
 							task.wait(1)
 
 							if player == targetPlayer
-								and twoColumnActive
+								and fourColumnActive
 								and vars.ActiveMode
-									== "twocolumn"
+									== "fourcolumn"
 							then
 
-								startTwoColumn(
+								startFourColumn(
 									player
 								)
 
@@ -1211,20 +1212,20 @@ return {
 				function()
 
 					if player == targetPlayer
-						and twoColumnActive
+						and fourColumnActive
 						and vars.ActiveMode
-							== "twocolumn"
+							== "fourcolumn"
 					then
 
 						task.wait(1)
 
 						if player == targetPlayer
-							and twoColumnActive
+							and fourColumnActive
 							and vars.ActiveMode
-								== "twocolumn"
+								== "fourcolumn"
 						then
 
-							startTwoColumn(
+							startFourColumn(
 								player
 							)
 
@@ -1249,12 +1250,12 @@ return {
 				updateCharacter()
 
 				--------------------------------------------------------
-				-- RESTART TWO COLUMN
+				-- RESTART FOUR COLUMN
 				--------------------------------------------------------
 
 				if vars.ActiveMode
-					== "twocolumn"
-					and twoColumnActive
+					== "fourcolumn"
+					and fourColumnActive
 					and targetPlayer
 				then
 
@@ -1264,13 +1265,13 @@ return {
 					task.wait(0.2)
 
 					if vars.ActiveMode
-						== "twocolumn"
-						and twoColumnActive
+						== "fourcolumn"
+						and fourColumnActive
 						and targetPlayer
 							== savedTarget
 					then
 
-						startTwoColumn(
+						startFourColumn(
 							savedTarget
 						)
 
@@ -1286,7 +1287,7 @@ return {
 		----------------------------------------------------------------
 
 		print(
-			"[TWOCOLUMN] Module loaded:",
+			"[FOURCOLUMN] Module loaded:",
 			LocalPlayer.Name,
 			LocalPlayer.UserId
 		)
