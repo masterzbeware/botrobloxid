@@ -50,7 +50,7 @@ local vars = _G.BotVars
 
 local Window = Library:CreateWindow({
     Title = "MasterZ HUB",
-    Footer = "1.0.0",
+    Footer = "1.0.3",
     Icon = 0
 })
 

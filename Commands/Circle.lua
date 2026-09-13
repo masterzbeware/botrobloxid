@@ -13,14 +13,16 @@ return {
         local LocalPlayer = Players.LocalPlayer
 
         if not LocalPlayer then
+            warn("[Circle] LocalPlayer tidak ditemukan")
             return
         end
 
         ----------------------------------------------------------------
-        -- GLOBAL MODE SYSTEM
+        -- GLOBAL
         ----------------------------------------------------------------
 
         _G.BotVars = _G.BotVars or {}
+
         _G.BotVars.ModeControllers =
             _G.BotVars.ModeControllers or {}
 
@@ -30,17 +32,43 @@ return {
         -- LOAD ADMIN
         ----------------------------------------------------------------
 
-        local Admin = loadstring(game:HttpGet(
-            "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
-        ))()
+        local Admin
+
+        do
+            local success, result = pcall(function()
+                return loadstring(game:HttpGet(
+                    "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
+                ))()
+            end)
+
+            if not success or not result then
+                warn("[Circle] Gagal load Admin.lua")
+                return
+            end
+
+            Admin = result
+        end
 
         ----------------------------------------------------------------
         -- LOAD DISTANCE
         ----------------------------------------------------------------
 
-        local Distance = loadstring(game:HttpGet(
-            "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Distance.lua"
-        ))()
+        local Distance
+
+        do
+            local success, result = pcall(function()
+                return loadstring(game:HttpGet(
+                    "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Distance.lua"
+                ))()
+            end)
+
+            if not success or not result then
+                warn("[Circle] Gagal load Distance.lua")
+                return
+            end
+
+            Distance = result
+        end
 
         ----------------------------------------------------------------
         -- CHARACTER
@@ -48,6 +76,24 @@ return {
 
         local humanoid
         local myHRP
+
+        local function updateCharacter()
+
+            local character =
+                LocalPlayer.Character
+                or LocalPlayer.CharacterAdded:Wait()
+
+            humanoid =
+                character:WaitForChild("Humanoid")
+
+            myHRP =
+                character:WaitForChild("HumanoidRootPart")
+
+            humanoid.AutoRotate = true
+
+        end
+
+        updateCharacter()
 
         ----------------------------------------------------------------
         -- STATE
@@ -58,7 +104,7 @@ return {
         local targetPlayer = nil
 
         ----------------------------------------------------------------
-        -- CIRCLE SETTINGS
+        -- SETTINGS
         ----------------------------------------------------------------
 
         local circleRadius = 8
@@ -85,28 +131,6 @@ return {
         }
 
         ----------------------------------------------------------------
-        -- UPDATE CHARACTER
-        ----------------------------------------------------------------
-
-        local function updateCharacter()
-
-            local character =
-                LocalPlayer.Character
-                or LocalPlayer.CharacterAdded:Wait()
-
-            humanoid =
-                character:WaitForChild("Humanoid")
-
-            myHRP =
-                character:WaitForChild("HumanoidRootPart")
-
-            humanoid.AutoRotate = true
-
-        end
-
-        updateCharacter()
-
-        ----------------------------------------------------------------
         -- SEND CHAT
         ----------------------------------------------------------------
 
@@ -128,20 +152,22 @@ return {
 
                 if channel then
 
-                    pcall(function()
+                    local sent = pcall(function()
 
                         channel:SendAsync(message)
 
                     end)
 
-                    success = true
+                    if sent then
+                        success = true
+                    end
 
                 end
 
             end
 
             ------------------------------------------------------------
-            -- OLD CHAT FALLBACK
+            -- OLD CHAT
             ------------------------------------------------------------
 
             if not success then
@@ -240,7 +266,7 @@ return {
             name = name:lower()
 
             ------------------------------------------------------------
-            -- EXACT MATCH
+            -- EXACT
             ------------------------------------------------------------
 
             for _, player in ipairs(
@@ -257,7 +283,7 @@ return {
             end
 
             ------------------------------------------------------------
-            -- PARTIAL MATCH
+            -- PARTIAL
             ------------------------------------------------------------
 
             for _, player in ipairs(
@@ -286,26 +312,12 @@ return {
         end
 
         ----------------------------------------------------------------
-        -- GET BOT DISTANCE
+        -- GET DISTANCE
         ----------------------------------------------------------------
 
         local function getBotDistance(player)
 
             local distance = circleRadius
-
-            ------------------------------------------------------------
-            -- ADMIN
-            ------------------------------------------------------------
-
-            if Admin:IsAdmin(player) then
-
-                distance = circleRadius
-
-            end
-
-            ------------------------------------------------------------
-            -- SPECIAL DISTANCE
-            ------------------------------------------------------------
 
             local specialDistance =
                 Distance:GetDistance(
@@ -314,9 +326,10 @@ return {
                 )
 
             if specialDistance then
-
-                distance = specialDistance
-
+                distance = math.max(
+                    circleRadius,
+                    specialDistance
+                )
             end
 
             return distance
@@ -341,12 +354,7 @@ return {
 
             end
 
-            ------------------------------------------------------------
-            -- TOTAL BOT
-            ------------------------------------------------------------
-
-            local totalBots =
-                #botOrder
+            local totalBots = #botOrder
 
             if totalBots <= 0 then
                 return nil
@@ -362,7 +370,7 @@ return {
                 * 2
 
             ------------------------------------------------------------
-            -- TARGET AXIS
+            -- PLAYER AXIS
             ------------------------------------------------------------
 
             local forward =
@@ -371,11 +379,8 @@ return {
             local right =
                 targetHRP.CFrame.RightVector
 
-            local origin =
-                targetHRP.Position
-
             ------------------------------------------------------------
-            -- OFFSET
+            -- CIRCLE OFFSET
             ------------------------------------------------------------
 
             local forwardOffset =
@@ -385,37 +390,12 @@ return {
                 math.sin(angle) * radius
 
             ------------------------------------------------------------
-            -- FINAL POSITION
+            -- POSITION
             ------------------------------------------------------------
 
-            return origin
+            return targetHRP.Position
                 + forward * forwardOffset
                 + right * rightOffset
-
-        end
-
-        ----------------------------------------------------------------
-        -- FACE TARGET
-        ----------------------------------------------------------------
-
-        local function faceTarget(targetHRP)
-
-            if not targetHRP or not myHRP then
-                return
-            end
-
-            local targetPosition =
-                targetHRP.Position
-
-            myHRP.CFrame =
-                CFrame.lookAt(
-                    myHRP.Position,
-                    Vector3.new(
-                        targetPosition.X,
-                        myHRP.Position.Y,
-                        targetPosition.Z
-                    )
-                )
 
         end
 
@@ -430,7 +410,7 @@ return {
             end
 
             ------------------------------------------------------------
-            -- STOP MODE LAIN
+            -- STOP OTHER MODES
             ------------------------------------------------------------
 
             stopOtherModes()
@@ -442,7 +422,7 @@ return {
             vars.ActiveMode = "circle"
 
             ------------------------------------------------------------
-            -- STOP CONNECTION LAMA
+            -- STOP OLD CONNECTION
             ------------------------------------------------------------
 
             if circleConnection then
@@ -475,15 +455,11 @@ return {
                     tostring(LocalPlayer.UserId)
                 )
 
-            ------------------------------------------------------------
-            -- BOT TIDAK TERDAFTAR
-            ------------------------------------------------------------
-
             if not myIndex then
 
-                print(
-                    "[CIRCLE]",
-                    "Bot ini bukan Bot 1-11:",
+                warn(
+                    "[Circle] Bot tidak ada di botOrder:",
+                    LocalPlayer.Name,
                     LocalPlayer.UserId
                 )
 
@@ -493,21 +469,16 @@ return {
 
             end
 
-            ------------------------------------------------------------
-            -- DEBUG
-            ------------------------------------------------------------
-
             print(
-                "[CIRCLE]",
-                "Bot Index:",
+                "[Circle] Started | Bot:",
                 myIndex,
-                "UserId:",
-                LocalPlayer.UserId
+                "| Target:",
+                player.Name
             )
 
-            ------------------------------------------------------------
+            ----------------------------------------------------------------
             -- HEARTBEAT
-            ------------------------------------------------------------
+            ----------------------------------------------------------------
 
             circleConnection =
                 RunService.Heartbeat:Connect(
@@ -580,7 +551,7 @@ return {
                         -- DISTANCE
                         ------------------------------------------------
 
-                        local botDistance =
+                        local radius =
                             getBotDistance(
                                 targetPlayer
                             )
@@ -593,7 +564,7 @@ return {
                             getCirclePosition(
                                 myIndex,
                                 targetHRP,
-                                botDistance
+                                radius
                             )
 
                         if not targetPosition then
@@ -628,16 +599,30 @@ return {
                         end
 
                         ------------------------------------------------
-                        -- REACHED
+                        -- ARRIVED
                         ------------------------------------------------
 
                         humanoid.AutoRotate = false
 
                         ------------------------------------------------
-                        -- FACE PLAYER
+                        -- FACE TARGET
                         ------------------------------------------------
 
-                        faceTarget(targetHRP)
+                        local lookPosition =
+                            targetHRP.Position
+
+                        local flatLook =
+                            Vector3.new(
+                                lookPosition.X,
+                                myHRP.Position.Y,
+                                lookPosition.Z
+                            )
+
+                        myHRP.CFrame =
+                            CFrame.lookAt(
+                                myHRP.Position,
+                                flatLook
+                            )
 
                     end
                 )
@@ -645,7 +630,7 @@ return {
         end
 
         ----------------------------------------------------------------
-        -- HANDLE COMMAND
+        -- COMMAND HANDLER
         ----------------------------------------------------------------
 
         local function handleCommand(
@@ -654,15 +639,19 @@ return {
         )
 
             ------------------------------------------------------------
-            -- ADMIN ONLY
+            -- ADMIN
             ------------------------------------------------------------
 
             if not Admin:IsAdmin(sender) then
                 return
             end
 
+            if not message then
+                return
+            end
+
             local lower =
-                message:lower()
+                message:lower():match("^%s*(.-)%s*$")
 
             ------------------------------------------------------------
             -- !CIRCLE
@@ -694,7 +683,16 @@ return {
 
                 if target then
 
-                    startCircle(target)
+                    startCircle(
+                        target
+                    )
+
+                else
+
+                    warn(
+                        "[Circle] Target tidak ditemukan:",
+                        targetName
+                    )
 
                 end
 
@@ -720,7 +718,7 @@ return {
         end
 
         ----------------------------------------------------------------
-        -- TEXT CHAT SERVICE
+        -- TEXT CHAT
         ----------------------------------------------------------------
 
         if TextChatService
@@ -756,6 +754,8 @@ return {
                         end
 
                     end
+
+                print("[Circle] TextChat listener aktif")
 
             end
 
@@ -804,7 +804,7 @@ return {
         )
 
         ----------------------------------------------------------------
-        -- CHARACTER RESPAWN
+        -- RESPAWN
         ----------------------------------------------------------------
 
         LocalPlayer.CharacterAdded:Connect(
@@ -813,10 +813,6 @@ return {
                 task.wait(1)
 
                 updateCharacter()
-
-                --------------------------------------------------------
-                -- RESTART CIRCLE
-                --------------------------------------------------------
 
                 if vars.ActiveMode == "circle"
                     and targetPlayer then
@@ -835,7 +831,7 @@ return {
         ----------------------------------------------------------------
 
         print(
-            "[CIRCLE] Circle.lua aktif!"
+            "[Circle] Circle.lua aktif!"
         )
 
     end
