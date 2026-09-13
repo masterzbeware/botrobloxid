@@ -49,9 +49,7 @@ return {
 
 		if not Admin then
 
-			warn(
-				"[VANGUARD] Gagal load Admin.lua"
-			)
+			warn("[VANGUARD] Gagal load Admin.lua")
 
 			return
 		end
@@ -78,9 +76,7 @@ return {
 
 		if not Distance then
 
-			warn(
-				"[VANGUARD] Gagal load Distance.lua"
-			)
+			warn("[VANGUARD] Gagal load Distance.lua")
 
 			return
 		end
@@ -103,24 +99,20 @@ return {
 		----------------------------------------------------------------
 		-- MODE TOKEN
 		----------------------------------------------------------------
-		--
-		-- Digunakan agar loop lama tidak ikut menggerakkan bot
-		-- setelah mode berganti.
-		--
 
 		local modeToken = 0
 
 		----------------------------------------------------------------
-		-- VANGUARD FORMATION SETTINGS
+		-- VANGUARD SETTINGS
 		----------------------------------------------------------------
 
 		-- Jarak bot paling depan dari Player
 		local formationDistance = 5
 
-		-- Jarak bot dari garis tengah Player
+		-- Jarak bot dari tengah Player
 		local sideSpacing = 4
 
-		-- Jarak antar bot dari depan ke belakang
+		-- Jarak antar baris dari depan ke belakang
 		local rowSpacing = 4
 
 		-- Toleransi posisi
@@ -133,35 +125,29 @@ return {
 		-- BOT ORDER
 		----------------------------------------------------------------
 		--
-		-- FORMASI:
+		-- B1  B3  B5  B7  B9
+		--     KIRI
 		--
-		--                   ARAH JALAN ↑
+		-- B2  B4  B6  B8  B10
+		--     KANAN
 		--
-		--              B1             B2
-		--              B3             B4
-		--              B5             B6
-		--              B7             B8
-		--              B9             B10
-		--
-		--                       B11
-		--
-		--                     PLAYER
+		-- B11 berada di belakang dan menghadap kiri.
 		--
 		----------------------------------------------------------------
 
 		local botOrder = {
 
-			"11611503633", -- Bot1
-			"11611534165", -- Bot2
-			"11611567975", -- Bot3
-			"11611562042", -- Bot4
-			"11611591921", -- Bot5
-			"11122806815", -- Bot6
-			"11122806817", -- Bot7
-			"11122687468", -- Bot8
-			"11122854402", -- Bot9
-			"11641280895", -- Bot10
-			"11641342530", -- Bot11
+			"11611503633", -- B1
+			"11611534165", -- B2
+			"11611567975", -- B3
+			"11611562042", -- B4
+			"11611591921", -- B5
+			"11122806815", -- B6
+			"11122806817", -- B7
+			"11122687468", -- B8
+			"11122854402", -- B9
+			"11641280895", -- B10
+			"11641342530", -- B11
 
 		}
 
@@ -290,7 +276,7 @@ return {
 			targetPlayer = nil
 
 			------------------------------------------------------------
-			-- DISCONNECT HEARTBEAT
+			-- DISCONNECT
 			------------------------------------------------------------
 
 			if vanguardConnection then
@@ -302,7 +288,7 @@ return {
 			end
 
 			------------------------------------------------------------
-			-- RESTORE CHARACTER
+			-- RESTORE
 			------------------------------------------------------------
 
 			if humanoid then
@@ -324,7 +310,7 @@ return {
 		end
 
 		----------------------------------------------------------------
-		-- REGISTER MODE CONTROLLER
+		-- REGISTER CONTROLLER
 		----------------------------------------------------------------
 
 		vars.ModeControllers.vanguard =
@@ -446,28 +432,7 @@ return {
 		end
 
 		----------------------------------------------------------------
-		-- GET VANGUARD FORMATION POSITION
-		----------------------------------------------------------------
-		--
-		-- BOT 1 - 10:
-		--
-		-- KIRI:
-		-- B1
-		-- B3
-		-- B5
-		-- B7
-		-- B9
-		--
-		-- KANAN:
-		-- B2
-		-- B4
-		-- B6
-		-- B8
-		-- B10
-		--
-		-- BOT 11:
-		-- Tengah paling belakang
-		--
+		-- GET FORMATION POSITION
 		----------------------------------------------------------------
 
 		local function getFormationPosition(
@@ -482,11 +447,10 @@ return {
 			then
 
 				return nil
-
 			end
 
 			------------------------------------------------------------
-			-- TARGET
+			-- TARGET DATA
 			------------------------------------------------------------
 
 			local targetPosition =
@@ -499,7 +463,15 @@ return {
 				targetHRP.CFrame.RightVector
 
 			------------------------------------------------------------
-			-- BOT KIRI
+			-- LEFT SIDE
+			------------------------------------------------------------
+			--
+			-- B1
+			-- B3
+			-- B5
+			-- B7
+			-- B9
+			--
 			------------------------------------------------------------
 
 			if myIndex % 2 == 1
@@ -549,7 +521,15 @@ return {
 			end
 
 			------------------------------------------------------------
-			-- BOT KANAN
+			-- RIGHT SIDE
+			------------------------------------------------------------
+			--
+			-- B2
+			-- B4
+			-- B6
+			-- B8
+			-- B10
+			--
 			------------------------------------------------------------
 
 			if myIndex % 2 == 0
@@ -597,7 +577,11 @@ return {
 			end
 
 			------------------------------------------------------------
-			-- BOT 11
+			-- B11
+			------------------------------------------------------------
+			--
+			-- B11 berada di belakang tengah.
+			--
 			------------------------------------------------------------
 
 			if myIndex == 11 then
@@ -635,31 +619,99 @@ return {
 		end
 
 		----------------------------------------------------------------
-		-- COPY TARGET ROTATION
+		-- SET FORMATION ROTATION
+		----------------------------------------------------------------
+		--
+		-- KIRI:
+		-- B1  B3  B5  B7  B9
+		-- menghadap KANAN.
+		--
+		-- KANAN:
+		-- B2  B4  B6  B8  B10
+		-- menghadap KIRI.
+		--
+		-- B11 juga menghadap KIRI.
+		--
 		----------------------------------------------------------------
 
-		local function copyTargetRotation(
+		local function setFormationRotation(
+			myIndex,
 			targetHRP
 		)
 
-			if not targetHRP
-				or not myHRP
+			if not myHRP
+				or not targetHRP
 			then
+
+				return
+			end
+
+			------------------------------------------------------------
+			-- LEFT SIDE
+			------------------------------------------------------------
+
+			if myIndex % 2 == 1
+				and myIndex <= 10
+			then
+
+				local lookDirection =
+					targetHRP.CFrame.RightVector
+
+				myHRP.CFrame =
+					CFrame.lookAt(
+						myHRP.Position,
+						myHRP.Position
+							+
+							lookDirection
+					)
 
 				return
 
 			end
 
-			local targetRotation =
-				targetHRP.CFrame
-				- targetHRP.Position
+			------------------------------------------------------------
+			-- RIGHT SIDE
+			------------------------------------------------------------
 
-			myHRP.CFrame =
-				CFrame.new(
-					myHRP.Position
-				)
-				*
-				targetRotation
+			if myIndex % 2 == 0
+				and myIndex <= 10
+			then
+
+				local lookDirection =
+					-targetHRP.CFrame.RightVector
+
+				myHRP.CFrame =
+					CFrame.lookAt(
+						myHRP.Position,
+						myHRP.Position
+							+
+							lookDirection
+					)
+
+				return
+
+			end
+
+			------------------------------------------------------------
+			-- B11
+			------------------------------------------------------------
+
+			if myIndex == 11 then
+
+				local lookDirection =
+					-targetHRP.CFrame.RightVector
+
+				myHRP.CFrame =
+					CFrame.lookAt(
+						myHRP.Position,
+						myHRP.Position
+							+
+							lookDirection
+					)
+
+				return
+
+			end
 
 		end
 
@@ -692,6 +744,10 @@ return {
 				return
 
 			end
+
+			------------------------------------------------------------
+			-- TARGET HRP
+			------------------------------------------------------------
 
 			local targetHRP =
 				targetCharacter:FindFirstChild(
@@ -737,7 +793,7 @@ return {
 			end
 
 			------------------------------------------------------------
-			-- SET ACTIVE MODE
+			-- ACTIVE
 			------------------------------------------------------------
 
 			vars.ActiveMode =
@@ -817,7 +873,9 @@ return {
 			-- CHAT
 			------------------------------------------------------------
 
-			sendChat("Yes, Sir!")
+			sendChat(
+				"Yes, Sir!"
+			)
 
 			------------------------------------------------------------
 			-- HEARTBEAT
@@ -828,17 +886,19 @@ return {
 					function()
 
 						------------------------------------------------
-						-- TOKEN CHECK
+						-- TOKEN
 						------------------------------------------------
 
-						if currentToken ~= modeToken then
+						if currentToken
+							~= modeToken
+						then
 
 							return
 
 						end
 
 						------------------------------------------------
-						-- MODE CHECK
+						-- MODE
 						------------------------------------------------
 
 						if vars.ActiveMode
@@ -850,7 +910,7 @@ return {
 						end
 
 						------------------------------------------------
-						-- ACTIVE CHECK
+						-- ACTIVE
 						------------------------------------------------
 
 						if not vanguardActive then
@@ -860,7 +920,7 @@ return {
 						end
 
 						------------------------------------------------
-						-- CHARACTER CHECK
+						-- CHARACTER
 						------------------------------------------------
 
 						if not humanoid
@@ -873,7 +933,7 @@ return {
 						end
 
 						------------------------------------------------
-						-- TARGET CHECK
+						-- TARGET
 						------------------------------------------------
 
 						if not targetPlayer then
@@ -920,7 +980,7 @@ return {
 							)
 
 						------------------------------------------------
-						-- FORMATION POSITION
+						-- POSITION
 						------------------------------------------------
 
 						local targetPosition =
@@ -937,7 +997,7 @@ return {
 						end
 
 						------------------------------------------------
-						-- DISTANCE TO POSITION
+						-- DISTANCE TO TARGET POSITION
 						------------------------------------------------
 
 						local distanceToTarget =
@@ -974,10 +1034,11 @@ return {
 							false
 
 						------------------------------------------------
-						-- HADAP SESUAI PLAYER
+						-- SET ARAH HADAP FORMASI
 						------------------------------------------------
 
-						copyTargetRotation(
+						setFormationRotation(
+							myIndex,
 							targetRoot
 						)
 
@@ -996,9 +1057,7 @@ return {
 		)
 
 			if not message then
-
 				return
-
 			end
 
 			------------------------------------------------------------
@@ -1006,15 +1065,11 @@ return {
 			------------------------------------------------------------
 
 			if not sender then
-
 				return
-
 			end
 
 			if not Admin:IsAdmin(sender) then
-
 				return
-
 			end
 
 			------------------------------------------------------------
@@ -1077,7 +1132,7 @@ return {
 			end
 
 			------------------------------------------------------------
-			-- !VANGUARD TANPA NAMA
+			-- !VANGUARD
 			------------------------------------------------------------
 
 			if lower == "!vanguard" then
@@ -1105,7 +1160,7 @@ return {
 		end
 
 		----------------------------------------------------------------
-		-- TEXT CHAT SERVICE
+		-- TEXT CHAT
 		----------------------------------------------------------------
 
 		pcall(function()
@@ -1127,9 +1182,7 @@ return {
 						message.TextSource
 
 					if not textSource then
-
 						return
-
 					end
 
 					local sender =
@@ -1138,9 +1191,7 @@ return {
 						)
 
 					if not sender then
-
 						return
-
 					end
 
 					handleCommand(
@@ -1185,7 +1236,7 @@ return {
 		end
 
 		----------------------------------------------------------------
-		-- NEW PLAYER
+		-- PLAYER ADDED
 		----------------------------------------------------------------
 
 		Players.PlayerAdded:Connect(
@@ -1204,14 +1255,16 @@ return {
 
 						if player == targetPlayer
 							and vanguardActive
-							and vars.ActiveMode == "vanguard"
+							and vars.ActiveMode
+								== "vanguard"
 						then
 
 							task.wait(1)
 
 							if player == targetPlayer
 								and vanguardActive
-								and vars.ActiveMode == "vanguard"
+								and vars.ActiveMode
+									== "vanguard"
 							then
 
 								startVanguard(
@@ -1241,14 +1294,16 @@ return {
 
 					if player == targetPlayer
 						and vanguardActive
-						and vars.ActiveMode == "vanguard"
+						and vars.ActiveMode
+							== "vanguard"
 					then
 
 						task.wait(1)
 
 						if player == targetPlayer
 							and vanguardActive
-							and vars.ActiveMode == "vanguard"
+							and vars.ActiveMode
+								== "vanguard"
 						then
 
 							startVanguard(
@@ -1293,7 +1348,8 @@ return {
 					if vars.ActiveMode
 						== "vanguard"
 						and vanguardActive
-						and targetPlayer == savedTarget
+						and targetPlayer
+							== savedTarget
 					then
 
 						startVanguard(
