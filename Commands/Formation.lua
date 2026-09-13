@@ -54,11 +54,11 @@ return {
         -- FORMATION SETTINGS
         ----------------------------------------------------------------
 
-        -- Jarak garis bot dari Player/Admin
+        -- Jarak BOT dari Player/Admin
         local adminFormationDistance = 6
         local defaultBotFormationDistance = 5
 
-        -- Jarak antar bot
+        -- Jarak antar BOT
         local formationSpacing = 4
 
         ----------------------------------------------------------------
@@ -78,6 +78,7 @@ return {
             "11122854402", -- Bot 9
             "11641280895", -- Bot 10
             "11641342530", -- Bot 11
+
         }
 
         ----------------------------------------------------------------
@@ -121,7 +122,9 @@ return {
                 if channel then
 
                     pcall(function()
+
                         channel:SendAsync(message)
+
                     end)
 
                     success = true
@@ -180,7 +183,9 @@ return {
             end
 
             if humanoid then
+
                 humanoid.AutoRotate = true
+
             end
 
         end
@@ -239,30 +244,31 @@ return {
         end
 
         ----------------------------------------------------------------
-        -- GET HORIZONTAL OFFSET
+        -- GET FORMATION OFFSET
         ----------------------------------------------------------------
         --
         -- FORMASI:
         --
-        -- BOT 1   BOT 2   BOT 3   BOT 4   ...   BOT 11
-        --   ↓       ↓       ↓       ↓              ↓
-        --                  PLAYER
+        -- BOT 1   BOT 2   BOT 3   BOT 4   BOT 5 ... BOT 11
+        --   ↓       ↓       ↓       ↓       ↓         ↓
+        --                    PLAYER
         --
-        -- Semua bot berada pada SATU GARIS.
+        -- Semua BOT berada dalam SATU BARIS.
         --
         ----------------------------------------------------------------
 
-        local function getHorizontalOffset(myIndex)
+        local function getFormationOffset(myIndex)
 
             local totalBots =
                 #botOrder
 
-            local center =
+            local centerIndex =
                 (totalBots + 1) / 2
 
-            return (
-                myIndex - center
-            ) * formationSpacing
+            local offset =
+                myIndex - centerIndex
+
+            return offset * formationSpacing
 
         end
 
@@ -336,7 +342,7 @@ return {
                     function()
 
                         ------------------------------------------------
-                        -- MODE BERUBAH
+                        -- JIKA MODE SUDAH BERGANTI
                         ------------------------------------------------
 
                         if _G.BotVars.ActiveMode
@@ -419,16 +425,16 @@ return {
                         end
 
                         ------------------------------------------------
-                        -- HORIZONTAL OFFSET
+                        -- FORMATION OFFSET
                         ------------------------------------------------
 
                         local horizontalOffset =
-                            getHorizontalOffset(
+                            getFormationOffset(
                                 myIndex
                             )
 
                         ------------------------------------------------
-                        -- TARGET DIRECTION
+                        -- PLAYER DIRECTION
                         ------------------------------------------------
 
                         local lookVector =
@@ -438,12 +444,12 @@ return {
                             targetHRP.CFrame.RightVector
 
                         ------------------------------------------------
-                        -- POSISI DEPAN TARGET
+                        -- POSISI DI DEPAN PLAYER
                         ------------------------------------------------
                         --
-                        -- LookVector = arah depan Player
+                        -- Player menghadap ke depan.
                         --
-                        -- Bot berada di depan Player
+                        -- BOT ditempatkan di depan Player.
                         --
 
                         local frontPosition =
@@ -451,16 +457,23 @@ return {
                             +
                             (
                                 lookVector
-                                *
-                                distance
+                                * distance
                             )
 
                         ------------------------------------------------
                         -- POSISI FINAL BOT
                         ------------------------------------------------
                         --
-                        -- RightVector digunakan untuk membuat
-                        -- garis kiri -> kanan.
+                        -- RightVector menentukan kiri-kanan.
+                        --
+                        -- Bot tengah:
+                        -- BOT 6
+                        --
+                        -- Bot kiri:
+                        -- BOT 1
+                        --
+                        -- Bot kanan:
+                        -- BOT 11
                         --
 
                         local targetPosition =
@@ -468,12 +481,11 @@ return {
                             +
                             (
                                 rightVector
-                                *
-                                horizontalOffset
+                                * horizontalOffset
                             )
 
                         ------------------------------------------------
-                        -- CEK JARAK
+                        -- JARAK KE SLOT FORMASI
                         ------------------------------------------------
 
                         local distanceToTarget =
@@ -484,7 +496,7 @@ return {
                             ).Magnitude
 
                         ------------------------------------------------
-                        -- MENUJU POSISI
+                        -- MENUJU SLOT FORMASI
                         ------------------------------------------------
 
                         if distanceToTarget > 1.5 then
@@ -500,7 +512,7 @@ return {
                         end
 
                         ------------------------------------------------
-                        -- SUDAH SAMPAI
+                        -- SUDAH SAMPAI SLOT
                         ------------------------------------------------
 
                         humanoid.AutoRotate = false
