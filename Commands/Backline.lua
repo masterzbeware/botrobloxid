@@ -7,47 +7,93 @@ return {
 
         local Players = game:GetService("Players")
         local RunService = game:GetService("RunService")
-        local TextChatService = game:GetService("TextChatService")
         local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
         local LocalPlayer = Players.LocalPlayer
 
         if not LocalPlayer then
+            warn("[BACKLINE] LocalPlayer tidak ditemukan")
             return
         end
 
         ----------------------------------------------------------------
-        -- GLOBAL MODE SYSTEM
+        -- GLOBAL VARIABLES
         ----------------------------------------------------------------
 
         _G.BotVars = _G.BotVars or {}
-        _G.BotVars.ModeControllers =
-            _G.BotVars.ModeControllers or {}
 
         local vars = _G.BotVars
+
+        vars.ModeControllers =
+            vars.ModeControllers or {}
+
+        vars.CommandHandlers =
+            vars.CommandHandlers or {}
 
         ----------------------------------------------------------------
         -- LOAD ADMIN
         ----------------------------------------------------------------
 
-        local Admin = loadstring(game:HttpGet(
-            "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
-        ))()
+        local Admin
+
+        do
+            local success, result = pcall(function()
+
+                return loadstring(game:HttpGet(
+                    "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
+                ))()
+
+            end)
+
+            if not success or not result then
+
+                warn(
+                    "[BACKLINE] Gagal load Admin.lua:",
+                    result
+                )
+
+                return
+
+            end
+
+            Admin = result
+        end
 
         ----------------------------------------------------------------
         -- LOAD DISTANCE
         ----------------------------------------------------------------
 
-        local Distance = loadstring(game:HttpGet(
-            "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Distance.lua"
-        ))()
+        local Distance
+
+        do
+            local success, result = pcall(function()
+
+                return loadstring(game:HttpGet(
+                    "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Distance.lua"
+                ))()
+
+            end)
+
+            if not success or not result then
+
+                warn(
+                    "[BACKLINE] Gagal load Distance.lua:",
+                    result
+                )
+
+                return
+
+            end
+
+            Distance = result
+        end
 
         ----------------------------------------------------------------
         -- CHARACTER
         ----------------------------------------------------------------
 
-        local humanoid
-        local myHRP
+        local humanoid = nil
+        local myHRP = nil
 
         ----------------------------------------------------------------
         -- STATE
@@ -61,22 +107,13 @@ return {
         -- FORMATION SETTINGS
         ----------------------------------------------------------------
 
-        -- Jarak Bot dari Player
         local formationDistance = 5
-
-        -- Jarak antar Bot kiri / kanan
         local formationSpacing = 3
-
-        -- Jarak minimum sebelum dianggap sudah sampai
         local stopThreshold = 1.5
-
-        -- Tinggi posisi formasi
         local formationHeight = 0
 
         ----------------------------------------------------------------
         -- BOT ORDER
-        ----------------------------------------------------------------
-        -- HANYA BOT 1 - BOT 11
         ----------------------------------------------------------------
 
         local botOrder = {
@@ -106,7 +143,9 @@ return {
                 or LocalPlayer.CharacterAdded:Wait()
 
             humanoid =
-                character:WaitForChild("Humanoid")
+                character:WaitForChild(
+                    "Humanoid"
+                )
 
             myHRP =
                 character:WaitForChild(
@@ -114,6 +153,10 @@ return {
                 )
 
             humanoid.AutoRotate = true
+
+            print(
+                "[BACKLINE] Character updated"
+            )
 
         end
 
@@ -135,6 +178,9 @@ return {
             -- TEXT CHAT
             ------------------------------------------------------------
 
+            local TextChatService =
+                game:GetService("TextChatService")
+
             if TextChatService
                 and TextChatService.TextChannels then
 
@@ -145,7 +191,7 @@ return {
 
                 if channel then
 
-                    pcall(function()
+                    local ok = pcall(function()
 
                         channel:SendAsync(
                             message
@@ -153,7 +199,9 @@ return {
 
                     end)
 
-                    success = true
+                    if ok then
+                        success = true
+                    end
 
                 end
 
@@ -218,10 +266,12 @@ return {
 
             end
 
+            print("[BACKLINE] Stopped")
+
         end
 
         ----------------------------------------------------------------
-        -- REGISTER CONTROLLER
+        -- REGISTER MODE CONTROLLER
         ----------------------------------------------------------------
 
         vars.ModeControllers.backline =
@@ -240,7 +290,11 @@ return {
                 if name ~= "backline"
                     and type(stopFunction) == "function" then
 
-                    pcall(stopFunction)
+                    pcall(function()
+
+                        stopFunction()
+
+                    end)
 
                 end
 
@@ -328,13 +382,17 @@ return {
             -- SPECIAL DISTANCE
             ------------------------------------------------------------
 
-            local specialDistance =
-                Distance:GetDistance(
-                    tostring(LocalPlayer.UserId),
-                    tostring(player.UserId)
-                )
+            local success, specialDistance =
+                pcall(function()
 
-            if specialDistance then
+                    return Distance:GetDistance(
+                        tostring(LocalPlayer.UserId),
+                        tostring(player.UserId)
+                    )
+
+                end)
+
+            if success and specialDistance then
 
                 distance = specialDistance
 
@@ -346,17 +404,6 @@ return {
 
         ----------------------------------------------------------------
         -- GET BACKLINE POSITION
-        ----------------------------------------------------------------
-        --
-        -- FORMASI:
-        --
-        --                         👤
-        --                       PLAYER
-        --
-        -- B1   B2   B3   B4   B5   B6   B7   B8   B9   B10   B11
-        --
-        -- Semua Bot berada di BELAKANG Player.
-        --
         ----------------------------------------------------------------
 
         local function getBacklinePosition(
@@ -374,21 +421,21 @@ return {
             end
 
             ------------------------------------------------------------
-            -- JUMLAH BOT
+            -- TOTAL BOT
             ------------------------------------------------------------
 
             local totalBots =
                 #botOrder
 
             ------------------------------------------------------------
-            -- POSISI TENGAH
+            -- CENTER
             ------------------------------------------------------------
 
             local center =
                 (totalBots + 1) / 2
 
             ------------------------------------------------------------
-            -- OFFSET KIRI / KANAN
+            -- LEFT / RIGHT
             ------------------------------------------------------------
 
             local horizontalOffset =
@@ -396,11 +443,7 @@ return {
                 * formationSpacing
 
             ------------------------------------------------------------
-            -- BELAKANG PLAYER
-            ------------------------------------------------------------
-            --
-            -- LookVector dibalik dengan tanda MINUS.
-            --
+            -- BACK OF PLAYER
             ------------------------------------------------------------
 
             local backPosition =
@@ -416,7 +459,7 @@ return {
                 )
 
             ------------------------------------------------------------
-            -- KIRI / KANAN
+            -- SIDE
             ------------------------------------------------------------
 
             local sidePosition =
@@ -424,7 +467,7 @@ return {
                 * horizontalOffset
 
             ------------------------------------------------------------
-            -- FINAL POSITION
+            -- FINAL
             ------------------------------------------------------------
 
             return backPosition
@@ -439,10 +482,6 @@ return {
 
         ----------------------------------------------------------------
         -- COPY TARGET ROTATION
-        ----------------------------------------------------------------
-        --
-        -- Bot memiliki rotasi yang SAMA PERSIS dengan target.
-        --
         ----------------------------------------------------------------
 
         local function copyTargetRotation(
@@ -475,7 +514,13 @@ return {
         local function startBackline(player)
 
             if not player then
+
+                warn(
+                    "[BACKLINE] Target player tidak ditemukan"
+                )
+
                 return
+
             end
 
             ------------------------------------------------------------
@@ -516,43 +561,38 @@ return {
             sendChat("Yes, Sir!")
 
             ------------------------------------------------------------
-            -- FIND BOT INDEX
+            -- BOT INDEX
             ------------------------------------------------------------
 
             local myIndex =
                 table.find(
                     botOrder,
-                    tostring(LocalPlayer.UserId)
+                    tostring(
+                        LocalPlayer.UserId
+                    )
                 )
-
-            ------------------------------------------------------------
-            -- BOT TIDAK ADA DI BACKLINE
-            ------------------------------------------------------------
 
             if not myIndex then
 
-                print(
-                    "[BACKLINE]",
-                    "Bot ini bukan Bot 1-11:",
+                warn(
+                    "[BACKLINE] Bot tidak terdaftar:",
                     LocalPlayer.UserId
                 )
 
                 stopBackline()
 
+                vars.ActiveMode = nil
+
                 return
 
             end
 
-            ------------------------------------------------------------
-            -- DEBUG
-            ------------------------------------------------------------
-
             print(
-                "[BACKLINE]",
+                "[BACKLINE] START",
                 "Bot Index:",
                 myIndex,
-                "UserId:",
-                LocalPlayer.UserId
+                "Target:",
+                player.Name
             )
 
             ------------------------------------------------------------
@@ -652,7 +692,7 @@ return {
                         end
 
                         ------------------------------------------------
-                        -- DISTANCE TO FORMATION
+                        -- DISTANCE TO TARGET
                         ------------------------------------------------
 
                         local distanceToTarget =
@@ -669,11 +709,8 @@ return {
                         if distanceToTarget
                             > stopThreshold then
 
-                            ------------------------------------------------
-                            -- ROBLOX BOLEH MEMUTAR SAAT BERJALAN
-                            ------------------------------------------------
-
-                            humanoid.AutoRotate = true
+                            humanoid.AutoRotate =
+                                true
 
                             humanoid:MoveTo(
                                 targetPosition
@@ -684,18 +721,14 @@ return {
                         end
 
                         ------------------------------------------------
-                        -- SUDAH SAMPAI
+                        -- ARRIVED
                         ------------------------------------------------
 
-                        humanoid.AutoRotate = false
+                        humanoid.AutoRotate =
+                            false
 
                         ------------------------------------------------
-                        -- COPY ROTATION TARGET
-                        ------------------------------------------------
-                        --
-                        -- Bot menghadap arah yang SAMA dengan
-                        -- Player/Admin.
-                        --
+                        -- COPY ROTATION
                         ------------------------------------------------
 
                         copyTargetRotation(
@@ -708,7 +741,7 @@ return {
         end
 
         ----------------------------------------------------------------
-        -- HANDLE COMMAND
+        -- COMMAND HANDLER
         ----------------------------------------------------------------
 
         local function handleCommand(
@@ -716,8 +749,15 @@ return {
             sender
         )
 
+            if not message
+                or not sender then
+
+                return
+
+            end
+
             ------------------------------------------------------------
-            -- ADMIN ONLY
+            -- ADMIN CHECK
             ------------------------------------------------------------
 
             if not Admin:IsAdmin(sender) then
@@ -725,7 +765,7 @@ return {
             end
 
             local lower =
-                message:lower()
+                message:lower():match("^%s*(.-)%s*$")
 
             ------------------------------------------------------------
             -- !BACKLINE
@@ -735,7 +775,7 @@ return {
 
                 startBackline(sender)
 
-                return
+                return true
 
             end
 
@@ -761,9 +801,16 @@ return {
                         target
                     )
 
+                else
+
+                    warn(
+                        "[BACKLINE] Player tidak ditemukan:",
+                        targetName
+                    )
+
                 end
 
-                return
+                return true
 
             end
 
@@ -774,98 +821,32 @@ return {
             if lower == "!stop"
                 or lower == "!unbackline" then
 
-                vars.ActiveMode = nil
+                if vars.ActiveMode
+                    == "backline" then
 
-                stopBackline()
+                    vars.ActiveMode = nil
 
-                return
-
-            end
-
-        end
-
-        ----------------------------------------------------------------
-        -- TEXT CHAT SERVICE
-        ----------------------------------------------------------------
-
-        if TextChatService
-            and TextChatService.TextChannels then
-
-            local channel =
-                TextChatService.TextChannels:FindFirstChild(
-                    "RBXGeneral"
-                )
-
-            if channel then
-
-                channel.OnIncomingMessage =
-                    function(message)
-
-                        local userId =
-                            message.TextSource
-                            and message.TextSource.UserId
-
-                        local sender =
-                            userId
-                            and Players:GetPlayerByUserId(
-                                userId
-                            )
-
-                        if sender then
-
-                            handleCommand(
-                                message.Text,
-                                sender
-                            )
-
-                        end
-
-                    end
-
-            end
-
-        end
-
-        ----------------------------------------------------------------
-        -- OLD CHAT
-        ----------------------------------------------------------------
-
-        for _, player in ipairs(
-            Players:GetPlayers()
-        ) do
-
-            player.Chatted:Connect(
-                function(message)
-
-                    handleCommand(
-                        message,
-                        player
-                    )
+                    stopBackline()
 
                 end
-            )
+
+                return true
+
+            end
+
+            return false
 
         end
 
         ----------------------------------------------------------------
-        -- NEW PLAYER
+        -- REGISTER COMMAND KE CENTRAL BOT
         ----------------------------------------------------------------
 
-        Players.PlayerAdded:Connect(
-            function(player)
+        vars.CommandHandlers.backline =
+            handleCommand
 
-                player.Chatted:Connect(
-                    function(message)
-
-                        handleCommand(
-                            message,
-                            player
-                        )
-
-                    end
-                )
-
-            end
+        print(
+            "[BACKLINE] Command handler registered"
         )
 
         ----------------------------------------------------------------
@@ -887,13 +868,24 @@ return {
                     == "backline"
                     and targetPlayer then
 
-                    startBackline(
+                    local target =
                         targetPlayer
+
+                    startBackline(
+                        target
                     )
 
                 end
 
             end
+        )
+
+        ----------------------------------------------------------------
+        -- READY
+        ----------------------------------------------------------------
+
+        print(
+            "✅ [BACKLINE] System ready"
         )
 
     end

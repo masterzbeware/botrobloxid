@@ -17,15 +17,15 @@ return {
         end
 
         --------------------------------------------------
-        -- GLOBAL MODE SYSTEM
+        -- GLOBAL VARIABLES
         --------------------------------------------------
 
         _G.BotVars = _G.BotVars or {}
 
-        _G.BotVars.ModeControllers =
-            _G.BotVars.ModeControllers or {}
-
         local vars = _G.BotVars
+
+        vars.ModeControllers =
+            vars.ModeControllers or {}
 
         --------------------------------------------------
         -- LOAD ADMIN
@@ -35,6 +35,11 @@ return {
             "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
         ))()
 
+        if not Admin then
+            warn("[CIRCLE] Gagal load Admin.lua")
+            return
+        end
+
         --------------------------------------------------
         -- LOAD DISTANCE
         --------------------------------------------------
@@ -43,26 +48,28 @@ return {
             "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Distance.lua"
         ))()
 
+        if not Distance then
+            warn("[CIRCLE] Gagal load Distance.lua")
+            return
+        end
+
         --------------------------------------------------
         -- CHARACTER
         --------------------------------------------------
 
-        local humanoid
-        local myHRP
+        local humanoid = nil
+        local myHRP = nil
 
         --------------------------------------------------
         -- STATE
         --------------------------------------------------
 
-        local cricleActive = false
-        local cricleConnection = nil
+        local circleActive = false
+        local circleConnection = nil
         local targetPlayer = nil
 
         --------------------------------------------------
         -- BOT ORDER
-        --------------------------------------------------
-        -- BOT 1 - BOT 11 IKUT FORMASI
-        -- BOT 12+ TIDAK IKUT
         --------------------------------------------------
 
         local botOrder = {
@@ -82,19 +89,11 @@ return {
         }
 
         --------------------------------------------------
-        -- FORMATION SETTINGS
-        --------------------------------------------------
-
-        local baseDistance = 5
-
-        local stopThreshold = 1.5
-
-        --------------------------------------------------
         -- CIRCLE SETTINGS
         --------------------------------------------------
 
-        -- Jarak bot dari player
         local circleRadius = 8
+        local stopThreshold = 1.5
 
         --------------------------------------------------
         -- UPDATE CHARACTER
@@ -104,118 +103,60 @@ return {
 
             local character =
                 LocalPlayer.Character
-                or LocalPlayer.CharacterAdded:Wait()
+
+            if not character then
+                character =
+                    LocalPlayer.CharacterAdded:Wait()
+            end
 
             humanoid =
-                character:WaitForChild("Humanoid")
+                character:WaitForChild(
+                    "Humanoid",
+                    10
+                )
 
             myHRP =
                 character:WaitForChild(
-                    "HumanoidRootPart"
+                    "HumanoidRootPart",
+                    10
                 )
 
-            humanoid.AutoRotate = true
+            if humanoid then
+                humanoid.AutoRotate = true
+            end
+
+            print(
+                "[CIRCLE] Character updated:",
+                LocalPlayer.Name
+            )
 
         end
 
         updateCharacter()
 
         --------------------------------------------------
-        -- SEND CHAT
+        -- STOP CIRCLE
         --------------------------------------------------
 
-        local function sendChat(message)
+        local function stopCircle()
 
-            if not message then
-                return
-            end
-
-            local success = false
-
-            --------------------------------------------------
-            -- TEXT CHAT
-            --------------------------------------------------
-
-            if TextChatService
-                and TextChatService.TextChannels then
-
-                local channel =
-                    TextChatService.TextChannels
-                    :FindFirstChild("RBXGeneral")
-
-                if channel then
-
-                    pcall(function()
-
-                        channel:SendAsync(message)
-
-                    end)
-
-                    success = true
-
-                end
-
-            end
-
-            --------------------------------------------------
-            -- OLD CHAT FALLBACK
-            --------------------------------------------------
-
-            if not success then
-
-                pcall(function()
-
-                    local chatEvents =
-                        ReplicatedStorage
-                        :FindFirstChild(
-                            "DefaultChatSystemChatEvents"
-                        )
-
-                    if not chatEvents then
-                        return
-                    end
-
-                    local sayMessageRequest =
-                        chatEvents:FindFirstChild(
-                            "SayMessageRequest"
-                        )
-
-                    if sayMessageRequest then
-
-                        sayMessageRequest:FireServer(
-                            message,
-                            "All"
-                        )
-
-                    end
-
-                end)
-
-            end
-
-        end
-
-        --------------------------------------------------
-        -- STOP CRICLE
-        --------------------------------------------------
-
-        local function stopCricle()
-
-            cricleActive = false
+            circleActive = false
             targetPlayer = nil
 
-            if cricleConnection then
+            if circleConnection then
 
-                cricleConnection:Disconnect()
-                cricleConnection = nil
+                circleConnection:Disconnect()
+                circleConnection = nil
 
             end
 
             if humanoid then
-
                 humanoid.AutoRotate = true
-
             end
+
+            print(
+                "[CIRCLE] Stopped"
+            )
 
         end
 
@@ -223,8 +164,8 @@ return {
         -- REGISTER CONTROLLER
         --------------------------------------------------
 
-        vars.ModeControllers.cricle =
-            stopCricle
+        vars.ModeControllers.circle =
+            stopCircle
 
         --------------------------------------------------
         -- STOP OTHER MODES
@@ -232,13 +173,16 @@ return {
 
         local function stopOtherModes()
 
-            for name, stopFunction in
-                pairs(vars.ModeControllers) do
+            for name, stopFunction in pairs(
+                vars.ModeControllers
+            ) do
 
-                if name ~= "cricle"
+                if name ~= "circle"
                     and type(stopFunction) == "function" then
 
-                    pcall(stopFunction)
+                    pcall(function()
+                        stopFunction()
+                    end)
 
                 end
 
@@ -262,8 +206,9 @@ return {
             -- EXACT MATCH
             --------------------------------------------------
 
-            for _, player in
-                ipairs(Players:GetPlayers()) do
+            for _, player in ipairs(
+                Players:GetPlayers()
+            ) do
 
                 if player.Name:lower() == name
                     or player.DisplayName:lower() == name then
@@ -278,8 +223,9 @@ return {
             -- PARTIAL MATCH
             --------------------------------------------------
 
-            for _, player in
-                ipairs(Players:GetPlayers()) do
+            for _, player in ipairs(
+                Players:GetPlayers()
+            ) do
 
                 if player.Name:lower():find(
                     name,
@@ -303,21 +249,32 @@ return {
         end
 
         --------------------------------------------------
-        -- GET DISTANCE
+        -- GET BOT INDEX
+        --------------------------------------------------
+
+        local function getBotIndex()
+
+            return table.find(
+                botOrder,
+                tostring(LocalPlayer.UserId)
+            )
+
+        end
+
+        --------------------------------------------------
+        -- GET BOT DISTANCE
         --------------------------------------------------
 
         local function getBotDistance(player)
 
-            local distance = baseDistance
+            local distance = 5
 
             --------------------------------------------------
-            -- ADMIN DISTANCE
+            -- ADMIN DEFAULT
             --------------------------------------------------
 
             if Admin:IsAdmin(player) then
-
-                distance = baseDistance
-
+                distance = 5
             end
 
             --------------------------------------------------
@@ -331,9 +288,7 @@ return {
                 )
 
             if specialDistance then
-
                 distance = specialDistance
-
             end
 
             return distance
@@ -343,35 +298,48 @@ return {
         --------------------------------------------------
         -- GET CIRCLE POSITION
         --------------------------------------------------
-        --
-        --              B1
-        --         B11       B2
-        --
-        --     B10             B3
-        --
-        --   B9        PLAYER      B4
-        --
-        --     B8             B5
-        --         B7       B6
-        --
-        --------------------------------------------------
 
-        local function getCriclePosition(
+        local function getCirclePosition(
             myIndex,
             targetHRP,
             distance
         )
 
             if not myIndex
-                or not targetHRP
-                or not distance then
+                or not targetHRP then
 
                 return nil
-
             end
 
             --------------------------------------------------
-            -- LOCAL AXIS
+            -- TOTAL BOT
+            --------------------------------------------------
+
+            local totalBots =
+                #botOrder
+
+            if totalBots <= 0 then
+                return nil
+            end
+
+            --------------------------------------------------
+            -- ANGLE
+            --------------------------------------------------
+
+            local angle =
+                ((myIndex - 1) / totalBots)
+                * math.pi
+                * 2
+
+            --------------------------------------------------
+            -- RADIUS
+            --------------------------------------------------
+
+            local radius =
+                circleRadius + distance
+
+            --------------------------------------------------
+            -- AXIS
             --------------------------------------------------
 
             local forward =
@@ -384,28 +352,7 @@ return {
                 targetHRP.Position
 
             --------------------------------------------------
-            -- CIRCLE RADIUS
-            --------------------------------------------------
-
-            local radius = circleRadius
-
-            --------------------------------------------------
-            -- TOTAL BOT
-            --------------------------------------------------
-
-            local totalBots =
-                #botOrder
-
-            --------------------------------------------------
-            -- ANGLE
-            --------------------------------------------------
-
-            local angle =
-                ((myIndex - 1) / totalBots)
-                * math.pi * 2
-
-            --------------------------------------------------
-            -- CIRCLE OFFSET
+            -- OFFSET
             --------------------------------------------------
 
             local forwardOffset =
@@ -425,13 +372,62 @@ return {
         end
 
         --------------------------------------------------
-        -- START CRICLE
+        -- FACE TARGET
         --------------------------------------------------
 
-        local function startCricle(player)
+        local function faceTarget(targetHRP)
+
+            if not targetHRP
+                or not myHRP then
+
+                return
+            end
+
+            local targetPosition =
+                targetHRP.Position
+
+            local lookPosition =
+                Vector3.new(
+                    targetPosition.X,
+                    myHRP.Position.Y,
+                    targetPosition.Z
+                )
+
+            myHRP.CFrame =
+                CFrame.lookAt(
+                    myHRP.Position,
+                    lookPosition
+                )
+
+        end
+
+        --------------------------------------------------
+        -- START CIRCLE
+        --------------------------------------------------
+
+        local function startCircle(player)
 
             if not player then
                 return
+            end
+
+            --------------------------------------------------
+            -- CHECK BOT INDEX FIRST
+            --------------------------------------------------
+
+            local myIndex =
+                getBotIndex()
+
+            if not myIndex then
+
+                warn(
+                    "[CIRCLE] Bot tidak terdaftar:",
+                    LocalPlayer.Name,
+                    LocalPlayer.UserId
+                )
+
+                return
+
             end
 
             --------------------------------------------------
@@ -441,94 +437,50 @@ return {
             stopOtherModes()
 
             --------------------------------------------------
+            -- STOP CONNECTION LAMA
+            --------------------------------------------------
+
+            if circleConnection then
+
+                circleConnection:Disconnect()
+                circleConnection = nil
+
+            end
+
+            --------------------------------------------------
             -- ACTIVE MODE
             --------------------------------------------------
 
             vars.ActiveMode =
-                "cricle"
+                "circle"
 
-            --------------------------------------------------
-            -- DISCONNECT OLD LOOP
-            --------------------------------------------------
-
-            if cricleConnection then
-
-                cricleConnection:Disconnect()
-                cricleConnection = nil
-
-            end
-
-            --------------------------------------------------
-            -- STATE
-            --------------------------------------------------
-
-            cricleActive = true
+            circleActive = true
             targetPlayer = player
 
-            --------------------------------------------------
-            -- CHAT
-            --------------------------------------------------
-
-            sendChat("Yes, Sir!")
-
-            --------------------------------------------------
-            -- FIND BOT INDEX
-            --------------------------------------------------
-
-            local myIndex =
-                table.find(
-                    botOrder,
-                    tostring(LocalPlayer.UserId)
-                )
-
-            --------------------------------------------------
-            -- BOT TIDAK TERDAFTAR
-            --------------------------------------------------
-
-            if not myIndex then
-
-                print(
-                    "[CRICLE]",
-                    "Bot tidak termasuk formasi:",
-                    LocalPlayer.Name,
-                    LocalPlayer.UserId
-                )
-
-                stopCricle()
-
-                return
-
-            end
-
-            --------------------------------------------------
-            -- DEBUG
-            --------------------------------------------------
-
             print(
-                "[CRICLE]",
+                "[CIRCLE] Started",
+                "Target:",
+                player.Name,
                 "Bot Index:",
-                myIndex,
-                "UserId:",
-                LocalPlayer.UserId
+                myIndex
             )
 
             --------------------------------------------------
             -- HEARTBEAT
             --------------------------------------------------
 
-            cricleConnection =
+            circleConnection =
                 RunService.Heartbeat:Connect(
                     function()
 
                         --------------------------------------------------
-                        -- MODE CHANGED
+                        -- MODE CHECK
                         --------------------------------------------------
 
                         if vars.ActiveMode
-                            ~= "cricle" then
+                            ~= "circle" then
 
-                            stopCricle()
-
+                            stopCircle()
                             return
 
                         end
@@ -537,7 +489,7 @@ return {
                         -- ACTIVE CHECK
                         --------------------------------------------------
 
-                        if not cricleActive then
+                        if not circleActive then
                             return
                         end
 
@@ -588,20 +540,20 @@ return {
                         -- DISTANCE
                         --------------------------------------------------
 
-                        local distance =
+                        local botDistance =
                             getBotDistance(
                                 targetPlayer
                             )
 
                         --------------------------------------------------
-                        -- CIRCLE POSITION
+                        -- POSITION
                         --------------------------------------------------
 
                         local targetPosition =
-                            getCriclePosition(
+                            getCirclePosition(
                                 myIndex,
                                 targetHRP,
-                                distance
+                                botDistance
                             )
 
                         if not targetPosition then
@@ -609,7 +561,7 @@ return {
                         end
 
                         --------------------------------------------------
-                        -- DISTANCE TO FORMATION
+                        -- DISTANCE TO POSITION
                         --------------------------------------------------
 
                         local distanceToTarget =
@@ -636,27 +588,18 @@ return {
                         end
 
                         --------------------------------------------------
-                        -- REACHED FORMATION
+                        -- REACHED POSITION
                         --------------------------------------------------
 
                         humanoid.AutoRotate = false
 
                         --------------------------------------------------
-                        -- FACE CENTER / PLAYER
+                        -- FACE CENTER
                         --------------------------------------------------
 
-                        local lookPosition =
-                            targetHRP.Position
-
-                        myHRP.CFrame =
-                            CFrame.lookAt(
-                                myHRP.Position,
-                                Vector3.new(
-                                    lookPosition.X,
-                                    myHRP.Position.Y,
-                                    lookPosition.Z
-                                )
-                            )
+                        faceTarget(
+                            targetHRP
+                        )
 
                     end
                 )
@@ -672,6 +615,10 @@ return {
             sender
         )
 
+            if not message or not sender then
+                return
+            end
+
             --------------------------------------------------
             -- ADMIN ONLY
             --------------------------------------------------
@@ -681,29 +628,27 @@ return {
             end
 
             local lower =
-                message:lower()
+                message:lower():match("^%s*(.-)%s*$")
 
             --------------------------------------------------
-            -- !CRICLE
+            -- !CIRCLE
             --------------------------------------------------
 
             if lower == "!circle" then
 
-                startCricle(
-                    sender
-                )
+                startCircle(sender)
 
                 return
 
             end
 
             --------------------------------------------------
-            -- !CRICLE PLAYER
+            -- !CIRCLE PLAYER
             --------------------------------------------------
 
             local targetName =
                 lower:match(
-                    "^!cricle%s+(.+)$"
+                    "^!circle%s+(.+)$"
                 )
 
             if targetName then
@@ -715,8 +660,15 @@ return {
 
                 if target then
 
-                    startCricle(
+                    startCircle(
                         target
+                    )
+
+                else
+
+                    warn(
+                        "[CIRCLE] Target tidak ditemukan:",
+                        targetName
                     )
 
                 end
@@ -730,11 +682,11 @@ return {
             --------------------------------------------------
 
             if lower == "!stop"
-                or lower == "!uncricle" then
+                or lower == "!uncircle" then
 
                 vars.ActiveMode = nil
 
-                stopCricle()
+                stopCircle()
 
                 return
 
@@ -743,52 +695,30 @@ return {
         end
 
         --------------------------------------------------
-        -- TEXT CHAT SERVICE
+        -- COMMAND HANDLER
+        --------------------------------------------------
+        -- PENTING:
+        -- JANGAN memasang OnIncomingMessage di sini.
+        --
+        -- Bot.lua yang menjadi satu-satunya pengelola chat.
         --------------------------------------------------
 
-        if TextChatService
-            and TextChatService.TextChannels then
+        vars.CommandHandlers =
+            vars.CommandHandlers or {}
 
-            local channel =
-                TextChatService.TextChannels
-                :FindFirstChild("RBXGeneral")
-
-            if channel then
-
-                channel.OnIncomingMessage =
-                    function(message)
-
-                        local userId =
-                            message.TextSource
-                            and message.TextSource.UserId
-
-                        local sender =
-                            userId
-                            and Players:GetPlayerByUserId(
-                                userId
-                            )
-
-                        if sender then
-
-                            handleCommand(
-                                message.Text,
-                                sender
-                            )
-
-                        end
-
-                    end
-
-            end
-
-        end
+        vars.CommandHandlers.circle =
+            handleCommand
 
         --------------------------------------------------
-        -- OLD CHAT FALLBACK
+        -- PLAYER CHAT FALLBACK
+        --------------------------------------------------
+        -- Tetap digunakan untuk kompatibilitas.
+        -- Bot.lua juga akan menangani TextChatService.
         --------------------------------------------------
 
-        for _, player in
-            ipairs(Players:GetPlayers()) do
+        for _, player in ipairs(
+            Players:GetPlayers()
+        ) do
 
             player.Chatted:Connect(
                 function(message)
@@ -825,7 +755,7 @@ return {
         )
 
         --------------------------------------------------
-        -- RESPAWN
+        -- CHARACTER RESPAWN
         --------------------------------------------------
 
         LocalPlayer.CharacterAdded:Connect(
@@ -836,15 +766,18 @@ return {
                 updateCharacter()
 
                 --------------------------------------------------
-                -- RESTART CRICLE
+                -- RESTART CIRCLE
                 --------------------------------------------------
 
                 if vars.ActiveMode
-                    == "cricle"
+                    == "circle"
                     and targetPlayer then
 
-                    startCricle(
+                    local target =
                         targetPlayer
+
+                    startCircle(
+                        target
                     )
 
                 end
@@ -857,7 +790,7 @@ return {
         --------------------------------------------------
 
         print(
-            "[CRICLE] Cricle.lua aktif!"
+            "[CIRCLE] Circle.lua aktif!"
         )
 
     end
