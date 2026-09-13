@@ -48,7 +48,9 @@ return {
 
 		if not Admin then
 
-			warn("[THREECOLUMN] Gagal load Admin.lua")
+			warn(
+				"[THREECOLUMN] Gagal load Admin.lua"
+			)
 
 			return
 
@@ -76,7 +78,9 @@ return {
 
 		if not Distance then
 
-			warn("[THREECOLUMN] Gagal load Distance.lua")
+			warn(
+				"[THREECOLUMN] Gagal load Distance.lua"
+			)
 
 			return
 
@@ -104,7 +108,7 @@ return {
 		local modeToken = 0
 
 		----------------------------------------------------------------
-		-- FORMATION SETTINGS
+		-- THREE COLUMN SETTINGS
 		----------------------------------------------------------------
 
 		-- Jarak baris pertama dari Player/Admin
@@ -124,6 +128,16 @@ return {
 
 		----------------------------------------------------------------
 		-- BOT ORDER
+		----------------------------------------------------------------
+		--
+		--             PLAYER
+		--            / ADMIN
+		--
+		--       B1      B2      B3
+		--       B4      B5      B6
+		--       B7      B8      B9
+		--       B10     B11
+		--
 		----------------------------------------------------------------
 
 		local botOrder = {
@@ -167,6 +181,87 @@ return {
 		end
 
 		updateCharacter()
+
+		----------------------------------------------------------------
+		-- SEND CHAT
+		----------------------------------------------------------------
+
+		local function sendChat(message)
+
+			if not message then
+				return
+			end
+
+			local sent = false
+
+			------------------------------------------------------------
+			-- TEXT CHAT
+			------------------------------------------------------------
+
+			pcall(function()
+
+				local textChannels =
+					TextChatService:FindFirstChild(
+						"TextChannels"
+					)
+
+				if not textChannels then
+					return
+				end
+
+				local channel =
+					textChannels:FindFirstChild(
+						"RBXGeneral"
+					)
+
+				if not channel then
+					return
+				end
+
+				channel:SendAsync(
+					message
+				)
+
+				sent = true
+
+			end)
+
+			------------------------------------------------------------
+			-- OLD CHAT
+			------------------------------------------------------------
+
+			if not sent then
+
+				pcall(function()
+
+					local chatEvents =
+						ReplicatedStorage:FindFirstChild(
+							"DefaultChatSystemChatEvents"
+						)
+
+					if not chatEvents then
+						return
+					end
+
+					local sayMessageRequest =
+						chatEvents:FindFirstChild(
+							"SayMessageRequest"
+						)
+
+					if sayMessageRequest then
+
+						sayMessageRequest:FireServer(
+							message,
+							"All"
+						)
+
+					end
+
+				end)
+
+			end
+
+		end
 
 		----------------------------------------------------------------
 		-- STOP THREE COLUMN
@@ -213,7 +308,9 @@ return {
 			-- CLEAR MODE
 			------------------------------------------------------------
 
-			if vars.ActiveMode == "threecolumn" then
+			if vars.ActiveMode
+				== "threecolumn"
+			then
 
 				vars.ActiveMode = nil
 
@@ -260,8 +357,12 @@ return {
 
 		local function findPlayerByName(name)
 
-			if not name or name == "" then
+			if not name
+				or name == ""
+			then
+
 				return nil
+
 			end
 
 			name = name:lower()
@@ -274,8 +375,11 @@ return {
 				Players:GetPlayers()
 			) do
 
-				if player.Name:lower() == name
-					or player.DisplayName:lower() == name
+				if player.Name:lower()
+					== name
+
+					or player.DisplayName:lower()
+					== name
 				then
 
 					return player
@@ -297,6 +401,7 @@ return {
 					1,
 					true
 				)
+
 					or player.DisplayName:lower():find(
 						name,
 						1,
@@ -326,11 +431,17 @@ return {
 
 				local specialDistance =
 					Distance:GetDistance(
-						tostring(LocalPlayer.UserId),
-						tostring(player.UserId)
+						tostring(
+							LocalPlayer.UserId
+						),
+						tostring(
+							player.UserId
+						)
 					)
 
-				if typeof(specialDistance) == "number" then
+				if typeof(specialDistance)
+					== "number"
+				then
 
 					distance =
 						specialDistance
@@ -344,11 +455,13 @@ return {
 		end
 
 		----------------------------------------------------------------
-		-- GET FORMATION POSITION
+		-- GET THREE COLUMN POSITION
 		----------------------------------------------------------------
 		--
-		--                 PLAYER
-		--                / ADMIN
+		-- FORMASI DI BELAKANG PLAYER
+		--
+		--                  PLAYER
+		--                 / ADMIN
 		--
 		--          B1      B2      B3
 		--          B4      B5      B6
@@ -372,14 +485,32 @@ return {
 
 			end
 
+			------------------------------------------------------------
+			-- TARGET POSITION
+			------------------------------------------------------------
+
 			local targetPosition =
 				targetHRP.Position
+
+			------------------------------------------------------------
+			-- TARGET DIRECTION
+			------------------------------------------------------------
 
 			local forward =
 				targetHRP.CFrame.LookVector
 
 			local right =
 				targetHRP.CFrame.RightVector
+
+			------------------------------------------------------------
+			-- IMPORTANT
+			--
+			-- -forward = BELAKANG Player
+			--
+			------------------------------------------------------------
+
+			local backward =
+				-forward
 
 			------------------------------------------------------------
 			-- B1 / B2 / B3
@@ -399,16 +530,16 @@ return {
 					*
 					columnSpacing
 
-				local forwardOffset =
+				local backwardOffset =
 					formationDistance
 
 				return
 					targetPosition
 					+
 					(
-						forward
+						backward
 						*
-						forwardOffset
+						backwardOffset
 					)
 					+
 					(
@@ -443,7 +574,7 @@ return {
 					*
 					columnSpacing
 
-				local forwardOffset =
+				local backwardOffset =
 					formationDistance
 					+
 					rowSpacing
@@ -452,9 +583,9 @@ return {
 					targetPosition
 					+
 					(
-						forward
+						backward
 						*
-						forwardOffset
+						backwardOffset
 					)
 					+
 					(
@@ -489,7 +620,7 @@ return {
 					*
 					columnSpacing
 
-				local forwardOffset =
+				local backwardOffset =
 					formationDistance
 					+
 					(
@@ -500,9 +631,9 @@ return {
 					targetPosition
 					+
 					(
-						forward
+						backward
 						*
-						forwardOffset
+						backwardOffset
 					)
 					+
 					(
@@ -541,7 +672,7 @@ return {
 
 				end
 
-				local forwardOffset =
+				local backwardOffset =
 					formationDistance
 					+
 					(
@@ -552,9 +683,9 @@ return {
 					targetPosition
 					+
 					(
-						forward
+						backward
 						*
-						forwardOffset
+						backwardOffset
 					)
 					+
 					(
@@ -576,7 +707,11 @@ return {
 		end
 
 		----------------------------------------------------------------
-		-- SET ROTATION
+		-- SET FORMATION ROTATION
+		----------------------------------------------------------------
+		--
+		-- Semua bot menghadap arah jalan Player/Admin.
+		--
 		----------------------------------------------------------------
 
 		local function setFormationRotation(
@@ -752,6 +887,10 @@ return {
 			)
 
 			print(
+				"[THREECOLUMN] Formation: BEHIND"
+			)
+
+			print(
 				"[THREECOLUMN] ==========================="
 			)
 
@@ -774,40 +913,6 @@ return {
 			------------------------------------------------------------
 			-- CHAT
 			------------------------------------------------------------
-
-			sendChat = sendChat or function(message)
-
-				if not message then
-					return
-				end
-
-				pcall(function()
-
-					local textChannels =
-						TextChatService:FindFirstChild(
-							"TextChannels"
-						)
-
-					if not textChannels then
-						return
-					end
-
-					local channel =
-						textChannels:FindFirstChild(
-							"RBXGeneral"
-						)
-
-					if channel then
-
-						channel:SendAsync(
-							message
-						)
-
-					end
-
-				end)
-
-			end
 
 			sendChat(
 				"Yes, Sir!"
@@ -1038,6 +1143,41 @@ return {
 
 				startThreeColumn(
 					sender
+				)
+
+				return
+
+			end
+
+			------------------------------------------------------------
+			-- !THREELINE PLAYER
+			------------------------------------------------------------
+
+			local targetName =
+				lower:match(
+					"^!threeline%s+(.+)$"
+				)
+
+			if targetName then
+
+				local target =
+					findPlayerByName(
+						targetName
+					)
+
+				if not target then
+
+					warn(
+						"[THREECOLUMN] Player tidak ditemukan:",
+						targetName
+					)
+
+					return
+
+				end
+
+				startThreeColumn(
+					target
 				)
 
 				return
