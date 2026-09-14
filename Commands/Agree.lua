@@ -18,7 +18,6 @@ return {
 
         local AGREE_MESSAGES = {
             "Yes, Sir!",
-            "I understand, sir",
             "Got it, Sir",
             "Noted, Sir"
         }
