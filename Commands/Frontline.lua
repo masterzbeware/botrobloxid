@@ -46,20 +46,20 @@ return {
         local humanoid
         local myHRP
 
-        local forming = false
+        local frontlining = false
         local targetPlayer = nil
-        local formationConnection = nil
+        local frontlineConnection = nil
 
         ----------------------------------------------------------------
-        -- FORMATION SETTINGS
+        -- FORMATION DISTANCE
         ----------------------------------------------------------------
 
-        -- Jarak BOT dari Player/Admin
-        local adminFormationDistance = 6
-        local defaultBotFormationDistance = 5
+        -- Jarak barisan B1-B11 dari Player/Admin.
+        local adminFrontlineDistance = 6
+        local defaultBotFrontlineDistance = 6
 
-        -- Jarak antar BOT
-        local formationSpacing = 4
+        -- Jarak antar bot di barisan.
+        local formationSpacing = 3
 
         ----------------------------------------------------------------
         -- BOT ORDER
@@ -122,15 +122,12 @@ return {
                 if channel then
 
                     pcall(function()
-
                         channel:SendAsync(message)
-
                     end)
 
                     success = true
 
                 end
-
             end
 
             if not success then
@@ -167,25 +164,23 @@ return {
         end
 
         ----------------------------------------------------------------
-        -- STOP FORMATION
+        -- STOP FRONTLINE
         ----------------------------------------------------------------
 
-        local function stopFormation()
+        local function stopFrontline()
 
-            forming = false
+            frontlining = false
             targetPlayer = nil
 
-            if formationConnection then
+            if frontlineConnection then
 
-                formationConnection:Disconnect()
-                formationConnection = nil
+                frontlineConnection:Disconnect()
+                frontlineConnection = nil
 
             end
 
             if humanoid then
-
                 humanoid.AutoRotate = true
-
             end
 
         end
@@ -194,8 +189,7 @@ return {
         -- REGISTER CONTROLLER
         ----------------------------------------------------------------
 
-        _G.BotVars.ModeControllers.formation =
-            stopFormation
+        _G.BotVars.ModeControllers.frontline = stopFrontline
 
         ----------------------------------------------------------------
         -- STOP SEMUA MODE LAIN
@@ -207,7 +201,7 @@ return {
                 _G.BotVars.ModeControllers
             ) do
 
-                if name ~= "formation"
+                if name ~= "frontline"
                     and type(stopFunction) == "function" then
 
                     pcall(stopFunction)
@@ -244,39 +238,10 @@ return {
         end
 
         ----------------------------------------------------------------
-        -- GET FORMATION OFFSET
-        ----------------------------------------------------------------
-        --
-        -- FORMASI:
-        --
-        -- BOT 1   BOT 2   BOT 3   BOT 4   BOT 5 ... BOT 11
-        --   ↓       ↓       ↓       ↓       ↓         ↓
-        --                    PLAYER
-        --
-        -- Semua BOT berada dalam SATU BARIS.
-        --
+        -- START FRONTLINE
         ----------------------------------------------------------------
 
-        local function getFormationOffset(myIndex)
-
-            local totalBots =
-                #botOrder
-
-            local centerIndex =
-                (totalBots + 1) / 2
-
-            local offset =
-                myIndex - centerIndex
-
-            return offset * formationSpacing
-
-        end
-
-        ----------------------------------------------------------------
-        -- START FORMATION
-        ----------------------------------------------------------------
-
-        local function startFormation(player)
+        local function startFrontline(player)
 
             if not player then
                 return
@@ -292,19 +257,23 @@ return {
             -- SET ACTIVE MODE
             ------------------------------------------------------------
 
-            _G.BotVars.ActiveMode =
-                "formation"
+            _G.BotVars.ActiveMode = "frontline"
 
             ------------------------------------------------------------
             -- STOP CONNECTION LAMA
             ------------------------------------------------------------
 
-            if formationConnection then
+            if frontlineConnection then
 
-                formationConnection:Disconnect()
-                formationConnection = nil
+                frontlineConnection:Disconnect()
+                frontlineConnection = nil
 
             end
+
+            frontlining = true
+            targetPlayer = player
+
+            sendChat("Yes, Sir!")
 
             ------------------------------------------------------------
             -- CARI INDEX BOT
@@ -318,26 +287,17 @@ return {
 
             if not myIndex then
 
-                stopFormation()
+                stopFrontline()
 
                 return
 
             end
 
             ------------------------------------------------------------
-            -- AKTIFKAN FORMATION
+            -- FRONTLINE LOOP
             ------------------------------------------------------------
 
-            forming = true
-            targetPlayer = player
-
-            sendChat("Formation!")
-
-            ------------------------------------------------------------
-            -- FORMATION LOOP
-            ------------------------------------------------------------
-
-            formationConnection =
+            frontlineConnection =
                 RunService.Heartbeat:Connect(
                     function()
 
@@ -345,10 +305,9 @@ return {
                         -- JIKA MODE SUDAH BERGANTI
                         ------------------------------------------------
 
-                        if _G.BotVars.ActiveMode
-                            ~= "formation" then
+                        if _G.BotVars.ActiveMode ~= "frontline" then
 
-                            stopFormation()
+                            stopFrontline()
 
                             return
 
@@ -358,7 +317,7 @@ return {
                         -- VALIDASI
                         ------------------------------------------------
 
-                        if not forming then
+                        if not frontlining then
                             return
                         end
 
@@ -398,18 +357,14 @@ return {
                         ------------------------------------------------
 
                         local distance =
-                            defaultBotFormationDistance
+                            defaultBotFrontlineDistance
 
                         if Admin:IsAdmin(targetPlayer) then
 
                             distance =
-                                adminFormationDistance
+                                adminFrontlineDistance
 
                         end
-
-                        ------------------------------------------------
-                        -- SPECIAL DISTANCE
-                        ------------------------------------------------
 
                         local specialDistance =
                             Distance:GetDistance(
@@ -425,67 +380,38 @@ return {
                         end
 
                         ------------------------------------------------
-                        -- FORMATION OFFSET
+                        -- FORMATION POSITION
+                        --
+                        -- B1  B2  B3 ... B11
+                        --             Player/Admin
+                        --
+                        -- Semua bot berada DI DEPAN target.
+                        -- myIndex 1..11 diubah menjadi offset
+                        -- kiri/kanan dengan B6 sebagai titik tengah.
                         ------------------------------------------------
+
+                        local centerIndex =
+                            (#botOrder + 1) / 2
 
                         local horizontalOffset =
-                            getFormationOffset(
-                                myIndex
-                            )
+                            (myIndex - centerIndex)
+                            * formationSpacing
 
-                        ------------------------------------------------
-                        -- PLAYER DIRECTION
-                        ------------------------------------------------
-
-                        local lookVector =
-                            targetHRP.CFrame.LookVector
-
-                        local rightVector =
-                            targetHRP.CFrame.RightVector
-
-                        ------------------------------------------------
-                        -- POSISI DI DEPAN PLAYER
-                        ------------------------------------------------
-                        --
-                        -- Player menghadap ke depan.
-                        --
-                        -- BOT ditempatkan di depan Player.
-                        --
-
-                        local frontPosition =
+                        local targetPosition =
                             targetHRP.Position
                             +
                             (
-                                lookVector
+                                targetHRP.CFrame.LookVector
                                 * distance
                             )
-
-                        ------------------------------------------------
-                        -- POSISI FINAL BOT
-                        ------------------------------------------------
-                        --
-                        -- RightVector menentukan kiri-kanan.
-                        --
-                        -- Bot tengah:
-                        -- BOT 6
-                        --
-                        -- Bot kiri:
-                        -- BOT 1
-                        --
-                        -- Bot kanan:
-                        -- BOT 11
-                        --
-
-                        local targetPosition =
-                            frontPosition
                             +
                             (
-                                rightVector
+                                targetHRP.CFrame.RightVector
                                 * horizontalOffset
                             )
 
                         ------------------------------------------------
-                        -- JARAK KE SLOT FORMASI
+                        -- JARAK
                         ------------------------------------------------
 
                         local distanceToTarget =
@@ -496,7 +422,7 @@ return {
                             ).Magnitude
 
                         ------------------------------------------------
-                        -- MENUJU SLOT FORMASI
+                        -- JALAN
                         ------------------------------------------------
 
                         if distanceToTarget > 1.5 then
@@ -512,31 +438,22 @@ return {
                         end
 
                         ------------------------------------------------
-                        -- SUDAH SAMPAI SLOT
+                        -- SUDAH SAMPAI
                         ------------------------------------------------
 
                         humanoid.AutoRotate = false
 
-                        ------------------------------------------------
-                        -- MENGHADAP PLAYER / ADMIN
-                        ------------------------------------------------
-
-                        local direction =
-                            targetHRP.Position
+                        local adminRotation =
+                            targetHRP.CFrame
                             -
-                            myHRP.Position
+                            targetHRP.Position
 
-                        if direction.Magnitude > 0.01 then
-
-                            myHRP.CFrame =
-                                CFrame.lookAt(
-                                    myHRP.Position,
-                                    myHRP.Position
-                                    +
-                                    direction.Unit
-                                )
-
-                        end
+                        myHRP.CFrame =
+                            CFrame.new(
+                                myHRP.Position
+                            )
+                            *
+                            adminRotation
 
                     end
                 )
@@ -552,10 +469,6 @@ return {
             sender
         )
 
-            ------------------------------------------------------------
-            -- HANYA ADMIN
-            ------------------------------------------------------------
-
             if not Admin:IsAdmin(sender) then
                 return
             end
@@ -564,24 +477,24 @@ return {
                 message:lower()
 
             ------------------------------------------------------------
-            -- !FORMATION
+            -- !FRONTLINE
             ------------------------------------------------------------
 
-            if lower == "!formation" then
+            if lower == "!frontline" then
 
-                startFormation(sender)
+                startFrontline(sender)
 
                 return
 
             end
 
             ------------------------------------------------------------
-            -- !FORMATION PLAYER
+            -- !FRONTLINE PLAYER
             ------------------------------------------------------------
 
             local targetName =
                 lower:match(
-                    "^!formation%s+(.+)$"
+                    "^!frontline%s+(.+)$"
                 )
 
             if targetName then
@@ -593,7 +506,7 @@ return {
 
                 if target then
 
-                    startFormation(target)
+                    startFrontline(target)
 
                 end
 
@@ -605,11 +518,12 @@ return {
             -- !STOP
             ------------------------------------------------------------
 
-            if lower == "!stop" then
+            if lower == "!stop"
+                or lower == "!unfrontline" then
 
                 _G.BotVars.ActiveMode = nil
 
-                stopFormation()
+                stopFrontline()
 
                 return
 
@@ -712,11 +626,10 @@ return {
 
                 updateCharacter()
 
-                if _G.BotVars.ActiveMode
-                    == "formation"
+                if _G.BotVars.ActiveMode == "frontline"
                     and targetPlayer then
 
-                    startFormation(
+                    startFrontline(
                         targetPlayer
                     )
 
