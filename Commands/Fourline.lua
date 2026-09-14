@@ -640,83 +640,77 @@ return {
                             row * rowSpacing
 
 
-                        ------------------------------------------------
-                        -- TARGET POSITION
-                        ------------------------------------------------
+ ------------------------------------------------
+-- TARGET POSITION
+------------------------------------------------
 
-                        local targetPosition =
-                            targetHRP.Position
+local targetPosition =
+    targetHRP.Position
 
-                            +
+    -
 
-                            (
-                                targetHRP.CFrame.LookVector
-                                * (
-                                    distance
-                                    + depthOffset
-                                )
-                            )
+    (
+        targetHRP.CFrame.LookVector
+        * (
+            distance
+            + depthOffset
+        )
+    )
 
-                            +
+    +
 
-                            (
-                                targetHRP.CFrame.RightVector
-                                * horizontalOffset
-                            )
-
-
-                        ------------------------------------------------
-                        -- DISTANCE KE TARGET POSITION
-                        ------------------------------------------------
-
-                        local distanceToTarget =
-                            (
-                                myHRP.Position
-                                -
-                                targetPosition
-                            ).Magnitude
+    (
+        targetHRP.CFrame.RightVector
+        * horizontalOffset
+    )
 
 
-                        ------------------------------------------------
-                        -- MOVE
-                        ------------------------------------------------
+------------------------------------------------
+-- DISTANCE KE TARGET POSITION
+------------------------------------------------
 
-                        if distanceToTarget > 1.5 then
-
-                            humanoid.AutoRotate = true
-
-                            humanoid:MoveTo(
-                                targetPosition
-                            )
-
-                            return
-
-                        end
+local distanceToTarget =
+    (
+        myHRP.Position
+        -
+        targetPosition
+    ).Magnitude
 
 
-                        ------------------------------------------------
-                        -- SUDAH SAMPAI
-                        ------------------------------------------------
+------------------------------------------------
+-- MOVE
+------------------------------------------------
 
-                        humanoid.AutoRotate = false
+if distanceToTarget > 1.5 then
+
+    humanoid.AutoRotate = true
+
+    humanoid:MoveTo(
+        targetPosition
+    )
+
+    return
+
+end
 
 
-                        local targetRotation =
-                            targetHRP.CFrame
-                            - targetHRP.Position
+------------------------------------------------
+-- SUDAH SAMPAI
+------------------------------------------------
+
+humanoid.AutoRotate = false
 
 
-                        myHRP.CFrame =
-                            CFrame.new(
-                                myHRP.Position
-                            )
-                            *
-                            targetRotation
+------------------------------------------------
+-- HADAP KE ARAH YANG SAMA DENGAN PLAYER
+------------------------------------------------
 
-                    end
-                )
-
-        end
+myHRP.CFrame =
+    CFrame.lookAt(
+        myHRP.Position,
+        myHRP.Position
+        + targetHRP.CFrame.LookVector
+    )
 
 
         ----------------------------------------------------------------
