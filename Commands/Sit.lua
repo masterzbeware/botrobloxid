@@ -1,0 +1,630 @@
+return {
+    Execute = function()
+
+        ----------------------------------------------------------------
+        -- SERVICES
+        ----------------------------------------------------------------
+
+        local Players = game:GetService("Players")
+
+        local LocalPlayer = Players.LocalPlayer
+
+        if not LocalPlayer then
+            warn("[Sit] LocalPlayer tidak ditemukan.")
+            return
+        end
+
+
+        ----------------------------------------------------------------
+        -- GLOBAL MODE SYSTEM
+        ----------------------------------------------------------------
+
+        _G.BotVars = _G.BotVars or {}
+        _G.BotVars.ModeControllers =
+            _G.BotVars.ModeControllers or {}
+
+
+        ----------------------------------------------------------------
+        -- LOAD ADMIN
+        ----------------------------------------------------------------
+
+        local Admin
+
+        do
+            local success, result = pcall(function()
+
+                return loadstring(game:HttpGet(
+                    "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
+                ))()
+
+            end)
+
+            if success and result then
+                Admin = result
+            else
+                warn("[Sit] Gagal load Admin.lua.")
+                return
+            end
+        end
+
+
+        ----------------------------------------------------------------
+        -- SIT EMOTE IDS
+        ----------------------------------------------------------------
+
+        local SIT_EMOTE_IDS = {
+            "115688938961933",
+            "87296962125027",
+            "91423783304464",
+            "135625163619348",
+            "93126583360867"
+        }
+
+
+        ----------------------------------------------------------------
+        -- VARIABLES
+        ----------------------------------------------------------------
+
+        local sitTrack = nil
+        local sitting = false
+
+
+        ----------------------------------------------------------------
+        -- GET CHARACTER
+        ----------------------------------------------------------------
+
+        local function getCharacter()
+
+            return LocalPlayer.Character
+                or LocalPlayer.CharacterAdded:Wait()
+
+        end
+
+
+        ----------------------------------------------------------------
+        -- RESTORE NORMAL ANIMATION
+        ----------------------------------------------------------------
+
+        local function restoreNormalAnimation()
+
+            local character =
+                LocalPlayer.Character
+
+            if not character then
+                return
+            end
+
+            local humanoid =
+                character:FindFirstChildOfClass(
+                    "Humanoid"
+                )
+
+            if not humanoid then
+                return
+            end
+
+
+            ------------------------------------------------------------
+            -- STOP SIT EMOTE
+            ------------------------------------------------------------
+
+            if sitTrack then
+
+                pcall(function()
+                    sitTrack:Stop(0.15)
+                end)
+
+                sitTrack = nil
+
+            end
+
+
+            ------------------------------------------------------------
+            -- STOP ACTION TRACKS
+            ------------------------------------------------------------
+
+            local animator =
+                humanoid:FindFirstChildOfClass(
+                    "Animator"
+                )
+
+            if animator then
+
+                for _, track in ipairs(
+                    animator:GetPlayingAnimationTracks()
+                ) do
+
+                    if track.Priority
+                        == Enum.AnimationPriority.Action
+                        or track.Priority
+                        == Enum.AnimationPriority.Action2
+                        or track.Priority
+                        == Enum.AnimationPriority.Action3
+                        or track.Priority
+                        == Enum.AnimationPriority.Action4 then
+
+                        pcall(function()
+                            track:Stop(0.15)
+                        end)
+
+                    end
+
+                end
+
+            end
+
+
+            ------------------------------------------------------------
+            -- RESTART DEFAULT ANIMATE SCRIPT
+            ------------------------------------------------------------
+
+            local animateScript =
+                character:FindFirstChild("Animate")
+
+            if animateScript
+                and animateScript:IsA("LocalScript") then
+
+                pcall(function()
+                    animateScript.Enabled = false
+                end)
+
+                task.wait()
+
+                pcall(function()
+                    animateScript.Enabled = true
+                end)
+
+            end
+
+
+            ------------------------------------------------------------
+            -- FORCE HUMANOID BACK TO RUNNING
+            ------------------------------------------------------------
+
+            pcall(function()
+
+                humanoid:ChangeState(
+                    Enum.HumanoidStateType.Running
+                )
+
+            end)
+
+
+            task.defer(function()
+
+                task.wait(0.1)
+
+                if humanoid
+                    and humanoid.Parent then
+
+                    pcall(function()
+
+                        humanoid:ChangeState(
+                            Enum.HumanoidStateType.Running
+                        )
+
+                    end)
+
+                end
+
+            end)
+
+
+            print("[Sit] Animasi normal dipulihkan.")
+
+        end
+
+
+        ----------------------------------------------------------------
+        -- STOP SIT
+        ----------------------------------------------------------------
+
+        local function stopSit()
+
+            sitting = false
+            restoreNormalAnimation()
+
+        end
+
+
+        ----------------------------------------------------------------
+        -- REGISTER CONTROLLER
+        ----------------------------------------------------------------
+
+        _G.BotVars.ModeControllers.sit =
+            stopSit
+
+
+        ----------------------------------------------------------------
+        -- STOP OTHER MODES
+        ----------------------------------------------------------------
+
+        local function stopOtherModes()
+
+            for name, stopFunction in pairs(
+                _G.BotVars.ModeControllers
+            ) do
+
+                if name ~= "sit"
+                    and type(stopFunction) == "function" then
+
+                    pcall(function()
+                        stopFunction()
+                    end)
+
+                end
+
+            end
+
+        end
+
+
+        ----------------------------------------------------------------
+        -- RANDOM EMOTE
+        ----------------------------------------------------------------
+
+        local function getRandomSitEmote()
+
+            return SIT_EMOTE_IDS[
+                math.random(1, #SIT_EMOTE_IDS)
+            ]
+
+        end
+
+
+        ----------------------------------------------------------------
+        -- PLAY SIT EMOTE
+        ----------------------------------------------------------------
+
+        local function playSit()
+
+            ------------------------------------------------------------
+            -- STOP MODE LAIN
+            ------------------------------------------------------------
+
+            stopOtherModes()
+
+
+            ------------------------------------------------------------
+            -- SET ACTIVE MODE
+            ------------------------------------------------------------
+
+            _G.BotVars.ActiveMode = "sit"
+
+
+            ------------------------------------------------------------
+            -- STOP PREVIOUS SIT
+            ------------------------------------------------------------
+
+            if sitTrack then
+
+                pcall(function()
+                    sitTrack:Stop(0.1)
+                end)
+
+                sitTrack = nil
+
+            end
+
+
+            ------------------------------------------------------------
+            -- GET CHARACTER
+            ------------------------------------------------------------
+
+            local character =
+                getCharacter()
+
+            local humanoid =
+                character:FindFirstChildOfClass(
+                    "Humanoid"
+                )
+
+            if not humanoid then
+
+                warn("[Sit] Humanoid tidak ditemukan.")
+                return
+
+            end
+
+
+            ------------------------------------------------------------
+            -- RANDOM SELECT EMOTE
+            ------------------------------------------------------------
+
+            local sitEmoteId =
+                getRandomSitEmote()
+
+
+            ------------------------------------------------------------
+            -- PLAY EMOTE
+            ------------------------------------------------------------
+
+            local success, result =
+                pcall(function()
+
+                    return humanoid:PlayEmoteAndGetAnimTrackById(
+                        sitEmoteId
+                    )
+
+                end)
+
+
+            if success and result then
+
+                sitTrack = result
+                sitting = true
+
+                print(
+                    "[Sit] Emote berhasil dimainkan:",
+                    sitEmoteId
+                )
+
+
+                --------------------------------------------------------
+                -- MONITOR TRACK
+                --------------------------------------------------------
+
+                task.spawn(function()
+
+                    local track =
+                        sitTrack
+
+                    if not track then
+                        return
+                    end
+
+                    pcall(function()
+                        track.Stopped:Wait()
+                    end)
+
+                    if sitTrack == track
+                        and sitting then
+
+                        sitTrack = nil
+
+                    end
+
+                end)
+
+            else
+
+                warn(
+                    "[Sit] Emote gagal dimainkan:",
+                    sitEmoteId,
+                    result
+                )
+
+            end
+
+        end
+
+
+        ----------------------------------------------------------------
+        -- COMMAND HANDLER
+        ----------------------------------------------------------------
+
+        local function handleCommand(
+            message,
+            sender
+        )
+
+            if not message then
+                return
+            end
+
+            if not sender then
+                return
+            end
+
+
+            ------------------------------------------------------------
+            -- ADMIN CHECK
+            ------------------------------------------------------------
+
+            local isAdmin = false
+
+            pcall(function()
+
+                isAdmin =
+                    Admin:IsAdmin(sender)
+
+            end)
+
+            if not isAdmin then
+                return
+            end
+
+
+            ------------------------------------------------------------
+            -- CLEAN MESSAGE
+            ------------------------------------------------------------
+
+            local lower =
+                message:lower()
+
+            lower =
+                lower:gsub("^%s+", "")
+
+            lower =
+                lower:gsub("%s+$", "")
+
+
+            ------------------------------------------------------------
+            -- !SIT
+            ------------------------------------------------------------
+
+            if lower == "!sit" then
+
+                print(
+                    "[Sit] Command diterima dari:",
+                    sender.Name
+                )
+
+                playSit()
+
+                return
+
+            end
+
+
+            ------------------------------------------------------------
+            -- !UNSIT
+            ------------------------------------------------------------
+
+            if lower == "!unsit" then
+
+                print(
+                    "[Sit] Unsit command dari:",
+                    sender.Name
+                )
+
+                if _G.BotVars.ActiveMode
+                    == "sit" then
+
+                    _G.BotVars.ActiveMode = nil
+
+                end
+
+                stopSit()
+
+                return
+
+            end
+
+
+            ------------------------------------------------------------
+            -- !STOP
+            ------------------------------------------------------------
+
+            if lower == "!stop" then
+
+                print(
+                    "[Sit] Stop command dari:",
+                    sender.Name
+                )
+
+                if _G.BotVars.ActiveMode
+                    == "sit" then
+
+                    _G.BotVars.ActiveMode = nil
+
+                end
+
+                stopSit()
+
+                return
+
+            end
+
+        end
+
+
+        ----------------------------------------------------------------
+        -- CHAT HANDLER
+        ----------------------------------------------------------------
+
+        local connectedPlayers = {}
+
+
+        local function connectPlayerChat(player)
+
+            if connectedPlayers[player] then
+                return
+            end
+
+            connectedPlayers[player] = true
+
+            player.Chatted:Connect(
+                function(message)
+
+                    handleCommand(
+                        message,
+                        player
+                    )
+
+                end
+            )
+
+        end
+
+
+        ----------------------------------------------------------------
+        -- EXISTING PLAYERS
+        ----------------------------------------------------------------
+
+        for _, player in ipairs(
+            Players:GetPlayers()
+        ) do
+
+            connectPlayerChat(player)
+
+        end
+
+
+        ----------------------------------------------------------------
+        -- PLAYER ADDED
+        ----------------------------------------------------------------
+
+        Players.PlayerAdded:Connect(
+            function(player)
+
+                connectPlayerChat(player)
+
+            end
+        )
+
+
+        ----------------------------------------------------------------
+        -- PLAYER REMOVING
+        ----------------------------------------------------------------
+
+        Players.PlayerRemoving:Connect(
+            function(player)
+
+                connectedPlayers[player] = nil
+
+            end
+        )
+
+
+        ----------------------------------------------------------------
+        -- CHARACTER RESPAWN
+        ----------------------------------------------------------------
+
+        LocalPlayer.CharacterAdded:Connect(
+            function()
+
+                task.wait(1)
+
+                sitTrack = nil
+
+                --------------------------------------------------------
+                -- JIKA MASIH MODE SIT
+                --------------------------------------------------------
+
+                if _G.BotVars.ActiveMode
+                    == "sit" then
+
+                    task.wait(0.5)
+
+                    playSit()
+
+                end
+
+            end
+        )
+
+
+        ----------------------------------------------------------------
+        -- READY
+        ----------------------------------------------------------------
+
+        print(
+            "[Sit] Loaded untuk:",
+            LocalPlayer.Name,
+            "| Random emotes:",
+            #SIT_EMOTE_IDS
+        )
+
+    end
+}
