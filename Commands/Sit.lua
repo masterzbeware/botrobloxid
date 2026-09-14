@@ -58,6 +58,7 @@ return {
             "115688938961933",
             "87296962125027",
             "91423783304464",
+            "93126583360867"
         }
 
 
@@ -67,6 +68,10 @@ return {
 
         local sitTrack = nil
         local sitting = false
+
+        -- Token untuk mencegah proses cleanup dari !stop lama
+        -- mengganggu !sit yang baru.
+        local sitGeneration = 0
 
 
         ----------------------------------------------------------------
@@ -95,7 +100,7 @@ return {
         -- RESTORE NORMAL ANIMATION
         ----------------------------------------------------------------
 
-        local function restoreNormalAnimation()
+        local function restoreNormalAnimation(generation)
 
             local character =
                 LocalPlayer.Character
@@ -110,6 +115,10 @@ return {
                 )
 
             if not humanoid then
+                return
+            end
+
+            if generation and generation ~= sitGeneration then
                 return
             end
 
@@ -204,6 +213,11 @@ return {
 
                 task.wait(0.1)
 
+                if generation
+                    and generation ~= sitGeneration then
+                    return
+                end
+
                 if humanoid
                     and humanoid.Parent then
 
@@ -231,8 +245,11 @@ return {
 
         local function stopSit()
 
+            sitGeneration = sitGeneration + 1
+            local generation = sitGeneration
+
             sitting = false
-            restoreNormalAnimation()
+            restoreNormalAnimation(generation)
 
         end
 
@@ -289,6 +306,14 @@ return {
         local function playSit()
 
             ------------------------------------------------------------
+            -- NEW GENERATION
+            ------------------------------------------------------------
+
+            sitGeneration = sitGeneration + 1
+            local generation = sitGeneration
+
+
+            ------------------------------------------------------------
             -- SET ACTIVE MODE
             ------------------------------------------------------------
 
@@ -303,7 +328,7 @@ return {
 
 
             ------------------------------------------------------------
-            -- STOP PREVIOUS SIT
+            -- STOP PREVIOUS SIT TRACK ONLY
             ------------------------------------------------------------
 
             if sitTrack then
@@ -331,8 +356,10 @@ return {
 
             if not humanoid then
 
-                warn("[Sit] Humanoid tidak ditemukan untuk:",
-                    LocalPlayer.Name)
+                warn(
+                    "[Sit] Humanoid tidak ditemukan untuk:",
+                    LocalPlayer.Name
+                )
 
                 return
 
@@ -340,26 +367,84 @@ return {
 
 
             ------------------------------------------------------------
-            -- RANDOM SELECT EMOTE
+            -- RANDOM EMOTE
             ------------------------------------------------------------
 
-            local sitEmoteId =
-                getRandomSitEmote()
+            local firstIndex =
+                math.random(1, #SIT_EMOTE_IDS)
 
 
             ------------------------------------------------------------
-            -- PLAY EMOTE
+            -- PLAY WITH RETRY
+            ------------------------------------------------------------
+            -- Beberapa client bisa gagal sesaat saat emote baru
+            -- dipanggil setelah !stop. Coba ulang beberapa kali.
+
+            local maxAttempts = #SIT_EMOTE_IDS
+            local success = false
+            local result = nil
+            local usedEmoteId = nil
+
+            for attempt = 1, maxAttempts do
+
+                if generation ~= sitGeneration then
+                    return
+                end
+
+                local index =
+                    ((firstIndex + attempt - 2)
+                        % #SIT_EMOTE_IDS) + 1
+
+                local sitEmoteId =
+                    SIT_EMOTE_IDS[index]
+
+                local ok, track =
+                    pcall(function()
+
+                        return humanoid:PlayEmoteAndGetAnimTrackById(
+                            sitEmoteId
+                        )
+
+                    end)
+
+                if ok and track then
+
+                    success = true
+                    result = track
+                    usedEmoteId = sitEmoteId
+                    break
+
+                end
+
+                result = track
+
+                -- Beri waktu kecil agar Animator selesai
+                -- membersihkan track sebelumnya.
+                task.wait(0.08)
+
+            end
+
+
+            ------------------------------------------------------------
+            -- VALIDATE GENERATION
             ------------------------------------------------------------
 
-            local success, result =
-                pcall(function()
+            if generation ~= sitGeneration then
 
-                    return humanoid:PlayEmoteAndGetAnimTrackById(
-                        sitEmoteId
-                    )
+                if result then
+                    pcall(function()
+                        result:Stop(0)
+                    end)
+                end
 
-                end)
+                return
 
+            end
+
+
+            ------------------------------------------------------------
+            -- RESULT
+            ------------------------------------------------------------
 
             if success and result then
 
@@ -370,7 +455,7 @@ return {
                     "[Sit] EMOTE AKTIF | Bot:",
                     LocalPlayer.Name,
                     "| ID:",
-                    sitEmoteId
+                    usedEmoteId
                 )
 
 
@@ -381,18 +466,15 @@ return {
                 task.spawn(function()
 
                     local track =
-                        sitTrack
-
-                    if not track then
-                        return
-                    end
+                        result
 
                     pcall(function()
                         track.Stopped:Wait()
                     end)
 
                     if sitTrack == track
-                        and sitting then
+                        and sitting
+                        and generation == sitGeneration then
 
                         sitTrack = nil
 
@@ -403,11 +485,9 @@ return {
             else
 
                 warn(
-                    "[Sit] Emote gagal | Bot:",
+                    "[Sit] Semua percobaan emote gagal | Bot:",
                     LocalPlayer.Name,
-                    "| ID:",
-                    sitEmoteId,
-                    "| Error:",
+                    "| Last Error:",
                     result
                 )
 
@@ -620,6 +700,8 @@ return {
                 task.wait(1)
 
                 sitTrack = nil
+
+                sitGeneration = sitGeneration + 1
 
                 --------------------------------------------------------
                 -- JIKA MASIH MODE SIT
