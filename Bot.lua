@@ -69,6 +69,6 @@ jalankan("perfix")
 jalankan("main")
 jalankan("follow")
 jalankan("frontline")
-jalankan("Circle")
+jalankan("circle")
 
 print("✅ Bot.lua loaded — All systems active.")
