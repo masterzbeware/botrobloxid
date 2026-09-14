@@ -437,28 +437,21 @@ return {
 
                         end
 
-                        ------------------------------------------------
-                        -- SUDAH SAMPAI
-                        ------------------------------------------------
+------------------------------------------------
+-- SUDAH SAMPAI
+------------------------------------------------
 
-                        humanoid.AutoRotate = false
+humanoid.AutoRotate = false
 
-                        local adminRotation =
-                            targetHRP.CFrame
-                            -
-                            targetHRP.Position
+------------------------------------------------
+-- HADAP KE PLAYER / ADMIN
+------------------------------------------------
 
-                        myHRP.CFrame =
-                            CFrame.new(
-                                myHRP.Position
-                            )
-                            *
-                            adminRotation
-
-                    end
-                )
-
-        end
+myHRP.CFrame =
+    CFrame.lookAt(
+        myHRP.Position,
+        targetHRP.Position
+    )
 
         ----------------------------------------------------------------
         -- COMMAND HANDLER
