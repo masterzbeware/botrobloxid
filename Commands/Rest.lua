@@ -53,7 +53,7 @@ return {
 
 
         ----------------------------------------------------------------
-        -- EMOTE
+        -- EMOTE ID
         ----------------------------------------------------------------
 
         local REST_EMOTE_ID =
@@ -81,6 +81,164 @@ return {
 
 
         ----------------------------------------------------------------
+        -- RESTORE NORMAL ANIMATION
+        ----------------------------------------------------------------
+
+        local function restoreNormalAnimation()
+
+            local character =
+                LocalPlayer.Character
+
+            if not character then
+                return
+            end
+
+
+            local humanoid =
+                character:FindFirstChildOfClass(
+                    "Humanoid"
+                )
+
+            if not humanoid then
+                return
+            end
+
+
+            ------------------------------------------------------------
+            -- STOP EMOTE TRACK
+            ------------------------------------------------------------
+
+            if restTrack then
+
+                pcall(function()
+
+                    restTrack:Stop(0.15)
+
+                end)
+
+                restTrack = nil
+
+            end
+
+
+            ------------------------------------------------------------
+            -- STOP ACTION TRACKS
+            ------------------------------------------------------------
+
+            local animator =
+                humanoid:FindFirstChildOfClass(
+                    "Animator"
+                )
+
+            if animator then
+
+                for _, track in ipairs(
+                    animator:GetPlayingAnimationTracks()
+                ) do
+
+                    if track.Priority
+                        == Enum.AnimationPriority.Action
+                        or track.Priority
+                        == Enum.AnimationPriority.Action2
+                        or track.Priority
+                        == Enum.AnimationPriority.Action3
+                        or track.Priority
+                        == Enum.AnimationPriority.Action4 then
+
+                        pcall(function()
+
+                            track:Stop(0.15)
+
+                        end)
+
+                    end
+
+                end
+
+            end
+
+
+            ------------------------------------------------------------
+            -- RESTART DEFAULT ANIMATE SCRIPT
+            ------------------------------------------------------------
+
+            local animateScript =
+                character:FindFirstChild(
+                    "Animate"
+                )
+
+
+            if animateScript
+                and animateScript:IsA("LocalScript") then
+
+                --------------------------------------------------------
+                -- Toggle agar controller animasi Roblox
+                -- mengambil alih kembali.
+                --------------------------------------------------------
+
+                pcall(function()
+
+                    animateScript.Enabled = false
+
+                end)
+
+                task.wait()
+
+
+                pcall(function()
+
+                    animateScript.Enabled = true
+
+                end)
+
+            end
+
+
+            ------------------------------------------------------------
+            -- FORCE HUMANOID BACK TO RUNNING
+            ------------------------------------------------------------
+
+            pcall(function()
+
+                humanoid:ChangeState(
+                    Enum.HumanoidStateType.Running
+                )
+
+            end)
+
+
+            ------------------------------------------------------------
+            -- SMALL DELAY UNTIL ANIMATE IS ACTIVE
+            ------------------------------------------------------------
+
+            task.defer(function()
+
+                task.wait(0.1)
+
+                if humanoid
+                    and humanoid.Parent then
+
+                    pcall(function()
+
+                        humanoid:ChangeState(
+                            Enum.HumanoidStateType.Running
+                        )
+
+                    end)
+
+                end
+
+            end)
+
+
+            print(
+                "[Rest] Animasi normal dipulihkan."
+            )
+
+        end
+
+
+        ----------------------------------------------------------------
         -- STOP REST
         ----------------------------------------------------------------
 
@@ -88,18 +246,7 @@ return {
 
             resting = false
 
-
-            if restTrack then
-
-                pcall(function()
-
-                    restTrack:Stop()
-
-                end)
-
-                restTrack = nil
-
-            end
+            restoreNormalAnimation()
 
         end
 
@@ -152,21 +299,31 @@ return {
 
 
             ------------------------------------------------------------
-            -- ACTIVE MODE
+            -- SET ACTIVE MODE
             ------------------------------------------------------------
 
             _G.BotVars.ActiveMode = "rest"
 
 
             ------------------------------------------------------------
-            -- STOP EMOTE SEBELUMNYA
+            -- STOP PREVIOUS REST
             ------------------------------------------------------------
 
-            stopRest()
+            if restTrack then
+
+                pcall(function()
+
+                    restTrack:Stop(0.1)
+
+                end)
+
+                restTrack = nil
+
+            end
 
 
             ------------------------------------------------------------
-            -- CHARACTER
+            -- GET CHARACTER
             ------------------------------------------------------------
 
             local character =
@@ -239,14 +396,14 @@ return {
                     end)
 
 
-                    if restTrack == track then
+                    if restTrack == track
+                        and resting then
 
                         restTrack = nil
 
                     end
 
                 end)
-
 
             else
 
@@ -402,13 +559,6 @@ return {
         ----------------------------------------------------------------
         -- CHAT HANDLER
         ----------------------------------------------------------------
-        --
-        -- Sengaja menggunakan Player.Chatted.
-        --
-        -- Tidak menggunakan TextChatService.OnIncomingMessage
-        -- agar tidak bentrok dengan Follow / Frontline /
-        -- Fourline / mode lainnya.
-        ----------------------------------------------------------------
 
         local connectedPlayers = {}
 
@@ -488,11 +638,6 @@ return {
             function()
 
                 task.wait(1)
-
-
-                --------------------------------------------------------
-                -- RESET OLD TRACK REFERENCE
-                --------------------------------------------------------
 
                 restTrack = nil
 
