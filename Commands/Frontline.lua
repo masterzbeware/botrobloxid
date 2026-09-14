@@ -54,11 +54,11 @@ return {
         -- FORMATION DISTANCE
         ----------------------------------------------------------------
 
-        -- Jarak barisan dari Player/Admin
+        -- Jarak barisan B1-B11 dari Player/Admin.
         local adminFrontlineDistance = 6
         local defaultBotFrontlineDistance = 6
 
-        -- Jarak antar Bot
+        -- Jarak antar bot di barisan.
         local formationSpacing = 3
 
         ----------------------------------------------------------------
@@ -382,13 +382,12 @@ return {
                         ------------------------------------------------
                         -- FORMATION POSITION
                         --
-                        -- B1   B2   B3 ... B11
-                        --               Player/Admin
+                        -- B1  B2  B3 ... B11
+                        --             Player/Admin
                         --
-                        -- Semua Bot berada DI DEPAN Player/Admin.
-                        --
-                        -- B6 menjadi titik tengah.
-                        --
+                        -- Semua bot berada DI DEPAN target.
+                        -- myIndex 1..11 diubah menjadi offset
+                        -- kiri/kanan dengan B6 sebagai titik tengah.
                         ------------------------------------------------
 
                         local centerIndex =
@@ -397,10 +396,6 @@ return {
                         local horizontalOffset =
                             (myIndex - centerIndex)
                             * formationSpacing
-
-                        ------------------------------------------------
-                        -- POSISI BOT
-                        ------------------------------------------------
 
                         local targetPosition =
                             targetHRP.Position
@@ -416,7 +411,7 @@ return {
                             )
 
                         ------------------------------------------------
-                        -- JARAK KE POSISI FORMASI
+                        -- JARAK
                         ------------------------------------------------
 
                         local distanceToTarget =
@@ -427,7 +422,7 @@ return {
                             ).Magnitude
 
                         ------------------------------------------------
-                        -- JALAN MENUJU POSISI
+                        -- JALAN
                         ------------------------------------------------
 
                         if distanceToTarget > 1.5 then
@@ -448,19 +443,17 @@ return {
 
                         humanoid.AutoRotate = false
 
-                        ------------------------------------------------
-                        -- HADAP KE PLAYER / ADMIN
-                        --
-                        -- Bot berada di depan Player/Admin,
-                        -- sehingga Bot harus menghadap ke belakang,
-                        -- yaitu menuju Player/Admin.
-                        ------------------------------------------------
+                        local adminRotation =
+                            targetHRP.CFrame
+                            -
+                            targetHRP.Position
 
                         myHRP.CFrame =
-                            CFrame.lookAt(
-                                myHRP.Position,
-                                targetHRP.Position
+                            CFrame.new(
+                                myHRP.Position
                             )
+                            *
+                            adminRotation
 
                     end
                 )
