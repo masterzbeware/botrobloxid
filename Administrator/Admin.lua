@@ -4,7 +4,7 @@
 local Admin = {}
 
 Admin.AllowedUsers = {
-    [11611493000] = true, -- MAIN ADMIN
+    [11001607521] = true, -- MAIN ADMIN
 }
 
 function Admin:IsAdmin(player)
