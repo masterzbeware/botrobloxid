@@ -790,7 +790,7 @@ return {
             -- !FRONTLINE
             ------------------------------------------------------------
 
-            if lower == "!frontline" then
+            if lower == "!behindline" then
 
                 print(
                     "[Frontline] Command diterima dari:",
