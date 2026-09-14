@@ -51,6 +51,8 @@ return {
         ----------------------------------------------------------------
         -- SIT EMOTE IDS
         ----------------------------------------------------------------
+        -- Setiap Bot yang menerima !sit akan memilih 1 emote secara
+        -- random dari daftar ini dan menjalankannya.
 
         local SIT_EMOTE_IDS = {
             "115688938961933",
@@ -67,6 +69,16 @@ return {
 
         local sitTrack = nil
         local sitting = false
+
+
+        ----------------------------------------------------------------
+        -- RANDOM SEED
+        ----------------------------------------------------------------
+
+        math.randomseed(
+            math.floor(os.clock() * 1000000)
+                + LocalPlayer.UserId
+        )
 
 
         ----------------------------------------------------------------
@@ -279,17 +291,17 @@ return {
         local function playSit()
 
             ------------------------------------------------------------
-            -- STOP MODE LAIN
-            ------------------------------------------------------------
-
-            stopOtherModes()
-
-
-            ------------------------------------------------------------
             -- SET ACTIVE MODE
             ------------------------------------------------------------
 
             _G.BotVars.ActiveMode = "sit"
+
+
+            ------------------------------------------------------------
+            -- STOP MODE LAIN
+            ------------------------------------------------------------
+
+            stopOtherModes()
 
 
             ------------------------------------------------------------
@@ -321,7 +333,9 @@ return {
 
             if not humanoid then
 
-                warn("[Sit] Humanoid tidak ditemukan.")
+                warn("[Sit] Humanoid tidak ditemukan untuk:",
+                    LocalPlayer.Name)
+
                 return
 
             end
@@ -355,7 +369,9 @@ return {
                 sitting = true
 
                 print(
-                    "[Sit] Emote berhasil dimainkan:",
+                    "[Sit] EMOTE AKTIF | Bot:",
+                    LocalPlayer.Name,
+                    "| ID:",
                     sitEmoteId
                 )
 
@@ -389,8 +405,11 @@ return {
             else
 
                 warn(
-                    "[Sit] Emote gagal dimainkan:",
+                    "[Sit] Emote gagal | Bot:",
+                    LocalPlayer.Name,
+                    "| ID:",
                     sitEmoteId,
+                    "| Error:",
                     result
                 )
 
@@ -408,11 +427,7 @@ return {
             sender
         )
 
-            if not message then
-                return
-            end
-
-            if not sender then
+            if not message or not sender then
                 return
             end
 
@@ -456,9 +471,15 @@ return {
             if lower == "!sit" then
 
                 print(
-                    "[Sit] Command diterima dari:",
+                    "[Sit] Command diterima | Bot:",
+                    LocalPlayer.Name,
+                    "| Admin:",
                     sender.Name
                 )
+
+                -- Tidak ada pengecekan Bot ID di sini.
+                -- Setiap bot yang menjalankan module ini akan
+                -- menjalankan emote masing-masing.
 
                 playSit()
 
@@ -474,7 +495,9 @@ return {
             if lower == "!unsit" then
 
                 print(
-                    "[Sit] Unsit command dari:",
+                    "[Sit] Unsit | Bot:",
+                    LocalPlayer.Name,
+                    "| Admin:",
                     sender.Name
                 )
 
@@ -499,7 +522,9 @@ return {
             if lower == "!stop" then
 
                 print(
-                    "[Sit] Stop command dari:",
+                    "[Sit] Stop | Bot:",
+                    LocalPlayer.Name,
+                    "| Admin:",
                     sender.Name
                 )
 
@@ -622,6 +647,7 @@ return {
         print(
             "[Sit] Loaded untuk:",
             LocalPlayer.Name,
+            "| Semua bot eligible untuk !sit",
             "| Random emotes:",
             #SIT_EMOTE_IDS
         )
