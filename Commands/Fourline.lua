@@ -33,11 +33,9 @@ return {
 
         do
             local success, result = pcall(function()
-
                 return loadstring(game:HttpGet(
                     "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
                 ))()
-
             end)
 
             if success and result then
@@ -57,11 +55,9 @@ return {
 
         do
             local success, result = pcall(function()
-
                 return loadstring(game:HttpGet(
                     "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Distance.lua"
                 ))()
-
             end)
 
             if success and result then
@@ -90,14 +86,13 @@ return {
         -- FORMATION DISTANCE
         ----------------------------------------------------------------
 
-        -- Jarak barisan pertama dari target.
         local adminFourlineDistance = 6
         local defaultBotFourlineDistance = 6
 
-        -- Jarak horizontal antar bot.
+        -- Jarak antar bot kiri-kanan
         local formationSpacing = 3
 
-        -- Jarak antar barisan.
+        -- Jarak antar baris
         local rowSpacing = 3
 
 
@@ -105,12 +100,16 @@ return {
         -- BOT ORDER
         ----------------------------------------------------------------
 
-        -- Urutan bot Fourline.
+        -- FORMASI:
         --
-        -- B1   B2   B3   B4
-        -- B5   B6   B7   B8
-        -- B9   B10  B11
+        --          PLAYER
         --
+        --       B1   B2   B3   B4
+        --       B5   B6   B7   B8
+        --        B9  B10  B11
+        --
+        -- Semua bot berada DI BELAKANG player
+        -- dan menghadap ke arah yang sama.
 
         local botOrder = {
 
@@ -173,8 +172,11 @@ return {
                     )
 
                 if channel then
+
                     channel:SendAsync(message)
+
                     return
+
                 end
 
 
@@ -279,8 +281,9 @@ return {
 
             name = name:lower()
 
+
             ------------------------------------------------------------
-            -- EXACT USERNAME / DISPLAY NAME
+            -- EXACT MATCH
             ------------------------------------------------------------
 
             for _, player in ipairs(
@@ -298,7 +301,7 @@ return {
 
 
             ------------------------------------------------------------
-            -- PARTIAL USERNAME / DISPLAY NAME
+            -- PARTIAL USERNAME
             ------------------------------------------------------------
 
             for _, player in ipairs(
@@ -333,7 +336,7 @@ return {
 
 
         ----------------------------------------------------------------
-        -- GET MY FOURLINE INDEX
+        -- GET MY INDEX
         ----------------------------------------------------------------
 
         local function getMyIndex()
@@ -341,13 +344,10 @@ return {
             local userId =
                 tostring(LocalPlayer.UserId)
 
-            local index =
-                table.find(
-                    botOrder,
-                    userId
-                )
-
-            return index
+            return table.find(
+                botOrder,
+                userId
+            )
 
         end
 
@@ -377,14 +377,14 @@ return {
 
 
             ------------------------------------------------------------
-            -- SET ACTIVE MODE
+            -- ACTIVE MODE
             ------------------------------------------------------------
 
             _G.BotVars.ActiveMode = "fourline"
 
 
             ------------------------------------------------------------
-            -- STOP CONNECTION LAMA
+            -- DISCONNECT OLD LOOP
             ------------------------------------------------------------
 
             if fourlineConnection then
@@ -439,39 +439,39 @@ return {
             fourlining = true
             targetPlayer = player
 
-
             sendChat("Yes, Sir!")
 
 
-            ------------------------------------------------------------
+            ----------------------------------------------------------------
             -- FOURLINE LOOP
-            ------------------------------------------------------------
+            ----------------------------------------------------------------
 
             fourlineConnection =
                 RunService.Heartbeat:Connect(
                     function()
 
                         ------------------------------------------------
-                        -- MODE SUDAH BERGANTI
+                        -- CHECK ACTIVE MODE
                         ------------------------------------------------
 
                         if _G.BotVars.ActiveMode
                             ~= "fourline" then
 
                             stopFourline()
+
                             return
 
                         end
 
-
-                        ------------------------------------------------
-                        -- VALIDATION
-                        ------------------------------------------------
 
                         if not fourlining then
                             return
                         end
 
+
+                        ------------------------------------------------
+                        -- CHARACTER VALIDATION
+                        ------------------------------------------------
 
                         if not humanoid
                             or not myHRP then
@@ -484,6 +484,7 @@ return {
                         if not targetPlayer then
 
                             stopFourline()
+
                             return
 
                         end
@@ -573,7 +574,7 @@ return {
 
 
                         ------------------------------------------------
-                        -- FORMATION
+                        -- FORMATION SETTINGS
                         ------------------------------------------------
 
                         local columnCount = 4
@@ -600,14 +601,21 @@ return {
 
 
                         ------------------------------------------------
-                        -- BOT COUNT DI BARIS
+                        -- BOT COUNT THIS ROW
                         ------------------------------------------------
+
+                        local remainingBots =
+                            #botOrder
+                            - (
+                                row
+                                * columnCount
+                            )
+
 
                         local columnsInThisRow =
                             math.min(
                                 columnCount,
-                                #botOrder
-                                - (row * columnCount)
+                                remainingBots
                             )
 
 
@@ -616,7 +624,10 @@ return {
                         ------------------------------------------------
 
                         local centerColumn =
-                            (columnsInThisRow - 1)
+                            (
+                                columnsInThisRow
+                                - 1
+                            )
                             / 2
 
 
@@ -640,77 +651,103 @@ return {
                             row * rowSpacing
 
 
- ------------------------------------------------
--- TARGET POSITION
-------------------------------------------------
+                        ----------------------------------------------------------------
+                        -- TARGET POSITION
+                        ----------------------------------------------------------------
+                        --
+                        -- PENTING:
+                        --
+                        -- Gunakan MINUS LookVector.
+                        --
+                        -- LookVector = arah DEPAN Player
+                        --
+                        -- -LookVector = arah BELAKANG Player
+                        --
+                        -- Jadi bot akan berada di belakang Player.
+                        ----------------------------------------------------------------
 
-local targetPosition =
-    targetHRP.Position
+                        local targetPosition =
+                            targetHRP.Position
 
-    -
+                            -
 
-    (
-        targetHRP.CFrame.LookVector
-        * (
-            distance
-            + depthOffset
-        )
-    )
+                            (
+                                targetHRP.CFrame.LookVector
+                                * (
+                                    distance
+                                    + depthOffset
+                                )
+                            )
 
-    +
+                            +
 
-    (
-        targetHRP.CFrame.RightVector
-        * horizontalOffset
-    )
-
-
-------------------------------------------------
--- DISTANCE KE TARGET POSITION
-------------------------------------------------
-
-local distanceToTarget =
-    (
-        myHRP.Position
-        -
-        targetPosition
-    ).Magnitude
-
-
-------------------------------------------------
--- MOVE
-------------------------------------------------
-
-if distanceToTarget > 1.5 then
-
-    humanoid.AutoRotate = true
-
-    humanoid:MoveTo(
-        targetPosition
-    )
-
-    return
-
-end
+                            (
+                                targetHRP.CFrame.RightVector
+                                * horizontalOffset
+                            )
 
 
-------------------------------------------------
--- SUDAH SAMPAI
-------------------------------------------------
+                        ------------------------------------------------
+                        -- DISTANCE TO POSITION
+                        ------------------------------------------------
 
-humanoid.AutoRotate = false
+                        local distanceToTarget =
+                            (
+                                myHRP.Position
+                                -
+                                targetPosition
+                            ).Magnitude
 
 
-------------------------------------------------
--- HADAP KE ARAH YANG SAMA DENGAN PLAYER
-------------------------------------------------
+                        ------------------------------------------------
+                        -- MOVE TO FORMATION
+                        ------------------------------------------------
 
-myHRP.CFrame =
-    CFrame.lookAt(
-        myHRP.Position,
-        myHRP.Position
-        + targetHRP.CFrame.LookVector
-    )
+                        if distanceToTarget > 1.5 then
+
+                            humanoid.AutoRotate = true
+
+                            humanoid:MoveTo(
+                                targetPosition
+                            )
+
+                            return
+
+                        end
+
+
+                        ----------------------------------------------------------------
+                        -- ARRIVED
+                        ----------------------------------------------------------------
+
+                        humanoid.AutoRotate = false
+
+
+                        ----------------------------------------------------------------
+                        -- FACE SAME DIRECTION AS PLAYER
+                        ----------------------------------------------------------------
+                        --
+                        -- Bot tidak membelakangi Player.
+                        --
+                        -- Bot menghadap ke arah yang sama
+                        -- dengan Player/Admin.
+                        ----------------------------------------------------------------
+
+                        local forwardDirection =
+                            targetHRP.CFrame.LookVector
+
+
+                        myHRP.CFrame =
+                            CFrame.lookAt(
+                                myHRP.Position,
+                                myHRP.Position
+                                + forwardDirection
+                            )
+
+                    end
+                )
+
+        end
 
 
         ----------------------------------------------------------------
@@ -802,7 +839,7 @@ myHRP.CFrame =
             if targetName then
 
                 print(
-                    "[Fourline] Command target:",
+                    "[Fourline] Target command:",
                     targetName
                 )
 
@@ -864,13 +901,11 @@ myHRP.CFrame =
         -- CHAT HANDLER
         ----------------------------------------------------------------
         --
-        -- IMPORTANT:
-        -- Jangan gunakan TextChatService.OnIncomingMessage
-        -- di sini karena Follow / Frontline / Circle juga
-        -- menggunakan callback tersebut.
+        -- Tidak menggunakan:
         --
-        -- Player.Chatted lebih aman untuk command handler
-        -- masing-masing module.
+        -- TextChatService.OnIncomingMessage
+        --
+        -- supaya tidak bentrok dengan Follow / Frontline / Circle.
         ----------------------------------------------------------------
 
         local connectedPlayers = {}
@@ -900,7 +935,7 @@ myHRP.CFrame =
 
 
         ----------------------------------------------------------------
-        -- CONNECT EXISTING PLAYERS
+        -- EXISTING PLAYERS
         ----------------------------------------------------------------
 
         for _, player in ipairs(
@@ -934,10 +969,6 @@ myHRP.CFrame =
 
                 connectedPlayers[player] = nil
 
-
-                --------------------------------------------------------
-                -- Jika target keluar
-                --------------------------------------------------------
 
                 if targetPlayer == player then
 
