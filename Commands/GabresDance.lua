@@ -10,7 +10,7 @@ return {
         local LocalPlayer = Players.LocalPlayer
 
         if not LocalPlayer then
-            warn("[PakodiDance] LocalPlayer tidak ditemukan.")
+            warn("[GabresDance] LocalPlayer tidak ditemukan.")
             return
         end
 
@@ -46,7 +46,7 @@ return {
 
             else
 
-                warn("[PakodiDance] Gagal load Admin.lua.")
+                warn("[GabresDance] Gagal load Admin.lua.")
                 return
 
             end
@@ -57,8 +57,8 @@ return {
         -- FE ANIMATION ID
         ----------------------------------------------------------------
 
-        local ATEEZ_DANCE_ANIMATION_ID =
-            "80676655500518"
+        local GABRES_DANCE_ANIMATION_ID =
+            "91788069539610"
 
 
         ----------------------------------------------------------------
@@ -69,7 +69,7 @@ return {
         local dancing = false
 
         -- Generation digunakan untuk memastikan proses lama
-        -- dari !stop / !pakodidance tidak mengganggu command terbaru.
+        -- dari !stop / !gabresdance tidak mengganggu command terbaru.
         local danceGeneration = 0
 
 
@@ -258,7 +258,7 @@ return {
 
 
             print(
-                "[PakodiDance] Animasi normal dipulihkan."
+                "[GabresDance] Animasi normal dipulihkan."
             )
 
         end
@@ -268,7 +268,7 @@ return {
         -- STOP ATEEZ DANCE
         ----------------------------------------------------------------
 
-        local function stopPakodiDance()
+        local function stopGabresDance()
 
             ------------------------------------------------------------
             -- INVALIDATE SEMUA PROSES LAMA
@@ -316,8 +316,8 @@ return {
         -- REGISTER CONTROLLER
         ----------------------------------------------------------------
 
-        _G.BotVars.ModeControllers.pakodidance =
-            stopPakodiDance
+        _G.BotVars.ModeControllers.ateezdance =
+            stopGabresDance
 
 
         ----------------------------------------------------------------
@@ -330,7 +330,7 @@ return {
                 _G.BotVars.ModeControllers
             ) do
 
-                if name ~= "pakodidance"
+                if name ~= "gabresdance"
                     and type(stopFunction) == "function" then
 
                     pcall(function()
@@ -348,7 +348,7 @@ return {
         -- PLAY ATEEZ DANCE
         ----------------------------------------------------------------
 
-        local function playPakodiDance()
+        local function playGabresDance()
 
             ------------------------------------------------------------
             -- NEW GENERATION
@@ -366,7 +366,7 @@ return {
             ------------------------------------------------------------
 
             _G.BotVars.ActiveMode =
-                "pakodidance"
+                "gabresdance"
 
 
             ------------------------------------------------------------
@@ -418,7 +418,7 @@ return {
             if not humanoid then
 
                 warn(
-                    "[PakodiDance] Humanoid tidak ditemukan."
+                    "[GabresDance] Humanoid tidak ditemukan."
                 )
 
                 return
@@ -456,7 +456,7 @@ return {
 
                         return humanoid:
                             PlayEmoteAndGetAnimTrackById(
-                                ATEEZ_DANCE_ANIMATION_ID
+                                GABRES_DANCE_ANIMATION_ID
                             )
 
                     end)
@@ -512,8 +512,8 @@ return {
                 dancing = true
 
                 print(
-                    "[PakodiDance] FE Animation berhasil dimainkan:",
-                    ATEEZ_DANCE_ANIMATION_ID,
+                    "[GabresDance] FE Animation berhasil dimainkan:",
+                    GABRES_DANCE_ANIMATION_ID,
                     "| Bot:",
                     LocalPlayer.Name
                 )
@@ -556,7 +556,7 @@ return {
             else
 
                 warn(
-                    "[PakodiDance] FE Animation gagal dimainkan setelah",
+                    "[GabresDance] FE Animation gagal dimainkan setelah",
                     maxAttempts,
                     "percobaan.",
                     "| Bot:",
@@ -620,16 +620,16 @@ return {
             -- !ATEEZDANCE
             ------------------------------------------------------------
 
-            if lower == "!pakodidance" then
+            if lower == "!gabresdance" then
 
                 print(
-                    "[PakodiDance] Command diterima | Bot:",
+                    "[GabresDance] Command diterima | Bot:",
                     LocalPlayer.Name,
                     "| Admin:",
                     sender.Name
                 )
 
-                playPakodiDance()
+                playGabresDance()
 
                 return
 
@@ -640,23 +640,23 @@ return {
             -- !UNATEEZDANCE
             ------------------------------------------------------------
 
-            if lower == "!unpakodidance" then
+            if lower == "!ungabresdance" then
 
                 print(
-                    "[PakodiDance] UnPakodiDance | Bot:",
+                    "[GabresDance] UnGabresDance | Bot:",
                     LocalPlayer.Name,
                     "| Admin:",
                     sender.Name
                 )
 
                 if _G.BotVars.ActiveMode
-                    == "pakodidance" then
+                    == "gabresdance" then
 
                     _G.BotVars.ActiveMode = nil
 
                 end
 
-                stopPakodiDance()
+                stopGabresDance()
 
                 return
 
@@ -670,20 +670,20 @@ return {
             if lower == "!stop" then
 
                 print(
-                    "[PakodiDance] Stop | Bot:",
+                    "[GabresDance] Stop | Bot:",
                     LocalPlayer.Name,
                     "| Admin:",
                     sender.Name
                 )
 
                 if _G.BotVars.ActiveMode
-                    == "pakodidance" then
+                    == "gabresdance" then
 
                     _G.BotVars.ActiveMode = nil
 
                 end
 
-                stopPakodiDance()
+                stopGabresDance()
 
                 return
 
@@ -793,7 +793,7 @@ return {
                 --------------------------------------------------------
 
                 if _G.BotVars.ActiveMode
-                    == "pakodidance" then
+                    == "gabresdance" then
 
                     task.wait(0.5)
 
@@ -809,7 +809,7 @@ return {
 
                     end
 
-                    playPakodiDance()
+                    playGabresDance()
 
                 end
 
@@ -822,10 +822,10 @@ return {
         ----------------------------------------------------------------
 
         print(
-            "[PakodiDance] Loaded untuk:",
+            "[GabresDance] Loaded untuk:",
             LocalPlayer.Name,
             "| FE Animation:",
-            ATEEZ_DANCE_ANIMATION_ID
+            GABRES_DANCE_ANIMATION_ID
         )
 
     end
