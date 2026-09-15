@@ -5,6 +5,7 @@ Execute = function()
     ----------------------------------------------------------------
 
     local Players = game:GetService("Players")
+    local TextChatService = game:GetService("TextChatService")
 
     local LocalPlayer = Players.LocalPlayer
 
@@ -52,22 +53,45 @@ Execute = function()
     local connectedPlayers = {}
 
     ----------------------------------------------------------------
-    -- CHECK COMMAND PREFIX
+    -- CHECK EXCLUDED CHARACTER
     ----------------------------------------------------------------
 
-    local function isCommand(message)
+    local function containsExcludedCharacter(message)
 
         if not message or message == "" then
-            return false
+            return true
         end
 
-        local firstCharacter =
-            message:sub(1, 1)
+        ----------------------------------------------------------------
+        -- CHARACTER YANG TIDAK BOLEH DIBALAS
+        ----------------------------------------------------------------
 
-        return firstCharacter == "!"
-            or firstCharacter == "?"
-            or firstCharacter == "/"
-            or firstCharacter == "\\"
+        local excludedCharacters = {
+            "!",
+            "?",
+            "/",
+            "\\",
+            ".",
+        }
+
+        for _, character in ipairs(
+            excludedCharacters
+        ) do
+
+            if message:find(
+                character,
+                1,
+                true
+            ) then
+
+                return true
+
+            end
+
+        end
+
+        return false
+
     end
 
     ----------------------------------------------------------------
@@ -83,45 +107,9 @@ Execute = function()
         local success, err =
             pcall(function()
 
-                if _G.BotVars
-                    and _G.BotVars.TextChatService then
-
-                    local TextChatService =
-                        _G.BotVars.TextChatService
-
-                    local textChannels =
-                        TextChatService:FindFirstChild(
-                            "TextChannels"
-                        )
-
-                    if textChannels then
-
-                        local generalChannel =
-                            textChannels:FindFirstChild(
-                                "RBXGeneral"
-                            )
-
-                        if generalChannel then
-
-                            generalChannel:SendAsync(
-                                message
-                            )
-
-                            return
-                        end
-
-                    end
-
-                end
-
                 ----------------------------------------------------------------
-                -- FALLBACK
+                -- TEXT CHAT SYSTEM
                 ----------------------------------------------------------------
-
-                local TextChatService =
-                    game:GetService(
-                        "TextChatService"
-                    )
 
                 local textChannels =
                     TextChatService:FindFirstChild(
@@ -129,21 +117,41 @@ Execute = function()
                     )
 
                 if not textChannels then
+
+                    warn(
+                        "[Message] TextChannels tidak ditemukan."
+                    )
+
                     return
+
                 end
+
+                ----------------------------------------------------------------
+                -- GENERAL CHANNEL
+                ----------------------------------------------------------------
 
                 local generalChannel =
                     textChannels:FindFirstChild(
                         "RBXGeneral"
                     )
 
-                if generalChannel then
+                if not generalChannel then
 
-                    generalChannel:SendAsync(
-                        message
+                    warn(
+                        "[Message] RBXGeneral tidak ditemukan."
                     )
 
+                    return
+
                 end
+
+                ----------------------------------------------------------------
+                -- SEND
+                ----------------------------------------------------------------
+
+                generalChannel:SendAsync(
+                    message
+                )
 
             end)
 
@@ -176,7 +184,7 @@ Execute = function()
         end
 
         ----------------------------------------------------------------
-        -- JANGAN PROSES CHAT BOT SENDIRI
+        -- JANGAN BALAS CHAT BOT SENDIRI
         ----------------------------------------------------------------
 
         if sender == LocalPlayer then
@@ -201,16 +209,20 @@ Execute = function()
         end
 
         ----------------------------------------------------------------
-        -- IGNORE COMMAND
+        -- IGNORE PESAN YANG MENGANDUNG
+        -- ! ? / \ .
         ----------------------------------------------------------------
 
-        if isCommand(message) then
+        if containsExcludedCharacter(
+            message
+        ) then
 
             return
+
         end
 
         ----------------------------------------------------------------
-        -- SEND EXACT SAME MESSAGE
+        -- KIRIM PESAN YANG SAMA
         ----------------------------------------------------------------
 
         sendMessage(message)
