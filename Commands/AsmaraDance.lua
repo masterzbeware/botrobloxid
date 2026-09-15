@@ -6,7 +6,6 @@ return {
         ----------------------------------------------------------------
 
         local Players = game:GetService("Players")
-
         local LocalPlayer = Players.LocalPlayer
 
         if not LocalPlayer then
@@ -20,9 +19,7 @@ return {
         ----------------------------------------------------------------
 
         _G.BotVars = _G.BotVars or {}
-
-        _G.BotVars.ModeControllers =
-            _G.BotVars.ModeControllers or {}
+        _G.BotVars.ModeControllers = _G.BotVars.ModeControllers or {}
 
 
         ----------------------------------------------------------------
@@ -54,11 +51,10 @@ return {
 
 
         ----------------------------------------------------------------
-        -- FE ANIMATION ID
+        -- ANIMATION ID
         ----------------------------------------------------------------
 
-        local ASMARA_DANCE_ANIMATION_ID =
-            "102234069757813"
+        local ASMARA_DANCE_ANIMATION_ID = "102234069757813"
 
 
         ----------------------------------------------------------------
@@ -67,9 +63,6 @@ return {
 
         local danceTrack = nil
         local dancing = false
-
-        -- Generation digunakan untuk memastikan proses lama
-        -- dari !stop / !asmaradance tidak mengganggu command terbaru.
         local danceGeneration = 0
 
 
@@ -91,31 +84,23 @@ return {
 
         local function restoreNormalAnimation(generation)
 
-            local character =
-                LocalPlayer.Character
+            local character = LocalPlayer.Character
 
             if not character then
                 return
             end
 
-            local humanoid =
-                character:FindFirstChildOfClass(
-                    "Humanoid"
-                )
+            local humanoid = character:FindFirstChildOfClass("Humanoid")
 
             if not humanoid then
                 return
             end
 
-
-            ------------------------------------------------------------
-            -- VALIDATE GENERATION
-            ------------------------------------------------------------
-
             if generation
                 and generation ~= danceGeneration then
 
                 return
+
             end
 
 
@@ -125,9 +110,7 @@ return {
 
             if danceTrack then
 
-                local oldTrack =
-                    danceTrack
-
+                local oldTrack = danceTrack
                 danceTrack = nil
 
                 pcall(function()
@@ -142,9 +125,7 @@ return {
             ------------------------------------------------------------
 
             local animator =
-                humanoid:FindFirstChildOfClass(
-                    "Animator"
-                )
+                humanoid:FindFirstChildOfClass("Animator")
 
             if animator then
 
@@ -152,14 +133,10 @@ return {
                     animator:GetPlayingAnimationTracks()
                 ) do
 
-                    if track.Priority
-                        == Enum.AnimationPriority.Action
-                        or track.Priority
-                        == Enum.AnimationPriority.Action2
-                        or track.Priority
-                        == Enum.AnimationPriority.Action3
-                        or track.Priority
-                        == Enum.AnimationPriority.Action4 then
+                    if track.Priority == Enum.AnimationPriority.Action
+                        or track.Priority == Enum.AnimationPriority.Action2
+                        or track.Priority == Enum.AnimationPriority.Action3
+                        or track.Priority == Enum.AnimationPriority.Action4 then
 
                         pcall(function()
                             track:Stop(0.15)
@@ -188,14 +165,11 @@ return {
 
                 task.wait()
 
-                --------------------------------------------------------
-                -- VALIDATE GENERATION AGAIN
-                --------------------------------------------------------
-
                 if generation
                     and generation ~= danceGeneration then
 
                     return
+
                 end
 
                 pcall(function()
@@ -206,13 +180,14 @@ return {
 
 
             ------------------------------------------------------------
-            -- FORCE HUMANOID BACK TO RUNNING
+            -- FORCE RUNNING STATE
             ------------------------------------------------------------
 
             if generation
                 and generation ~= danceGeneration then
 
                 return
+
             end
 
             pcall(function()
@@ -235,14 +210,11 @@ return {
 
                 task.wait(0.1)
 
-                if cleanupGeneration
-                    ~= danceGeneration then
-
+                if cleanupGeneration ~= danceGeneration then
                     return
                 end
 
-                if humanoid
-                    and humanoid.Parent then
+                if humanoid and humanoid.Parent then
 
                     pcall(function()
 
@@ -257,9 +229,7 @@ return {
             end)
 
 
-            print(
-                "[AsmaraDance] Animasi normal dipulihkan."
-            )
+            print("[AsmaraDance] Animasi normal dipulihkan.")
 
         end
 
@@ -269,10 +239,6 @@ return {
         ----------------------------------------------------------------
 
         local function stopAsmaraDance()
-
-            ------------------------------------------------------------
-            -- INVALIDATE SEMUA PROSES LAMA
-            ------------------------------------------------------------
 
             danceGeneration =
                 danceGeneration + 1
@@ -284,7 +250,7 @@ return {
 
 
             ------------------------------------------------------------
-            -- STOP TRACK
+            -- STOP CURRENT TRACK
             ------------------------------------------------------------
 
             if danceTrack then
@@ -302,7 +268,7 @@ return {
 
 
             ------------------------------------------------------------
-            -- RESTORE ANIMATION
+            -- RESTORE NORMAL ANIMATION
             ------------------------------------------------------------
 
             restoreNormalAnimation(
@@ -370,14 +336,14 @@ return {
 
 
             ------------------------------------------------------------
-            -- STOP MODE LAIN
+            -- STOP OTHER MODES
             ------------------------------------------------------------
 
             stopOtherModes()
 
 
             ------------------------------------------------------------
-            -- VALIDATE GENERATION
+            -- VALIDATE
             ------------------------------------------------------------
 
             if generation ~= danceGeneration then
@@ -386,7 +352,7 @@ return {
 
 
             ------------------------------------------------------------
-            -- STOP PREVIOUS DANCE TRACK
+            -- STOP OLD TRACK
             ------------------------------------------------------------
 
             if danceTrack then
@@ -411,9 +377,7 @@ return {
                 getCharacter()
 
             local humanoid =
-                character:FindFirstChildOfClass(
-                    "Humanoid"
-                )
+                character:FindFirstChildOfClass("Humanoid")
 
             if not humanoid then
 
@@ -427,64 +391,154 @@ return {
 
 
             ------------------------------------------------------------
-            -- PLAY FE ANIMATION WITH RETRY
+            -- GET ANIMATOR
             ------------------------------------------------------------
-            -- Menggunakan Humanoid:PlayEmoteAndGetAnimTrackById()
-            -- sehingga animasi dijalankan sebagai FE animation.
 
-            local maxAttempts = 3
+            local animator =
+                humanoid:FindFirstChildOfClass("Animator")
+
+            if not animator then
+
+                animator =
+                    Instance.new("Animator")
+
+                animator.Parent =
+                    humanoid
+
+            end
+
+
+            ------------------------------------------------------------
+            -- PLAY ANIMATION
+            ------------------------------------------------------------
+
             local success = false
             local result = nil
+            local lastError = nil
 
-            for attempt = 1, maxAttempts do
 
-                --------------------------------------------------------
-                -- COMMAND SUDAH BERGANTI
-                --------------------------------------------------------
+            ------------------------------------------------------------
+            -- METHOD 1
+            -- PlayEmoteAndGetAnimTrackById
+            ------------------------------------------------------------
+
+            for attempt = 1, 3 do
 
                 if generation ~= danceGeneration then
                     return
                 end
 
-
-                --------------------------------------------------------
-                -- PLAY FE ANIMATION
-                --------------------------------------------------------
-
-                local ok, track =
+                local ok, trackOrError =
                     pcall(function()
 
-                        return humanoid:
-                            PlayEmoteAndGetAnimTrackById(
-                                ASMARA_DANCE_ANIMATION_ID
-                            )
+                        return humanoid:PlayEmoteAndGetAnimTrackById(
+                            ASMARA_DANCE_ANIMATION_ID
+                        )
 
                     end)
 
-                if ok and track then
+                if ok and trackOrError then
 
                     success = true
-                    result = track
+                    result = trackOrError
+
+                    print(
+                        "[AsmaraDance] Berhasil menggunakan PlayEmoteAndGetAnimTrackById."
+                    )
+
                     break
+
+                else
+
+                    lastError = trackOrError
+
+                    warn(
+                        "[AsmaraDance] Percobaan",
+                        attempt,
+                        "gagal:",
+                        trackOrError
+                    )
 
                 end
 
-                result = track
-
-
-                --------------------------------------------------------
-                -- JIKA GAGAL, BERI WAKTU UNTUK ANIMATOR
-                --------------------------------------------------------
-
-                if attempt < maxAttempts then
-                    task.wait(0.1)
+                if attempt < 3 then
+                    task.wait(0.2)
                 end
 
             end
 
 
             ------------------------------------------------------------
-            -- VALIDATE GENERATION SETELAH RETRY
+            -- METHOD 2
+            -- Animator:LoadAnimation
+            ------------------------------------------------------------
+
+            if not success then
+
+                if generation ~= danceGeneration then
+                    return
+                end
+
+                print(
+                    "[AsmaraDance] Mencoba metode Animator:LoadAnimation..."
+                )
+
+
+                local animation =
+                    Instance.new("Animation")
+
+                animation.AnimationId =
+                    "rbxassetid://" .. ASMARA_DANCE_ANIMATION_ID
+
+
+                local ok, trackOrError =
+                    pcall(function()
+
+                        local track =
+                            animator:LoadAnimation(animation)
+
+                        track.Priority =
+                            Enum.AnimationPriority.Action
+
+                        track.Looped = true
+
+                        track:Play(
+                            0.15,
+                            1,
+                            1
+                        )
+
+                        return track
+
+                    end)
+
+
+                if ok and trackOrError then
+
+                    success = true
+                    result = trackOrError
+
+                    print(
+                        "[AsmaraDance] Berhasil menggunakan Animator:LoadAnimation."
+                    )
+
+                else
+
+                    lastError =
+                        trackOrError
+
+                    warn(
+                        "[AsmaraDance] Animator:LoadAnimation juga gagal:",
+                        trackOrError
+                    )
+
+                end
+
+            end
+
+
+            ------------------------------------------------------------
+            -- VALIDATE GENERATION
             ------------------------------------------------------------
 
             if generation ~= danceGeneration then
@@ -503,13 +557,17 @@ return {
 
 
             ------------------------------------------------------------
-            -- RESULT
+            -- SUCCESS
             ------------------------------------------------------------
 
             if success and result then
 
-                danceTrack = result
-                dancing = true
+                danceTrack =
+                    result
+
+                dancing =
+                    true
+
 
                 print(
                     "[AsmaraDance] FE Animation berhasil dimainkan:",
@@ -525,44 +583,44 @@ return {
 
                 task.spawn(function()
 
-                    local track = result
-                    local trackGeneration = generation
+                    local track =
+                        result
+
+                    local trackGeneration =
+                        generation
 
                     if not track then
                         return
                     end
+
 
                     pcall(function()
                         track.Stopped:Wait()
                     end)
 
 
-                    ----------------------------------------------------
-                    -- HANYA BOLEH MEMBERSIHKAN TRACK
-                    -- JIKA MASIH TRACK + GENERATION YANG SAMA
-                    ----------------------------------------------------
-
                     if danceTrack == track
                         and dancing
-                        and trackGeneration
-                            == danceGeneration then
+                        and trackGeneration == danceGeneration then
 
-                        danceTrack = nil
+                        danceTrack =
+                            nil
 
                     end
 
                 end)
 
+
             else
 
                 warn(
-                    "[AsmaraDance] FE Animation gagal dimainkan setelah",
-                    maxAttempts,
-                    "percobaan.",
+                    "[AsmaraDance] Animation gagal dimainkan.",
+                    "| ID:",
+                    ASMARA_DANCE_ANIMATION_ID,
                     "| Bot:",
                     LocalPlayer.Name,
                     "| Last Error:",
-                    result
+                    lastError
                 )
 
             end
@@ -588,7 +646,8 @@ return {
             -- ADMIN CHECK
             ------------------------------------------------------------
 
-            local isAdmin = false
+            local isAdmin =
+                false
 
             pcall(function()
 
@@ -652,7 +711,8 @@ return {
                 if _G.BotVars.ActiveMode
                     == "asmaradance" then
 
-                    _G.BotVars.ActiveMode = nil
+                    _G.BotVars.ActiveMode =
+                        nil
 
                 end
 
@@ -679,7 +739,8 @@ return {
                 if _G.BotVars.ActiveMode
                     == "asmaradance" then
 
-                    _G.BotVars.ActiveMode = nil
+                    _G.BotVars.ActiveMode =
+                        nil
 
                 end
 
@@ -706,6 +767,7 @@ return {
             end
 
             connectedPlayers[player] = true
+
 
             player.Chatted:Connect(
                 function(message)
@@ -758,7 +820,8 @@ return {
         Players.PlayerRemoving:Connect(
             function(player)
 
-                connectedPlayers[player] = nil
+                connectedPlayers[player] =
+                    nil
 
             end
         )
@@ -775,7 +838,7 @@ return {
 
 
                 --------------------------------------------------------
-                -- INVALIDATE TRACK LAMA
+                -- INVALIDATE OLD TRACK
                 --------------------------------------------------------
 
                 danceGeneration =
@@ -784,12 +847,15 @@ return {
                 local generation =
                     danceGeneration
 
-                danceTrack = nil
-                dancing = false
+                danceTrack =
+                    nil
+
+                dancing =
+                    false
 
 
                 --------------------------------------------------------
-                -- JIKA MASIH MODE ASMARA DANCE
+                -- IF STILL ASMARA MODE
                 --------------------------------------------------------
 
                 if _G.BotVars.ActiveMode
@@ -798,16 +864,13 @@ return {
                     task.wait(0.5)
 
 
-                    ----------------------------------------------------
-                    -- PASTIKAN BELUM ADA COMMAND BARU
-                    ----------------------------------------------------
-
                     if generation
                         ~= danceGeneration then
 
                         return
 
                     end
+
 
                     playAsmaraDance()
 
@@ -824,7 +887,7 @@ return {
         print(
             "[AsmaraDance] Loaded untuk:",
             LocalPlayer.Name,
-            "| FE Animation:",
+            "| Animation ID:",
             ASMARA_DANCE_ANIMATION_ID
         )
 
