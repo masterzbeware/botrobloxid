@@ -6,7 +6,6 @@ return {
         ----------------------------------------------------------------
 
         local Players = game:GetService("Players")
-
         local LocalPlayer = Players.LocalPlayer
 
         if not LocalPlayer then
@@ -20,7 +19,6 @@ return {
         ----------------------------------------------------------------
 
         _G.BotVars = _G.BotVars or {}
-
         _G.BotVars.ModeControllers =
             _G.BotVars.ModeControllers or {}
 
@@ -41,14 +39,10 @@ return {
             end)
 
             if success and result then
-
                 Admin = result
-
             else
-
                 warn("[GabresDance] Gagal load Admin.lua.")
                 return
-
             end
         end
 
@@ -68,8 +62,8 @@ return {
         local danceTrack = nil
         local dancing = false
 
-        -- Generation digunakan untuk memastikan proses lama
-        -- dari !stop / !gabresdance tidak mengganggu command terbaru.
+        -- Generation untuk mencegah proses lama
+        -- mengganggu command terbaru.
         local danceGeneration = 0
 
 
@@ -91,17 +85,14 @@ return {
 
         local function restoreNormalAnimation(generation)
 
-            local character =
-                LocalPlayer.Character
+            local character = LocalPlayer.Character
 
             if not character then
                 return
             end
 
             local humanoid =
-                character:FindFirstChildOfClass(
-                    "Humanoid"
-                )
+                character:FindFirstChildOfClass("Humanoid")
 
             if not humanoid then
                 return
@@ -120,14 +111,12 @@ return {
 
 
             ------------------------------------------------------------
-            -- STOP ATEEZ DANCE
+            -- STOP GABRES DANCE
             ------------------------------------------------------------
 
             if danceTrack then
 
-                local oldTrack =
-                    danceTrack
-
+                local oldTrack = danceTrack
                 danceTrack = nil
 
                 pcall(function()
@@ -142,9 +131,7 @@ return {
             ------------------------------------------------------------
 
             local animator =
-                humanoid:FindFirstChildOfClass(
-                    "Animator"
-                )
+                humanoid:FindFirstChildOfClass("Animator")
 
             if animator then
 
@@ -187,10 +174,6 @@ return {
                 end)
 
                 task.wait()
-
-                --------------------------------------------------------
-                -- VALIDATE GENERATION AGAIN
-                --------------------------------------------------------
 
                 if generation
                     and generation ~= danceGeneration then
@@ -265,7 +248,7 @@ return {
 
 
         ----------------------------------------------------------------
-        -- STOP ATEEZ DANCE
+        -- STOP GABRES DANCE
         ----------------------------------------------------------------
 
         local function stopGabresDance()
@@ -289,9 +272,7 @@ return {
 
             if danceTrack then
 
-                local oldTrack =
-                    danceTrack
-
+                local oldTrack = danceTrack
                 danceTrack = nil
 
                 pcall(function()
@@ -316,7 +297,11 @@ return {
         -- REGISTER CONTROLLER
         ----------------------------------------------------------------
 
-        _G.BotVars.ModeControllers.ateezdance =
+        -- FIX:
+        -- Sebelumnya salah menggunakan "ateezdance".
+        -- Sekarang Gabres mempunyai controller sendiri.
+
+        _G.BotVars.ModeControllers.gabresdance =
             stopGabresDance
 
 
@@ -345,7 +330,7 @@ return {
 
 
         ----------------------------------------------------------------
-        -- PLAY ATEEZ DANCE
+        -- PLAY GABRES DANCE
         ----------------------------------------------------------------
 
         local function playGabresDance()
@@ -386,14 +371,12 @@ return {
 
 
             ------------------------------------------------------------
-            -- STOP PREVIOUS DANCE TRACK
+            -- STOP PREVIOUS GABRES TRACK
             ------------------------------------------------------------
 
             if danceTrack then
 
-                local oldTrack =
-                    danceTrack
-
+                local oldTrack = danceTrack
                 danceTrack = nil
 
                 pcall(function()
@@ -411,9 +394,7 @@ return {
                 getCharacter()
 
             local humanoid =
-                character:FindFirstChildOfClass(
-                    "Humanoid"
-                )
+                character:FindFirstChildOfClass("Humanoid")
 
             if not humanoid then
 
@@ -429,8 +410,6 @@ return {
             ------------------------------------------------------------
             -- PLAY FE ANIMATION WITH RETRY
             ------------------------------------------------------------
-            -- Menggunakan Humanoid:PlayEmoteAndGetAnimTrackById()
-            -- sehingga animasi dijalankan sebagai FE animation.
 
             local maxAttempts = 3
             local success = false
@@ -461,23 +440,34 @@ return {
 
                     end)
 
+
+                --------------------------------------------------------
+                -- SUCCESS
+                --------------------------------------------------------
+
                 if ok and track then
 
                     success = true
                     result = track
+
                     break
 
                 end
+
+
+                --------------------------------------------------------
+                -- SAVE ERROR / RESULT
+                --------------------------------------------------------
 
                 result = track
 
 
                 --------------------------------------------------------
-                -- JIKA GAGAL, BERI WAKTU UNTUK ANIMATOR
+                -- RETRY
                 --------------------------------------------------------
 
                 if attempt < maxAttempts then
-                    task.wait(0.1)
+                    task.wait(0.2)
                 end
 
             end
@@ -511,6 +501,7 @@ return {
                 danceTrack = result
                 dancing = true
 
+
                 print(
                     "[GabresDance] FE Animation berhasil dimainkan:",
                     GABRES_DANCE_ANIMATION_ID,
@@ -538,8 +529,7 @@ return {
 
 
                     ----------------------------------------------------
-                    -- HANYA BOLEH MEMBERSIHKAN TRACK
-                    -- JIKA MASIH TRACK + GENERATION YANG SAMA
+                    -- HANYA BERSIHKAN TRACK YANG MASIH AKTIF
                     ----------------------------------------------------
 
                     if danceTrack == track
@@ -617,7 +607,7 @@ return {
 
 
             ------------------------------------------------------------
-            -- !ATEEZDANCE
+            -- !GABRESDANCE
             ------------------------------------------------------------
 
             if lower == "!gabresdance" then
@@ -637,7 +627,7 @@ return {
 
 
             ------------------------------------------------------------
-            -- !UNATEEZDANCE
+            -- !UNGABRESDANCE
             ------------------------------------------------------------
 
             if lower == "!ungabresdance" then
@@ -789,7 +779,7 @@ return {
 
 
                 --------------------------------------------------------
-                -- JIKA MASIH MODE ATEEZ DANCE
+                -- JIKA MASIH MODE GABRES DANCE
                 --------------------------------------------------------
 
                 if _G.BotVars.ActiveMode
