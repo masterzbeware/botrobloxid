@@ -331,6 +331,7 @@ return {
             ) do
 
                 if name ~= "asmaradance"
+                    and name ~= "follow"
                     and type(stopFunction) == "function" then
 
                     pcall(function()
