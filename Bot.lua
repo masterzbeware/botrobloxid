@@ -46,7 +46,6 @@ local commandFiles = {
     "GabresDance.lua",
     "PakodiDance.lua",
     "KangoraDance.lua",
-    "AsmaraDance.lua",
 }
 
 for _, fileName in ipairs(commandFiles) do
@@ -95,6 +94,5 @@ jalankan("ateezdance")
 jalankan("gabresdance")
 jalankan("pakodidance")
 jalankan("kangoradance")
-jalankan("asmaradance")
 
 print("✅ Bot.lua loaded — All systems active.")

@@ -16,7 +16,7 @@ return {
 
 
         ----------------------------------------------------------------
-        -- GLOBAL MODE SYSTEM
+        -- GLOBAL SYSTEM
         ----------------------------------------------------------------
 
         _G.BotVars = _G.BotVars or {}
@@ -32,6 +32,7 @@ return {
         local Admin
 
         do
+
             local success, result = pcall(function()
 
                 return loadstring(game:HttpGet(
@@ -50,6 +51,7 @@ return {
                 return
 
             end
+
         end
 
 
@@ -66,10 +68,10 @@ return {
         ----------------------------------------------------------------
 
         local danceTrack = nil
+
         local dancing = false
 
-        -- Generation digunakan untuk memastikan proses lama
-        -- dari !stop / !ateezdance tidak mengganggu command terbaru.
+        -- Generation digunakan untuk membatalkan proses dance lama.
         local danceGeneration = 0
 
 
@@ -98,6 +100,7 @@ return {
                 return
             end
 
+
             local humanoid =
                 character:FindFirstChildOfClass(
                     "Humanoid"
@@ -116,11 +119,12 @@ return {
                 and generation ~= danceGeneration then
 
                 return
+
             end
 
 
             ------------------------------------------------------------
-            -- STOP ATEEZ DANCE
+            -- STOP ATEEZ DANCE TRACK
             ------------------------------------------------------------
 
             if danceTrack then
@@ -188,6 +192,7 @@ return {
 
                 task.wait()
 
+
                 --------------------------------------------------------
                 -- VALIDATE GENERATION AGAIN
                 --------------------------------------------------------
@@ -196,7 +201,9 @@ return {
                     and generation ~= danceGeneration then
 
                     return
+
                 end
+
 
                 pcall(function()
                     animateScript.Enabled = true
@@ -206,14 +213,16 @@ return {
 
 
             ------------------------------------------------------------
-            -- FORCE HUMANOID BACK TO RUNNING
+            -- FORCE HUMANOID RUNNING
             ------------------------------------------------------------
 
             if generation
                 and generation ~= danceGeneration then
 
                 return
+
             end
+
 
             pcall(function()
 
@@ -239,7 +248,9 @@ return {
                     ~= danceGeneration then
 
                     return
+
                 end
+
 
                 if humanoid
                     and humanoid.Parent then
@@ -265,13 +276,13 @@ return {
 
 
         ----------------------------------------------------------------
-        -- STOP ATEEZ DANCE
+        -- STOP ATEEZ DANCE ONLY
         ----------------------------------------------------------------
 
         local function stopAteezDance()
 
             ------------------------------------------------------------
-            -- INVALIDATE SEMUA PROSES LAMA
+            -- INVALIDATE OLD PROCESSES
             ------------------------------------------------------------
 
             danceGeneration =
@@ -279,6 +290,7 @@ return {
 
             local generation =
                 danceGeneration
+
 
             dancing = false
 
@@ -302,11 +314,16 @@ return {
 
 
             ------------------------------------------------------------
-            -- RESTORE ANIMATION
+            -- RESTORE NORMAL ANIMATION
             ------------------------------------------------------------
 
             restoreNormalAnimation(
                 generation
+            )
+
+
+            print(
+                "[AteezDance] Dance dihentikan."
             )
 
         end
@@ -315,34 +332,17 @@ return {
         ----------------------------------------------------------------
         -- REGISTER CONTROLLER
         ----------------------------------------------------------------
+        --
+        -- IMPORTANT:
+        -- Controller ini HANYA mengontrol Ateez Dance.
+        --
+        -- Jangan mengubah ActiveMode karena Follow.lua menggunakan
+        -- ActiveMode == "follow" sebagai indikator bahwa Follow aktif.
+        --
+        ----------------------------------------------------------------
 
         _G.BotVars.ModeControllers.ateezdance =
             stopAteezDance
-
-
-        ----------------------------------------------------------------
-        -- STOP OTHER MODES
-        ----------------------------------------------------------------
-
-        local function stopOtherModes()
-
-            for name, stopFunction in pairs(
-                _G.BotVars.ModeControllers
-            ) do
-
-                if name ~= "ateezdance"
-                    and name ~= "follow"
-                    and type(stopFunction) == "function" then
-
-                    pcall(function()
-                        stopFunction()
-                    end)
-
-                end
-
-            end
-
-        end
 
 
         ----------------------------------------------------------------
@@ -363,27 +363,18 @@ return {
 
 
             ------------------------------------------------------------
-            -- SET ACTIVE MODE
+            -- JANGAN UBAH ActiveMode
             ------------------------------------------------------------
-
-            _G.BotVars.ActiveMode =
-                "ateezdance"
-
-
+            --
+            -- Jika Follow sedang aktif:
+            --
+            --     _G.BotVars.ActiveMode == "follow"
+            --
+            -- Biarkan nilai tersebut tetap "follow".
+            --
+            -- Dengan begitu Heartbeat Follow.lua tetap berjalan.
+            --
             ------------------------------------------------------------
-            -- STOP MODE LAIN
-            ------------------------------------------------------------
-
-            stopOtherModes()
-
-
-            ------------------------------------------------------------
-            -- VALIDATE GENERATION
-            ------------------------------------------------------------
-
-            if generation ~= danceGeneration then
-                return
-            end
 
 
             ------------------------------------------------------------
@@ -411,10 +402,12 @@ return {
             local character =
                 getCharacter()
 
+
             local humanoid =
                 character:FindFirstChildOfClass(
                     "Humanoid"
                 )
+
 
             if not humanoid then
 
@@ -430,12 +423,13 @@ return {
             ------------------------------------------------------------
             -- PLAY FE ANIMATION WITH RETRY
             ------------------------------------------------------------
-            -- Menggunakan Humanoid:PlayEmoteAndGetAnimTrackById()
-            -- sehingga animasi dijalankan sebagai FE animation.
 
             local maxAttempts = 3
+
             local success = false
+
             local result = nil
+
 
             for attempt = 1, maxAttempts do
 
@@ -462,30 +456,36 @@ return {
 
                     end)
 
+
                 if ok and track then
 
                     success = true
+
                     result = track
+
                     break
 
                 end
+
 
                 result = track
 
 
                 --------------------------------------------------------
-                -- JIKA GAGAL, BERI WAKTU UNTUK ANIMATOR
+                -- RETRY
                 --------------------------------------------------------
 
                 if attempt < maxAttempts then
+
                     task.wait(0.1)
+
                 end
 
             end
 
 
             ------------------------------------------------------------
-            -- VALIDATE GENERATION SETELAH RETRY
+            -- VALIDATE GENERATION AFTER RETRY
             ------------------------------------------------------------
 
             if generation ~= danceGeneration then
@@ -510,13 +510,19 @@ return {
             if success and result then
 
                 danceTrack = result
+
                 dancing = true
+
 
                 print(
                     "[AteezDance] FE Animation berhasil dimainkan:",
                     ATEEZ_DANCE_ANIMATION_ID,
                     "| Bot:",
-                    LocalPlayer.Name
+                    LocalPlayer.Name,
+                    "| Follow:",
+                    tostring(
+                        _G.BotVars.ActiveMode == "follow"
+                    )
                 )
 
 
@@ -526,12 +532,17 @@ return {
 
                 task.spawn(function()
 
-                    local track = result
-                    local trackGeneration = generation
+                    local track =
+                        result
+
+                    local trackGeneration =
+                        generation
+
 
                     if not track then
                         return
                     end
+
 
                     pcall(function()
                         track.Stopped:Wait()
@@ -539,8 +550,7 @@ return {
 
 
                     ----------------------------------------------------
-                    -- HANYA BOLEH MEMBERSIHKAN TRACK
-                    -- JIKA MASIH TRACK + GENERATION YANG SAMA
+                    -- ONLY CLEAN CURRENT TRACK
                     ----------------------------------------------------
 
                     if danceTrack == track
@@ -549,6 +559,8 @@ return {
                             == danceGeneration then
 
                         danceTrack = nil
+
+                        dancing = false
 
                     end
 
@@ -591,12 +603,14 @@ return {
 
             local isAdmin = false
 
+
             pcall(function()
 
                 isAdmin =
                     Admin:IsAdmin(sender)
 
             end)
+
 
             if not isAdmin then
                 return
@@ -610,8 +624,10 @@ return {
             local lower =
                 message:lower()
 
+
             lower =
                 lower:gsub("^%s+", "")
+
 
             lower =
                 lower:gsub("%s+$", "")
@@ -627,10 +643,38 @@ return {
                     "[AteezDance] Command diterima | Bot:",
                     LocalPlayer.Name,
                     "| Admin:",
-                    sender.Name
+                    sender.Name,
+                    "| ActiveMode sebelum:",
+                    tostring(
+                        _G.BotVars.ActiveMode
+                    )
                 )
 
+
+                --------------------------------------------------------
+                -- IMPORTANT
+                --------------------------------------------------------
+                --
+                -- Tidak memanggil stopOtherModes().
+                --
+                -- Tidak mengubah ActiveMode.
+                --
+                -- Jadi apabila Follow aktif:
+                --
+                -- ActiveMode tetap "follow"
+                --
+                --------------------------------------------------------
+
                 playAteezDance()
+
+
+                print(
+                    "[AteezDance] Dance aktif | ActiveMode:",
+                    tostring(
+                        _G.BotVars.ActiveMode
+                    )
+                )
+
 
                 return
 
@@ -650,14 +694,24 @@ return {
                     sender.Name
                 )
 
-                if _G.BotVars.ActiveMode
-                    == "ateezdance" then
 
-                    _G.BotVars.ActiveMode = nil
-
-                end
+                --------------------------------------------------------
+                -- HANYA STOP DANCE
+                --------------------------------------------------------
 
                 stopAteezDance()
+
+
+                --------------------------------------------------------
+                -- JANGAN SENTUH ActiveMode
+                --------------------------------------------------------
+                --
+                -- Jika Follow aktif:
+                --
+                -- ActiveMode tetap "follow"
+                --
+                --------------------------------------------------------
+
 
                 return
 
@@ -677,14 +731,17 @@ return {
                     sender.Name
                 )
 
-                if _G.BotVars.ActiveMode
-                    == "ateezdance" then
 
-                    _G.BotVars.ActiveMode = nil
-
-                end
+                --------------------------------------------------------
+                -- STOP DANCE SAJA
+                --
+                -- Follow.lua akan menerima !stop secara terpisah
+                -- dan menghentikan Follow-nya sendiri.
+                --
+                --------------------------------------------------------
 
                 stopAteezDance()
+
 
                 return
 
@@ -706,7 +763,9 @@ return {
                 return
             end
 
+
             connectedPlayers[player] = true
+
 
             player.Chatted:Connect(
                 function(message)
@@ -776,41 +835,44 @@ return {
 
 
                 --------------------------------------------------------
-                -- INVALIDATE TRACK LAMA
+                -- INVALIDATE OLD TRACK
                 --------------------------------------------------------
 
                 danceGeneration =
                     danceGeneration + 1
 
+
                 local generation =
                     danceGeneration
 
+
                 danceTrack = nil
+
                 dancing = false
 
 
                 --------------------------------------------------------
-                -- JIKA MASIH MODE ATEEZ DANCE
+                -- JIKA DANCE MASIH AKTIF
+                --------------------------------------------------------
+                --
+                -- Kita tidak menggunakan ActiveMode lagi.
+                --
+                -- Jadi status dance disimpan melalui flag dancing
+                -- sebelum respawn.
+                --
                 --------------------------------------------------------
 
-                if _G.BotVars.ActiveMode
-                    == "ateezdance" then
-
-                    task.wait(0.5)
+                task.wait(0.5)
 
 
-                    ----------------------------------------------------
-                    -- PASTIKAN BELUM ADA COMMAND BARU
-                    ----------------------------------------------------
+                --------------------------------------------------------
+                -- JANGAN MEMAKSA DANCE JIKA SUDAH DI-STOP
+                --------------------------------------------------------
 
-                    if generation
-                        ~= danceGeneration then
+                if generation
+                    ~= danceGeneration then
 
-                        return
-
-                    end
-
-                    playAteezDance()
+                    return
 
                 end
 
@@ -826,7 +888,8 @@ return {
             "[AteezDance] Loaded untuk:",
             LocalPlayer.Name,
             "| FE Animation:",
-            ATEEZ_DANCE_ANIMATION_ID
+            ATEEZ_DANCE_ANIMATION_ID,
+            "| Follow compatibility: ENABLED"
         )
 
     end
