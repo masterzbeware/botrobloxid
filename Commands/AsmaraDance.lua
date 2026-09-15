@@ -10,7 +10,7 @@ return {
         local LocalPlayer = Players.LocalPlayer
 
         if not LocalPlayer then
-            warn("[KetlinDance] LocalPlayer tidak ditemukan.")
+            warn("[AsmaraDance] LocalPlayer tidak ditemukan.")
             return
         end
 
@@ -46,7 +46,7 @@ return {
 
             else
 
-                warn("[KetlinDance] Gagal load Admin.lua.")
+                warn("[AsmaraDance] Gagal load Admin.lua.")
                 return
 
             end
@@ -57,8 +57,8 @@ return {
         -- FE ANIMATION ID
         ----------------------------------------------------------------
 
-        local KETLIN_DANCE_ANIMATION_ID =
-            "120769095541981"
+        local ASMARA_DANCE_ANIMATION_ID =
+            "100345445988062"
 
 
         ----------------------------------------------------------------
@@ -69,7 +69,7 @@ return {
         local dancing = false
 
         -- Generation digunakan untuk memastikan proses lama
-        -- dari !stop / !ketlindance tidak mengganggu command terbaru.
+        -- dari !stop / !asmaradance tidak mengganggu command terbaru.
         local danceGeneration = 0
 
 
@@ -258,7 +258,7 @@ return {
 
 
             print(
-                "[KetlinDance] Animasi normal dipulihkan."
+                "[AsmaraDance] Animasi normal dipulihkan."
             )
 
         end
@@ -268,7 +268,7 @@ return {
         -- STOP ATEEZ DANCE
         ----------------------------------------------------------------
 
-        local function stopKetlinDance()
+        local function stopAsmaraDance()
 
             ------------------------------------------------------------
             -- INVALIDATE SEMUA PROSES LAMA
@@ -317,7 +317,7 @@ return {
         ----------------------------------------------------------------
 
         _G.BotVars.ModeControllers.ateezdance =
-            stopKetlinDance
+            stopAsmaraDance
 
 
         ----------------------------------------------------------------
@@ -330,7 +330,7 @@ return {
                 _G.BotVars.ModeControllers
             ) do
 
-                if name ~= "ketlindance"
+                if name ~= "asmaradance"
                     and type(stopFunction) == "function" then
 
                     pcall(function()
@@ -348,7 +348,7 @@ return {
         -- PLAY ATEEZ DANCE
         ----------------------------------------------------------------
 
-        local function playKetlinDance()
+        local function playAsmaraDance()
 
             ------------------------------------------------------------
             -- NEW GENERATION
@@ -366,7 +366,7 @@ return {
             ------------------------------------------------------------
 
             _G.BotVars.ActiveMode =
-                "ketlindance"
+                "asmaradance"
 
 
             ------------------------------------------------------------
@@ -418,7 +418,7 @@ return {
             if not humanoid then
 
                 warn(
-                    "[KetlinDance] Humanoid tidak ditemukan."
+                    "[AsmaraDance] Humanoid tidak ditemukan."
                 )
 
                 return
@@ -456,7 +456,7 @@ return {
 
                         return humanoid:
                             PlayEmoteAndGetAnimTrackById(
-                                KETLIN_DANCE_ANIMATION_ID
+                                ASMARA_DANCE_ANIMATION_ID
                             )
 
                     end)
@@ -512,8 +512,8 @@ return {
                 dancing = true
 
                 print(
-                    "[KetlinDance] FE Animation berhasil dimainkan:",
-                    KETLIN_DANCE_ANIMATION_ID,
+                    "[AsmaraDance] FE Animation berhasil dimainkan:",
+                    ASMARA_DANCE_ANIMATION_ID,
                     "| Bot:",
                     LocalPlayer.Name
                 )
@@ -556,7 +556,7 @@ return {
             else
 
                 warn(
-                    "[KetlinDance] FE Animation gagal dimainkan setelah",
+                    "[AsmaraDance] FE Animation gagal dimainkan setelah",
                     maxAttempts,
                     "percobaan.",
                     "| Bot:",
@@ -620,16 +620,16 @@ return {
             -- !ATEEZDANCE
             ------------------------------------------------------------
 
-            if lower == "!ketlindance" then
+            if lower == "!asmaradance" then
 
                 print(
-                    "[KetlinDance] Command diterima | Bot:",
+                    "[AsmaraDance] Command diterima | Bot:",
                     LocalPlayer.Name,
                     "| Admin:",
                     sender.Name
                 )
 
-                playKetlinDance()
+                playAsmaraDance()
 
                 return
 
@@ -640,23 +640,23 @@ return {
             -- !UNATEEZDANCE
             ------------------------------------------------------------
 
-            if lower == "!unketlindance" then
+            if lower == "!unasmaradance" then
 
                 print(
-                    "[KetlinDance] UnKetlinDance | Bot:",
+                    "[AsmaraDance] UnAsmaraDance | Bot:",
                     LocalPlayer.Name,
                     "| Admin:",
                     sender.Name
                 )
 
                 if _G.BotVars.ActiveMode
-                    == "ketlindance" then
+                    == "asmaradance" then
 
                     _G.BotVars.ActiveMode = nil
 
                 end
 
-                stopKetlinDance()
+                stopAsmaraDance()
 
                 return
 
@@ -670,20 +670,20 @@ return {
             if lower == "!stop" then
 
                 print(
-                    "[KetlinDance] Stop | Bot:",
+                    "[AsmaraDance] Stop | Bot:",
                     LocalPlayer.Name,
                     "| Admin:",
                     sender.Name
                 )
 
                 if _G.BotVars.ActiveMode
-                    == "ketlindance" then
+                    == "asmaradance" then
 
                     _G.BotVars.ActiveMode = nil
 
                 end
 
-                stopKetlinDance()
+                stopAsmaraDance()
 
                 return
 
@@ -793,7 +793,7 @@ return {
                 --------------------------------------------------------
 
                 if _G.BotVars.ActiveMode
-                    == "ketlindance" then
+                    == "asmaradance" then
 
                     task.wait(0.5)
 
@@ -809,7 +809,7 @@ return {
 
                     end
 
-                    playKetlinDance()
+                    playAsmaraDance()
 
                 end
 
@@ -822,10 +822,10 @@ return {
         ----------------------------------------------------------------
 
         print(
-            "[KetlinDance] Loaded untuk:",
+            "[AsmaraDance] Loaded untuk:",
             LocalPlayer.Name,
             "| FE Animation:",
-            KETLIN_DANCE_ANIMATION_ID
+            ASMARA_DANCE_ANIMATION_ID
         )
 
     end
