@@ -37,11 +37,9 @@ local commandFiles = {
     "Fourline.lua",
     "Rest.lua",
     "Salute.lua",
-    "NoTouch.lua",
     "Sit.lua",
     "Agree.lua",
     "Backline.lua",
-    "AntiCollision.lua",
 }
 
 for _, fileName in ipairs(commandFiles) do
@@ -84,7 +82,5 @@ jalankan("salute")
 jalankan("sit")
 jalankan("agree")
 jalankan("backline")
-jalankan("notouch")
-jalankan("anticollision")
 
 print("✅ Bot.lua loaded — All systems active.")
