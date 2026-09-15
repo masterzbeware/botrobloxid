@@ -20,6 +20,7 @@ return {
         ----------------------------------------------------------------
 
         _G.BotVars = _G.BotVars or {}
+
         _G.BotVars.ModeControllers =
             _G.BotVars.ModeControllers or {}
 
@@ -67,6 +68,10 @@ return {
         local saluteTrack = nil
         local saluting = false
 
+        -- Generation digunakan untuk memastikan proses lama
+        -- dari !stop / !salute tidak mengganggu command terbaru.
+        local saluteGeneration = 0
+
 
         ----------------------------------------------------------------
         -- GET CHARACTER
@@ -83,8 +88,19 @@ return {
         ----------------------------------------------------------------
         -- RESTORE NORMAL ANIMATION
         ----------------------------------------------------------------
+        -- generation bersifat optional.
+        -- Jika generation sudah berubah, proses cleanup lama
+        -- langsung dibatalkan.
 
-        local function restoreNormalAnimation()
+        local function restoreNormalAnimation(generation)
+
+            if generation
+                and generation ~= saluteGeneration then
+
+                return
+
+            end
+
 
             local character =
                 LocalPlayer.Character
@@ -105,18 +121,31 @@ return {
 
 
             ------------------------------------------------------------
+            -- CHECK GENERATION
+            ------------------------------------------------------------
+
+            if generation
+                and generation ~= saluteGeneration then
+
+                return
+
+            end
+
+
+            ------------------------------------------------------------
             -- STOP SALUTE EMOTE
             ------------------------------------------------------------
 
             if saluteTrack then
 
-                pcall(function()
-
-                    saluteTrack:Stop(0.15)
-
-                end)
+                local oldTrack =
+                    saluteTrack
 
                 saluteTrack = nil
+
+                pcall(function()
+                    oldTrack:Stop(0.15)
+                end)
 
             end
 
@@ -146,14 +175,24 @@ return {
                         == Enum.AnimationPriority.Action4 then
 
                         pcall(function()
-
                             track:Stop(0.15)
-
                         end)
 
                     end
 
                 end
+
+            end
+
+
+            ------------------------------------------------------------
+            -- CHECK GENERATION BEFORE TOUCHING ANIMATE
+            ------------------------------------------------------------
+
+            if generation
+                and generation ~= saluteGeneration then
+
+                return
 
             end
 
@@ -167,24 +206,49 @@ return {
                     "Animate"
                 )
 
-
             if animateScript
                 and animateScript:IsA("LocalScript") then
 
                 pcall(function()
-
                     animateScript.Enabled = false
-
                 end)
+
+
+                --------------------------------------------------------
+                -- WAIT SINGKAT UNTUK MEMBERI WAKTU ANIMATE RESET
+                --------------------------------------------------------
 
                 task.wait()
 
 
+                --------------------------------------------------------
+                -- JIKA SUDAH ADA COMMAND BARU,
+                -- JANGAN LANJUTKAN CLEANUP LAMA
+                --------------------------------------------------------
+
+                if generation
+                    and generation ~= saluteGeneration then
+
+                    return
+
+                end
+
+
                 pcall(function()
-
                     animateScript.Enabled = true
-
                 end)
+
+            end
+
+
+            ------------------------------------------------------------
+            -- CHECK GENERATION
+            ------------------------------------------------------------
+
+            if generation
+                and generation ~= saluteGeneration then
+
+                return
 
             end
 
@@ -202,9 +266,30 @@ return {
             end)
 
 
+            ------------------------------------------------------------
+            -- DELAYED RUNNING STATE
+            ------------------------------------------------------------
+
+            local cleanupGeneration =
+                generation or saluteGeneration
+
             task.defer(function()
 
                 task.wait(0.1)
+
+
+                --------------------------------------------------------
+                -- JIKA SUDAH ADA COMMAND BARU,
+                -- CLEANUP INI SUDAH TIDAK BERLAKU
+                --------------------------------------------------------
+
+                if cleanupGeneration
+                    ~= saluteGeneration then
+
+                    return
+
+                end
+
 
                 if humanoid
                     and humanoid.Parent then
@@ -235,9 +320,45 @@ return {
 
         local function stopSalute()
 
+            ------------------------------------------------------------
+            -- INVALIDATE SEMUA PROSES SALUTE LAMA
+            ------------------------------------------------------------
+
+            saluteGeneration =
+                saluteGeneration + 1
+
+            local generation =
+                saluteGeneration
+
+
             saluting = false
 
-            restoreNormalAnimation()
+
+            ------------------------------------------------------------
+            -- STOP TRACK
+            ------------------------------------------------------------
+
+            if saluteTrack then
+
+                local oldTrack =
+                    saluteTrack
+
+                saluteTrack = nil
+
+                pcall(function()
+                    oldTrack:Stop(0.15)
+                end)
+
+            end
+
+
+            ------------------------------------------------------------
+            -- RESTORE ANIMATION
+            ------------------------------------------------------------
+
+            restoreNormalAnimation(
+                generation
+            )
 
         end
 
@@ -264,9 +385,7 @@ return {
                     and type(stopFunction) == "function" then
 
                     pcall(function()
-
                         stopFunction()
-
                     end)
 
                 end
@@ -283,6 +402,25 @@ return {
         local function playSalute()
 
             ------------------------------------------------------------
+            -- NEW GENERATION
+            ------------------------------------------------------------
+
+            saluteGeneration =
+                saluteGeneration + 1
+
+            local generation =
+                saluteGeneration
+
+
+            ------------------------------------------------------------
+            -- SET ACTIVE MODE
+            ------------------------------------------------------------
+
+            _G.BotVars.ActiveMode =
+                "salute"
+
+
+            ------------------------------------------------------------
             -- STOP MODE LAIN
             ------------------------------------------------------------
 
@@ -290,25 +428,28 @@ return {
 
 
             ------------------------------------------------------------
-            -- SET ACTIVE MODE
+            -- VALIDATE GENERATION
             ------------------------------------------------------------
 
-            _G.BotVars.ActiveMode = "salute"
+            if generation ~= saluteGeneration then
+                return
+            end
 
 
             ------------------------------------------------------------
-            -- STOP PREVIOUS SALUTE
+            -- STOP PREVIOUS SALUTE TRACK
             ------------------------------------------------------------
 
             if saluteTrack then
 
-                pcall(function()
-
-                    saluteTrack:Stop(0.1)
-
-                end)
+                local oldTrack =
+                    saluteTrack
 
                 saluteTrack = nil
+
+                pcall(function()
+                    oldTrack:Stop(0.1)
+                end)
 
             end
 
@@ -326,7 +467,6 @@ return {
                     "Humanoid"
                 )
 
-
             if not humanoid then
 
                 warn(
@@ -339,18 +479,91 @@ return {
 
 
             ------------------------------------------------------------
-            -- PLAY EMOTE
+            -- PLAY EMOTE WITH RETRY
+            ------------------------------------------------------------
+            -- Setelah !stop, Animator kadang masih melakukan cleanup.
+            -- Karena itu emote dicoba beberapa kali dengan jeda kecil.
+
+            local maxAttempts = 3
+
+            local success = false
+            local result = nil
+
+
+            for attempt = 1, maxAttempts do
+
+                --------------------------------------------------------
+                -- COMMAND SUDAH BERGANTI
+                --------------------------------------------------------
+
+                if generation ~= saluteGeneration then
+                    return
+                end
+
+
+                --------------------------------------------------------
+                -- PLAY EMOTE
+                --------------------------------------------------------
+
+                local ok, track =
+                    pcall(function()
+
+                        return humanoid:
+                            PlayEmoteAndGetAnimTrackById(
+                                SALUTE_EMOTE_ID
+                            )
+
+                    end)
+
+
+                if ok and track then
+
+                    success = true
+                    result = track
+
+                    break
+
+                end
+
+
+                result = track
+
+
+                --------------------------------------------------------
+                -- JIKA GAGAL, BERI WAKTU UNTUK ANIMATOR
+                --------------------------------------------------------
+
+                if attempt < maxAttempts then
+
+                    task.wait(0.1)
+
+                end
+
+            end
+
+
+            ------------------------------------------------------------
+            -- VALIDATE GENERATION SETELAH RETRY
             ------------------------------------------------------------
 
-            local success, result =
-                pcall(function()
+            if generation ~= saluteGeneration then
 
-                    return humanoid:PlayEmoteAndGetAnimTrackById(
-                        SALUTE_EMOTE_ID
-                    )
+                if result then
 
-                end)
+                    pcall(function()
+                        result:Stop(0)
+                    end)
 
+                end
+
+                return
+
+            end
+
+
+            ------------------------------------------------------------
+            -- RESULT
+            ------------------------------------------------------------
 
             if success and result then
 
@@ -360,7 +573,9 @@ return {
 
                 print(
                     "[Salute] Emote berhasil dimainkan:",
-                    SALUTE_EMOTE_ID
+                    SALUTE_EMOTE_ID,
+                    "| Attempt:",
+                    "success"
                 )
 
 
@@ -371,7 +586,10 @@ return {
                 task.spawn(function()
 
                     local track =
-                        saluteTrack
+                        result
+
+                    local trackGeneration =
+                        generation
 
 
                     if not track then
@@ -380,14 +598,19 @@ return {
 
 
                     pcall(function()
-
                         track.Stopped:Wait()
-
                     end)
 
 
+                    ----------------------------------------------------
+                    -- HANYA BOLEH MEMBERSIHKAN TRACK
+                    -- JIKA MASIH TRACK + GENERATION YANG SAMA
+                    ----------------------------------------------------
+
                     if saluteTrack == track
-                        and saluting then
+                        and saluting
+                        and trackGeneration
+                            == saluteGeneration then
 
                         saluteTrack = nil
 
@@ -395,10 +618,16 @@ return {
 
                 end)
 
+
             else
 
                 warn(
-                    "[Salute] Emote gagal dimainkan:",
+                    "[Salute] Emote gagal dimainkan setelah",
+                    maxAttempts,
+                    "percobaan.",
+                    "| Bot:",
+                    LocalPlayer.Name,
+                    "| Last Error:",
                     result
                 )
 
@@ -500,15 +729,18 @@ return {
                 )
 
 
+                --------------------------------------------------------
+                -- HANYA UBAH ACTIVE MODE JIKA SALUTE MEMANG AKTIF
+                --------------------------------------------------------
+
                 if _G.BotVars.ActiveMode
                     == "salute" then
 
                     _G.BotVars.ActiveMode = nil
 
+                    stopSalute()
+
                 end
-
-
-                stopSalute()
 
 
                 return
@@ -528,15 +760,28 @@ return {
                 )
 
 
+                --------------------------------------------------------
+                -- PENTING:
+                -- Salute HANYA melakukan cleanup jika Salute
+                -- memang merupakan ActiveMode.
+                --
+                -- Jika misalnya mode aktif adalah:
+                --
+                -- follow
+                -- rest
+                -- frontline
+                --
+                -- module Salute tidak akan ikut mereset Animator.
+                --------------------------------------------------------
+
                 if _G.BotVars.ActiveMode
                     == "salute" then
 
                     _G.BotVars.ActiveMode = nil
 
+                    stopSalute()
+
                 end
-
-
-                stopSalute()
 
 
                 return
@@ -629,7 +874,20 @@ return {
 
                 task.wait(1)
 
+
+                --------------------------------------------------------
+                -- INVALIDATE TRACK LAMA
+                --------------------------------------------------------
+
+                saluteGeneration =
+                    saluteGeneration + 1
+
+                local generation =
+                    saluteGeneration
+
+
                 saluteTrack = nil
+                saluting = false
 
 
                 --------------------------------------------------------
@@ -640,6 +898,19 @@ return {
                     == "salute" then
 
                     task.wait(0.5)
+
+
+                    ----------------------------------------------------
+                    -- PASTIKAN BELUM ADA COMMAND BARU
+                    ----------------------------------------------------
+
+                    if generation
+                        ~= saluteGeneration then
+
+                        return
+
+                    end
+
 
                     playSalute()
 

@@ -18,8 +18,6 @@ return {
 
         local AGREE_MESSAGES = {
             "Yes, Sir!",
-            "Got it, Sir",
-            "Noted, Sir"
         }
 
         local agreeing = false

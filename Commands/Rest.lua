@@ -6,7 +6,6 @@ return {
         ----------------------------------------------------------------
 
         local Players = game:GetService("Players")
-
         local LocalPlayer = Players.LocalPlayer
 
         if not LocalPlayer then
@@ -40,14 +39,10 @@ return {
             end)
 
             if success and result then
-
                 Admin = result
-
             else
-
                 warn("[Rest] Gagal load Admin.lua.")
                 return
-
             end
         end
 
@@ -67,6 +62,20 @@ return {
         local restTrack = nil
         local resting = false
 
+        -- Token / generation untuk mencegah cleanup
+        -- dari command lama mengganggu !rest yang baru.
+        local restGeneration = 0
+
+
+        ----------------------------------------------------------------
+        -- RANDOM SEED
+        ----------------------------------------------------------------
+
+        math.randomseed(
+            math.floor(os.clock() * 1000000)
+                + LocalPlayer.UserId
+        )
+
 
         ----------------------------------------------------------------
         -- GET CHARACTER
@@ -84,7 +93,7 @@ return {
         -- RESTORE NORMAL ANIMATION
         ----------------------------------------------------------------
 
-        local function restoreNormalAnimation()
+        local function restoreNormalAnimation(generation)
 
             local character =
                 LocalPlayer.Character
@@ -105,15 +114,24 @@ return {
 
 
             ------------------------------------------------------------
-            -- STOP EMOTE TRACK
+            -- VALIDATE GENERATION
+            ------------------------------------------------------------
+
+            if generation
+                and generation ~= restGeneration then
+
+                return
+            end
+
+
+            ------------------------------------------------------------
+            -- STOP REST EMOTE
             ------------------------------------------------------------
 
             if restTrack then
 
                 pcall(function()
-
                     restTrack:Stop(0.15)
-
                 end)
 
                 restTrack = nil
@@ -138,17 +156,18 @@ return {
 
                     if track.Priority
                         == Enum.AnimationPriority.Action
+
                         or track.Priority
                         == Enum.AnimationPriority.Action2
+
                         or track.Priority
                         == Enum.AnimationPriority.Action3
+
                         or track.Priority
                         == Enum.AnimationPriority.Action4 then
 
                         pcall(function()
-
                             track:Stop(0.15)
-
                         end)
 
                     end
@@ -163,34 +182,58 @@ return {
             ------------------------------------------------------------
 
             local animateScript =
-                character:FindFirstChild(
-                    "Animate"
-                )
+                character:FindFirstChild("Animate")
 
 
             if animateScript
                 and animateScript:IsA("LocalScript") then
 
                 --------------------------------------------------------
-                -- Toggle agar controller animasi Roblox
-                -- mengambil alih kembali.
+                -- Disable Animate
                 --------------------------------------------------------
 
                 pcall(function()
-
                     animateScript.Enabled = false
-
                 end)
+
+
+                --------------------------------------------------------
+                -- WAIT
+                --------------------------------------------------------
 
                 task.wait()
 
 
+                --------------------------------------------------------
+                -- VALIDATE GENERATION AGAIN
+                --------------------------------------------------------
+
+                if generation
+                    and generation ~= restGeneration then
+
+                    return
+                end
+
+
+                --------------------------------------------------------
+                -- Enable Animate
+                --------------------------------------------------------
+
                 pcall(function()
-
                     animateScript.Enabled = true
-
                 end)
 
+            end
+
+
+            ------------------------------------------------------------
+            -- VALIDATE GENERATION
+            ------------------------------------------------------------
+
+            if generation
+                and generation ~= restGeneration then
+
+                return
             end
 
 
@@ -214,6 +257,18 @@ return {
             task.defer(function()
 
                 task.wait(0.1)
+
+
+                --------------------------------------------------------
+                -- OLD CLEANUP CANNOT TOUCH NEW GENERATION
+                --------------------------------------------------------
+
+                if generation
+                    and generation ~= restGeneration then
+
+                    return
+                end
+
 
                 if humanoid
                     and humanoid.Parent then
@@ -244,9 +299,31 @@ return {
 
         local function stopRest()
 
+            ------------------------------------------------------------
+            -- NEW GENERATION
+            ------------------------------------------------------------
+
+            restGeneration =
+                restGeneration + 1
+
+            local generation =
+                restGeneration
+
+
+            ------------------------------------------------------------
+            -- DISABLE REST STATE
+            ------------------------------------------------------------
+
             resting = false
 
-            restoreNormalAnimation()
+
+            ------------------------------------------------------------
+            -- RESTORE NORMAL ANIMATION
+            ------------------------------------------------------------
+
+            restoreNormalAnimation(
+                generation
+            )
 
         end
 
@@ -273,9 +350,7 @@ return {
                     and type(stopFunction) == "function" then
 
                     pcall(function()
-
                         stopFunction()
-
                     end)
 
                 end
@@ -292,10 +367,14 @@ return {
         local function playRest()
 
             ------------------------------------------------------------
-            -- STOP MODE LAIN
+            -- NEW GENERATION
             ------------------------------------------------------------
 
-            stopOtherModes()
+            restGeneration =
+                restGeneration + 1
+
+            local generation =
+                restGeneration
 
 
             ------------------------------------------------------------
@@ -306,15 +385,29 @@ return {
 
 
             ------------------------------------------------------------
-            -- STOP PREVIOUS REST
+            -- STOP MODE LAIN
+            ------------------------------------------------------------
+
+            stopOtherModes()
+
+
+            ------------------------------------------------------------
+            -- VALIDATE GENERATION
+            ------------------------------------------------------------
+
+            if generation ~= restGeneration then
+                return
+            end
+
+
+            ------------------------------------------------------------
+            -- STOP PREVIOUS REST TRACK
             ------------------------------------------------------------
 
             if restTrack then
 
                 pcall(function()
-
                     restTrack:Stop(0.1)
-
                 end)
 
                 restTrack = nil
@@ -339,28 +432,93 @@ return {
             if not humanoid then
 
                 warn(
-                    "[Rest] Humanoid tidak ditemukan."
+                    "[Rest] Humanoid tidak ditemukan untuk:",
+                    LocalPlayer.Name
                 )
 
                 return
+            end
+
+
+            ------------------------------------------------------------
+            -- PLAY EMOTE WITH RETRY
+            ------------------------------------------------------------
+
+            local maxAttempts = 3
+
+            local success = false
+            local result = nil
+
+
+            for attempt = 1, maxAttempts do
+
+                --------------------------------------------------------
+                -- GENERATION CHECK
+                --------------------------------------------------------
+
+                if generation ~= restGeneration then
+                    return
+                end
+
+
+                --------------------------------------------------------
+                -- TRY PLAY EMOTE
+                --------------------------------------------------------
+
+                local ok, track =
+                    pcall(function()
+
+                        return humanoid:
+                            PlayEmoteAndGetAnimTrackById(
+                                REST_EMOTE_ID
+                            )
+
+                    end)
+
+
+                if ok and track then
+
+                    success = true
+                    result = track
+
+                    break
+
+                end
+
+
+                result = track
+
+
+                --------------------------------------------------------
+                -- SMALL DELAY BEFORE RETRY
+                --------------------------------------------------------
+
+                task.wait(0.1)
 
             end
 
 
             ------------------------------------------------------------
-            -- PLAY EMOTE
+            -- VALIDATE GENERATION AFTER PLAY
             ------------------------------------------------------------
 
-            local success, result =
-                pcall(function()
+            if generation ~= restGeneration then
 
-                    return humanoid:
-                        PlayEmoteAndGetAnimTrackById(
-                            REST_EMOTE_ID
-                        )
+                if result then
 
-                end)
+                    pcall(function()
+                        result:Stop(0)
+                    end)
 
+                end
+
+                return
+            end
+
+
+            ------------------------------------------------------------
+            -- RESULT
+            ------------------------------------------------------------
 
             if success and result then
 
@@ -369,7 +527,9 @@ return {
 
 
                 print(
-                    "[Rest] Emote berhasil dimainkan:",
+                    "[Rest] EMOTE AKTIF | Bot:",
+                    LocalPlayer.Name,
+                    "| ID:",
                     REST_EMOTE_ID
                 )
 
@@ -381,13 +541,20 @@ return {
                 task.spawn(function()
 
                     local track =
-                        restTrack
+                        result
+
+                    local trackGeneration =
+                        generation
 
 
                     if not track then
                         return
                     end
 
+
+                    ----------------------------------------------------
+                    -- WAIT UNTIL EMOTE STOPPED
+                    ----------------------------------------------------
 
                     pcall(function()
 
@@ -396,8 +563,13 @@ return {
                     end)
 
 
+                    ----------------------------------------------------
+                    -- ONLY CLEAR CURRENT TRACK
+                    ----------------------------------------------------
+
                     if restTrack == track
-                        and resting then
+                        and resting
+                        and trackGeneration == restGeneration then
 
                         restTrack = nil
 
@@ -405,10 +577,13 @@ return {
 
                 end)
 
+
             else
 
                 warn(
-                    "[Rest] Emote gagal dimainkan:",
+                    "[Rest] Semua percobaan emote gagal | Bot:",
+                    LocalPlayer.Name,
+                    "| Last Error:",
                     result
                 )
 
@@ -485,7 +660,9 @@ return {
             if lower == "!rest" then
 
                 print(
-                    "[Rest] Command diterima dari:",
+                    "[Rest] Command diterima | Bot:",
+                    LocalPlayer.Name,
+                    "| Admin:",
                     sender.Name
                 )
 
@@ -494,7 +671,6 @@ return {
 
 
                 return
-
             end
 
 
@@ -505,24 +681,28 @@ return {
             if lower == "!unrest" then
 
                 print(
-                    "[Rest] Unrest command dari:",
+                    "[Rest] Unrest command | Bot:",
+                    LocalPlayer.Name,
+                    "| Admin:",
                     sender.Name
                 )
 
+
+                --------------------------------------------------------
+                -- HANYA CLEAR ACTIVE MODE JIKA MEMANG REST
+                --------------------------------------------------------
 
                 if _G.BotVars.ActiveMode
                     == "rest" then
 
                     _G.BotVars.ActiveMode = nil
 
+                    stopRest()
+
                 end
 
 
-                stopRest()
-
-
                 return
-
             end
 
 
@@ -533,24 +713,28 @@ return {
             if lower == "!stop" then
 
                 print(
-                    "[Rest] Stop command dari:",
+                    "[Rest] Stop command | Bot:",
+                    LocalPlayer.Name,
+                    "| Admin:",
                     sender.Name
                 )
 
+
+                --------------------------------------------------------
+                -- HANYA STOP REST JIKA REST SEDANG AKTIF
+                --------------------------------------------------------
 
                 if _G.BotVars.ActiveMode
                     == "rest" then
 
                     _G.BotVars.ActiveMode = nil
 
+                    stopRest()
+
                 end
 
 
-                stopRest()
-
-
                 return
-
             end
 
         end
@@ -637,13 +821,44 @@ return {
         LocalPlayer.CharacterAdded:Connect(
             function()
 
-                task.wait(1)
+                --------------------------------------------------------
+                -- INVALIDATE OLD GENERATION
+                --------------------------------------------------------
 
-                restTrack = nil
+                restGeneration =
+                    restGeneration + 1
+
+
+                local generation =
+                    restGeneration
 
 
                 --------------------------------------------------------
-                -- JIKA MASIH MODE REST
+                -- RESET STATE
+                --------------------------------------------------------
+
+                restTrack = nil
+                resting = false
+
+
+                --------------------------------------------------------
+                -- WAIT CHARACTER READY
+                --------------------------------------------------------
+
+                task.wait(1)
+
+
+                --------------------------------------------------------
+                -- CHECK GENERATION
+                --------------------------------------------------------
+
+                if generation ~= restGeneration then
+                    return
+                end
+
+
+                --------------------------------------------------------
+                -- CHECK ACTIVE MODE
                 --------------------------------------------------------
 
                 if _G.BotVars.ActiveMode
@@ -651,7 +866,22 @@ return {
 
                     task.wait(0.5)
 
-                    playRest()
+
+                    ----------------------------------------------------
+                    -- CHECK AGAIN
+                    ----------------------------------------------------
+
+                    if generation ~= restGeneration then
+                        return
+                    end
+
+
+                    if _G.BotVars.ActiveMode
+                        == "rest" then
+
+                        playRest()
+
+                    end
 
                 end
 
