@@ -16,7 +16,7 @@ return {
 
 
         ----------------------------------------------------------------
-        -- GLOBAL SYSTEM
+        -- GLOBAL MODE SYSTEM
         ----------------------------------------------------------------
 
         _G.BotVars = _G.BotVars or {}
@@ -32,7 +32,6 @@ return {
         local Admin
 
         do
-
             local success, result = pcall(function()
 
                 return loadstring(game:HttpGet(
@@ -51,7 +50,6 @@ return {
                 return
 
             end
-
         end
 
 
@@ -68,22 +66,11 @@ return {
         ----------------------------------------------------------------
 
         local danceTrack = nil
-
         local dancing = false
 
+        -- Generation digunakan untuk memastikan proses lama
+        -- dari !stop / !ateezdance tidak mengganggu command terbaru.
         local danceGeneration = 0
-
-        local danceLoopThread = nil
-
-        local connectedPlayers = {}
-
-
-        ----------------------------------------------------------------
-        -- GLOBAL ATEEZ STATE
-        ----------------------------------------------------------------
-
-        _G.BotVars.AteezDanceActive =
-            _G.BotVars.AteezDanceActive or false
 
 
         ----------------------------------------------------------------
@@ -94,49 +81,6 @@ return {
 
             return LocalPlayer.Character
                 or LocalPlayer.CharacterAdded:Wait()
-
-        end
-
-
-        ----------------------------------------------------------------
-        -- GET HUMANOID
-        ----------------------------------------------------------------
-
-        local function getHumanoid()
-
-            local character =
-                LocalPlayer.Character
-
-            if not character then
-                return nil
-            end
-
-
-            return character:FindFirstChildOfClass(
-                "Humanoid"
-            )
-
-        end
-
-
-        ----------------------------------------------------------------
-        -- STOP CURRENT TRACK
-        ----------------------------------------------------------------
-
-        local function stopCurrentTrack()
-
-            if danceTrack then
-
-                local oldTrack =
-                    danceTrack
-
-                danceTrack = nil
-
-                pcall(function()
-                    oldTrack:Stop(0.15)
-                end)
-
-            end
 
         end
 
@@ -154,7 +98,6 @@ return {
                 return
             end
 
-
             local humanoid =
                 character:FindFirstChildOfClass(
                     "Humanoid"
@@ -166,22 +109,32 @@ return {
 
 
             ------------------------------------------------------------
-            -- GENERATION CHECK
+            -- VALIDATE GENERATION
             ------------------------------------------------------------
 
             if generation
                 and generation ~= danceGeneration then
 
                 return
-
             end
 
 
             ------------------------------------------------------------
-            -- STOP ATEEZ TRACK
+            -- STOP ATEEZ DANCE
             ------------------------------------------------------------
 
-            stopCurrentTrack()
+            if danceTrack then
+
+                local oldTrack =
+                    danceTrack
+
+                danceTrack = nil
+
+                pcall(function()
+                    oldTrack:Stop(0.15)
+                end)
+
+            end
 
 
             ------------------------------------------------------------
@@ -220,7 +173,7 @@ return {
 
 
             ------------------------------------------------------------
-            -- RESTART DEFAULT ANIMATE
+            -- RESTART DEFAULT ANIMATE SCRIPT
             ------------------------------------------------------------
 
             local animateScript =
@@ -235,14 +188,15 @@ return {
 
                 task.wait()
 
+                --------------------------------------------------------
+                -- VALIDATE GENERATION AGAIN
+                --------------------------------------------------------
 
                 if generation
                     and generation ~= danceGeneration then
 
                     return
-
                 end
-
 
                 pcall(function()
                     animateScript.Enabled = true
@@ -252,16 +206,14 @@ return {
 
 
             ------------------------------------------------------------
-            -- RESTORE RUNNING STATE
+            -- FORCE HUMANOID BACK TO RUNNING
             ------------------------------------------------------------
 
             if generation
                 and generation ~= danceGeneration then
 
                 return
-
             end
-
 
             pcall(function()
 
@@ -272,18 +224,22 @@ return {
             end)
 
 
+            ------------------------------------------------------------
+            -- DELAYED RUNNING STATE
+            ------------------------------------------------------------
+
+            local cleanupGeneration =
+                generation or danceGeneration
+
             task.defer(function()
 
                 task.wait(0.1)
 
-
-                if generation
-                    and generation ~= danceGeneration then
+                if cleanupGeneration
+                    ~= danceGeneration then
 
                     return
-
                 end
-
 
                 if humanoid
                     and humanoid.Parent then
@@ -309,76 +265,185 @@ return {
 
 
         ----------------------------------------------------------------
-        -- PLAY SINGLE ATEEZ TRACK
+        -- STOP ATEEZ DANCE
         ----------------------------------------------------------------
 
-        local function playSingleAteezTrack(
-            generation
-        )
+        local function stopAteezDance()
 
             ------------------------------------------------------------
-            -- VALIDATE
+            -- INVALIDATE SEMUA PROSES LAMA
             ------------------------------------------------------------
 
-            if not _G.BotVars.AteezDanceActive then
-                return nil
+            danceGeneration =
+                danceGeneration + 1
+
+            local generation =
+                danceGeneration
+
+            dancing = false
+
+
+            ------------------------------------------------------------
+            -- STOP TRACK
+            ------------------------------------------------------------
+
+            if danceTrack then
+
+                local oldTrack =
+                    danceTrack
+
+                danceTrack = nil
+
+                pcall(function()
+                    oldTrack:Stop(0.15)
+                end)
+
             end
 
 
-            if generation
-                and generation ~= danceGeneration then
+            ------------------------------------------------------------
+            -- RESTORE ANIMATION
+            ------------------------------------------------------------
 
-                return nil
+            restoreNormalAnimation(
+                generation
+            )
+
+        end
+
+
+        ----------------------------------------------------------------
+        -- REGISTER CONTROLLER
+        ----------------------------------------------------------------
+
+        _G.BotVars.ModeControllers.ateezdance =
+            stopAteezDance
+
+
+        ----------------------------------------------------------------
+        -- STOP OTHER MODES
+        ----------------------------------------------------------------
+
+        local function stopOtherModes()
+
+            for name, stopFunction in pairs(
+                _G.BotVars.ModeControllers
+            ) do
+
+                if name ~= "ateezdance"
+                    and type(stopFunction) == "function" then
+
+                    pcall(function()
+                        stopFunction()
+                    end)
+
+                end
+
+            end
+
+        end
+
+
+        ----------------------------------------------------------------
+        -- PLAY ATEEZ DANCE
+        ----------------------------------------------------------------
+
+        local function playAteezDance()
+
+            ------------------------------------------------------------
+            -- NEW GENERATION
+            ------------------------------------------------------------
+
+            danceGeneration =
+                danceGeneration + 1
+
+            local generation =
+                danceGeneration
+
+
+            ------------------------------------------------------------
+            -- SET ACTIVE MODE
+            ------------------------------------------------------------
+
+            _G.BotVars.ActiveMode =
+                "ateezdance"
+
+
+            ------------------------------------------------------------
+            -- STOP MODE LAIN
+            ------------------------------------------------------------
+
+            stopOtherModes()
+
+
+            ------------------------------------------------------------
+            -- VALIDATE GENERATION
+            ------------------------------------------------------------
+
+            if generation ~= danceGeneration then
+                return
+            end
+
+
+            ------------------------------------------------------------
+            -- STOP PREVIOUS DANCE TRACK
+            ------------------------------------------------------------
+
+            if danceTrack then
+
+                local oldTrack =
+                    danceTrack
+
+                danceTrack = nil
+
+                pcall(function()
+                    oldTrack:Stop(0.1)
+                end)
 
             end
 
 
             ------------------------------------------------------------
-            -- HUMANOID
+            -- GET CHARACTER
             ------------------------------------------------------------
+
+            local character =
+                getCharacter()
 
             local humanoid =
-                getHumanoid()
+                character:FindFirstChildOfClass(
+                    "Humanoid"
+                )
 
             if not humanoid then
 
-                return nil
+                warn(
+                    "[AteezDance] Humanoid tidak ditemukan."
+                )
+
+                return
 
             end
 
 
             ------------------------------------------------------------
-            -- STOP OLD TRACK
+            -- PLAY FE ANIMATION WITH RETRY
             ------------------------------------------------------------
-
-            stopCurrentTrack()
-
-
-            ------------------------------------------------------------
-            -- PLAY WITH RETRY
-            ------------------------------------------------------------
+            -- Menggunakan Humanoid:PlayEmoteAndGetAnimTrackById()
+            -- sehingga animasi dijalankan sebagai FE animation.
 
             local maxAttempts = 3
-
+            local success = false
             local result = nil
-
 
             for attempt = 1, maxAttempts do
 
                 --------------------------------------------------------
-                -- VALIDATE STATE
+                -- COMMAND SUDAH BERGANTI
                 --------------------------------------------------------
 
-                if not _G.BotVars.AteezDanceActive then
-                    return nil
-                end
-
-
-                if generation
-                    and generation ~= danceGeneration then
-
-                    return nil
-
+                if generation ~= danceGeneration then
+                    return
                 end
 
 
@@ -396,370 +461,111 @@ return {
 
                     end)
 
-
                 if ok and track then
 
+                    success = true
                     result = track
-
                     break
 
                 end
-
 
                 result = track
 
 
                 --------------------------------------------------------
-                -- RETRY DELAY
+                -- JIKA GAGAL, BERI WAKTU UNTUK ANIMATOR
                 --------------------------------------------------------
 
                 if attempt < maxAttempts then
-
-                    task.wait(0.15)
-
+                    task.wait(0.1)
                 end
 
             end
 
 
             ------------------------------------------------------------
-            -- VALIDATE RESULT
+            -- VALIDATE GENERATION SETELAH RETRY
             ------------------------------------------------------------
 
-            if not result then
+            if generation ~= danceGeneration then
 
-                return nil
+                if result then
 
-            end
+                    pcall(function()
+                        result:Stop(0)
+                    end)
 
+                end
 
-            if not _G.BotVars.AteezDanceActive then
-
-                pcall(function()
-                    result:Stop(0)
-                end)
-
-                return nil
-
-            end
-
-
-            if generation
-                and generation ~= danceGeneration then
-
-                pcall(function()
-                    result:Stop(0)
-                end)
-
-                return nil
-
-            end
-
-
-            ------------------------------------------------------------
-            -- STORE TRACK
-            ------------------------------------------------------------
-
-            danceTrack = result
-
-            dancing = true
-
-
-            ------------------------------------------------------------
-            -- TRY LOOPED
-            ------------------------------------------------------------
-            --
-            -- Tetap gunakan watchdog sebagai fallback.
-            --
-            ------------------------------------------------------------
-
-            pcall(function()
-
-                result.Looped = true
-
-            end)
-
-
-            print(
-                "[AteezDance] Animation dimainkan:",
-                ATEEZ_DANCE_ANIMATION_ID,
-                "| Bot:",
-                LocalPlayer.Name
-            )
-
-
-            return result
-
-        end
-
-
-        ----------------------------------------------------------------
-        -- ATEEZ WATCHDOG
-        ----------------------------------------------------------------
-
-        local function startDanceWatchdog(
-            generation
-        )
-
-            ------------------------------------------------------------
-            -- PREVENT MULTIPLE WATCHDOG
-            ------------------------------------------------------------
-
-            if danceLoopThread then
                 return
+
             end
 
 
-            danceLoopThread =
+            ------------------------------------------------------------
+            -- RESULT
+            ------------------------------------------------------------
+
+            if success and result then
+
+                danceTrack = result
+                dancing = true
+
+                print(
+                    "[AteezDance] FE Animation berhasil dimainkan:",
+                    ATEEZ_DANCE_ANIMATION_ID,
+                    "| Bot:",
+                    LocalPlayer.Name
+                )
+
+
+                --------------------------------------------------------
+                -- MONITOR TRACK
+                --------------------------------------------------------
+
                 task.spawn(function()
 
-                    while true do
+                    local track = result
+                    local trackGeneration = generation
 
-                        ------------------------------------------------
-                        -- CHECK ACTIVE
-                        ------------------------------------------------
-
-                        if not _G.BotVars.AteezDanceActive then
-
-                            break
-
-                        end
-
-
-                        ------------------------------------------------
-                        -- CHECK GENERATION
-                        ------------------------------------------------
-
-                        if generation
-                            ~= danceGeneration then
-
-                            break
-
-                        end
-
-
-                        ------------------------------------------------
-                        -- CHECK CHARACTER
-                        ------------------------------------------------
-
-                        local humanoid =
-                            getHumanoid()
-
-
-                        if not humanoid then
-
-                            task.wait(0.5)
-
-                            continue
-
-                        end
-
-
-                        ------------------------------------------------
-                        -- CHECK CURRENT TRACK
-                        ------------------------------------------------
-
-                        local currentTrack =
-                            danceTrack
-
-
-                        local needsRestart = false
-
-
-                        if not currentTrack then
-
-                            needsRestart = true
-
-                        else
-
-                            local isPlaying = false
-
-
-                            pcall(function()
-
-                                isPlaying =
-                                    currentTrack.IsPlaying
-
-                            end)
-
-
-                            if not isPlaying then
-
-                                needsRestart = true
-
-                            end
-
-                        end
-
-
-                        ------------------------------------------------
-                        -- RESTART IF NEEDED
-                        ------------------------------------------------
-
-                        if needsRestart then
-
-                            if _G.BotVars.AteezDanceActive
-                                and generation
-                                    == danceGeneration then
-
-                                playSingleAteezTrack(
-                                    generation
-                                )
-
-                            end
-
-                        end
-
-
-                        ------------------------------------------------
-                        -- WATCHDOG INTERVAL
-                        ------------------------------------------------
-
-                        task.wait(0.25)
-
+                    if not track then
+                        return
                     end
 
+                    pcall(function()
+                        track.Stopped:Wait()
+                    end)
+
 
                     ----------------------------------------------------
-                    -- THREAD FINISHED
+                    -- HANYA BOLEH MEMBERSIHKAN TRACK
+                    -- JIKA MASIH TRACK + GENERATION YANG SAMA
                     ----------------------------------------------------
 
-                    if danceLoopThread
-                        == coroutine.running() then
+                    if danceTrack == track
+                        and dancing
+                        and trackGeneration
+                            == danceGeneration then
 
-                        danceLoopThread = nil
+                        danceTrack = nil
 
                     end
 
                 end)
 
-        end
-
-
-        ----------------------------------------------------------------
-        -- STOP ATEEZ DANCE
-        ----------------------------------------------------------------
-
-        local function stopAteezDance()
-
-            ------------------------------------------------------------
-            -- INVALIDATE OLD PROCESSES
-            ------------------------------------------------------------
-
-            danceGeneration =
-                danceGeneration + 1
-
-
-            local generation =
-                danceGeneration
-
-
-            ------------------------------------------------------------
-            -- GLOBAL STATE OFF
-            ------------------------------------------------------------
-
-            _G.BotVars.AteezDanceActive =
-                false
-
-
-            dancing = false
-
-
-            ------------------------------------------------------------
-            -- STOP TRACK
-            ------------------------------------------------------------
-
-            stopCurrentTrack()
-
-
-            ------------------------------------------------------------
-            -- RESTORE NORMAL ANIMATION
-            ------------------------------------------------------------
-
-            restoreNormalAnimation(
-                generation
-            )
-
-
-            print(
-                "[AteezDance] Dance dihentikan."
-            )
-
-        end
-
-
-        ----------------------------------------------------------------
-        -- REGISTER CONTROLLER
-        ----------------------------------------------------------------
-
-        _G.BotVars.ModeControllers.ateezdance =
-            stopAteezDance
-
-
-        ----------------------------------------------------------------
-        -- START ATEEZ DANCE
-        ----------------------------------------------------------------
-
-        local function startAteezDance()
-
-            ------------------------------------------------------------
-            -- INVALIDATE OLD GENERATION
-            ------------------------------------------------------------
-
-            danceGeneration =
-                danceGeneration + 1
-
-
-            local generation =
-                danceGeneration
-
-
-            ------------------------------------------------------------
-            -- ACTIVE
-            ------------------------------------------------------------
-
-            _G.BotVars.AteezDanceActive =
-                true
-
-
-            dancing = true
-
-
-            ------------------------------------------------------------
-            -- PLAY FIRST TRACK
-            ------------------------------------------------------------
-
-            local track =
-                playSingleAteezTrack(
-                    generation
-                )
-
-
-            if not track then
-
-                dancing = false
+            else
 
                 warn(
-                    "[AteezDance] Gagal memainkan animation."
+                    "[AteezDance] FE Animation gagal dimainkan setelah",
+                    maxAttempts,
+                    "percobaan.",
+                    "| Bot:",
+                    LocalPlayer.Name,
+                    "| Last Error:",
+                    result
                 )
 
-                return
-
             end
-
-
-            ------------------------------------------------------------
-            -- START WATCHDOG
-            ------------------------------------------------------------
-
-            startDanceWatchdog(
-                generation
-            )
-
-
-            print(
-                "[AteezDance] Persistent Dance aktif."
-            )
 
         end
 
@@ -784,14 +590,12 @@ return {
 
             local isAdmin = false
 
-
             pcall(function()
 
                 isAdmin =
                     Admin:IsAdmin(sender)
 
             end)
-
 
             if not isAdmin then
                 return
@@ -805,10 +609,8 @@ return {
             local lower =
                 message:lower()
 
-
             lower =
                 lower:gsub("^%s+", "")
-
 
             lower =
                 lower:gsub("%s+$", "")
@@ -824,16 +626,10 @@ return {
                     "[AteezDance] Command diterima | Bot:",
                     LocalPlayer.Name,
                     "| Admin:",
-                    sender.Name,
-                    "| Follow:",
-                    tostring(
-                        _G.BotVars.ActiveMode == "follow"
-                    )
+                    sender.Name
                 )
 
-
-                startAteezDance()
-
+                playAteezDance()
 
                 return
 
@@ -853,9 +649,14 @@ return {
                     sender.Name
                 )
 
+                if _G.BotVars.ActiveMode
+                    == "ateezdance" then
+
+                    _G.BotVars.ActiveMode = nil
+
+                end
 
                 stopAteezDance()
-
 
                 return
 
@@ -875,9 +676,14 @@ return {
                     sender.Name
                 )
 
+                if _G.BotVars.ActiveMode
+                    == "ateezdance" then
+
+                    _G.BotVars.ActiveMode = nil
+
+                end
 
                 stopAteezDance()
-
 
                 return
 
@@ -890,15 +696,16 @@ return {
         -- CHAT HANDLER
         ----------------------------------------------------------------
 
+        local connectedPlayers = {}
+
+
         local function connectPlayerChat(player)
 
             if connectedPlayers[player] then
                 return
             end
 
-
             connectedPlayers[player] = true
-
 
             player.Chatted:Connect(
                 function(message)
@@ -964,86 +771,45 @@ return {
         LocalPlayer.CharacterAdded:Connect(
             function()
 
+                task.wait(1)
+
+
                 --------------------------------------------------------
-                -- INVALIDATE OLD TRACK
+                -- INVALIDATE TRACK LAMA
                 --------------------------------------------------------
 
                 danceGeneration =
                     danceGeneration + 1
 
-
                 local generation =
                     danceGeneration
 
-
                 danceTrack = nil
-
                 dancing = false
 
 
                 --------------------------------------------------------
-                -- WAIT FOR CHARACTER
+                -- JIKA MASIH MODE ATEEZ DANCE
                 --------------------------------------------------------
 
-                task.wait(1)
+                if _G.BotVars.ActiveMode
+                    == "ateezdance" then
+
+                    task.wait(0.5)
 
 
-                --------------------------------------------------------
-                -- RESTART DANCE AFTER RESPAWN
-                --------------------------------------------------------
+                    ----------------------------------------------------
+                    -- PASTIKAN BELUM ADA COMMAND BARU
+                    ----------------------------------------------------
 
-                if not _G.BotVars.AteezDanceActive then
-                    return
-                end
+                    if generation
+                        ~= danceGeneration then
 
+                        return
 
-                if generation
-                    ~= danceGeneration then
+                    end
 
-                    return
-
-                end
-
-
-                local character =
-                    LocalPlayer.Character
-
-
-                if not character then
-                    return
-                end
-
-
-                local humanoid =
-                    character:FindFirstChildOfClass(
-                        "Humanoid"
-                    )
-
-
-                if not humanoid then
-                    return
-                end
-
-
-                task.wait(0.5)
-
-
-                --------------------------------------------------------
-                -- PLAY AGAIN
-                --------------------------------------------------------
-
-                if _G.BotVars.AteezDanceActive
-                    and generation
-                        == danceGeneration then
-
-                    playSingleAteezTrack(
-                        generation
-                    )
-
-
-                    startDanceWatchdog(
-                        generation
-                    )
+                    playAteezDance()
 
                 end
 
@@ -1059,9 +825,7 @@ return {
             "[AteezDance] Loaded untuk:",
             LocalPlayer.Name,
             "| FE Animation:",
-            ATEEZ_DANCE_ANIMATION_ID,
-            "| Persistent Loop: ENABLED",
-            "| Follow compatibility: ENABLED"
+            ATEEZ_DANCE_ANIMATION_ID
         )
 
     end
