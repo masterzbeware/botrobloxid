@@ -21,7 +21,8 @@ return {
         ----------------------------------------------------------------
 
         _G.BotVars = _G.BotVars or {}
-        _G.BotVars.ModeControllers = _G.BotVars.ModeControllers or {}
+        _G.BotVars.ModeControllers =
+            _G.BotVars.ModeControllers or {}
 
         ----------------------------------------------------------------
         -- LOAD ADMIN
@@ -51,22 +52,39 @@ return {
         local followConnection = nil
 
         ----------------------------------------------------------------
-        -- DISTANCE
+        -- DEFAULT DISTANCE
         ----------------------------------------------------------------
+        -- Jarak Admin -> Bot 1
+        -- Jika Distance.lua mempunyai jarak pasangan,
+        -- nilai pasangan tersebut akan digunakan.
 
         local adminFollowDistance = 3
-        local defaultBotFollowDistance = 2
+
+        -- Fallback untuk hubungan bot yang tidak ditulis
+        -- secara eksplisit di Distance.lua.
+        local defaultBotFollowDistance = 3
 
         ----------------------------------------------------------------
         -- BOT ORDER
         ----------------------------------------------------------------
+        -- Urutan formasi:
+        --
+        -- Admin
+        --   ↓ 3
+        -- Bot 1
+        --   ↓ 3
+        -- Bot 2
+        --   ↓ 3
+        -- Bot 3
+        --   ↓ 3
+        -- Bot 4
 
-local botOrder = {
-    "11611503633", -- Bot 1
-    "11611567975", -- Bot 2
-    "11611562042", -- Bot 3
-    "11611591921", -- Bot 4
-}
+        local botOrder = {
+            "11611503633", -- Bot 1
+            "11611567975", -- Bot 2
+            "11611562042", -- Bot 3
+            "11611591921", -- Bot 4
+        }
 
         ----------------------------------------------------------------
         -- UPDATE CHARACTER
@@ -85,7 +103,6 @@ local botOrder = {
                 character:WaitForChild("HumanoidRootPart")
 
             humanoid.AutoRotate = true
-
         end
 
         updateCharacter()
@@ -113,7 +130,6 @@ local botOrder = {
                     end)
 
                     success = true
-
                 end
             end
 
@@ -141,13 +157,212 @@ local botOrder = {
                             )
 
                         end
-
                     end
 
                 end)
+            end
+        end
 
+        ----------------------------------------------------------------
+        -- FIND PLAYER
+        ----------------------------------------------------------------
+
+        local function findPlayerByName(name)
+
+            name = name:lower()
+
+            for _, player in ipairs(
+                Players:GetPlayers()
+            ) do
+
+                if player.Name:lower() == name
+                    or player.DisplayName:lower() == name then
+
+                    return player
+                end
             end
 
+            return nil
+        end
+
+        ----------------------------------------------------------------
+        -- GET MY BOT INDEX
+        ----------------------------------------------------------------
+
+        local function getMyBotIndex()
+
+            return table.find(
+                botOrder,
+                tostring(LocalPlayer.UserId)
+            )
+        end
+
+        ----------------------------------------------------------------
+        -- GET PREVIOUS BOT
+        ----------------------------------------------------------------
+
+        local function getPreviousBot(myIndex)
+
+            if not myIndex or myIndex <= 1 then
+                return nil
+            end
+
+            local previousUserId =
+                tonumber(
+                    botOrder[myIndex - 1]
+                )
+
+            if not previousUserId then
+                return nil
+            end
+
+            return Players:GetPlayerByUserId(
+                previousUserId
+            )
+        end
+
+        ----------------------------------------------------------------
+        -- GET DISTANCE FROM DISTANCE.LUA
+        ----------------------------------------------------------------
+
+        local function getFormationDistance(
+            myIndex,
+            referencePlayer
+        )
+
+            ------------------------------------------------------------
+            -- BOT 1
+            ------------------------------------------------------------
+            -- Bot 1 mengikuti Admin/player.
+            ------------------------------------------------------------
+
+            if myIndex == 1 then
+
+                local distanceFromDistanceModule =
+                    Distance:GetDistance(
+                        tostring(LocalPlayer.UserId),
+                        tostring(referencePlayer.UserId)
+                    )
+
+                if distanceFromDistanceModule then
+                    return distanceFromDistanceModule
+                end
+
+                return adminFollowDistance
+            end
+
+            ------------------------------------------------------------
+            -- BOT 2+
+            ------------------------------------------------------------
+            -- Cek pasangan yang didefinisikan Distance.lua.
+            ------------------------------------------------------------
+
+            local previousBot =
+                getPreviousBot(myIndex)
+
+            if previousBot then
+
+                local specialDistance =
+                    Distance:GetDistance(
+                        tostring(LocalPlayer.UserId),
+                        tostring(previousBot.UserId)
+                    )
+
+                if specialDistance then
+                    return specialDistance
+                end
+            end
+
+            ------------------------------------------------------------
+            -- FALLBACK
+            ------------------------------------------------------------
+
+            return defaultBotFollowDistance
+        end
+
+        ----------------------------------------------------------------
+        -- CHECK TARGET JUMPING
+        ----------------------------------------------------------------
+
+        local function isPlayerJumping(player)
+
+            if not player then
+                return false
+            end
+
+            local character =
+                player.Character
+
+            if not character then
+                return false
+            end
+
+            local targetHumanoid =
+                character:FindFirstChildOfClass(
+                    "Humanoid"
+                )
+
+            local targetHRP =
+                character:FindFirstChild(
+                    "HumanoidRootPart"
+                )
+
+            if not targetHumanoid
+                or not targetHRP then
+
+                return false
+            end
+
+            local state =
+                targetHumanoid:GetState()
+
+            ------------------------------------------------------------
+            -- STATE JUMP
+            ------------------------------------------------------------
+
+            if state == Enum.HumanoidStateType.Jumping
+                or state == Enum.HumanoidStateType.Freefall then
+
+                return true
+            end
+
+            ------------------------------------------------------------
+            -- VELOCITY JUMP DETECTION
+            ------------------------------------------------------------
+
+            if targetHRP.AssemblyLinearVelocity.Y > 3 then
+                return true
+            end
+
+            return false
+        end
+
+        ----------------------------------------------------------------
+        -- JUMP BOT
+        ----------------------------------------------------------------
+
+        local function makeBotJump()
+
+            if not humanoid then
+                return
+            end
+
+            local state =
+                humanoid:GetState()
+
+            if state == Enum.HumanoidStateType.Jumping
+                or state == Enum.HumanoidStateType.Freefall then
+
+                return
+            end
+
+            humanoid.Jump = true
+
+            pcall(function()
+                humanoid:ChangeState(
+                    Enum.HumanoidStateType.Jumping
+                )
+            end)
         end
 
         ----------------------------------------------------------------
@@ -169,17 +384,17 @@ local botOrder = {
             if humanoid then
                 humanoid.AutoRotate = true
             end
-
         end
 
         ----------------------------------------------------------------
         -- REGISTER CONTROLLER
         ----------------------------------------------------------------
 
-        _G.BotVars.ModeControllers.follow = stopFollow
+        _G.BotVars.ModeControllers.follow =
+            stopFollow
 
         ----------------------------------------------------------------
-        -- STOP SEMUA MODE LAIN
+        -- STOP ALL OTHER MODES
         ----------------------------------------------------------------
 
         local function stopOtherModes()
@@ -194,34 +409,7 @@ local botOrder = {
                     pcall(stopFunction)
 
                 end
-
             end
-
-        end
-
-        ----------------------------------------------------------------
-        -- FIND PLAYER
-        ----------------------------------------------------------------
-
-        local function findPlayerByName(name)
-
-            name = name:lower()
-
-            for _, player in ipairs(
-                Players:GetPlayers()
-            ) do
-
-                if player.Name:lower() == name
-                    or player.DisplayName:lower() == name then
-
-                    return player
-
-                end
-
-            end
-
-            return nil
-
         end
 
         ----------------------------------------------------------------
@@ -235,19 +423,19 @@ local botOrder = {
             end
 
             ------------------------------------------------------------
-            -- STOP MODE LAIN
+            -- STOP OTHER MODES
             ------------------------------------------------------------
 
             stopOtherModes()
 
             ------------------------------------------------------------
-            -- SET ACTIVE MODE
+            -- SET MODE
             ------------------------------------------------------------
 
             _G.BotVars.ActiveMode = "follow"
 
             ------------------------------------------------------------
-            -- STOP CONNECTION LAMA
+            -- STOP OLD CONNECTION
             ------------------------------------------------------------
 
             if followConnection then
@@ -263,19 +451,15 @@ local botOrder = {
             sendChat("Yes, Sir!")
 
             ------------------------------------------------------------
-            -- CARI INDEX BOT
+            -- GET BOT INDEX
             ------------------------------------------------------------
 
             local myIndex =
-                table.find(
-                    botOrder,
-                    tostring(LocalPlayer.UserId)
-                )
+                getMyBotIndex()
 
             if not myIndex then
 
                 stopFollow()
-
                 return
 
             end
@@ -289,19 +473,19 @@ local botOrder = {
                     function()
 
                         ------------------------------------------------
-                        -- JIKA MODE SUDAH BERGANTI
+                        -- MODE CHECK
                         ------------------------------------------------
 
-                        if _G.BotVars.ActiveMode ~= "follow" then
+                        if _G.BotVars.ActiveMode
+                            ~= "follow" then
 
                             stopFollow()
-
                             return
 
                         end
 
                         ------------------------------------------------
-                        -- VALIDASI
+                        -- VALIDATION
                         ------------------------------------------------
 
                         if not following then
@@ -312,7 +496,6 @@ local botOrder = {
                             or not myHRP then
 
                             return
-
                         end
 
                         if not targetPlayer then
@@ -320,11 +503,37 @@ local botOrder = {
                         end
 
                         ------------------------------------------------
+                        -- DETERMINE FORMATION TARGET
+                        ------------------------------------------------
+                        --
+                        -- Bot 1 -> Admin
+                        -- Bot 2 -> Bot 1
+                        -- Bot 3 -> Bot 2
+                        -- Bot 4 -> Bot 3
+                        --
+
+                        local formationTarget =
+                            targetPlayer
+
+                        if myIndex > 1 then
+
+                            local previousBot =
+                                getPreviousBot(myIndex)
+
+                            if previousBot then
+
+                                formationTarget =
+                                    previousBot
+
+                            end
+                        end
+
+                        ------------------------------------------------
                         -- TARGET CHARACTER
                         ------------------------------------------------
 
                         local targetCharacter =
-                            targetPlayer.Character
+                            formationTarget.Character
 
                         if not targetCharacter then
                             return
@@ -340,47 +549,80 @@ local botOrder = {
                         end
 
                         ------------------------------------------------
-                        -- DISTANCE
+                        -- TARGET HUMANOID
+                        ------------------------------------------------
+
+                        local targetHumanoid =
+                            targetCharacter:FindFirstChildOfClass(
+                                "Humanoid"
+                            )
+
+                        ------------------------------------------------
+                        -- JUMP FOLLOW
+                        ------------------------------------------------
+                        -- Jika target formasi melompat,
+                        -- bot langsung ikut melompat.
+
+                        if isPlayerJumping(
+                            formationTarget
+                        ) then
+
+                            makeBotJump()
+
+                        elseif myHRP.Position.Y
+                            < targetHRP.Position.Y - 5 then
+
+                            ------------------------------------------------
+                            -- Jika bot tertinggal jauh secara vertikal,
+                            -- bantu lompat untuk mengejar.
+                            ------------------------------------------------
+
+                            makeBotJump()
+
+                        end
+
+                        ------------------------------------------------
+                        -- GET DISTANCE
                         ------------------------------------------------
 
                         local distance =
-                            defaultBotFollowDistance
-
-                        if Admin:IsAdmin(targetPlayer) then
-
-                            distance =
-                                adminFollowDistance
-
-                        end
-
-                        local specialDistance =
-                            Distance:GetDistance(
-                                tostring(LocalPlayer.UserId),
-                                tostring(targetPlayer.UserId)
+                            getFormationDistance(
+                                myIndex,
+                                formationTarget
                             )
 
-                        if specialDistance then
+                        ------------------------------------------------
+                        -- FORMATION DIRECTION
+                        ------------------------------------------------
+                        -- Gunakan arah hadap target.
+                        --
+                        -- Bot selalu berada di belakang target
+                        -- sebesar distance.
 
-                            distance =
-                                specialDistance
-
-                        end
+                        local lookVector =
+                            targetHRP.CFrame.LookVector
 
                         ------------------------------------------------
-                        -- POSISI BOT
+                        -- TARGET POSITION
                         ------------------------------------------------
 
                         local targetPosition =
                             targetHRP.Position
                             -
                             (
-                                targetHRP.CFrame.LookVector
-                                *
-                                (distance * myIndex)
+                                lookVector
+                                * distance
                             )
 
                         ------------------------------------------------
-                        -- JARAK
+                        -- JAGA KETINGGIAN
+                        ------------------------------------------------
+                        -- Tidak mengunci Y secara keras.
+                        -- Ini penting agar bot bisa mengikuti
+                        -- tanjakan, turunan dan lompatan.
+
+                        ------------------------------------------------
+                        -- HITUNG JARAK
                         ------------------------------------------------
 
                         local distanceToTarget =
@@ -391,10 +633,10 @@ local botOrder = {
                             ).Magnitude
 
                         ------------------------------------------------
-                        -- JALAN
+                        -- MOVEMENT
                         ------------------------------------------------
 
-                        if distanceToTarget > 1.5 then
+                        if distanceToTarget > 1.25 then
 
                             humanoid.AutoRotate = true
 
@@ -403,30 +645,39 @@ local botOrder = {
                             )
 
                             return
-
                         end
 
                         ------------------------------------------------
-                        -- SUDAH SAMPAI
+                        -- SUDAH DEKAT
                         ------------------------------------------------
 
                         humanoid.AutoRotate = false
 
-                        local adminRotation =
-                            targetHRP.CFrame
-                            -
-                            targetHRP.Position
+                        ------------------------------------------------
+                        -- HADAP SAMA DENGAN TARGET
+                        ------------------------------------------------
+
+                        local targetRotation =
+                            CFrame.lookAt(
+                                myHRP.Position,
+                                myHRP.Position
+                                +
+                                targetHRP.CFrame.LookVector
+                            )
 
                         myHRP.CFrame =
                             CFrame.new(
                                 myHRP.Position
                             )
                             *
-                            adminRotation
+                            (
+                                targetRotation
+                                -
+                                targetRotation.Position
+                            )
 
                     end
                 )
-
         end
 
         ----------------------------------------------------------------
@@ -454,7 +705,6 @@ local botOrder = {
                 startFollow(sender)
 
                 return
-
             end
 
             ------------------------------------------------------------
@@ -480,7 +730,6 @@ local botOrder = {
                 end
 
                 return
-
             end
 
             ------------------------------------------------------------
@@ -495,9 +744,7 @@ local botOrder = {
                 stopFollow()
 
                 return
-
             end
-
         end
 
         ----------------------------------------------------------------
@@ -535,11 +782,8 @@ local botOrder = {
                             )
 
                         end
-
                     end
-
             end
-
         end
 
         ----------------------------------------------------------------
@@ -560,7 +804,6 @@ local botOrder = {
 
                 end
             )
-
         end
 
         ----------------------------------------------------------------
@@ -580,7 +823,6 @@ local botOrder = {
 
                     end
                 )
-
             end
         )
 
@@ -595,7 +837,8 @@ local botOrder = {
 
                 updateCharacter()
 
-                if _G.BotVars.ActiveMode == "follow"
+                if _G.BotVars.ActiveMode
+                    == "follow"
                     and targetPlayer then
 
                     startFollow(
@@ -603,7 +846,6 @@ local botOrder = {
                     )
 
                 end
-
             end
         )
 
