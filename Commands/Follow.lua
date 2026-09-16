@@ -55,7 +55,7 @@ return {
         ----------------------------------------------------------------
 
         local adminFollowDistance = 3
-        local defaultBotFollowDistance = 3
+        local defaultBotFollowDistance = 2
 
         ----------------------------------------------------------------
         -- BOT ORDER
@@ -318,75 +318,51 @@ local botOrder = {
                         if not targetPlayer then
                             return
                         end
+
                         ------------------------------------------------
-                        -- FORMATION TARGET
-                        -- Bot 1 mengikuti Admin.
-                        -- Bot berikutnya mengikuti bot tepat di depannya.
-                        -- Jadi jarak dihitung antar anggota barisan, bukan
-                        -- dikalikan dengan index dari posisi Admin.
+                        -- TARGET CHARACTER
                         ------------------------------------------------
 
-                        local formationTarget = targetPlayer
+                        local targetCharacter =
+                            targetPlayer.Character
 
-                        if myIndex > 1 then
-
-                            local previousBotUserId =
-                                tonumber(botOrder[myIndex - 1])
-
-                            if previousBotUserId then
-
-                                local previousBot =
-                                    Players:GetPlayerByUserId(
-                                        previousBotUserId
-                                    )
-
-                                if previousBot then
-                                    formationTarget = previousBot
-                                end
-
-                            end
-
-                        end
-
-                        local formationCharacter =
-                            formationTarget.Character
-
-                        if not formationCharacter then
+                        if not targetCharacter then
                             return
                         end
 
-                        local formationHRP =
-                            formationCharacter:FindFirstChild(
+                        local targetHRP =
+                            targetCharacter:FindFirstChild(
                                 "HumanoidRootPart"
                             )
 
-                        if not formationHRP then
+                        if not targetHRP then
                             return
                         end
 
                         ------------------------------------------------
-                        -- DISTANCE DARI DISTANCE.LUA
+                        -- DISTANCE
                         ------------------------------------------------
 
                         local distance =
                             defaultBotFollowDistance
 
-                        if myIndex == 1 then
+                        if Admin:IsAdmin(targetPlayer) then
 
                             distance =
                                 adminFollowDistance
 
-                        else
+                        end
 
-                            local pairDistance =
-                                Distance:GetDistance(
-                                    tostring(LocalPlayer.UserId),
-                                    tostring(formationTarget.UserId)
-                                )
+                        local specialDistance =
+                            Distance:GetDistance(
+                                tostring(LocalPlayer.UserId),
+                                tostring(targetPlayer.UserId)
+                            )
 
-                            if pairDistance then
-                                distance = pairDistance
-                            end
+                        if specialDistance then
+
+                            distance =
+                                specialDistance
 
                         end
 
@@ -395,11 +371,12 @@ local botOrder = {
                         ------------------------------------------------
 
                         local targetPosition =
-                            formationHRP.Position
+                            targetHRP.Position
                             -
                             (
-                                formationHRP.CFrame.LookVector
-                                * distance
+                                targetHRP.CFrame.LookVector
+                                *
+                                (distance * myIndex)
                             )
 
                         ------------------------------------------------
@@ -435,17 +412,17 @@ local botOrder = {
 
                         humanoid.AutoRotate = false
 
-                        local formationRotation =
-                            formationHRP.CFrame
+                        local adminRotation =
+                            targetHRP.CFrame
                             -
-                            formationHRP.Position
+                            targetHRP.Position
 
                         myHRP.CFrame =
                             CFrame.new(
                                 myHRP.Position
                             )
                             *
-                            formationRotation
+                            adminRotation
 
                     end
                 )
