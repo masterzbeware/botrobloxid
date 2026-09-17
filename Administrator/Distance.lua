@@ -10,7 +10,7 @@ local DistanceModule = {}
 DistanceModule.Bots = {
 
     ["11611503633"] = "Bot 1",
-    ["11611567975"] = "Bot 2",
+    ["11001647769"] = "Bot 2",
     ["11611562042"] = "Bot 3",
     ["11611591921"] = "Bot 4",
     ["11611597741"] = "Bot 5",
@@ -43,7 +43,7 @@ DistanceModule.Pairs = {
 
     {
         ["BotA"] = "11611503633",
-        ["BotB"] = "11611567975",
+        ["BotB"] = "11001647769",
         ["Distance"] = 2
     }, -- Bot 1 - Bot 2
 
