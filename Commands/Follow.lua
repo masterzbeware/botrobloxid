@@ -166,6 +166,8 @@ local botOrder = {
 
             following = false
             targetPlayer = nil
+            -- CommandTarget sengaja TIDAK dihapus di sini.
+            -- Target tetap berhak mengganti formasi sampai admin mengetik !stop.
 
             if followConnection then
 
@@ -446,19 +448,53 @@ local botOrder = {
             sender
         )
 
-            if not Admin:IsAdmin(sender) then
+            if not sender then
                 return
             end
 
-            local lower =
-                message:lower()
+            local isAdmin = false
+            pcall(function()
+                isAdmin = Admin:IsAdmin(sender)
+            end)
+
+            local lower = message:lower():gsub("^%s+", ""):gsub("%s+$", "")
+
+            ------------------------------------------------------------
+            -- !STOP
+            -- HANYA PLAYER/ADMIN YANG BOLEH STOP SEMUA BOT.
+            ------------------------------------------------------------
+
+            if lower == "!stop"
+                or lower == "!unfollow" then
+
+                if not isAdmin then
+                    return
+                end
+
+                _G.BotVars.ActiveMode = nil
+                _G.BotVars.CommandTarget = nil
+
+                for _, stopFunction in pairs(_G.BotVars.ModeControllers) do
+                    if type(stopFunction) == "function" then
+                        pcall(stopFunction)
+                    end
+                end
+
+                return
+            end
 
             ------------------------------------------------------------
             -- !FOLLOW
+            -- HANYA ADMIN YANG BOLEH MEMILIH TARGET AWAL.
             ------------------------------------------------------------
+
+            if not isAdmin then
+                return
+            end
 
             if lower == "!follow" then
 
+                _G.BotVars.CommandTarget = sender
                 startFollow(sender)
 
                 return
@@ -482,25 +518,9 @@ local botOrder = {
                     )
 
                 if target then
-
+                    _G.BotVars.CommandTarget = target
                     startFollow(target)
-
                 end
-
-                return
-
-            end
-
-            ------------------------------------------------------------
-            -- !STOP
-            ------------------------------------------------------------
-
-            if lower == "!stop"
-                or lower == "!unfollow" then
-
-                _G.BotVars.ActiveMode = nil
-
-                stopFollow()
 
                 return
 
@@ -522,7 +542,7 @@ local botOrder = {
 
             if channel then
 
-                channel.OnIncomingMessage =
+                channel.MessageReceived:Connect(
                     function(message)
 
                         local userId =
@@ -544,7 +564,7 @@ local botOrder = {
 
                         end
 
-                    end
+                    end)
 
             end
 

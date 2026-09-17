@@ -436,6 +436,7 @@ local botOrder = {
 
             fourlining = true
             targetPlayer = player
+            _G.BotVars.CommandTarget = player
 
             sendChat("Yes, Sir!")
 
@@ -757,75 +758,67 @@ local botOrder = {
             sender
         )
 
-            if not message then
+            if not message or not sender then
                 return
             end
-
-
-            if not sender then
-                return
-            end
-
-
-            ------------------------------------------------------------
-            -- ADMIN CHECK
-            ------------------------------------------------------------
 
             local isAdmin = false
-
             pcall(function()
-
-                isAdmin =
-                    Admin:IsAdmin(sender)
-
+                isAdmin = Admin:IsAdmin(sender)
             end)
 
+            local lower =
+                message:lower():gsub("^%s+", ""):gsub("%s+$", "")
 
-            if not isAdmin then
+            local commandTarget =
+                _G.BotVars.CommandTarget
+
+            ------------------------------------------------------------
+            -- !STOP
+            -- HANYA PLAYER/ADMIN YANG BOLEH STOP SEMUA MODE.
+            ------------------------------------------------------------
+
+            if lower == "!stop"
+                or lower == "!unfourline" then
+
+                if not isAdmin then
+                    return
+                end
+
+                _G.BotVars.ActiveMode = nil
+                _G.BotVars.CommandTarget = nil
+
+                for _, stopFunction in pairs(_G.BotVars.ModeControllers) do
+                    if type(stopFunction) == "function" then
+                        pcall(stopFunction)
+                    end
+                end
+
                 return
             end
 
-
             ------------------------------------------------------------
-            -- CLEAN MESSAGE
-            ------------------------------------------------------------
-
-            local lower =
-                message:lower()
-
-            lower =
-                lower:gsub(
-                    "^%s+",
-                    ""
-                )
-
-            lower =
-                lower:gsub(
-                    "%s+$",
-                    ""
-                )
-
-
-            ------------------------------------------------------------
-            -- !FOURLINE
+            -- !fourline
+            -- Admin boleh menjalankan kapan saja.
+            -- Target aktif juga boleh mengganti formasi, tetapi hanya
+            -- dengan command tanpa nama player.
             ------------------------------------------------------------
 
             if lower == "!fourline" then
 
-                print(
-                    "[Fourline] Command diterima dari:",
-                    sender.Name
-                )
+                if not isAdmin and sender ~= commandTarget then
+                    return
+                end
 
+                _G.BotVars.CommandTarget = sender
                 startFourline(sender)
 
                 return
-
             end
 
-
             ------------------------------------------------------------
-            -- !FOURLINE PLAYER
+            -- !fourline PLAYER
+            -- HANYA ADMIN YANG boleh memilih target baru.
             ------------------------------------------------------------
 
             local targetName =
@@ -833,69 +826,28 @@ local botOrder = {
                     "^!fourline%s+(.+)$"
                 )
 
-
             if targetName then
 
-                print(
-                    "[Fourline] Target command:",
-                    targetName
-                )
-
+                if not isAdmin then
+                    return
+                end
 
                 local target =
                     findPlayerByName(
                         targetName
                     )
 
-
                 if target then
-
-                    print(
-                        "[Fourline] Target ditemukan:",
-                        target.Name
-                    )
-
+                    _G.BotVars.CommandTarget = target
                     startFourline(target)
-
-                else
-
-                    warn(
-                        "[Fourline] Player tidak ditemukan:",
-                        targetName
-                    )
-
                 end
 
-
                 return
-
-            end
-
-
-            ------------------------------------------------------------
-            -- !STOP
-            ------------------------------------------------------------
-
-            if lower == "!stop"
-                or lower == "!unfourline" then
-
-                print(
-                    "[Fourline] Stop command dari:",
-                    sender.Name
-                )
-
-                _G.BotVars.ActiveMode = nil
-
-                stopFourline()
-
-                return
-
             end
 
         end
 
-
-        ----------------------------------------------------------------
+----------------------------------------------------------------
         -- CHAT HANDLER
         ----------------------------------------------------------------
         --

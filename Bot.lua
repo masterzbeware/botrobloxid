@@ -15,6 +15,11 @@ _G.BotVars = {
     TextChatService = game:GetService("TextChatService"),
     RunService = game:GetService("RunService"),
     LocalPlayer = game:GetService("Players").LocalPlayer,
+
+    -- Target yang dipilih oleh admin melalui !follow.
+    -- Target ini boleh mengganti formasi dengan !frontline/!circle/!fourline.
+    -- Hanya admin yang boleh mengakhiri semuanya dengan !stop.
+    CommandTarget = nil,
 }
 
 local Window = Library:CreateWindow({

@@ -272,6 +272,7 @@ local botOrder = {
 
             frontlining = true
             targetPlayer = player
+            _G.BotVars.CommandTarget = player
 
             sendChat("Yes, Sir!")
 
@@ -469,27 +470,67 @@ local botOrder = {
             sender
         )
 
-            if not Admin:IsAdmin(sender) then
+            if not message or not sender then
                 return
             end
 
+            local isAdmin = false
+            pcall(function()
+                isAdmin = Admin:IsAdmin(sender)
+            end)
+
             local lower =
-                message:lower()
+                message:lower():gsub("^%s+", ""):gsub("%s+$", "")
+
+            local commandTarget =
+                _G.BotVars.CommandTarget
 
             ------------------------------------------------------------
-            -- !FRONTLINE
+            -- !STOP
+            -- HANYA PLAYER/ADMIN YANG BOLEH STOP SEMUA MODE.
+            ------------------------------------------------------------
+
+            if lower == "!stop"
+                or lower == "!unfrontline" then
+
+                if not isAdmin then
+                    return
+                end
+
+                _G.BotVars.ActiveMode = nil
+                _G.BotVars.CommandTarget = nil
+
+                for _, stopFunction in pairs(_G.BotVars.ModeControllers) do
+                    if type(stopFunction) == "function" then
+                        pcall(stopFunction)
+                    end
+                end
+
+                return
+            end
+
+            ------------------------------------------------------------
+            -- !frontline
+            -- Admin boleh menjalankan kapan saja.
+            -- Target aktif juga boleh mengganti formasi, tetapi hanya
+            -- dengan command tanpa nama player.
             ------------------------------------------------------------
 
             if lower == "!frontline" then
 
+                if not isAdmin and sender ~= commandTarget then
+                    return
+                end
+
+                _G.BotVars.CommandTarget = sender
                 startFrontline(sender)
 
                 return
-
             end
 
             ------------------------------------------------------------
-            -- !FRONTLINE PLAYER
+            -- !frontline PLAYER
+            -- HANYA ADMIN YANG boleh memilih target baru.
             ------------------------------------------------------------
 
             local targetName =
@@ -499,39 +540,26 @@ local botOrder = {
 
             if targetName then
 
+                if not isAdmin then
+                    return
+                end
+
                 local target =
                     findPlayerByName(
                         targetName
                     )
 
                 if target then
-
+                    _G.BotVars.CommandTarget = target
                     startFrontline(target)
-
                 end
 
                 return
-
-            end
-
-            ------------------------------------------------------------
-            -- !STOP
-            ------------------------------------------------------------
-
-            if lower == "!stop"
-                or lower == "!unfrontline" then
-
-                _G.BotVars.ActiveMode = nil
-
-                stopFrontline()
-
-                return
-
             end
 
         end
 
-        ----------------------------------------------------------------
+----------------------------------------------------------------
         -- TEXT CHAT
         ----------------------------------------------------------------
 
@@ -545,7 +573,7 @@ local botOrder = {
 
             if channel then
 
-                channel.OnIncomingMessage =
+                channel.MessageReceived:Connect(
                     function(message)
 
                         local userId =
@@ -567,7 +595,7 @@ local botOrder = {
 
                         end
 
-                    end
+                    end)
 
             end
 
