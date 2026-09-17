@@ -30,34 +30,39 @@ return {
         local StatusLabel = StatusGroup:AddLabel("Session\nOffline")
 
         -- Daftar command yang tersedia
-        local CommandLabel = CommandGroup:AddLabel(
-            "!perfix\n" ..
-            "!main\n" ..
-            "!follow\n" ..
-            "!frontline\n" ..
-            "!circle\n" ..
-            "!fourline\n" ..
-            "!backline\n" ..
-            "!rest\n" ..
-            "!salute\n" ..
-            "!sit\n" ..
-            "!agree\n" ..
-            "!pushup\n" ..
-            "!message\n" ..
-            "!collision\n" ..
-            "!ateezdance\n" ..
-            "!gabresdance\n" ..
-            "!pakodidance\n" ..
-            "!kangoradance\n" ..
-            "!asmaradance\n" ..
-            "!pargoydance\n" ..
-            "!vacationdance\n" ..
-            "!brazildance\n" ..
-            "!ketlindance\n" ..
-            "!harleydance\n" ..
-            "!heeseungdance\n" ..
-            "!worship"
-        )
+        local commands = {
+            "!perfix",
+            "!main",
+            "!follow",
+            "!frontline",
+            "!circle",
+            "!fourline",
+            "!backline",
+            "!rest",
+            "!salute",
+            "!sit",
+            "!agree",
+            "!pushup",
+            "!message",
+            "!collision",
+            "!ateezdance",
+            "!gabresdance",
+            "!pakodidance",
+            "!kangoradance",
+            "!asmaradance",
+            "!pargoydance",
+            "!vacationdance",
+            "!brazildance",
+            "!ketlindance",
+            "!harleydance",
+            "!heeseungdance",
+            "!worship",
+        }
+
+        for _, commandName in ipairs(commands) do
+            CommandGroup:AddLabel(commandName)
+        end
+
 
         local Players = game:GetService("Players")
         local startTime = os.clock()
