@@ -10,7 +10,7 @@ return {
         local LocalPlayer = Players.LocalPlayer
 
         if not LocalPlayer then
-            warn("[Salute] LocalPlayer tidak ditemukan.")
+            warn("[PargoyDance] LocalPlayer tidak ditemukan.")
             return
         end
 
@@ -46,7 +46,7 @@ return {
 
             else
 
-                warn("[Salute] Gagal load Admin.lua.")
+                warn("[PargoyDance] Gagal load Admin.lua.")
                 return
 
             end
@@ -57,8 +57,8 @@ return {
         -- FE ANIMATION ID
         ----------------------------------------------------------------
 
-        local SALUTE_ANIMATION_ID =
-            "97204032436479"
+        local ATEEZ_DANCE_ANIMATION_ID =
+            "80655010092183"
 
 
         ----------------------------------------------------------------
@@ -69,7 +69,7 @@ return {
         local dancing = false
 
         -- Generation digunakan untuk memastikan proses lama
-        -- dari !stop / !salute tidak mengganggu command terbaru.
+        -- dari !stop / !pargoydance tidak mengganggu command terbaru.
         local danceGeneration = 0
 
 
@@ -258,7 +258,7 @@ return {
 
 
             print(
-                "[Salute] Animasi normal dipulihkan."
+                "[PargoyDance] Animasi normal dipulihkan."
             )
 
         end
@@ -268,7 +268,7 @@ return {
         -- STOP ATEEZ DANCE
         ----------------------------------------------------------------
 
-        local function stopSalute()
+        local function stopPargoyDance()
 
             ------------------------------------------------------------
             -- INVALIDATE SEMUA PROSES LAMA
@@ -316,8 +316,8 @@ return {
         -- REGISTER CONTROLLER
         ----------------------------------------------------------------
 
-        _G.BotVars.ModeControllers.salute =
-            stopSalute
+        _G.BotVars.ModeControllers.pargoydance =
+            stopPargoyDance
 
 
         ----------------------------------------------------------------
@@ -330,7 +330,7 @@ return {
                 _G.BotVars.ModeControllers
             ) do
 
-                if name ~= "salute"
+                if name ~= "pargoydance"
                     and type(stopFunction) == "function" then
 
                     pcall(function()
@@ -348,7 +348,7 @@ return {
         -- PLAY ATEEZ DANCE
         ----------------------------------------------------------------
 
-        local function playSalute()
+        local function playPargoyDance()
 
             ------------------------------------------------------------
             -- NEW GENERATION
@@ -366,7 +366,7 @@ return {
             ------------------------------------------------------------
 
             _G.BotVars.ActiveMode =
-                "salute"
+                "pargoydance"
 
 
             ------------------------------------------------------------
@@ -418,7 +418,7 @@ return {
             if not humanoid then
 
                 warn(
-                    "[Salute] Humanoid tidak ditemukan."
+                    "[PargoyDance] Humanoid tidak ditemukan."
                 )
 
                 return
@@ -456,7 +456,7 @@ return {
 
                         return humanoid:
                             PlayEmoteAndGetAnimTrackById(
-                                SALUTE_ANIMATION_ID
+                                ATEEZ_DANCE_ANIMATION_ID
                             )
 
                     end)
@@ -512,8 +512,8 @@ return {
                 dancing = true
 
                 print(
-                    "[Salute] FE Animation berhasil dimainkan:",
-                    SALUTE_ANIMATION_ID,
+                    "[PargoyDance] FE Animation berhasil dimainkan:",
+                    ATEEZ_DANCE_ANIMATION_ID,
                     "| Bot:",
                     LocalPlayer.Name
                 )
@@ -556,7 +556,7 @@ return {
             else
 
                 warn(
-                    "[Salute] FE Animation gagal dimainkan setelah",
+                    "[PargoyDance] FE Animation gagal dimainkan setelah",
                     maxAttempts,
                     "percobaan.",
                     "| Bot:",
@@ -620,16 +620,16 @@ return {
             -- !ATEEZDANCE
             ------------------------------------------------------------
 
-            if lower == "!salute" then
+            if lower == "!pargoydance" then
 
                 print(
-                    "[Salute] Command diterima | Bot:",
+                    "[PargoyDance] Command diterima | Bot:",
                     LocalPlayer.Name,
                     "| Admin:",
                     sender.Name
                 )
 
-                playSalute()
+                playPargoyDance()
 
                 return
 
@@ -640,23 +640,23 @@ return {
             -- !UNATEEZDANCE
             ------------------------------------------------------------
 
-            if lower == "!unsalute" then
+            if lower == "!unpargoydance" then
 
                 print(
-                    "[Salute] UnSalute | Bot:",
+                    "[PargoyDance] UnPargoyDance | Bot:",
                     LocalPlayer.Name,
                     "| Admin:",
                     sender.Name
                 )
 
                 if _G.BotVars.ActiveMode
-                    == "salute" then
+                    == "pargoydance" then
 
                     _G.BotVars.ActiveMode = nil
 
                 end
 
-                stopSalute()
+                stopPargoyDance()
 
                 return
 
@@ -670,20 +670,20 @@ return {
             if lower == "!stop" then
 
                 print(
-                    "[Salute] Stop | Bot:",
+                    "[PargoyDance] Stop | Bot:",
                     LocalPlayer.Name,
                     "| Admin:",
                     sender.Name
                 )
 
                 if _G.BotVars.ActiveMode
-                    == "salute" then
+                    == "pargoydance" then
 
                     _G.BotVars.ActiveMode = nil
 
                 end
 
-                stopSalute()
+                stopPargoyDance()
 
                 return
 
@@ -793,7 +793,7 @@ return {
                 --------------------------------------------------------
 
                 if _G.BotVars.ActiveMode
-                    == "salute" then
+                    == "pargoydance" then
 
                     task.wait(0.5)
 
@@ -809,7 +809,7 @@ return {
 
                     end
 
-                    playSalute()
+                    playPargoyDance()
 
                 end
 
@@ -822,10 +822,10 @@ return {
         ----------------------------------------------------------------
 
         print(
-            "[Salute] Loaded untuk:",
+            "[PargoyDance] Loaded untuk:",
             LocalPlayer.Name,
             "| FE Animation:",
-            SALUTE_ANIMATION_ID
+            ATEEZ_DANCE_ANIMATION_ID
         )
 
     end

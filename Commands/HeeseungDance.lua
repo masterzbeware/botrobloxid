@@ -10,7 +10,7 @@ return {
         local LocalPlayer = Players.LocalPlayer
 
         if not LocalPlayer then
-            warn("[Salute] LocalPlayer tidak ditemukan.")
+            warn("[HeeseungDance] LocalPlayer tidak ditemukan.")
             return
         end
 
@@ -46,7 +46,7 @@ return {
 
             else
 
-                warn("[Salute] Gagal load Admin.lua.")
+                warn("[HeeseungDance] Gagal load Admin.lua.")
                 return
 
             end
@@ -57,8 +57,8 @@ return {
         -- FE ANIMATION ID
         ----------------------------------------------------------------
 
-        local SALUTE_ANIMATION_ID =
-            "97204032436479"
+        local HEESEUNG_DANCE_ANIMATION_ID =
+            "102398076892201"
 
 
         ----------------------------------------------------------------
@@ -69,7 +69,7 @@ return {
         local dancing = false
 
         -- Generation digunakan untuk memastikan proses lama
-        -- dari !stop / !salute tidak mengganggu command terbaru.
+        -- dari !stop / !heeseungdance tidak mengganggu command terbaru.
         local danceGeneration = 0
 
 
@@ -258,7 +258,7 @@ return {
 
 
             print(
-                "[Salute] Animasi normal dipulihkan."
+                "[HeeseungDance] Animasi normal dipulihkan."
             )
 
         end
@@ -268,7 +268,7 @@ return {
         -- STOP ATEEZ DANCE
         ----------------------------------------------------------------
 
-        local function stopSalute()
+        local function stopHeeseungDance()
 
             ------------------------------------------------------------
             -- INVALIDATE SEMUA PROSES LAMA
@@ -316,8 +316,8 @@ return {
         -- REGISTER CONTROLLER
         ----------------------------------------------------------------
 
-        _G.BotVars.ModeControllers.salute =
-            stopSalute
+        _G.BotVars.ModeControllers.heeseungdance =
+            stopHeeseungDance
 
 
         ----------------------------------------------------------------
@@ -330,7 +330,7 @@ return {
                 _G.BotVars.ModeControllers
             ) do
 
-                if name ~= "salute"
+                if name ~= "heeseungdance"
                     and type(stopFunction) == "function" then
 
                     pcall(function()
@@ -348,7 +348,7 @@ return {
         -- PLAY ATEEZ DANCE
         ----------------------------------------------------------------
 
-        local function playSalute()
+        local function playHeeseungDance()
 
             ------------------------------------------------------------
             -- NEW GENERATION
@@ -366,7 +366,7 @@ return {
             ------------------------------------------------------------
 
             _G.BotVars.ActiveMode =
-                "salute"
+                "heeseungdance"
 
 
             ------------------------------------------------------------
@@ -418,7 +418,7 @@ return {
             if not humanoid then
 
                 warn(
-                    "[Salute] Humanoid tidak ditemukan."
+                    "[HeeseungDance] Humanoid tidak ditemukan."
                 )
 
                 return
@@ -456,7 +456,7 @@ return {
 
                         return humanoid:
                             PlayEmoteAndGetAnimTrackById(
-                                SALUTE_ANIMATION_ID
+                                HEESEUNG_DANCE_ANIMATION_ID
                             )
 
                     end)
@@ -512,8 +512,8 @@ return {
                 dancing = true
 
                 print(
-                    "[Salute] FE Animation berhasil dimainkan:",
-                    SALUTE_ANIMATION_ID,
+                    "[HeeseungDance] FE Animation berhasil dimainkan:",
+                    HEESEUNG_DANCE_ANIMATION_ID,
                     "| Bot:",
                     LocalPlayer.Name
                 )
@@ -556,7 +556,7 @@ return {
             else
 
                 warn(
-                    "[Salute] FE Animation gagal dimainkan setelah",
+                    "[HeeseungDance] FE Animation gagal dimainkan setelah",
                     maxAttempts,
                     "percobaan.",
                     "| Bot:",
@@ -620,16 +620,16 @@ return {
             -- !ATEEZDANCE
             ------------------------------------------------------------
 
-            if lower == "!salute" then
+            if lower == "!heeseungdance" then
 
                 print(
-                    "[Salute] Command diterima | Bot:",
+                    "[HeeseungDance] Command diterima | Bot:",
                     LocalPlayer.Name,
                     "| Admin:",
                     sender.Name
                 )
 
-                playSalute()
+                playHeeseungDance()
 
                 return
 
@@ -640,23 +640,23 @@ return {
             -- !UNATEEZDANCE
             ------------------------------------------------------------
 
-            if lower == "!unsalute" then
+            if lower == "!unheeseungdance" then
 
                 print(
-                    "[Salute] UnSalute | Bot:",
+                    "[HeeseungDance] UnHeeseungDance | Bot:",
                     LocalPlayer.Name,
                     "| Admin:",
                     sender.Name
                 )
 
                 if _G.BotVars.ActiveMode
-                    == "salute" then
+                    == "heeseungdance" then
 
                     _G.BotVars.ActiveMode = nil
 
                 end
 
-                stopSalute()
+                stopHeeseungDance()
 
                 return
 
@@ -670,20 +670,20 @@ return {
             if lower == "!stop" then
 
                 print(
-                    "[Salute] Stop | Bot:",
+                    "[HeeseungDance] Stop | Bot:",
                     LocalPlayer.Name,
                     "| Admin:",
                     sender.Name
                 )
 
                 if _G.BotVars.ActiveMode
-                    == "salute" then
+                    == "heeseungdance" then
 
                     _G.BotVars.ActiveMode = nil
 
                 end
 
-                stopSalute()
+                stopHeeseungDance()
 
                 return
 
@@ -793,7 +793,7 @@ return {
                 --------------------------------------------------------
 
                 if _G.BotVars.ActiveMode
-                    == "salute" then
+                    == "heeseungdance" then
 
                     task.wait(0.5)
 
@@ -809,7 +809,7 @@ return {
 
                     end
 
-                    playSalute()
+                    playHeeseungDance()
 
                 end
 
@@ -822,10 +822,10 @@ return {
         ----------------------------------------------------------------
 
         print(
-            "[Salute] Loaded untuk:",
+            "[HeeseungDance] Loaded untuk:",
             LocalPlayer.Name,
             "| FE Animation:",
-            SALUTE_ANIMATION_ID
+            HEESEUNG_DANCE_ANIMATION_ID
         )
 
     end

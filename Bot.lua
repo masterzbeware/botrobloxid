@@ -45,6 +45,7 @@ local commandFiles = {
     "Sit.lua",
     "Agree.lua",
     "Backline.lua",
+    "PushUp.lua",
     "Message.lua",
     "Collision.lua",
     "AteezDance.lua",
@@ -52,6 +53,13 @@ local commandFiles = {
     "PakodiDance.lua",
     "KangoraDance.lua",
     "AsmaraDance.lua",
+    "PargoyDance.lua",
+    "VacationDance.lua",
+    "BrazilDance.lua",
+    "KetlinDance.lua",
+    "HarleyDance.lua",
+    "HeeseungDance.lua",
+    "Worship.lua",
 }
 
 for _, fileName in ipairs(commandFiles) do
@@ -101,5 +109,12 @@ jalankan("gabresdance")
 jalankan("pakodidance")
 jalankan("kangoradance")
 jalankan("asmaradance")
+jalankan("pargoydance")
+jalankan("vacationdance")
+jalankan("brazildance")
+jalankan("ketlindance")
+jalankan("harleydance")
+jalankan("heeseungdance")
+jalankan("worship")
 
 print("✅ Bot.lua loaded — All systems active.")

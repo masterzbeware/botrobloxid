@@ -10,7 +10,7 @@ return {
         local LocalPlayer = Players.LocalPlayer
 
         if not LocalPlayer then
-            warn("[Salute] LocalPlayer tidak ditemukan.")
+            warn("[PushUp] LocalPlayer tidak ditemukan.")
             return
         end
 
@@ -46,7 +46,7 @@ return {
 
             else
 
-                warn("[Salute] Gagal load Admin.lua.")
+                warn("[PushUp] Gagal load Admin.lua.")
                 return
 
             end
@@ -57,8 +57,8 @@ return {
         -- FE ANIMATION ID
         ----------------------------------------------------------------
 
-        local SALUTE_ANIMATION_ID =
-            "97204032436479"
+        local PUSHUP_ANIMATION_ID =
+            "110904780556875"
 
 
         ----------------------------------------------------------------
@@ -69,7 +69,7 @@ return {
         local dancing = false
 
         -- Generation digunakan untuk memastikan proses lama
-        -- dari !stop / !salute tidak mengganggu command terbaru.
+        -- dari !stop / !pushup tidak mengganggu command terbaru.
         local danceGeneration = 0
 
 
@@ -258,7 +258,7 @@ return {
 
 
             print(
-                "[Salute] Animasi normal dipulihkan."
+                "[PushUp] Animasi normal dipulihkan."
             )
 
         end
@@ -268,7 +268,7 @@ return {
         -- STOP ATEEZ DANCE
         ----------------------------------------------------------------
 
-        local function stopSalute()
+        local function stopPushUp()
 
             ------------------------------------------------------------
             -- INVALIDATE SEMUA PROSES LAMA
@@ -316,8 +316,8 @@ return {
         -- REGISTER CONTROLLER
         ----------------------------------------------------------------
 
-        _G.BotVars.ModeControllers.salute =
-            stopSalute
+        _G.BotVars.ModeControllers.pushup =
+            stopPushUp
 
 
         ----------------------------------------------------------------
@@ -330,7 +330,7 @@ return {
                 _G.BotVars.ModeControllers
             ) do
 
-                if name ~= "salute"
+                if name ~= "pushup"
                     and type(stopFunction) == "function" then
 
                     pcall(function()
@@ -348,183 +348,184 @@ return {
         -- PLAY ATEEZ DANCE
         ----------------------------------------------------------------
 
-        local function playSalute()
+        local function playPushUp(repetitions)
+            repetitions = tonumber(repetitions)
 
-            ------------------------------------------------------------
-            -- NEW GENERATION
-            ------------------------------------------------------------
+            -- Tanpa angka = jalankan seperti command !pushup biasa.
+            if not repetitions then
+                repetitions = nil
+            else
+                repetitions = math.floor(repetitions)
 
-            danceGeneration =
-                danceGeneration + 1
+                if repetitions < 1 then
+                    return
+                end
 
-            local generation =
-                danceGeneration
+                -- Batasi angka agar command tidak membuat proses terlalu lama.
+                repetitions = math.min(repetitions, 100)
+            end
 
+            danceGeneration = danceGeneration + 1
 
-            ------------------------------------------------------------
-            -- SET ACTIVE MODE
-            ------------------------------------------------------------
+            local generation = danceGeneration
 
-            _G.BotVars.ActiveMode =
-                "salute"
-
-
-            ------------------------------------------------------------
-            -- STOP MODE LAIN
-            ------------------------------------------------------------
+            _G.BotVars.ActiveMode = "pushup"
 
             stopOtherModes()
-
-
-            ------------------------------------------------------------
-            -- VALIDATE GENERATION
-            ------------------------------------------------------------
 
             if generation ~= danceGeneration then
                 return
             end
 
-
-            ------------------------------------------------------------
-            -- STOP PREVIOUS DANCE TRACK
-            ------------------------------------------------------------
-
             if danceTrack then
-
-                local oldTrack =
-                    danceTrack
-
+                local oldTrack = danceTrack
                 danceTrack = nil
 
                 pcall(function()
                     oldTrack:Stop(0.1)
                 end)
-
             end
 
+            -- Untuk command !pushup ANGKA, bot memberi konfirmasi
+            -- sebelum animation dimulai.
+            if repetitions then
+                sendChat("Yes, Sir!")
+            end
 
-            ------------------------------------------------------------
-            -- GET CHARACTER
-            ------------------------------------------------------------
-
-            local character =
-                getCharacter()
+            local character = getCharacter()
 
             local humanoid =
-                character:FindFirstChildOfClass(
-                    "Humanoid"
-                )
+                character:FindFirstChildOfClass("Humanoid")
 
             if not humanoid then
-
-                warn(
-                    "[Salute] Humanoid tidak ditemukan."
-                )
-
+                warn("[PushUp] Humanoid tidak ditemukan.")
                 return
-
             end
-
-
-            ------------------------------------------------------------
-            -- PLAY FE ANIMATION WITH RETRY
-            ------------------------------------------------------------
-            -- Menggunakan Humanoid:PlayEmoteAndGetAnimTrackById()
-            -- sehingga animasi dijalankan sebagai FE animation.
 
             local maxAttempts = 3
             local success = false
             local result = nil
 
             for attempt = 1, maxAttempts do
-
-                --------------------------------------------------------
-                -- COMMAND SUDAH BERGANTI
-                --------------------------------------------------------
-
                 if generation ~= danceGeneration then
                     return
                 end
 
-
-                --------------------------------------------------------
-                -- PLAY FE ANIMATION
-                --------------------------------------------------------
-
                 local ok, track =
                     pcall(function()
-
                         return humanoid:
                             PlayEmoteAndGetAnimTrackById(
-                                SALUTE_ANIMATION_ID
+                                PUSHUP_ANIMATION_ID
                             )
-
                     end)
 
                 if ok and track then
-
                     success = true
                     result = track
                     break
-
                 end
 
                 result = track
 
-
-                --------------------------------------------------------
-                -- JIKA GAGAL, BERI WAKTU UNTUK ANIMATOR
-                --------------------------------------------------------
-
                 if attempt < maxAttempts then
                     task.wait(0.1)
                 end
-
             end
 
-
-            ------------------------------------------------------------
-            -- VALIDATE GENERATION SETELAH RETRY
-            ------------------------------------------------------------
-
             if generation ~= danceGeneration then
-
                 if result then
-
                     pcall(function()
                         result:Stop(0)
                     end)
-
                 end
 
                 return
-
             end
 
-
-            ------------------------------------------------------------
-            -- RESULT
-            ------------------------------------------------------------
-
-            if success and result then
-
-                danceTrack = result
-                dancing = true
-
-                print(
-                    "[Salute] FE Animation berhasil dimainkan:",
-                    SALUTE_ANIMATION_ID,
+            if not success or not result then
+                warn(
+                    "[PushUp] FE Animation gagal dimainkan setelah",
+                    maxAttempts,
+                    "percobaan.",
                     "| Bot:",
-                    LocalPlayer.Name
+                    LocalPlayer.Name,
+                    "| Last Error:",
+                    result
                 )
+                return
+            end
 
+            danceTrack = result
+            dancing = true
 
-                --------------------------------------------------------
-                -- MONITOR TRACK
-                --------------------------------------------------------
+            print(
+                "[PushUp] FE Animation berhasil dimainkan:",
+                PUSHUP_ANIMATION_ID,
+                "| Bot:",
+                LocalPlayer.Name
+            )
 
+            -- Jika !pushup memakai angka, hitung 1 sampai angka.
+            if repetitions then
                 task.spawn(function()
+                    local track = result
+                    local trackGeneration = generation
 
+                    -- Beri sedikit waktu agar semua bot mulai animasi
+                    -- sebelum hitungan dimulai.
+                    task.wait(0.2)
+
+                    for count = 1, repetitions do
+                        if danceGeneration ~= trackGeneration
+                            or _G.BotVars.ActiveMode ~= "pushup"
+                            or danceTrack ~= track
+                            or not dancing then
+                            return
+                        end
+
+                        print(
+                            "[PushUp] Hitungan:",
+                            count,
+                            "/",
+                            repetitions,
+                            "| Bot:",
+                            LocalPlayer.Name
+                        )
+
+                        task.wait(1)
+                    end
+
+                    if danceGeneration ~= trackGeneration
+                        or _G.BotVars.ActiveMode ~= "pushup"
+                        or danceTrack ~= track then
+                        return
+                    end
+
+                    -- Setelah hitungan selesai, stop animation.
+                    danceGeneration = danceGeneration + 1
+                    dancing = false
+                    danceTrack = nil
+
+                    pcall(function()
+                        track:Stop(0.15)
+                    end)
+
+                    _G.BotVars.ActiveMode = nil
+
+                    restoreNormalAnimation(
+                        danceGeneration
+                    )
+
+                    print(
+                        "[PushUp] Selesai",
+                        repetitions,
+                        "hitungan | Bot:",
+                        LocalPlayer.Name
+                    )
+                end)
+            else
+                -- Mode normal: monitor track sampai berhenti.
+                task.spawn(function()
                     local track = result
                     local trackGeneration = generation
 
@@ -536,39 +537,14 @@ return {
                         track.Stopped:Wait()
                     end)
 
-
-                    ----------------------------------------------------
-                    -- HANYA BOLEH MEMBERSIHKAN TRACK
-                    -- JIKA MASIH TRACK + GENERATION YANG SAMA
-                    ----------------------------------------------------
-
                     if danceTrack == track
                         and dancing
-                        and trackGeneration
-                            == danceGeneration then
-
+                        and trackGeneration == danceGeneration then
                         danceTrack = nil
-
                     end
-
                 end)
-
-            else
-
-                warn(
-                    "[Salute] FE Animation gagal dimainkan setelah",
-                    maxAttempts,
-                    "percobaan.",
-                    "| Bot:",
-                    LocalPlayer.Name,
-                    "| Last Error:",
-                    result
-                )
-
             end
-
         end
-
 
         ----------------------------------------------------------------
         -- COMMAND HANDLER
@@ -620,16 +596,28 @@ return {
             -- !ATEEZDANCE
             ------------------------------------------------------------
 
-            if lower == "!salute" then
+            local pushUpCount =
+                lower:match("^!pushup%s+(%d+)$")
+
+            if lower == "!pushup"
+                or pushUpCount then
 
                 print(
-                    "[Salute] Command diterima | Bot:",
+                    "[PushUp] Command diterima | Bot:",
                     LocalPlayer.Name,
                     "| Admin:",
-                    sender.Name
+                    sender.Name,
+                    "| Count:",
+                    pushUpCount or "normal"
                 )
 
-                playSalute()
+                if pushUpCount then
+                    -- Pesan hanya dikirim sekali oleh setiap bot command
+                    -- handler; animation kemudian dimulai.
+                    playPushUp(tonumber(pushUpCount))
+                else
+                    playPushUp()
+                end
 
                 return
 
@@ -640,23 +628,23 @@ return {
             -- !UNATEEZDANCE
             ------------------------------------------------------------
 
-            if lower == "!unsalute" then
+            if lower == "!unpushup" then
 
                 print(
-                    "[Salute] UnSalute | Bot:",
+                    "[PushUp] UnPushUp | Bot:",
                     LocalPlayer.Name,
                     "| Admin:",
                     sender.Name
                 )
 
                 if _G.BotVars.ActiveMode
-                    == "salute" then
+                    == "pushup" then
 
                     _G.BotVars.ActiveMode = nil
 
                 end
 
-                stopSalute()
+                stopPushUp()
 
                 return
 
@@ -670,20 +658,20 @@ return {
             if lower == "!stop" then
 
                 print(
-                    "[Salute] Stop | Bot:",
+                    "[PushUp] Stop | Bot:",
                     LocalPlayer.Name,
                     "| Admin:",
                     sender.Name
                 )
 
                 if _G.BotVars.ActiveMode
-                    == "salute" then
+                    == "pushup" then
 
                     _G.BotVars.ActiveMode = nil
 
                 end
 
-                stopSalute()
+                stopPushUp()
 
                 return
 
@@ -793,7 +781,7 @@ return {
                 --------------------------------------------------------
 
                 if _G.BotVars.ActiveMode
-                    == "salute" then
+                    == "pushup" then
 
                     task.wait(0.5)
 
@@ -809,7 +797,7 @@ return {
 
                     end
 
-                    playSalute()
+                    playPushUp()
 
                 end
 
@@ -822,10 +810,10 @@ return {
         ----------------------------------------------------------------
 
         print(
-            "[Salute] Loaded untuk:",
+            "[PushUp] Loaded untuk:",
             LocalPlayer.Name,
             "| FE Animation:",
-            SALUTE_ANIMATION_ID
+            PUSHUP_ANIMATION_ID
         )
 
     end
