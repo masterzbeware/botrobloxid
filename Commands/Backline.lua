@@ -22,6 +22,7 @@ return {
 
         _G.BotVars = _G.BotVars or {}
         _G.BotVars.ModeControllers = _G.BotVars.ModeControllers or {}
+_G.BotVars.CommandTarget = _G.BotVars.CommandTarget or nil
 
         ----------------------------------------------------------------
         -- LOAD ADMIN
@@ -272,6 +273,7 @@ local botOrder = {
 
             backlining = true
             targetPlayer = player
+            _G.BotVars.CommandTarget = player
 
             sendChat("Yes, Sir!")
 
@@ -469,9 +471,8 @@ local botOrder = {
             sender
         )
 
-            if not Admin:IsAdmin(sender) then
-                return
-            end
+            local isAdmin = Admin:IsAdmin(sender)
+            local isCommandTarget = (_G.BotVars.CommandTarget == sender)
 
             local lower =
                 message:lower()
@@ -481,6 +482,10 @@ local botOrder = {
             ------------------------------------------------------------
 
             if lower == "!backline" then
+
+                if not isAdmin and not isCommandTarget then
+                    return
+                end
 
                 startBackline(sender)
 
@@ -498,6 +503,10 @@ local botOrder = {
                 )
 
             if targetName then
+
+                if not isAdmin then
+                    return
+                end
 
                 local target =
                     findPlayerByName(
@@ -521,9 +530,18 @@ local botOrder = {
             if lower == "!stop"
                 or lower == "!unbackline" then
 
-                _G.BotVars.ActiveMode = nil
+                if not isAdmin then
+                    return
+                end
 
-                stopBackline()
+                _G.BotVars.ActiveMode = nil
+                _G.BotVars.CommandTarget = nil
+
+                for name, stopFunction in pairs(_G.BotVars.ModeControllers) do
+                    if type(stopFunction) == "function" then
+                        pcall(stopFunction)
+                    end
+                end
 
                 return
 
@@ -545,7 +563,7 @@ local botOrder = {
 
             if channel then
 
-                channel.OnIncomingMessage =
+                channel.MessageReceived:Connect(
                     function(message)
 
                         local userId =
@@ -568,6 +586,7 @@ local botOrder = {
                         end
 
                     end
+                )
 
             end
 
