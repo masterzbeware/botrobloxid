@@ -20,10 +20,44 @@ return {
         local StatusGroup = (Tab.AddRightGroupbox and Tab:AddRightGroupbox("Status"))
             or Tab:AddLeftGroupbox("Status")
 
+        -- Groupbox daftar command
+        local CommandGroup = (Tab.AddLeftGroupbox and Tab:AddLeftGroupbox("List Command"))
+            or Tab:AddRightGroupbox("List Command")
+
         -- Label ala RonixHub
         local PlayersLabel = ServerGroup:AddLabel("Players\n0")
         local TimeLabel = ServerGroup:AddLabel("Server Time\n0h:00m:00s")
         local StatusLabel = StatusGroup:AddLabel("Session\nOffline")
+
+        -- Daftar command yang tersedia
+        local CommandLabel = CommandGroup:AddLabel(
+            "!perfix\n" ..
+            "!main\n" ..
+            "!follow\n" ..
+            "!frontline\n" ..
+            "!circle\n" ..
+            "!fourline\n" ..
+            "!backline\n" ..
+            "!rest\n" ..
+            "!salute\n" ..
+            "!sit\n" ..
+            "!agree\n" ..
+            "!pushup\n" ..
+            "!message\n" ..
+            "!collision\n" ..
+            "!ateezdance\n" ..
+            "!gabresdance\n" ..
+            "!pakodidance\n" ..
+            "!kangoradance\n" ..
+            "!asmaradance\n" ..
+            "!pargoydance\n" ..
+            "!vacationdance\n" ..
+            "!brazildance\n" ..
+            "!ketlindance\n" ..
+            "!harleydance\n" ..
+            "!heeseungdance\n" ..
+            "!worship"
+        )
 
         local Players = game:GetService("Players")
         local startTime = os.clock()
