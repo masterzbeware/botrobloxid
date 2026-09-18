@@ -1,36 +1,81 @@
 return {
     Execute = function()
-        local vars = _G.BotVars or {}
-        _G.BotVars = vars
+        local vars = _G.BotVars
+
+        if not vars then
+            warn("[Main] _G.BotVars tidak ditemukan!")
+            return
+        end
 
         local Window = vars.MainWindow
-        if not Window then return end
+
+        if not Window then
+            warn("[Main] MainWindow tidak ditemukan!")
+            return
+        end
 
         vars.Tabs = vars.Tabs or {}
+
+        --==================================================
+        -- TAB HOME
+        --==================================================
+
         if not vars.Tabs.Main then
             vars.Tabs.Main = Window:AddTab("Home")
         end
 
         local Tab = vars.Tabs.Main
 
-        -- Groupbox kiri & kanan (mirip Ronix)
-        local ServerGroup = (Tab.AddLeftGroupbox and Tab:AddLeftGroupbox("Server"))
+        --==================================================
+        -- SERVER GROUP
+        --==================================================
+
+        local ServerGroup =
+            (Tab.AddLeftGroupbox and Tab:AddLeftGroupbox("Server"))
             or Tab:AddRightGroupbox("Server")
 
-        local StatusGroup = (Tab.AddRightGroupbox and Tab:AddRightGroupbox("Status"))
+        --==================================================
+        -- STATUS GROUP
+        --==================================================
+
+        local StatusGroup =
+            (Tab.AddRightGroupbox and Tab:AddRightGroupbox("Status"))
             or Tab:AddLeftGroupbox("Status")
 
-        -- Groupbox daftar command
-        local CommandGroup = (Tab.AddLeftGroupbox and Tab:AddLeftGroupbox("List Command"))
-            or Tab:AddRightGroupbox("List Command")
+        --==================================================
+        -- LIST COMMAND GROUP 1
+        --==================================================
 
-        -- Label ala RonixHub
+        local CommandGroup1 =
+            (Tab.AddLeftGroupbox and Tab:AddLeftGroupbox("List Command 1"))
+            or Tab:AddRightGroupbox("List Command 1")
+
+        --==================================================
+        -- LIST COMMAND GROUP 2
+        --==================================================
+
+        local CommandGroup2 =
+            (Tab.AddRightGroupbox and Tab:AddRightGroupbox("List Command 2"))
+            or Tab:AddLeftGroupbox("List Command 2")
+
+        --==================================================
+        -- SERVER INFO
+        --==================================================
+
         local PlayersLabel = ServerGroup:AddLabel("Players\n0")
         local TimeLabel = ServerGroup:AddLabel("Server Time\n0h:00m:00s")
+
+        --==================================================
+        -- STATUS INFO
+        --==================================================
+
         local StatusLabel = StatusGroup:AddLabel("Session\nOffline")
 
-        -- Daftar command yang tersedia
-        local commands = {
+        --==================================================
+        -- COMMAND LIST
+        --==================================================
+
+        local commands1 = {
             "!perfix",
             "!main",
             "!follow",
@@ -43,6 +88,9 @@ return {
             "!sit",
             "!agree",
             "!pushup",
+        }
+
+        local commands2 = {
             "!message",
             "!collision",
             "!ateezdance",
@@ -59,44 +107,73 @@ return {
             "!worship",
         }
 
-        for _, commandName in ipairs(commands) do
-            CommandGroup:AddLabel(commandName)
+        for _, commandName in ipairs(commands1) do
+            CommandGroup1:AddLabel(commandName)
         end
 
-
-        local Players = game:GetService("Players")
-        local startTime = os.clock()
-
-        -- Format waktu seperti RonixHub
-        local function formatUptime(sec)
-            sec = math.floor(sec)
-            local h = math.floor(sec / 3600)
-            local m = math.floor((sec % 3600) / 60)
-            local s = sec % 60
-            return string.format("%dh:%02dm:%02ds", h, m, s)
+        for _, commandName in ipairs(commands2) do
+            CommandGroup2:AddLabel(commandName)
         end
 
-        task.spawn(function()
-            while true do
-                -- Players
+        --==================================================
+        -- SERVER UPDATE
+        --==================================================
+
+        local Players = vars.Players
+        local RunService = vars.RunService
+
+        if Players then
+            local function updatePlayers()
+                local playerCount = #Players:GetPlayers()
+
                 PlayersLabel:SetText(
-                    "Players\n" ..
-                    Players.NumPlayers .. " / " .. Players.MaxPlayers
+                    "Players\n" .. tostring(playerCount)
                 )
-
-                -- Server Time / Uptime
-                TimeLabel:SetText(
-                    "Server Time\n" ..
-                    formatUptime(os.clock() - startTime)
-                )
-
-                -- Status
-                StatusLabel:SetText(
-                    "Session\nOnline"
-                )
-
-                task.wait(1)
             end
-        end)
+
+            updatePlayers()
+
+            Players.PlayerAdded:Connect(updatePlayers)
+            Players.PlayerRemoving:Connect(updatePlayers)
+        end
+
+        --==================================================
+        -- SERVER TIME UPDATE
+        --==================================================
+
+        if RunService then
+            local startTime = os.clock()
+
+            RunService.Heartbeat:Connect(function()
+                local elapsed = math.floor(os.clock() - startTime)
+
+                local hours = math.floor(elapsed / 3600)
+                local minutes = math.floor((elapsed % 3600) / 60)
+                local seconds = elapsed % 60
+
+                TimeLabel:SetText(
+                    string.format(
+                        "Server Time\n%dh:%02dm:%02ds",
+                        hours,
+                        minutes,
+                        seconds
+                    )
+                )
+            end)
+        end
+
+        --==================================================
+        -- SESSION STATUS
+        --==================================================
+
+        if vars.LocalPlayer then
+            StatusLabel:SetText(
+                "Session\nOnline\n" .. vars.LocalPlayer.Name
+            )
+        else
+            StatusLabel:SetText("Session\nOffline")
+        end
+
+        print("[Main] Home tab berhasil dibuat.")
     end
 }
