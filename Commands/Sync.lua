@@ -16,13 +16,11 @@ return {
             return
         end
 
-
         ----------------------------------------------------------------
         -- GLOBAL
         ----------------------------------------------------------------
 
         _G.BotVars = _G.BotVars or {}
-
 
         ----------------------------------------------------------------
         -- LOAD ADMIN
@@ -45,34 +43,15 @@ return {
             end
         end
 
-
         ----------------------------------------------------------------
         -- REQUEST SYNC REMOTE
         ----------------------------------------------------------------
 
-        local RequestSync
-
-        do
-            local Events = ReplicatedStorage:FindFirstChild("Events")
-
-            if Events then
-                RequestSync = Events:FindFirstChild("RequestSync")
-            end
-
-            if not RequestSync then
-                warn("[Sync] ReplicatedStorage.Events.RequestSync tidak ditemukan.")
-                return
-            end
-        end
-
+        local Events = ReplicatedStorage:WaitForChild("Events")
+        local RequestSync = Events:WaitForChild("RequestSync")
 
         ----------------------------------------------------------------
         -- FIND PLAYER
-        -- Mendukung:
-        -- 1. Username exact
-        -- 2. DisplayName exact
-        -- 3. Username prefix
-        -- 4. DisplayName prefix
         ----------------------------------------------------------------
 
         local function findPlayerByName(name)
@@ -81,41 +60,42 @@ return {
                 return nil
             end
 
-            name = name:gsub("^%s+", ""):gsub("%s+$", "")
-
-            if name == "" then
-                return nil
-            end
-
-            local lowerName = name:lower()
-
+            name = name:lower()
 
             ------------------------------------------------------------
-            -- EXACT USERNAME / DISPLAY NAME
+            -- EXACT USERNAME
             ------------------------------------------------------------
 
             for _, player in ipairs(Players:GetPlayers()) do
 
-                if player.Name:lower() == lowerName
-                    or player.DisplayName:lower() == lowerName then
-
+                if player.Name:lower() == name then
                     return player
-
                 end
 
             end
 
+            ------------------------------------------------------------
+            -- EXACT DISPLAY NAME
+            ------------------------------------------------------------
+
+            for _, player in ipairs(Players:GetPlayers()) do
+
+                if player.DisplayName:lower() == name then
+                    return player
+                end
+
+            end
 
             ------------------------------------------------------------
-            -- PREFIX USERNAME / DISPLAY NAME
+            -- PARTIAL USERNAME / DISPLAY NAME
             ------------------------------------------------------------
 
             for _, player in ipairs(Players:GetPlayers()) do
 
                 if player.Name:lower():sub(
                     1,
-                    #lowerName
-                ) == lowerName then
+                    #name
+                ) == name then
 
                     return player
 
@@ -123,8 +103,8 @@ return {
 
                 if player.DisplayName:lower():sub(
                     1,
-                    #lowerName
-                ) == lowerName then
+                    #name
+                ) == name then
 
                     return player
 
@@ -132,54 +112,96 @@ return {
 
             end
 
-
             return nil
 
         end
 
+        ----------------------------------------------------------------
+        -- SEND CHAT
+        ----------------------------------------------------------------
+
+        local function sendChat(message)
+
+            local success = false
+
+            pcall(function()
+
+                local channel =
+                    TextChatService.TextChannels
+                    and TextChatService.TextChannels:FindFirstChild(
+                        "RBXGeneral"
+                    )
+
+                if channel then
+                    channel:SendAsync(message)
+                    success = true
+                end
+
+            end)
+
+            if not success then
+
+                pcall(function()
+
+                    local chatEvents =
+                        ReplicatedStorage:FindFirstChild(
+                            "DefaultChatSystemChatEvents"
+                        )
+
+                    if not chatEvents then
+                        return
+                    end
+
+                    local sayMessageRequest =
+                        chatEvents:FindFirstChild(
+                            "SayMessageRequest"
+                        )
+
+                    if sayMessageRequest then
+                        sayMessageRequest:FireServer(
+                            message,
+                            "All"
+                        )
+                    end
+
+                end)
+
+            end
+
+        end
 
         ----------------------------------------------------------------
         -- REQUEST SYNC
         ----------------------------------------------------------------
 
-        local function requestSync(targetPlayer)
+        local function requestSync(target)
 
-            if not targetPlayer then
-                warn("[Sync] Target tidak ditemukan.")
-                return
+            if not target then
+                return false
             end
 
             local success, err = pcall(function()
-
-                RequestSync:FireServer(targetPlayer)
-
+                RequestSync:FireServer(target)
             end)
 
             if success then
-
                 print(
-                    "[Sync] RequestSync berhasil | Bot:",
-                    LocalPlayer.Name,
-                    "| Target:",
-                    targetPlayer.Name,
-                    "(" .. targetPlayer.DisplayName .. ")"
+                    "[Sync] RequestSync berhasil:",
+                    target.Name,
+                    "(" .. target.DisplayName .. ")"
                 )
 
-            else
-
-                warn(
-                    "[Sync] RequestSync gagal | Bot:",
-                    LocalPlayer.Name,
-                    "| Target:",
-                    targetPlayer.Name,
-                    "| Error:",
-                    err
-                )
-
+                return true
             end
 
-        end
+            warn(
+                "[Sync] RequestSync gagal:",
+                err
+            )
 
+            return false
+
+        end
 
         ----------------------------------------------------------------
         -- COMMAND HANDLER
@@ -187,13 +209,12 @@ return {
 
         local function handleCommand(message, sender)
 
-            if not message or not sender then
+            if not sender then
                 return
             end
 
-
             ------------------------------------------------------------
-            -- ADMIN CHECK
+            -- HANYA ADMIN
             ------------------------------------------------------------
 
             local isAdmin = false
@@ -206,32 +227,18 @@ return {
                 return
             end
 
+            local command =
+                message:match("^%s*(.-)%s*$")
 
-            ------------------------------------------------------------
-            -- CLEAN MESSAGE
-            ------------------------------------------------------------
-
-            local lower =
-                message:lower()
-                    :gsub("^%s+", "")
-                    :gsub("%s+$", "")
-
+            local lowerCommand =
+                command:lower()
 
             ------------------------------------------------------------
             -- !SYNC
-            --
-            -- !sync
-            -- = sync ke pengirim command
+            -- Sync ke pengirim command sendiri.
             ------------------------------------------------------------
 
-            if lower == "!sync" then
-
-                print(
-                    "[Sync] Command !sync | Bot:",
-                    LocalPlayer.Name,
-                    "| Target:",
-                    sender.Name
-                )
+            if lowerCommand == "!sync" then
 
                 requestSync(sender)
 
@@ -239,16 +246,14 @@ return {
 
             end
 
-
             ------------------------------------------------------------
-            -- !SYNC PLAYER
-            --
-            -- !sync username
-            -- !sync displayname
+            -- !SYNC <USERNAME / DISPLAYNAME>
             ------------------------------------------------------------
 
             local targetName =
-                lower:match("^!sync%s+(.+)$")
+                command:match(
+                    "^!sync%s+(.+)$"
+                )
 
             if targetName then
 
@@ -257,24 +262,13 @@ return {
 
                 if not target then
 
-                    warn(
-                        "[Sync] Player tidak ditemukan:",
-                        targetName
+                    sendChat(
+                        "Player tidak ditemukan."
                     )
 
                     return
 
                 end
-
-
-                print(
-                    "[Sync] Command !sync target | Bot:",
-                    LocalPlayer.Name,
-                    "| Admin:",
-                    sender.Name,
-                    "| Target:",
-                    target.Name
-                )
 
                 requestSync(target)
 
@@ -283,7 +277,6 @@ return {
             end
 
         end
-
 
         ----------------------------------------------------------------
         -- TEXT CHAT
@@ -328,12 +321,13 @@ return {
 
         end
 
-
         ----------------------------------------------------------------
         -- FALLBACK CHAT
         ----------------------------------------------------------------
 
-        local function connectPlayer(player)
+        for _, player in ipairs(
+            Players:GetPlayers()
+        ) do
 
             player.Chatted:Connect(
                 function(message)
@@ -348,25 +342,28 @@ return {
 
         end
 
-
-        for _, player in ipairs(
-            Players:GetPlayers()
-        ) do
-
-            connectPlayer(player)
-
-        end
-
+        ----------------------------------------------------------------
+        -- PLAYER ADDED
+        ----------------------------------------------------------------
 
         Players.PlayerAdded:Connect(
-            connectPlayer
+            function(player)
+
+                player.Chatted:Connect(
+                    function(message)
+
+                        handleCommand(
+                            message,
+                            player
+                        )
+
+                    end
+                )
+
+            end
         )
 
-
-        print(
-            "[Sync] Loaded successfully | Bot:",
-            LocalPlayer.Name
-        )
+        print("[Sync] Loaded successfully.")
 
     end
 }
