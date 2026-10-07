@@ -64,8 +64,8 @@ return {
         local rowSpacing = 3
 
         -- Jarak khusus target Admin.
-        local adminArrowDistance = 4
-        local defaultBotArrowDistance = 4
+        local adminArrowDistance = 3
+        local defaultBotArrowDistance = 3
 
         ----------------------------------------------------------------
         -- BOT ORDER
