@@ -1,25 +1,3 @@
--- Administrator/Diamond.lua
--- Diamond Formation untuk VIP + 10 Bot
---
--- Command:
---   !diamond       -> Bot membentuk diamond mengelilingi target/admin
---   !stop          -> Menghentikan semua mode
---
--- Formasi:
---
---                    B1
---              B2          B3
---
---          B4                B5
---
---             B6    VIP    B7
---
---              B8          B9
---                    B10
---
--- Semua posisi mengikuti arah hadap VIP.
--- Jarak dibuat lebih rapat agar formasi terlihat compact.
-
 return {
 
     Execute = function()
@@ -44,7 +22,8 @@ return {
         ----------------------------------------------------------------
 
         _G.BotVars = _G.BotVars or {}
-        _G.BotVars.ModeControllers = _G.BotVars.ModeControllers or {}
+        _G.BotVars.ModeControllers =
+            _G.BotVars.ModeControllers or {}
 
         ----------------------------------------------------------------
         -- LOAD ADMIN
@@ -69,34 +48,20 @@ return {
         local humanoid
         local myHRP
 
-        local diamonding = false
+        local squaring = false
         local targetPlayer = nil
-        local diamondConnection = nil
+        local squareConnection = nil
 
         ----------------------------------------------------------------
-        -- DIAMOND SETTINGS
-        ----------------------------------------------------------------
-        --
-        -- Angka kecil = formasi lebih rapat.
-        -- Semua offset dihitung relatif terhadap VIP.
-        --
-        -- Forward  = arah depan VIP
-        -- Right    = sisi kanan VIP
-        --
-        -- Posisi:
-        --
-        --                    B1
-        --              B2          B3
-        --          B4                B5
-        --             B6    VIP    B7
-        --              B8          B9
-        --                    B10
-        --
+        -- FORMATION SETTINGS
         ----------------------------------------------------------------
 
-        local formationForward = 4.0
-        local formationSide = 2.2
-        local formationDepth = 2.0
+        -- Jarak target ke sisi dalam kotak.
+        local adminSquareDistance = 6
+        local defaultBotSquareDistance = 6
+
+        -- Jarak antar posisi bot.
+        local botSpacing = 3
 
         ----------------------------------------------------------------
         -- BOT ORDER
@@ -114,69 +79,6 @@ return {
             "11122854402", -- Bot 8
             "11774472805", -- Bot 9
             "11774494628", -- Bot 10
-
-        }
-
-        ----------------------------------------------------------------
-        -- DIAMOND OFFSETS
-        ----------------------------------------------------------------
-        --
-        -- x = kiri/kanan
-        -- z = depan/belakang
-        --
-        -- Posisi dibuat berdasarkan jumlah 10 bot.
-        -- B1/B10 berada di ujung depan/belakang.
-        -- B2-B9 membentuk sisi diamond.
-        --
-        ----------------------------------------------------------------
-
-        local diamondPositions = {
-
-            [1] = Vector3.new(0, 0, formationForward + formationDepth),
-            [2] = Vector3.new(-formationSide, 0, formationForward),
-            [3] = Vector3.new(formationSide, 0, formationForward),
-
-            [4] = Vector3.new(
-                -(formationSide * 1.65),
-                0,
-                formationDepth
-            ),
-
-            [5] = Vector3.new(
-                formationSide * 1.65,
-                0,
-                formationDepth
-            ),
-
-            [6] = Vector3.new(
-                -formationSide,
-                0,
-                0
-            ),
-
-            [7] = Vector3.new(
-                formationSide,
-                0,
-                0
-            ),
-
-            [8] = Vector3.new(
-                -formationSide,
-                0,
-                -formationForward
-            ),
-
-            [9] = Vector3.new(
-                formationSide,
-                0,
-                -formationForward
-            ),
-
-            [10] = Vector3.new(
-                0,
-                0,
-                -(formationForward + formationDepth)
-            ),
 
         }
 
@@ -253,6 +155,7 @@ return {
                             )
 
                         end
+
                     end
 
                 end)
@@ -262,18 +165,18 @@ return {
         end
 
         ----------------------------------------------------------------
-        -- STOP DIAMOND
+        -- STOP SQUARE
         ----------------------------------------------------------------
 
-        local function stopDiamond()
+        local function stopSquare()
 
-            diamonding = false
+            squaring = false
             targetPlayer = nil
 
-            if diamondConnection then
+            if squareConnection then
 
-                diamondConnection:Disconnect()
-                diamondConnection = nil
+                squareConnection:Disconnect()
+                squareConnection = nil
 
             end
 
@@ -287,10 +190,11 @@ return {
         -- REGISTER CONTROLLER
         ----------------------------------------------------------------
 
-        _G.BotVars.ModeControllers.diamond = stopDiamond
+        _G.BotVars.ModeControllers.square =
+            stopSquare
 
         ----------------------------------------------------------------
-        -- STOP SEMUA MODE LAIN
+        -- STOP OTHER MODES
         ----------------------------------------------------------------
 
         local function stopOtherModes()
@@ -299,7 +203,7 @@ return {
                 _G.BotVars.ModeControllers
             ) do
 
-                if name ~= "diamond"
+                if name ~= "square"
                     and type(stopFunction) == "function" then
 
                     pcall(stopFunction)
@@ -336,28 +240,155 @@ return {
         end
 
         ----------------------------------------------------------------
-        -- GET TARGET POSITION
+        -- GET SQUARE POSITION
+        ----------------------------------------------------------------
+        --
+        -- Formasi menggunakan perimeter kotak.
+        --
+        -- Contoh 10 BOT:
+        --
+        --       B1  B2  B3
+        --       B10     B4
+        --       B9      B5
+        --       B8 B7 B6
+        --
+        -- Target berada di tengah.
+        --
         ----------------------------------------------------------------
 
-        local function getFormationPosition(
-            targetHRP,
-            offset
-        )
+        local function getSquareOffset(index, totalBots, distance)
 
-            -- Offset Z positif = depan VIP.
-            -- Offset X positif = kanan VIP.
+            if totalBots <= 0 then
+                return Vector3.zero
+            end
 
-            return targetHRP.Position
-                + (targetHRP.CFrame.RightVector * offset.X)
-                + (targetHRP.CFrame.LookVector * offset.Z)
+            ----------------------------------------------------------------
+            -- PERIMETER KOTAK
+            ----------------------------------------------------------------
+
+            local halfSize = distance
+
+            local sideLength = halfSize * 2
+
+            local perimeter = sideLength * 4
+
+            local spacing = perimeter / totalBots
+
+            local traveled =
+                (index - 1) * spacing
+
+            ----------------------------------------------------------------
+            -- SISI ATAS
+            ----------------------------------------------------------------
+
+            if traveled < sideLength then
+
+                local alpha =
+                    traveled / sideLength
+
+                local x =
+                    -halfSize
+                    + (sideLength * alpha)
+
+                local z =
+                    -halfSize
+
+                return Vector3.new(
+                    x,
+                    0,
+                    z
+                )
+
+            end
+
+            ----------------------------------------------------------------
+            -- SISI KANAN
+            ----------------------------------------------------------------
+
+            traveled =
+                traveled - sideLength
+
+            if traveled < sideLength then
+
+                local alpha =
+                    traveled / sideLength
+
+                local x =
+                    halfSize
+
+                local z =
+                    -halfSize
+                    + (sideLength * alpha)
+
+                return Vector3.new(
+                    x,
+                    0,
+                    z
+                )
+
+            end
+
+            ----------------------------------------------------------------
+            -- SISI BAWAH
+            ----------------------------------------------------------------
+
+            traveled =
+                traveled - sideLength
+
+            if traveled < sideLength then
+
+                local alpha =
+                    traveled / sideLength
+
+                local x =
+                    halfSize
+                    - (sideLength * alpha)
+
+                local z =
+                    halfSize
+
+                return Vector3.new(
+                    x,
+                    0,
+                    z
+                )
+
+            end
+
+            ----------------------------------------------------------------
+            -- SISI KIRI
+            ----------------------------------------------------------------
+
+            traveled =
+                traveled - sideLength
+
+            local alpha =
+                math.clamp(
+                    traveled / sideLength,
+                    0,
+                    1
+                )
+
+            local x =
+                -halfSize
+
+            local z =
+                halfSize
+                - (sideLength * alpha)
+
+            return Vector3.new(
+                x,
+                0,
+                z
+            )
 
         end
 
         ----------------------------------------------------------------
-        -- START DIAMOND
+        -- START SQUARE
         ----------------------------------------------------------------
 
-        local function startDiamond(player)
+        local function startSquare(player)
 
             if not player then
                 return
@@ -373,20 +404,20 @@ return {
             -- SET ACTIVE MODE
             ------------------------------------------------------------
 
-            _G.BotVars.ActiveMode = "diamond"
+            _G.BotVars.ActiveMode = "square"
 
             ------------------------------------------------------------
             -- STOP CONNECTION LAMA
             ------------------------------------------------------------
 
-            if diamondConnection then
+            if squareConnection then
 
-                diamondConnection:Disconnect()
-                diamondConnection = nil
+                squareConnection:Disconnect()
+                squareConnection = nil
 
             end
 
-            diamonding = true
+            squaring = true
             targetPlayer = player
 
             _G.BotVars.CommandTarget = player
@@ -405,32 +436,17 @@ return {
 
             if not myIndex then
 
-                stopDiamond()
+                stopSquare()
 
                 return
 
             end
 
             ------------------------------------------------------------
-            -- AMBIL OFFSET BOT
+            -- SQUARE LOOP
             ------------------------------------------------------------
 
-            local myOffset =
-                diamondPositions[myIndex]
-
-            if not myOffset then
-
-                stopDiamond()
-
-                return
-
-            end
-
-            ------------------------------------------------------------
-            -- DIAMOND LOOP
-            ------------------------------------------------------------
-
-            diamondConnection =
+            squareConnection =
                 RunService.Heartbeat:Connect(
                     function()
 
@@ -438,9 +454,9 @@ return {
                         -- JIKA MODE SUDAH BERGANTI
                         ------------------------------------------------
 
-                        if _G.BotVars.ActiveMode ~= "diamond" then
+                        if _G.BotVars.ActiveMode ~= "square" then
 
-                            stopDiamond()
+                            stopSquare()
 
                             return
 
@@ -450,7 +466,7 @@ return {
                         -- VALIDASI
                         ------------------------------------------------
 
-                        if not diamonding then
+                        if not squaring then
                             return
                         end
 
@@ -486,27 +502,81 @@ return {
                         end
 
                         ------------------------------------------------
-                        -- FORMATION POSITION
+                        -- DISTANCE
                         ------------------------------------------------
 
-                        local targetPosition =
-                            getFormationPosition(
-                                targetHRP,
-                                myOffset
+                        local distance =
+                            defaultBotSquareDistance
+
+                        if Admin:IsAdmin(targetPlayer) then
+
+                            distance =
+                                adminSquareDistance
+
+                        end
+
+                        ------------------------------------------------
+                        -- SPECIAL DISTANCE
+                        ------------------------------------------------
+
+                        local specialDistance =
+                            Distance:GetDistance(
+                                tostring(LocalPlayer.UserId),
+                                tostring(targetPlayer.UserId)
+                            )
+
+                        if specialDistance then
+
+                            distance =
+                                specialDistance
+
+                        end
+
+                        ------------------------------------------------
+                        -- SQUARE OFFSET
+                        ------------------------------------------------
+
+                        local totalBots =
+                            #botOrder
+
+                        local squareOffset =
+                            getSquareOffset(
+                                myIndex,
+                                totalBots,
+                                distance
                             )
 
                         ------------------------------------------------
-                        -- JARAK KE POSISI FORMASI
+                        -- CONVERT LOCAL OFFSET
+                        -- KE ARAH TARGET
+                        ------------------------------------------------
+
+                        local right =
+                            targetHRP.CFrame.RightVector
+
+                        local forward =
+                            targetHRP.CFrame.LookVector
+
+                        local targetPosition =
+                            targetHRP.Position
+                            +
+                            (right * squareOffset.X)
+                            +
+                            (forward * squareOffset.Z)
+
+                        ------------------------------------------------
+                        -- JARAK KE POSISI
                         ------------------------------------------------
 
                         local distanceToTarget =
                             (
                                 myHRP.Position
-                                - targetPosition
+                                -
+                                targetPosition
                             ).Magnitude
 
                         ------------------------------------------------
-                        -- JALAN MENUJU POSISI
+                        -- JALAN KE POSISI
                         ------------------------------------------------
 
                         if distanceToTarget > 1.5 then
@@ -523,23 +593,23 @@ return {
 
                         ------------------------------------------------
                         -- SUDAH SAMPAI
+                        -- BOT MENGHADAP KE TENGAH
                         ------------------------------------------------
 
                         humanoid.AutoRotate = false
 
-                        -- Semua bot menghadap arah yang sama
-                        -- dengan VIP.
-
-                        local targetRotation =
-                            targetHRP.CFrame
-                            - targetHRP.Position
+                        local lookPosition =
+                            Vector3.new(
+                                targetHRP.Position.X,
+                                myHRP.Position.Y,
+                                targetHRP.Position.Z
+                            )
 
                         myHRP.CFrame =
-                            CFrame.new(
-                                myHRP.Position
+                            CFrame.lookAt(
+                                myHRP.Position,
+                                lookPosition
                             )
-                            *
-                            targetRotation
 
                     end
                 )
@@ -559,11 +629,22 @@ return {
                 return
             end
 
+            ------------------------------------------------------------
+            -- CHECK ADMIN
+            ------------------------------------------------------------
+
             local isAdmin = false
 
             pcall(function()
-                isAdmin = Admin:IsAdmin(sender)
+
+                isAdmin =
+                    Admin:IsAdmin(sender)
+
             end)
+
+            ------------------------------------------------------------
+            -- NORMALIZE MESSAGE
+            ------------------------------------------------------------
 
             local lower =
                 message
@@ -571,16 +652,20 @@ return {
                 :gsub("^%s+", "")
                 :gsub("%s+$", "")
 
+            ------------------------------------------------------------
+            -- CURRENT TARGET
+            ------------------------------------------------------------
+
             local commandTarget =
                 _G.BotVars.CommandTarget
 
             ------------------------------------------------------------
             -- !STOP
-            --
-            -- Hanya admin yang boleh menghentikan formasi.
+            -- !UNSQUARE
             ------------------------------------------------------------
 
-            if lower == "!stop" then
+            if lower == "!stop"
+                or lower == "!unsquare" then
 
                 if not isAdmin then
                     return
@@ -606,15 +691,16 @@ return {
             end
 
             ------------------------------------------------------------
-            -- !DIAMOND
+            -- !SQUARE
             --
-            -- Admin dapat menjalankan diamond kapan saja.
+            -- Admin:
+            -- dapat menjalankan ke dirinya sendiri.
             --
-            -- Target yang sedang aktif juga dapat mengetik
-            -- !diamond untuk mengaktifkan kembali formasi dirinya.
+            -- Target aktif:
+            -- dapat mengganti formasi menjadi square.
             ------------------------------------------------------------
 
-            if lower == "!diamond" then
+            if lower == "!square" then
 
                 if not isAdmin
                     and sender ~= commandTarget then
@@ -623,24 +709,24 @@ return {
 
                 end
 
-                _G.BotVars.CommandTarget = sender
+                _G.BotVars.CommandTarget =
+                    sender
 
-                startDiamond(sender)
+                startSquare(sender)
 
                 return
 
             end
 
             ------------------------------------------------------------
-            -- !DIAMOND PLAYER
+            -- !SQUARE PLAYER
             --
-            -- Hanya admin yang boleh menentukan target lain.
-            --
+            -- HANYA ADMIN.
             ------------------------------------------------------------
 
             local targetName =
                 lower:match(
-                    "^!diamond%s+(.+)$"
+                    "^!square%s+(.+)$"
                 )
 
             if targetName then
@@ -656,9 +742,10 @@ return {
 
                 if target then
 
-                    _G.BotVars.CommandTarget = target
+                    _G.BotVars.CommandTarget =
+                        target
 
-                    startDiamond(target)
+                    startSquare(target)
 
                 end
 
@@ -764,10 +851,10 @@ return {
 
                 updateCharacter()
 
-                if _G.BotVars.ActiveMode == "diamond"
+                if _G.BotVars.ActiveMode == "square"
                     and targetPlayer then
 
-                    startDiamond(
+                    startSquare(
                         targetPlayer
                     )
 
@@ -775,6 +862,12 @@ return {
 
             end
         )
+
+        ----------------------------------------------------------------
+        -- DONE
+        ----------------------------------------------------------------
+
+        print("[Square] Square formation system loaded.")
 
     end
 }
