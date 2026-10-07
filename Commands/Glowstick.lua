@@ -7,6 +7,7 @@ Execute = function()
 
     local Players = game:GetService("Players")
     local TextChatService = game:GetService("TextChatService")
+    local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
     local LocalPlayer = Players.LocalPlayer
 
@@ -29,68 +30,100 @@ Execute = function()
     local glowstickActive = false
 
     ----------------------------------------------------------------
--- GLOWSTICK COLORS
-----------------------------------------------------------------
+    -- GLOWSTICK COLORS
+    ----------------------------------------------------------------
 
-local GlowstickColors = {
+    local GlowstickColors = {
 
-    red =
-        Color3.new(
-            1,
-            0,
-            0
-        ),
+        ------------------------------------------------------------
+        -- RED
+        ------------------------------------------------------------
 
-    orange =
-        Color3.new(
-            1,
-            0.47058823704719543,
-            0
-        ),
+        red =
+            Color3.new(
+                1,
+                0,
+                0
+            ),
 
-    yellow =
-        Color3.new(
-            1,
-            0.94117647409439087,
-            0
-        ),
+        ------------------------------------------------------------
+        -- ORANGE
+        ------------------------------------------------------------
 
-    green =
-        Color3.new(
-            0.31372550129890442,
-            1,
-            0
-        ),
+        orange =
+            Color3.new(
+                1,
+                0.47058823704719543,
+                0
+            ),
 
-    blue =
-        Color3.new(
-            0,
-            0.31372550129890442,
-            1
-        ),
+        ------------------------------------------------------------
+        -- YELLOW
+        ------------------------------------------------------------
 
-    pink =
-        Color3.new(
-            1,
-            0.62745100259780884,
-            0.86274510622024536
-        ),
+        yellow =
+            Color3.new(
+                1,
+                0.94117647409439087,
+                0
+            ),
 
-    black =
-        Color3.new(
-            0.039215687662363052,
-            0.039215687662363052,
-            0.039215687662363052
-        ),
+        ------------------------------------------------------------
+        -- GREEN
+        ------------------------------------------------------------
 
-    white =
-        Color3.new(
-            0.94117647409439087,
-            0.94117647409439087,
-            0.94117647409439087
-        ),
+        green =
+            Color3.new(
+                0.31372550129890442,
+                1,
+                0
+            ),
 
-}
+        ------------------------------------------------------------
+        -- BLUE
+        ------------------------------------------------------------
+
+        blue =
+            Color3.new(
+                0,
+                0.31372550129890442,
+                1
+            ),
+
+        ------------------------------------------------------------
+        -- PINK
+        ------------------------------------------------------------
+
+        pink =
+            Color3.new(
+                1,
+                0.62745100259780884,
+                0.86274510622024536
+            ),
+
+        ------------------------------------------------------------
+        -- BLACK
+        ------------------------------------------------------------
+
+        black =
+            Color3.new(
+                0.039215687662363052,
+                0.039215687662363052,
+                0.039215687662363052
+            ),
+
+        ------------------------------------------------------------
+        -- WHITE
+        ------------------------------------------------------------
+
+        white =
+            Color3.new(
+                0.94117647409439087,
+                0.94117647409439087,
+                0.94117647409439087
+            ),
+
+    }
 
     ----------------------------------------------------------------
     -- EQUIP GLOWSTICK
@@ -113,7 +146,7 @@ local GlowstickColors = {
         end
 
         ------------------------------------------------------------
-        -- CARI GLOWSTICK DI BACKPACK
+        -- BACKPACK
         ------------------------------------------------------------
 
         local backpack =
@@ -123,12 +156,21 @@ local GlowstickColors = {
             return
         end
 
+        ------------------------------------------------------------
+        -- FIND GLOWSTICK
+        ------------------------------------------------------------
+
         local glowstick =
             backpack:FindFirstChild("Glowstick")
 
         if not glowstick then
-            warn("[Glowstick] Tool Glowstick tidak ditemukan di Backpack.")
+
+            warn(
+                "[Glowstick] Tool Glowstick tidak ditemukan di Backpack."
+            )
+
             return
+
         end
 
         ------------------------------------------------------------
@@ -137,7 +179,87 @@ local GlowstickColors = {
 
         pcall(function()
 
-            humanoid:EquipTool(glowstick)
+            humanoid:EquipTool(
+                glowstick
+            )
+
+        end)
+
+    end
+
+    ----------------------------------------------------------------
+    -- SET GLOWSTICK COLOR
+    ----------------------------------------------------------------
+
+    local function setGlowstickColor(
+        colorName
+    )
+
+        local color =
+            GlowstickColors[colorName]
+
+        ------------------------------------------------------------
+        -- INVALID COLOR
+        ------------------------------------------------------------
+
+        if not color then
+
+            warn(
+                "[Glowstick] Warna tidak dikenal:",
+                colorName
+            )
+
+            return
+
+        end
+
+        ------------------------------------------------------------
+        -- GLOWSTICK REMOTES
+        ------------------------------------------------------------
+
+        local glowstickRemotes =
+            ReplicatedStorage:FindFirstChild(
+                "GlowstickRemotes"
+            )
+
+        if not glowstickRemotes then
+
+            warn(
+                "[Glowstick] GlowstickRemotes tidak ditemukan."
+            )
+
+            return
+
+        end
+
+        ------------------------------------------------------------
+        -- SET COLOR REMOTE
+        ------------------------------------------------------------
+
+        local setColor =
+            glowstickRemotes:FindFirstChild(
+                "SetColor"
+            )
+
+        if not setColor then
+
+            warn(
+                "[Glowstick] SetColor tidak ditemukan."
+            )
+
+            return
+
+        end
+
+        ------------------------------------------------------------
+        -- FIRE SERVER
+        ------------------------------------------------------------
+
+        pcall(function()
+
+            setColor:FireServer(
+                color
+            )
 
         end)
 
@@ -166,11 +288,13 @@ local GlowstickColors = {
         end
 
         ------------------------------------------------------------
-        -- CEK TOOL YANG SEDANG DI-EQUIP
+        -- CHECK EQUIPPED GLOWSTICK
         ------------------------------------------------------------
 
         local equippedTool =
-            character:FindFirstChild("Glowstick")
+            character:FindFirstChild(
+                "Glowstick"
+            )
 
         if equippedTool then
 
@@ -200,16 +324,18 @@ local GlowstickColors = {
 
         end
 
-        ------------------------------------------------------------
+        ----------------------------------------------------------------
         -- ADMIN CHECK
-        ------------------------------------------------------------
+        ----------------------------------------------------------------
 
         local isAdmin = false
 
         pcall(function()
 
             isAdmin =
-                Admin:IsAdmin(sender)
+                Admin:IsAdmin(
+                    sender
+                )
 
         end)
 
@@ -217,9 +343,9 @@ local GlowstickColors = {
             return
         end
 
-        ------------------------------------------------------------
-        -- NORMALIZE
-        ------------------------------------------------------------
+        ----------------------------------------------------------------
+        -- NORMALIZE MESSAGE
+        ----------------------------------------------------------------
 
         local lower =
             message
@@ -227,9 +353,21 @@ local GlowstickColors = {
             :gsub("^%s+", "")
             :gsub("%s+$", "")
 
-        ------------------------------------------------------------
+        ----------------------------------------------------------------
+        -- !STOP
+        ----------------------------------------------------------------
+
+        if lower == "!stop" then
+
+            unequipGlowstick()
+
+            return
+
+        end
+
+        ----------------------------------------------------------------
         -- !GLOWSTICK
-        ------------------------------------------------------------
+        ----------------------------------------------------------------
 
         if lower == "!glowstick" then
 
@@ -241,13 +379,58 @@ local GlowstickColors = {
 
         end
 
-        ------------------------------------------------------------
-        -- !STOP
-        ------------------------------------------------------------
+        ----------------------------------------------------------------
+        -- !GLOWSTICK COLOR
+        ----------------------------------------------------------------
 
-        if lower == "!stop" then
+        local glowstickColor =
+            lower:match(
+                "^!glowstick%s+(.+)$"
+            )
 
-            unequipGlowstick()
+        if glowstickColor then
+
+            glowstickColor =
+                glowstickColor
+                :gsub("^%s+", "")
+                :gsub("%s+$", "")
+
+            --------------------------------------------------------
+            -- VALIDATE COLOR
+            --------------------------------------------------------
+
+            if not GlowstickColors[
+                glowstickColor
+            ] then
+
+                warn(
+                    "[Glowstick] Warna tidak tersedia:",
+                    glowstickColor
+                )
+
+                return
+
+            end
+
+            --------------------------------------------------------
+            -- ACTIVATE
+            --------------------------------------------------------
+
+            glowstickActive = true
+
+            --------------------------------------------------------
+            -- EQUIP
+            --------------------------------------------------------
+
+            equipGlowstick()
+
+            --------------------------------------------------------
+            -- SET COLOR
+            --------------------------------------------------------
+
+            setGlowstickColor(
+                glowstickColor
+            )
 
             return
 
@@ -341,7 +524,7 @@ local GlowstickColors = {
     )
 
     ----------------------------------------------------------------
-    -- RESPAWN
+    -- CHARACTER RESPAWN
     ----------------------------------------------------------------
 
     LocalPlayer.CharacterAdded:Connect(
