@@ -65,7 +65,7 @@ local commandFiles = {
     "StormDance.lua",
     "ScubaDance.lua",
     "Sync.lua",
-    "Square.lua",
+    "Square.lua",t 
 }
 
 for _, fileName in ipairs(commandFiles) do
