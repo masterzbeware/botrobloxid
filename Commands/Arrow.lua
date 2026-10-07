@@ -1,976 +1,868 @@
 return {
-	Execute = function()
 
-		--------------------------------------------------
-		-- SERVICES
-		--------------------------------------------------
+    Execute = function()
 
-		local Players = game:GetService("Players")
-		local RunService = game:GetService("RunService")
-		local TextChatService = game:GetService("TextChatService")
-		local ReplicatedStorage = game:GetService("ReplicatedStorage")
+        ----------------------------------------------------------------
+        -- SERVICES
+        ----------------------------------------------------------------
 
-		local LocalPlayer = Players.LocalPlayer
+        local Players = game:GetService("Players")
+        local RunService = game:GetService("RunService")
+        local TextChatService = game:GetService("TextChatService")
+        local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-		if not LocalPlayer then
-			return
-		end
+        local LocalPlayer = Players.LocalPlayer
 
-		--------------------------------------------------
-		-- GLOBAL MODE SYSTEM
-		--------------------------------------------------
+        if not LocalPlayer then
+            return
+        end
 
-		_G.BotVars = _G.BotVars or {}
+        ----------------------------------------------------------------
+        -- GLOBAL MODE SYSTEM
+        ----------------------------------------------------------------
 
-		_G.BotVars.ModeControllers =
-			_G.BotVars.ModeControllers or {}
+        _G.BotVars = _G.BotVars or {}
 
-		local vars = _G.BotVars
+        _G.BotVars.ModeControllers =
+            _G.BotVars.ModeControllers or {}
 
-		--------------------------------------------------
-		-- LOAD ADMIN
-		--------------------------------------------------
+        ----------------------------------------------------------------
+        -- LOAD ADMIN
+        ----------------------------------------------------------------
 
-		local Admin = loadstring(game:HttpGet(
-			"https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
-		))()
+        local Admin = loadstring(game:HttpGet(
+            "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
+        ))()
 
-		--------------------------------------------------
-		-- LOAD DISTANCE
-		--------------------------------------------------
+        ----------------------------------------------------------------
+        -- LOAD DISTANCE
+        ----------------------------------------------------------------
 
-		local Distance = loadstring(game:HttpGet(
-			"https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Distance.lua"
-		))()
+        local Distance = loadstring(game:HttpGet(
+            "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Distance.lua"
+        ))()
 
-		--------------------------------------------------
-		-- CHARACTER
-		--------------------------------------------------
+        ----------------------------------------------------------------
+        -- VARIABLES
+        ----------------------------------------------------------------
 
-		local humanoid
-		local myHRP
+        local humanoid
+        local myHRP
 
-		--------------------------------------------------
-		-- STATE
-		--------------------------------------------------
+        local arrowing = false
+        local targetPlayer = nil
+        local arrowConnection = nil
 
-		local arrowActive = false
-		local arrowConnection = nil
-		local targetPlayer = nil
+        ----------------------------------------------------------------
+        -- FORMATION SETTINGS
+        ----------------------------------------------------------------
 
-		--------------------------------------------------
-		-- BOT ORDER
-		--------------------------------------------------
-		-- BOT 1 - BOT 11 IKUT FORMASI
-		-- BOT 12 - BOT 14 TIDAK IKUT
-		--------------------------------------------------
+        -- Jarak horizontal antar bot.
+        local botSpacing = 3
 
-local botOrder = {
+        -- Jarak antar baris.
+        local rowSpacing = 3
 
-	"11611503633", -- Bot 1
-	"11611591921", -- Bot 2
-	"11611597741", -- Bot 3
-	"11672413029", -- Bot 4
-	"11122806815", -- Bot 5
-	"11122806817", -- Bot 6
-	"11122687468", -- Bot 7
-	"11122854402", -- Bot 8
-	"11774472805", -- Bot 9
-	"11774494628", -- Bot 10
+        -- Jarak khusus target Admin.
+        local adminArrowDistance = 6
+        local defaultBotArrowDistance = 6
 
-}
+        ----------------------------------------------------------------
+        -- BOT ORDER
+        ----------------------------------------------------------------
 
-		--------------------------------------------------
-		-- ARROW FORMATION SETTINGS
-		--------------------------------------------------
+        local botOrder = {
 
-		-- Jarak dasar dari Player
-		local baseDistance = 5
+            "11611503633", -- Bot 1
+            "11611591921", -- Bot 2
+            "11611597741", -- Bot 3
+            "11672413029", -- Bot 4
 
-		-- Jarak antar bot yang berada pada batang panah
-		local bodySpacing = 3
+            "11122806815", -- Bot 5
+            "11122806817", -- Bot 6
 
-		-- Jarak kiri / kanan kepala panah
-		local sideSpacing = 3
+            "11122687468", -- Bot 7
+            "11122854402", -- Bot 8
+            "11774472805", -- Bot 9
+            "11774494628", -- Bot 10
 
-		-- Jarak kiri / kanan bagian bawah kepala panah
-		local lowerSideSpacing = 2
+        }
 
-		-- Jarak minimum sebelum dianggap sampai
-		local stopThreshold = 1.5
+        ----------------------------------------------------------------
+        -- UPDATE CHARACTER
+        ----------------------------------------------------------------
 
-		--------------------------------------------------
-		-- UPDATE CHARACTER
-		--------------------------------------------------
+        local function updateCharacter()
 
-		local function updateCharacter()
+            local character =
+                LocalPlayer.Character
+                or LocalPlayer.CharacterAdded:Wait()
 
-			local character =
-				LocalPlayer.Character
-				or LocalPlayer.CharacterAdded:Wait()
+            humanoid =
+                character:WaitForChild("Humanoid")
 
-			humanoid =
-				character:WaitForChild("Humanoid")
+            myHRP =
+                character:WaitForChild("HumanoidRootPart")
 
-			myHRP =
-				character:WaitForChild("HumanoidRootPart")
+            humanoid.AutoRotate = true
 
-			humanoid.AutoRotate = true
+        end
 
-		end
+        updateCharacter()
 
-		updateCharacter()
+        ----------------------------------------------------------------
+        -- SEND CHAT
+        ----------------------------------------------------------------
 
-		--------------------------------------------------
-		-- SEND CHAT
-		--------------------------------------------------
+        local function sendChat(message)
 
-		local function sendChat(message)
+            local success = false
 
-			if not message then
-				return
-			end
+            if TextChatService
+                and TextChatService.TextChannels then
 
-			local success = false
+                local channel =
+                    TextChatService.TextChannels:FindFirstChild(
+                        "RBXGeneral"
+                    )
 
-			--------------------------------------------------
-			-- TEXT CHAT
-			--------------------------------------------------
+                if channel then
 
-			if TextChatService
-				and TextChatService.TextChannels then
+                    pcall(function()
 
-				local channel =
-					TextChatService.TextChannels
-					:FindFirstChild("RBXGeneral")
+                        channel:SendAsync(message)
 
-				if channel then
+                    end)
 
-					pcall(function()
+                    success = true
 
-						channel:SendAsync(message)
+                end
 
-					end)
+            end
 
-					success = true
+            if not success then
 
-				end
+                pcall(function()
 
-			end
+                    local chatEvents =
+                        ReplicatedStorage:FindFirstChild(
+                            "DefaultChatSystemChatEvents"
+                        )
 
-			--------------------------------------------------
-			-- OLD CHAT FALLBACK
-			--------------------------------------------------
+                    if chatEvents then
 
-			if not success then
+                        local sayMessageRequest =
+                            chatEvents:FindFirstChild(
+                                "SayMessageRequest"
+                            )
 
-				pcall(function()
+                        if sayMessageRequest then
 
-					local chatEvents =
-						ReplicatedStorage
-						:FindFirstChild(
-							"DefaultChatSystemChatEvents"
-						)
+                            sayMessageRequest:FireServer(
+                                message,
+                                "All"
+                            )
 
-					if not chatEvents then
-						return
-					end
+                        end
 
-					local sayMessageRequest =
-						chatEvents:FindFirstChild(
-							"SayMessageRequest"
-						)
+                    end
 
-					if sayMessageRequest then
+                end)
 
-						sayMessageRequest:FireServer(
-							message,
-							"All"
-						)
+            end
 
-					end
+        end
 
-				end)
+        ----------------------------------------------------------------
+        -- STOP ARROW
+        ----------------------------------------------------------------
 
-			end
+        local function stopArrow()
 
-		end
+            arrowing = false
+            targetPlayer = nil
 
-		--------------------------------------------------
-		-- STOP ARROW
-		--------------------------------------------------
+            if arrowConnection then
 
-		local function stopArrow()
+                arrowConnection:Disconnect()
+                arrowConnection = nil
 
-			arrowActive = false
-			targetPlayer = nil
+            end
 
-			if arrowConnection then
+            if humanoid then
 
-				arrowConnection:Disconnect()
-				arrowConnection = nil
+                humanoid.AutoRotate = true
 
-			end
+            end
 
-			if humanoid then
+        end
 
-				humanoid.AutoRotate = true
+        ----------------------------------------------------------------
+        -- REGISTER CONTROLLER
+        ----------------------------------------------------------------
 
-			end
+        _G.BotVars.ModeControllers.arrow =
+            stopArrow
 
-		end
+        ----------------------------------------------------------------
+        -- STOP OTHER MODES
+        ----------------------------------------------------------------
 
-		--------------------------------------------------
-		-- REGISTER CONTROLLER
-		--------------------------------------------------
+        local function stopOtherModes()
 
-		vars.ModeControllers.arrow =
-			stopArrow
+            for name, stopFunction in pairs(
+                _G.BotVars.ModeControllers
+            ) do
 
-		--------------------------------------------------
-		-- STOP OTHER MODES
-		--------------------------------------------------
+                if name ~= "arrow"
+                    and type(stopFunction) == "function" then
 
-		local function stopOtherModes()
+                    pcall(stopFunction)
 
-			for name, stopFunction in
-				pairs(vars.ModeControllers) do
+                end
 
-				if name ~= "arrow"
-					and type(stopFunction) == "function" then
+            end
 
-					pcall(stopFunction)
+        end
 
-				end
+        ----------------------------------------------------------------
+        -- FIND PLAYER
+        ----------------------------------------------------------------
 
-			end
+        local function findPlayerByName(name)
 
-		end
+            name = name:lower()
 
-		--------------------------------------------------
-		-- FIND PLAYER
-		--------------------------------------------------
+            for _, player in ipairs(
+                Players:GetPlayers()
+            ) do
 
-		local function findPlayerByName(name)
+                if player.Name:lower() == name
+                    or player.DisplayName:lower() == name then
 
-			if not name or name == "" then
-				return nil
-			end
+                    return player
 
-			name = name:lower()
+                end
 
-			--------------------------------------------------
-			-- EXACT MATCH
-			--------------------------------------------------
+            end
 
-			for _, player in
-				ipairs(Players:GetPlayers()) do
+            return nil
 
-				if player.Name:lower() == name
-					or player.DisplayName:lower() == name then
+        end
 
-					return player
+        ----------------------------------------------------------------
+        -- GET ARROW FORMATION OFFSET
+        ----------------------------------------------------------------
+        --
+        -- FORMASI:
+        --
+        -- B10  B9  B8  B7
+        --
+        --  B6          B5
+        --
+        --    B4  B3  B2
+        --
+        --        B1  A
+        --
+        ----------------------------------------------------------------
 
-				end
+        local function getArrowOffset(index, distance)
 
-			end
+            ----------------------------------------------------------------
+            -- B1
+            ----------------------------------------------------------------
+            --
+            --        B1  A
+            --
+            -- B1 berada di sebelah kiri A.
+            ----------------------------------------------------------------
 
-			--------------------------------------------------
-			-- PARTIAL MATCH
-			--------------------------------------------------
+            if index == 1 then
 
-			for _, player in
-				ipairs(Players:GetPlayers()) do
+                return Vector3.new(
+                    -botSpacing,
+                    0,
+                    -distance
+                )
 
-				if player.Name:lower():find(
-					name,
-					1,
-					true
-				)
-					or player.DisplayName:lower():find(
-						name,
-						1,
-						true
-					) then
+            end
 
-					return player
+            ----------------------------------------------------------------
+            -- B2 B3 B4
+            ----------------------------------------------------------------
+            --
+            --      B4  B3  B2
+            --
+            -- Berada satu baris di belakang B1.
+            ----------------------------------------------------------------
 
-				end
+            if index >= 2 and index <= 4 then
 
-			end
+                local column =
+                    index - 2
 
-			return nil
+                local x =
+                    (column - 1)
+                    * botSpacing
 
-		end
+                local z =
+                    -(distance + rowSpacing)
 
-		--------------------------------------------------
-		-- GET DISTANCE
-		--------------------------------------------------
+                return Vector3.new(
+                    x,
+                    0,
+                    z
+                )
 
-		local function getBotDistance(player)
+            end
 
-			local distance = baseDistance
+            ----------------------------------------------------------------
+            -- B5
+            ----------------------------------------------------------------
+            --
+            -- B6              B5
+            --
+            -- B5 berada di kanan A.
+            ----------------------------------------------------------------
 
-			--------------------------------------------------
-			-- ADMIN DISTANCE
-			--------------------------------------------------
+            if index == 5 then
 
-			if Admin:IsAdmin(player) then
+                return Vector3.new(
+                    botSpacing * 2,
+                    0,
+                    -(distance + rowSpacing * 2)
+                )
 
-				distance = baseDistance
+            end
 
-			end
+            ----------------------------------------------------------------
+            -- B6
+            ----------------------------------------------------------------
+            --
+            -- B6 berada di kiri A.
+            ----------------------------------------------------------------
 
-			--------------------------------------------------
-			-- SPECIAL DISTANCE
-			--------------------------------------------------
+            if index == 6 then
 
-			local specialDistance =
-				Distance:GetDistance(
-					tostring(LocalPlayer.UserId),
-					tostring(player.UserId)
-				)
+                return Vector3.new(
+                    -botSpacing * 2,
+                    0,
+                    -(distance + rowSpacing * 2)
+                )
 
-			if specialDistance then
+            end
 
-				distance = specialDistance
+            ----------------------------------------------------------------
+            -- B7 B8 B9 B10
+            ----------------------------------------------------------------
+            --
+            -- B10  B9  B8  B7
+            --
+            -- Baris paling belakang.
+            ----------------------------------------------------------------
 
-			end
+            if index >= 7 and index <= 10 then
 
-			return distance
+                local column =
+                    index - 7
 
-		end
+                local x =
+                    (column - 1.5)
+                    * botSpacing
 
-		--------------------------------------------------
-		-- GET ARROW POSITION
-		--------------------------------------------------
-		--
-		-- FORMASI:
-		--
-		--                     B1
-		--                     ▲
-		--                     B2
-		--                     ▲
-		--                     B3
-		--                     ▲
-		--                     B4
-		--                     ▲
-		--           B5        B6        B7
-		--            ▲         ▲         ▲
-		--              B8    B9    B10
-		--                   B11
-		--                    ▲
-		--                   👤
-		--                 PLAYER
-		--
-		--------------------------------------------------
+                local z =
+                    -(distance + rowSpacing * 3)
 
-		local function getArrowPosition(
-			myIndex,
-			targetHRP,
-			distance
-		)
+                return Vector3.new(
+                    x,
+                    0,
+                    z
+                )
 
-			if not myIndex
-				or not targetHRP
-				or not distance then
+            end
 
-				return nil
+            ----------------------------------------------------------------
+            -- FALLBACK
+            ----------------------------------------------------------------
 
-			end
+            return Vector3.zero
 
-			--------------------------------------------------
-			-- LOCAL AXIS
-			--------------------------------------------------
+        end
 
-			local forward =
-				targetHRP.CFrame.LookVector
+        ----------------------------------------------------------------
+        -- START ARROW
+        ----------------------------------------------------------------
 
-			local right =
-				targetHRP.CFrame.RightVector
+        local function startArrow(player)
 
-			local origin =
-				targetHRP.Position
+            if not player then
+                return
+            end
 
-			--------------------------------------------------
-			-- BOT 1
-			-- UJUNG PANAH
-			--------------------------------------------------
+            ----------------------------------------------------------------
+            -- STOP MODE LAIN
+            ----------------------------------------------------------------
 
-			if myIndex == 1 then
+            stopOtherModes()
 
-				return origin
-					+ forward
-					* distance
+            ----------------------------------------------------------------
+            -- SET ACTIVE MODE
+            ----------------------------------------------------------------
 
-			end
+            _G.BotVars.ActiveMode = "arrow"
 
-			--------------------------------------------------
-			-- BOT 2
-			-- BATANG PANAH
-			--------------------------------------------------
+            ----------------------------------------------------------------
+            -- STOP CONNECTION LAMA
+            ----------------------------------------------------------------
 
-			if myIndex == 2 then
+            if arrowConnection then
 
-				return origin
-					+ forward
-					* (distance - bodySpacing)
+                arrowConnection:Disconnect()
+                arrowConnection = nil
 
-			end
+            end
 
-			--------------------------------------------------
-			-- BOT 3
-			-- BATANG PANAH
-			--------------------------------------------------
+            arrowing = true
+            targetPlayer = player
 
-			if myIndex == 3 then
+            _G.BotVars.CommandTarget = player
 
-				return origin
-					+ forward
-					* (distance - bodySpacing * 2)
+            sendChat("Yes, Sir!")
 
-			end
+            ----------------------------------------------------------------
+            -- CARI INDEX BOT
+            ----------------------------------------------------------------
 
-			--------------------------------------------------
-			-- BOT 4
-			-- DASAR BATANG
-			--------------------------------------------------
+            local myIndex =
+                table.find(
+                    botOrder,
+                    tostring(LocalPlayer.UserId)
+                )
 
-			if myIndex == 4 then
+            if not myIndex then
 
-				return origin
-					+ forward
-					* (distance - bodySpacing * 3)
+                stopArrow()
 
-			end
+                return
 
-			--------------------------------------------------
-			-- BOT 5
-			-- KEPALA PANAH KIRI
-			--------------------------------------------------
+            end
 
-			if myIndex == 5 then
+            ----------------------------------------------------------------
+            -- ARROW LOOP
+            ----------------------------------------------------------------
 
-				return origin
-					+ forward
-					* (distance - bodySpacing * 3)
-					- right
-					* sideSpacing
+            arrowConnection =
+                RunService.Heartbeat:Connect(
+                    function()
 
-			end
+                        ----------------------------------------------------------------
+                        -- JIKA MODE SUDAH BERGANTI
+                        ----------------------------------------------------------------
 
-			--------------------------------------------------
-			-- BOT 6
-			-- TENGAH KEPALA PANAH
-			--------------------------------------------------
+                        if _G.BotVars.ActiveMode ~= "arrow" then
 
-			if myIndex == 6 then
+                            stopArrow()
 
-				return origin
-					+ forward
-					* (distance - bodySpacing * 3)
+                            return
 
-			end
+                        end
 
-			--------------------------------------------------
-			-- BOT 7
-			-- KEPALA PANAH KANAN
-			--------------------------------------------------
+                        ----------------------------------------------------------------
+                        -- VALIDASI
+                        ----------------------------------------------------------------
 
-			if myIndex == 7 then
+                        if not arrowing then
+                            return
+                        end
 
-				return origin
-					+ forward
-					* (distance - bodySpacing * 3)
-					+ right
-					* sideSpacing
+                        if not humanoid
+                            or not myHRP then
 
-			end
+                            return
 
-			--------------------------------------------------
-			-- BOT 8
-			-- BAGIAN BAWAH KIRI
-			--------------------------------------------------
+                        end
 
-			if myIndex == 8 then
+                        if not targetPlayer then
+                            return
+                        end
 
-				return origin
-					+ forward
-					* (distance - bodySpacing * 3 - bodySpacing)
-					- right
-					* lowerSideSpacing
+                        ----------------------------------------------------------------
+                        -- TARGET CHARACTER
+                        ----------------------------------------------------------------
 
-			end
+                        local targetCharacter =
+                            targetPlayer.Character
 
-			--------------------------------------------------
-			-- BOT 9
-			-- BAGIAN BAWAH TENGAH
-			--------------------------------------------------
+                        if not targetCharacter then
+                            return
+                        end
 
-			if myIndex == 9 then
+                        local targetHRP =
+                            targetCharacter:FindFirstChild(
+                                "HumanoidRootPart"
+                            )
 
-				return origin
-					+ forward
-					* (distance - bodySpacing * 3 - bodySpacing)
+                        if not targetHRP then
+                            return
+                        end
 
-			end
+                        ----------------------------------------------------------------
+                        -- DISTANCE
+                        ----------------------------------------------------------------
 
-			--------------------------------------------------
-			-- BOT 10
-			-- BAGIAN BAWAH KANAN
-			--------------------------------------------------
+                        local distance =
+                            defaultBotArrowDistance
 
-			if myIndex == 10 then
+                        if Admin:IsAdmin(targetPlayer) then
 
-				return origin
-					+ forward
-					* (distance - bodySpacing * 3 - bodySpacing)
-					+ right
-					* lowerSideSpacing
+                            distance =
+                                adminArrowDistance
 
-			end
+                        end
 
-			--------------------------------------------------
-			-- BOT 11
-			-- PANGKAL PANAH
-			--------------------------------------------------
+                        ----------------------------------------------------------------
+                        -- SPECIAL DISTANCE
+                        ----------------------------------------------------------------
 
-			if myIndex == 11 then
+                        local specialDistance =
+                            Distance:GetDistance(
+                                tostring(LocalPlayer.UserId),
+                                tostring(targetPlayer.UserId)
+                            )
 
-				return origin
-					+ forward
-					* (distance - bodySpacing * 3 - bodySpacing * 2)
+                        if specialDistance then
 
-			end
+                            distance =
+                                specialDistance
 
-			--------------------------------------------------
-			-- INVALID INDEX
-			--------------------------------------------------
+                        end
 
-			return nil
+                        ----------------------------------------------------------------
+                        -- FORMATION OFFSET
+                        ----------------------------------------------------------------
 
-		end
+                        local arrowOffset =
+                            getArrowOffset(
+                                myIndex,
+                                distance
+                            )
 
-		--------------------------------------------------
-		-- START ARROW
-		--------------------------------------------------
+                        ----------------------------------------------------------------
+                        -- CONVERT LOCAL OFFSET
+                        -- KE POSISI WORLD
+                        ----------------------------------------------------------------
 
-		local function startArrow(player)
+                        local right =
+                            targetHRP.CFrame.RightVector
 
-			if not player then
-				return
-			end
+                        local forward =
+                            targetHRP.CFrame.LookVector
 
-			--------------------------------------------------
-			-- STOP MODE LAIN
-			--------------------------------------------------
+                        local targetPosition =
+                            targetHRP.Position
+                            +
+                            (right * arrowOffset.X)
+                            +
+                            (forward * arrowOffset.Z)
 
-			stopOtherModes()
+                        ----------------------------------------------------------------
+                        -- JARAK KE POSISI
+                        ----------------------------------------------------------------
 
-			--------------------------------------------------
-			-- ACTIVE MODE
-			--------------------------------------------------
+                        local distanceToTarget =
+                            (
+                                myHRP.Position
+                                -
+                                targetPosition
+                            ).Magnitude
 
-			vars.ActiveMode = "arrow"
+                        ----------------------------------------------------------------
+                        -- JALAN KE POSISI
+                        ----------------------------------------------------------------
 
-			--------------------------------------------------
-			-- DISCONNECT OLD LOOP
-			--------------------------------------------------
+                        if distanceToTarget > 1.5 then
 
-			if arrowConnection then
+                            humanoid.AutoRotate = true
 
-				arrowConnection:Disconnect()
-				arrowConnection = nil
+                            humanoid:MoveTo(
+                                targetPosition
+                            )
 
-			end
+                            return
 
-			--------------------------------------------------
-			-- STATE
-			--------------------------------------------------
+                        end
 
-			arrowActive = true
-			targetPlayer = player
+                        ----------------------------------------------------------------
+                        -- SUDAH SAMPAI
+                        -- MENGHADAP KE ARAH YANG SAMA
+                        -- DENGAN TARGET
+                        ----------------------------------------------------------------
 
-			--------------------------------------------------
-			-- CHAT
-			--------------------------------------------------
+                        humanoid.AutoRotate = false
 
-			sendChat("Yes, Sir!")
+                        myHRP.CFrame =
+                            CFrame.lookAt(
+                                myHRP.Position,
+                                myHRP.Position
+                                    + targetHRP.CFrame.LookVector
+                            )
 
-			--------------------------------------------------
-			-- FIND BOT INDEX
-			--------------------------------------------------
+                    end
+                )
 
-			local myIndex =
-				table.find(
-					botOrder,
-					tostring(LocalPlayer.UserId)
-				)
+        end
 
-			--------------------------------------------------
-			-- BOT TIDAK TERDAFTAR
-			--------------------------------------------------
+        ----------------------------------------------------------------
+        -- COMMAND HANDLER
+        ----------------------------------------------------------------
 
-			if not myIndex then
+        local function handleCommand(
+            message,
+            sender
+        )
 
-				print(
-					"[ARROW] Bot tidak termasuk formasi:",
-					LocalPlayer.Name,
-					LocalPlayer.UserId
-				)
+            if not message
+                or not sender then
 
-				stopArrow()
+                return
 
-				return
+            end
 
-			end
+            ----------------------------------------------------------------
+            -- CHECK ADMIN
+            ----------------------------------------------------------------
 
-			--------------------------------------------------
-			-- DEBUG
-			--------------------------------------------------
+            local isAdmin = false
 
-			print(
-				"[ARROW]",
-				"Bot Index:",
-				myIndex,
-				"UserId:",
-				LocalPlayer.UserId
-			)
+            pcall(function()
 
-			--------------------------------------------------
-			-- HEARTBEAT
-			--------------------------------------------------
+                isAdmin =
+                    Admin:IsAdmin(sender)
 
-			arrowConnection =
-				RunService.Heartbeat:Connect(
-					function()
+            end)
 
-						--------------------------------------------------
-						-- MODE CHANGED
-						--------------------------------------------------
+            ----------------------------------------------------------------
+            -- NORMALIZE MESSAGE
+            ----------------------------------------------------------------
 
-						if vars.ActiveMode
-							~= "arrow" then
+            local lower =
+                message
+                :lower()
+                :gsub("^%s+", "")
+                :gsub("%s+$", "")
 
-							stopArrow()
+            ----------------------------------------------------------------
+            -- CURRENT TARGET
+            ----------------------------------------------------------------
 
-							return
+            local commandTarget =
+                _G.BotVars.CommandTarget
 
-						end
+            ----------------------------------------------------------------
+            -- !STOP
+            -- !UNARROW
+            ----------------------------------------------------------------
 
-						--------------------------------------------------
-						-- ACTIVE CHECK
-						--------------------------------------------------
+            if lower == "!stop"
+                or lower == "!unarrow" then
 
-						if not arrowActive then
-							return
-						end
+                if not isAdmin then
+                    return
+                end
 
-						--------------------------------------------------
-						-- CHARACTER CHECK
-						--------------------------------------------------
+                _G.BotVars.ActiveMode = nil
+                _G.BotVars.CommandTarget = nil
 
-						if not humanoid
-							or not myHRP then
+                for _, stopFunction in pairs(
+                    _G.BotVars.ModeControllers
+                ) do
 
-							return
+                    if type(stopFunction) == "function" then
 
-						end
+                        pcall(stopFunction)
 
-						--------------------------------------------------
-						-- TARGET CHECK
-						--------------------------------------------------
+                    end
 
-						if not targetPlayer then
-							return
-						end
+                end
 
-						--------------------------------------------------
-						-- TARGET CHARACTER
-						--------------------------------------------------
+                return
 
-						local targetCharacter =
-							targetPlayer.Character
+            end
 
-						if not targetCharacter then
-							return
-						end
+            ----------------------------------------------------------------
+            -- !ARROW
+            ----------------------------------------------------------------
 
-						--------------------------------------------------
-						-- TARGET HRP
-						--------------------------------------------------
+            if lower == "!arrow" then
 
-						local targetHRP =
-							targetCharacter:FindFirstChild(
-								"HumanoidRootPart"
-							)
+                if not isAdmin
+                    and sender ~= commandTarget then
 
-						if not targetHRP then
-							return
-						end
+                    return
 
-						--------------------------------------------------
-						-- DISTANCE
-						--------------------------------------------------
+                end
 
-						local distance =
-							getBotDistance(
-								targetPlayer
-							)
+                _G.BotVars.CommandTarget =
+                    sender
 
-						--------------------------------------------------
-						-- FORMATION POSITION
-						--------------------------------------------------
+                startArrow(sender)
 
-						local targetPosition =
-							getArrowPosition(
-								myIndex,
-								targetHRP,
-								distance
-							)
+                return
 
-						if not targetPosition then
-							return
-						end
+            end
 
-						--------------------------------------------------
-						-- DISTANCE TO FORMATION POSITION
-						--------------------------------------------------
+            ----------------------------------------------------------------
+            -- !ARROW PLAYER
+            --
+            -- HANYA ADMIN
+            ----------------------------------------------------------------
 
-						local distanceToTarget =
-							(
-								myHRP.Position
-								- targetPosition
-							).Magnitude
+            local targetName =
+                lower:match(
+                    "^!arrow%s+(.+)$"
+                )
 
-						--------------------------------------------------
-						-- MOVE
-						--------------------------------------------------
+            if targetName then
 
-						if distanceToTarget
-							> stopThreshold then
+                if not isAdmin then
+                    return
+                end
 
-							humanoid.AutoRotate = true
+                local target =
+                    findPlayerByName(
+                        targetName
+                    )
 
-							humanoid:MoveTo(
-								targetPosition
-							)
+                if target then
 
-							return
+                    _G.BotVars.CommandTarget =
+                        target
 
-						end
+                    startArrow(target)
 
-						--------------------------------------------------
-						-- REACHED FORMATION
-						--------------------------------------------------
+                end
 
-						humanoid.AutoRotate = false
+                return
 
-						--------------------------------------------------
-						-- COPY PLAYER ROTATION
-						--------------------------------------------------
+            end
 
-						local targetRotation =
-							targetHRP.CFrame
-							- targetHRP.Position
+        end
 
-						myHRP.CFrame =
-							CFrame.new(
-								myHRP.Position
-							)
-							* targetRotation
+        ----------------------------------------------------------------
+        -- TEXT CHAT
+        ----------------------------------------------------------------
 
-					end
-				)
+        if TextChatService
+            and TextChatService.TextChannels then
 
-		end
+            local channel =
+                TextChatService.TextChannels:FindFirstChild(
+                    "RBXGeneral"
+                )
 
-		--------------------------------------------------
-		-- HANDLE COMMAND
-		--------------------------------------------------
+            if channel then
 
-		local function handleCommand(
-			message,
-			sender
-		)
+                channel.MessageReceived:Connect(
+                    function(message)
 
-			--------------------------------------------------
-			-- ADMIN ONLY
-			--------------------------------------------------
+                        local userId =
+                            message.TextSource
+                            and message.TextSource.UserId
 
-			if not Admin:IsAdmin(sender) then
-				return
-			end
+                        local sender =
+                            userId
+                            and Players:GetPlayerByUserId(
+                                userId
+                            )
 
-			local lower =
-				message:lower()
+                        if sender then
 
-			--------------------------------------------------
-			-- !ARROW
-			--------------------------------------------------
+                            handleCommand(
+                                message.Text,
+                                sender
+                            )
 
-			if lower == "!arrow" then
+                        end
 
-				startArrow(sender)
+                    end
+                )
 
-				return
+            end
 
-			end
+        end
 
-			--------------------------------------------------
-			-- !ARROW PLAYER
-			--------------------------------------------------
+        ----------------------------------------------------------------
+        -- FALLBACK CHAT
+        ----------------------------------------------------------------
 
-			local targetName =
-				lower:match(
-					"^!arrow%s+(.+)$"
-				)
+        for _, player in ipairs(
+            Players:GetPlayers()
+        ) do
 
-			if targetName then
+            player.Chatted:Connect(
+                function(message)
 
-				local target =
-					findPlayerByName(
-						targetName
-					)
+                    handleCommand(
+                        message,
+                        player
+                    )
 
-				if target then
+                end
+            )
 
-					startArrow(
-						target
-					)
+        end
 
-				end
+        ----------------------------------------------------------------
+        -- PLAYER ADDED
+        ----------------------------------------------------------------
 
-				return
+        Players.PlayerAdded:Connect(
+            function(player)
 
-			end
+                player.Chatted:Connect(
+                    function(message)
 
-			--------------------------------------------------
-			-- !STOP
-			--------------------------------------------------
+                        handleCommand(
+                            message,
+                            player
+                        )
 
-			if lower == "!stop"
-				or lower == "!unarrow" then
+                    end
+                )
 
-				vars.ActiveMode = nil
+            end
+        )
 
-				stopArrow()
+        ----------------------------------------------------------------
+        -- CHARACTER RESPAWN
+        ----------------------------------------------------------------
 
-				return
+        LocalPlayer.CharacterAdded:Connect(
+            function()
 
-			end
+                task.wait(1)
 
-		end
+                updateCharacter()
 
-		--------------------------------------------------
-		-- TEXT CHAT SERVICE
-		--------------------------------------------------
+                if _G.BotVars.ActiveMode == "arrow"
+                    and targetPlayer then
 
-		if TextChatService
-			and TextChatService.TextChannels then
+                    startArrow(
+                        targetPlayer
+                    )
 
-			local channel =
-				TextChatService.TextChannels
-				:FindFirstChild("RBXGeneral")
+                end
 
-			if channel then
+            end
+        )
 
-				channel.OnIncomingMessage =
-					function(message)
+        ----------------------------------------------------------------
+        -- DONE
+        ----------------------------------------------------------------
 
-						local userId =
-							message.TextSource
-							and message.TextSource.UserId
+        print(
+            "[Arrow] Arrow formation system loaded."
+        )
 
-						local sender =
-							userId
-							and Players:GetPlayerByUserId(
-								userId
-							)
-
-						if sender then
-
-							handleCommand(
-								message.Text,
-								sender
-							)
-
-						end
-
-					end
-
-			end
-
-		end
-
-		--------------------------------------------------
-		-- OLD CHAT FALLBACK
-		--------------------------------------------------
-
-		for _, player in
-			ipairs(Players:GetPlayers()) do
-
-			player.Chatted:Connect(
-				function(message)
-
-					handleCommand(
-						message,
-						player
-					)
-
-				end
-			)
-
-		end
-
-		--------------------------------------------------
-		-- PLAYER ADDED
-		--------------------------------------------------
-
-		Players.PlayerAdded:Connect(
-			function(player)
-
-				player.Chatted:Connect(
-					function(message)
-
-						handleCommand(
-							message,
-							player
-						)
-
-					end
-				)
-
-			end
-		)
-
-		--------------------------------------------------
-		-- RESPAWN
-		--------------------------------------------------
-
-		LocalPlayer.CharacterAdded:Connect(
-			function()
-
-				task.wait(1)
-
-				updateCharacter()
-
-				--------------------------------------------------
-				-- RESTART ARROW
-				--------------------------------------------------
-
-				if vars.ActiveMode
-					== "arrow"
-					and targetPlayer then
-
-					startArrow(
-						targetPlayer
-					)
-
-				end
-
-			end
-		)
-
-	end
+    end
 }
