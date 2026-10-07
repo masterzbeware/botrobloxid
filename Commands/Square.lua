@@ -565,25 +565,18 @@ return {
 
                         end
 
-                        ----------------------------------------------------------------
-                        -- SUDAH SAMPAI
-                        -- SEMUA BOT MENGHADAP KE A
-                        ----------------------------------------------------------------
+ ----------------------------------------------------------------
+-- SUDAH SAMPAI
+-- BOT MENGHADAP KE DEPAN SESUAI ARAH TARGET
+----------------------------------------------------------------
 
-                        humanoid.AutoRotate = false
+humanoid.AutoRotate = false
 
-                        local lookPosition =
-                            Vector3.new(
-                                targetHRP.Position.X,
-                                myHRP.Position.Y,
-                                targetHRP.Position.Z
-                            )
-
-                        myHRP.CFrame =
-                            CFrame.lookAt(
-                                myHRP.Position,
-                                lookPosition
-                            )
+myHRP.CFrame =
+    CFrame.lookAt(
+        myHRP.Position,
+        myHRP.Position + targetHRP.CFrame.LookVector
+    )
 
                     end
                 )
