@@ -46,6 +46,7 @@ local commandFiles = {
     "Agree.lua",
     "Backline.lua",
     "PushUp.lua",
+    "Diamond.lua",
     "Message.lua",
     "Collision.lua",
     "AteezDance.lua",
@@ -121,6 +122,7 @@ jalankan("harleydance")
 jalankan("heeseungdance")
 jalankan("worship")
 jalankan("centerline")
+jalankan("diamond")
 jalankan("stormdance")
 jalankan("sync")
 
