@@ -63,6 +63,7 @@ local commandFiles = {
     "Worship.lua",
     "Centerline.lua",
     "StormDance.lua",
+    "ScubaDance.lua",
     "Sync.lua",
 }
 
@@ -124,6 +125,7 @@ jalankan("worship")
 jalankan("centerline")
 jalankan("diamond")
 jalankan("stormdance")
+jalankan("scubadance")
 jalankan("sync")
 
 print("✅ Bot.lua loaded — All systems active.")
