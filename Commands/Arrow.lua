@@ -277,15 +277,15 @@ return {
             -- B1 berada di sebelah kiri A.
             ----------------------------------------------------------------
 
-            if index == 1 then
+if index == 1 then
 
-                return Vector3.new(
-                    -botSpacing,
-                    0,
-                    -distance
-                )
+    return Vector3.new(
+        -botSpacing,
+        0,
+        0
+    )
 
-            end
+end
 
             ----------------------------------------------------------------
             -- B2 B3 B4
