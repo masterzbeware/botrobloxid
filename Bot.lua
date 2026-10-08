@@ -50,7 +50,7 @@ local commandFiles = {
     "Message.lua",
     "PakodiDance.lua",
     "PargoyDance.lua",
-    "PushUp.lua",
+    "Pushup.lua",
     "Rest.lua",
     "Salute.lua",
     "Sit.lua",
