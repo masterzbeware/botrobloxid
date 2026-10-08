@@ -24,7 +24,7 @@ _G.BotVars = {
 
 local Window = Library:CreateWindow({
     Title = "MasterZ HUB",
-    Footer = "1.0.3",
+    Footer = "1.0.4",
     Icon = 0
 })
 
@@ -135,6 +135,6 @@ jalankan("square")
 jalankan("twoline")
 jalankan("arrow")
 jalankan("glowstick")
-jalankan("rooftleft")
+jalankan("roofleft")
 
 print("✅ Bot.lua loaded — All systems active.")
