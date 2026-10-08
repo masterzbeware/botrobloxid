@@ -56,7 +56,6 @@ local commandFiles = {
     "Sit.lua",
     "Square.lua",
     "Sync.lua",
-    "Twoline.lua",
     "Worship.lua",
     "LineFormation.lua"
 }
@@ -111,7 +110,6 @@ jalankan("salute")
 jalankan("sit")
 jalankan("square")
 jalankan("sync")
-jalankan("twoline")
 jalankan("worship")
 jalankan("lineformation")
 
