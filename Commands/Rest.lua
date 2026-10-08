@@ -62,8 +62,6 @@ return {
         local restTrack = nil
         local resting = false
 
-        -- Token / generation untuk mencegah cleanup
-        -- dari command lama mengganggu !rest yang baru.
         local restGeneration = 0
 
 
@@ -130,11 +128,14 @@ return {
 
             if restTrack then
 
-                pcall(function()
-                    restTrack:Stop(0.15)
-                end)
+                local oldTrack =
+                    restTrack
 
                 restTrack = nil
+
+                pcall(function()
+                    oldTrack:Stop(0.15)
+                end)
 
             end
 
@@ -188,18 +189,10 @@ return {
             if animateScript
                 and animateScript:IsA("LocalScript") then
 
-                --------------------------------------------------------
-                -- Disable Animate
-                --------------------------------------------------------
-
                 pcall(function()
                     animateScript.Enabled = false
                 end)
 
-
-                --------------------------------------------------------
-                -- WAIT
-                --------------------------------------------------------
 
                 task.wait()
 
@@ -214,10 +207,6 @@ return {
                     return
                 end
 
-
-                --------------------------------------------------------
-                -- Enable Animate
-                --------------------------------------------------------
 
                 pcall(function()
                     animateScript.Enabled = true
@@ -251,17 +240,13 @@ return {
 
 
             ------------------------------------------------------------
-            -- SMALL DELAY UNTIL ANIMATE IS ACTIVE
+            -- SMALL DELAY
             ------------------------------------------------------------
 
             task.defer(function()
 
                 task.wait(0.1)
 
-
-                --------------------------------------------------------
-                -- OLD CLEANUP CANNOT TOUCH NEW GENERATION
-                --------------------------------------------------------
 
                 if generation
                     and generation ~= restGeneration then
@@ -300,7 +285,7 @@ return {
         local function stopRest()
 
             ------------------------------------------------------------
-            -- NEW GENERATION
+            -- INVALIDATE OLD PROCESS
             ------------------------------------------------------------
 
             restGeneration =
@@ -324,6 +309,13 @@ return {
             restoreNormalAnimation(
                 generation
             )
+
+
+            ------------------------------------------------------------
+            -- JANGAN CLEAR CommandTarget
+            --
+            -- CommandTarget hanya dihapus oleh !stop ADMIN.
+            ------------------------------------------------------------
 
         end
 
@@ -364,7 +356,7 @@ return {
         -- PLAY REST EMOTE
         ----------------------------------------------------------------
 
-        local function playRest()
+        local function playRest(targetPlayer)
 
             ------------------------------------------------------------
             -- NEW GENERATION
@@ -381,11 +373,24 @@ return {
             -- SET ACTIVE MODE
             ------------------------------------------------------------
 
-            _G.BotVars.ActiveMode = "rest"
+            _G.BotVars.ActiveMode =
+                "rest"
 
 
             ------------------------------------------------------------
-            -- STOP MODE LAIN
+            -- SET COMMAND TARGET
+            ------------------------------------------------------------
+
+            if targetPlayer then
+
+                _G.BotVars.CommandTarget =
+                    targetPlayer
+
+            end
+
+
+            ------------------------------------------------------------
+            -- STOP OTHER MODES
             ------------------------------------------------------------
 
             stopOtherModes()
@@ -395,8 +400,11 @@ return {
             -- VALIDATE GENERATION
             ------------------------------------------------------------
 
-            if generation ~= restGeneration then
+            if generation
+                ~= restGeneration then
+
                 return
+
             end
 
 
@@ -406,11 +414,14 @@ return {
 
             if restTrack then
 
-                pcall(function()
-                    restTrack:Stop(0.1)
-                end)
+                local oldTrack =
+                    restTrack
 
                 restTrack = nil
+
+                pcall(function()
+                    oldTrack:Stop(0.1)
+                end)
 
             end
 
@@ -437,6 +448,7 @@ return {
                 )
 
                 return
+
             end
 
 
@@ -493,7 +505,9 @@ return {
                 -- SMALL DELAY BEFORE RETRY
                 --------------------------------------------------------
 
-                task.wait(0.1)
+                if attempt < maxAttempts then
+                    task.wait(0.1)
+                end
 
             end
 
@@ -502,7 +516,8 @@ return {
             -- VALIDATE GENERATION AFTER PLAY
             ------------------------------------------------------------
 
-            if generation ~= restGeneration then
+            if generation
+                ~= restGeneration then
 
                 if result then
 
@@ -513,6 +528,7 @@ return {
                 end
 
                 return
+
             end
 
 
@@ -530,7 +546,11 @@ return {
                     "[Rest] EMOTE AKTIF | Bot:",
                     LocalPlayer.Name,
                     "| ID:",
-                    REST_EMOTE_ID
+                    REST_EMOTE_ID,
+                    "| Target:",
+                    _G.BotVars.CommandTarget
+                        and _G.BotVars.CommandTarget.Name
+                        or "None"
                 )
 
 
@@ -551,10 +571,6 @@ return {
                         return
                     end
 
-
-                    ----------------------------------------------------
-                    -- WAIT UNTIL EMOTE STOPPED
-                    ----------------------------------------------------
 
                     pcall(function()
 
@@ -593,6 +609,64 @@ return {
 
 
         ----------------------------------------------------------------
+        -- FIND PLAYER
+        ----------------------------------------------------------------
+
+        local function findPlayerByName(name)
+
+            if not name or name == "" then
+                return nil
+            end
+
+
+            local search =
+                name:lower()
+
+
+            ------------------------------------------------------------
+            -- EXACT MATCH
+            ------------------------------------------------------------
+
+            for _, player in ipairs(
+                Players:GetPlayers()
+            ) do
+
+                if player.Name:lower()
+                    == search then
+
+                    return player
+
+                end
+
+            end
+
+
+            ------------------------------------------------------------
+            -- PREFIX MATCH
+            ------------------------------------------------------------
+
+            for _, player in ipairs(
+                Players:GetPlayers()
+            ) do
+
+                if player.Name:lower():sub(
+                    1,
+                    #search
+                ) == search then
+
+                    return player
+
+                end
+
+            end
+
+
+            return nil
+
+        end
+
+
+        ----------------------------------------------------------------
         -- COMMAND HANDLER
         ----------------------------------------------------------------
 
@@ -617,7 +691,6 @@ return {
 
             local isAdmin = false
 
-
             pcall(function()
 
                 isAdmin =
@@ -626,9 +699,12 @@ return {
             end)
 
 
-            if not isAdmin then
-                return
-            end
+            ------------------------------------------------------------
+            -- COMMAND TARGET CHECK
+            ------------------------------------------------------------
+
+            local isCommandTarget =
+                (_G.BotVars.CommandTarget == sender)
 
 
             ------------------------------------------------------------
@@ -653,76 +729,92 @@ return {
                 )
 
 
-            ------------------------------------------------------------
-            -- !REST
-            ------------------------------------------------------------
-
-            if lower == "!rest" then
-
-                print(
-                    "[Rest] Command diterima | Bot:",
-                    LocalPlayer.Name,
-                    "| Admin:",
-                    sender.Name
-                )
-
-
-                playRest()
-
-
-                return
-            end
-
-
-            ------------------------------------------------------------
-            -- !UNREST
-            ------------------------------------------------------------
-
-            if lower == "!unrest" then
-
-                print(
-                    "[Rest] Unrest command | Bot:",
-                    LocalPlayer.Name,
-                    "| Admin:",
-                    sender.Name
-                )
-
-
-                --------------------------------------------------------
-                -- HANYA CLEAR ACTIVE MODE JIKA MEMANG REST
-                --------------------------------------------------------
-
-                if _G.BotVars.ActiveMode
-                    == "rest" then
-
-                    _G.BotVars.ActiveMode = nil
-
-                    stopRest()
-
-                end
-
-
-                return
-            end
-
-
-            ------------------------------------------------------------
+            ----------------------------------------------------------------
             -- !STOP
-            ------------------------------------------------------------
+            --
+            -- HANYA ADMIN
+            ----------------------------------------------------------------
 
             if lower == "!stop" then
 
+                if not isAdmin then
+
+                    print(
+                        "[Rest] !stop ditolak:",
+                        sender.Name,
+                        "bukan Admin."
+                    )
+
+                    return
+
+                end
+
+
                 print(
-                    "[Rest] Stop command | Bot:",
-                    LocalPlayer.Name,
-                    "| Admin:",
+                    "[Rest] !stop diterima | Admin:",
                     sender.Name
                 )
 
 
                 --------------------------------------------------------
-                -- HANYA STOP REST JIKA REST SEDANG AKTIF
+                -- CLEAR GLOBAL MODE
                 --------------------------------------------------------
+
+                _G.BotVars.ActiveMode = nil
+                _G.BotVars.CommandTarget = nil
+
+
+                --------------------------------------------------------
+                -- STOP SEMUA MODE
+                --------------------------------------------------------
+
+                for _, stopFunction in pairs(
+                    _G.BotVars.ModeControllers
+                ) do
+
+                    if type(stopFunction)
+                        == "function" then
+
+                        pcall(function()
+                            stopFunction()
+                        end)
+
+                    end
+
+                end
+
+
+                return
+
+            end
+
+
+            ----------------------------------------------------------------
+            -- !UNREST
+            --
+            -- HANYA ADMIN
+            ----------------------------------------------------------------
+
+            if lower == "!unrest" then
+
+                if not isAdmin then
+
+                    print(
+                        "[Rest] !unrest ditolak:",
+                        sender.Name,
+                        "bukan Admin."
+                    )
+
+                    return
+
+                end
+
+
+                print(
+                    "[Rest] !unrest diterima | Admin:",
+                    sender.Name
+                )
+
 
                 if _G.BotVars.ActiveMode
                     == "rest" then
@@ -735,6 +827,125 @@ return {
 
 
                 return
+
+            end
+
+
+            ----------------------------------------------------------------
+            -- !REST
+            --
+            -- !rest
+            --     Admin / CommandTarget
+            --
+            -- !rest PLAYER
+            --     Admin ONLY
+            ----------------------------------------------------------------
+
+            if lower == "!rest" then
+
+                if not isAdmin
+                    and not isCommandTarget then
+
+                    print(
+                        "[Rest] !rest ditolak:",
+                        sender.Name
+                    )
+
+                    return
+
+                end
+
+
+                print(
+                    "[Rest] !rest diterima | Sender:",
+                    sender.Name,
+                    "| Admin:",
+                    isAdmin,
+                    "| CommandTarget:",
+                    isCommandTarget
+                )
+
+
+                --------------------------------------------------------
+                -- COMMAND TARGET = SENDER
+                --------------------------------------------------------
+
+                _G.BotVars.CommandTarget =
+                    sender
+
+
+                playRest(sender)
+
+
+                return
+
+            end
+
+
+            ----------------------------------------------------------------
+            -- !REST PLAYER
+            --
+            -- HANYA ADMIN YANG BOLEH MEMILIH TARGET BARU
+            ----------------------------------------------------------------
+
+            local targetName =
+                lower:match(
+                    "^!rest%s+(.+)$"
+                )
+
+
+            if targetName then
+
+                if not isAdmin then
+
+                    print(
+                        "[Rest] !rest PLAYER ditolak:",
+                        sender.Name,
+                        "bukan Admin."
+                    )
+
+                    return
+
+                end
+
+
+                local target =
+                    findPlayerByName(targetName)
+
+
+                if not target then
+
+                    warn(
+                        "[Rest] Player tidak ditemukan:",
+                        targetName
+                    )
+
+                    return
+
+                end
+
+
+                print(
+                    "[Rest] Target dipilih:",
+                    target.Name,
+                    "| Admin:",
+                    sender.Name
+                )
+
+
+                --------------------------------------------------------
+                -- SET COMMAND TARGET
+                --------------------------------------------------------
+
+                _G.BotVars.CommandTarget =
+                    target
+
+
+                playRest(target)
+
+
+                return
+
             end
 
         end
@@ -879,7 +1090,10 @@ return {
                     if _G.BotVars.ActiveMode
                         == "rest" then
 
-                        playRest()
+                        local target =
+                            _G.BotVars.CommandTarget
+
+                        playRest(target)
 
                     end
 

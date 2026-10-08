@@ -68,8 +68,6 @@ return {
         local danceTrack = nil
         local dancing = false
 
-        -- Generation digunakan untuk memastikan proses lama
-        -- dari !stop / !pakodidance tidak mengganggu command terbaru.
         local danceGeneration = 0
 
 
@@ -98,6 +96,7 @@ return {
                 return
             end
 
+
             local humanoid =
                 character:FindFirstChildOfClass(
                     "Humanoid"
@@ -116,11 +115,12 @@ return {
                 and generation ~= danceGeneration then
 
                 return
+
             end
 
 
             ------------------------------------------------------------
-            -- STOP ATEEZ DANCE
+            -- STOP PAKODI DANCE
             ------------------------------------------------------------
 
             if danceTrack then
@@ -131,7 +131,9 @@ return {
                 danceTrack = nil
 
                 pcall(function()
+
                     oldTrack:Stop(0.15)
+
                 end)
 
             end
@@ -145,6 +147,7 @@ return {
                 humanoid:FindFirstChildOfClass(
                     "Animator"
                 )
+
 
             if animator then
 
@@ -162,7 +165,9 @@ return {
                         == Enum.AnimationPriority.Action4 then
 
                         pcall(function()
+
                             track:Stop(0.15)
+
                         end)
 
                     end
@@ -177,16 +182,23 @@ return {
             ------------------------------------------------------------
 
             local animateScript =
-                character:FindFirstChild("Animate")
+                character:FindFirstChild(
+                    "Animate"
+                )
+
 
             if animateScript
                 and animateScript:IsA("LocalScript") then
 
                 pcall(function()
+
                     animateScript.Enabled = false
+
                 end)
 
+
                 task.wait()
+
 
                 --------------------------------------------------------
                 -- VALIDATE GENERATION AGAIN
@@ -196,10 +208,14 @@ return {
                     and generation ~= danceGeneration then
 
                     return
+
                 end
 
+
                 pcall(function()
+
                     animateScript.Enabled = true
+
                 end)
 
             end
@@ -213,7 +229,9 @@ return {
                 and generation ~= danceGeneration then
 
                 return
+
             end
+
 
             pcall(function()
 
@@ -229,17 +247,22 @@ return {
             ------------------------------------------------------------
 
             local cleanupGeneration =
-                generation or danceGeneration
+                generation
+                or danceGeneration
+
 
             task.defer(function()
 
                 task.wait(0.1)
 
+
                 if cleanupGeneration
                     ~= danceGeneration then
 
                     return
+
                 end
+
 
                 if humanoid
                     and humanoid.Parent then
@@ -265,7 +288,7 @@ return {
 
 
         ----------------------------------------------------------------
-        -- STOP ATEEZ DANCE
+        -- STOP PAKODI DANCE
         ----------------------------------------------------------------
 
         local function stopPakodiDance()
@@ -277,8 +300,10 @@ return {
             danceGeneration =
                 danceGeneration + 1
 
+
             local generation =
                 danceGeneration
+
 
             dancing = false
 
@@ -294,8 +319,11 @@ return {
 
                 danceTrack = nil
 
+
                 pcall(function()
+
                     oldTrack:Stop(0.15)
+
                 end)
 
             end
@@ -308,6 +336,14 @@ return {
             restoreNormalAnimation(
                 generation
             )
+
+
+            ----------------------------------------------------------------
+            -- PENTING:
+            -- CommandTarget TIDAK DIHAPUS DI SINI.
+            --
+            -- CommandTarget hanya dihapus oleh !stop ADMIN.
+            ----------------------------------------------------------------
 
         end
 
@@ -334,7 +370,9 @@ return {
                     and type(stopFunction) == "function" then
 
                     pcall(function()
+
                         stopFunction()
+
                     end)
 
                 end
@@ -345,10 +383,10 @@ return {
 
 
         ----------------------------------------------------------------
-        -- PLAY ATEEZ DANCE
+        -- PLAY PAKODI DANCE
         ----------------------------------------------------------------
 
-        local function playPakodiDance()
+        local function playPakodiDance(targetPlayer)
 
             ------------------------------------------------------------
             -- NEW GENERATION
@@ -356,6 +394,7 @@ return {
 
             danceGeneration =
                 danceGeneration + 1
+
 
             local generation =
                 danceGeneration
@@ -370,6 +409,18 @@ return {
 
 
             ------------------------------------------------------------
+            -- SET COMMAND TARGET
+            ------------------------------------------------------------
+
+            if targetPlayer then
+
+                _G.BotVars.CommandTarget =
+                    targetPlayer
+
+            end
+
+
+            ------------------------------------------------------------
             -- STOP MODE LAIN
             ------------------------------------------------------------
 
@@ -380,8 +431,11 @@ return {
             -- VALIDATE GENERATION
             ------------------------------------------------------------
 
-            if generation ~= danceGeneration then
+            if generation
+                ~= danceGeneration then
+
                 return
+
             end
 
 
@@ -396,8 +450,11 @@ return {
 
                 danceTrack = nil
 
+
                 pcall(function()
+
                     oldTrack:Stop(0.1)
+
                 end)
 
             end
@@ -410,10 +467,12 @@ return {
             local character =
                 getCharacter()
 
+
             local humanoid =
                 character:FindFirstChildOfClass(
                     "Humanoid"
                 )
+
 
             if not humanoid then
 
@@ -429,12 +488,13 @@ return {
             ------------------------------------------------------------
             -- PLAY FE ANIMATION WITH RETRY
             ------------------------------------------------------------
-            -- Menggunakan Humanoid:PlayEmoteAndGetAnimTrackById()
-            -- sehingga animasi dijalankan sebagai FE animation.
 
             local maxAttempts = 3
+
             local success = false
+
             local result = nil
+
 
             for attempt = 1, maxAttempts do
 
@@ -442,8 +502,11 @@ return {
                 -- COMMAND SUDAH BERGANTI
                 --------------------------------------------------------
 
-                if generation ~= danceGeneration then
+                if generation
+                    ~= danceGeneration then
+
                     return
+
                 end
 
 
@@ -461,23 +524,29 @@ return {
 
                     end)
 
+
                 if ok and track then
 
                     success = true
+
                     result = track
+
                     break
 
                 end
+
 
                 result = track
 
 
                 --------------------------------------------------------
-                -- JIKA GAGAL, BERI WAKTU UNTUK ANIMATOR
+                -- RETRY
                 --------------------------------------------------------
 
                 if attempt < maxAttempts then
+
                     task.wait(0.1)
+
                 end
 
             end
@@ -487,12 +556,15 @@ return {
             -- VALIDATE GENERATION SETELAH RETRY
             ------------------------------------------------------------
 
-            if generation ~= danceGeneration then
+            if generation
+                ~= danceGeneration then
 
                 if result then
 
                     pcall(function()
+
                         result:Stop(0)
+
                     end)
 
                 end
@@ -509,7 +581,9 @@ return {
             if success and result then
 
                 danceTrack = result
+
                 dancing = true
+
 
                 print(
                     "[PakodiDance] FE Animation berhasil dimainkan:",
@@ -525,21 +599,28 @@ return {
 
                 task.spawn(function()
 
-                    local track = result
-                    local trackGeneration = generation
+                    local track =
+                        result
+
+
+                    local trackGeneration =
+                        generation
+
 
                     if not track then
                         return
                     end
 
+
                     pcall(function()
+
                         track.Stopped:Wait()
+
                     end)
 
 
                     ----------------------------------------------------
-                    -- HANYA BOLEH MEMBERSIHKAN TRACK
-                    -- JIKA MASIH TRACK + GENERATION YANG SAMA
+                    -- CLEAN TRACK ONLY IF STILL VALID
                     ----------------------------------------------------
 
                     if danceTrack == track
@@ -552,6 +633,7 @@ return {
                     end
 
                 end)
+
 
             else
 
@@ -571,6 +653,67 @@ return {
 
 
         ----------------------------------------------------------------
+        -- FIND PLAYER
+        ----------------------------------------------------------------
+
+        local function findPlayerByName(name)
+
+            if not name
+                or name == "" then
+
+                return nil
+
+            end
+
+
+            name =
+                name:lower()
+
+
+            ------------------------------------------------------------
+            -- EXACT USERNAME / DISPLAY NAME
+            ------------------------------------------------------------
+
+            for _, player in ipairs(
+                Players:GetPlayers()
+            ) do
+
+                if player.Name:lower() == name
+                    or player.DisplayName:lower() == name then
+
+                    return player
+
+                end
+
+            end
+
+
+            ------------------------------------------------------------
+            -- PREFIX USERNAME
+            ------------------------------------------------------------
+
+            for _, player in ipairs(
+                Players:GetPlayers()
+            ) do
+
+                if player.Name:lower():sub(
+                    1,
+                    #name
+                ) == name then
+
+                    return player
+
+                end
+
+            end
+
+
+            return nil
+
+        end
+
+
+        ----------------------------------------------------------------
         -- COMMAND HANDLER
         ----------------------------------------------------------------
 
@@ -579,8 +722,11 @@ return {
             sender
         )
 
-            if not message or not sender then
+            if not message
+                or not sender then
+
                 return
+
             end
 
 
@@ -590,6 +736,7 @@ return {
 
             local isAdmin = false
 
+
             pcall(function()
 
                 isAdmin =
@@ -597,9 +744,20 @@ return {
 
             end)
 
-            if not isAdmin then
-                return
-            end
+
+            ------------------------------------------------------------
+            -- CURRENT COMMAND TARGET
+            ------------------------------------------------------------
+
+            local commandTarget =
+                _G.BotVars.CommandTarget
+
+
+            local isCommandTarget =
+                (
+                    commandTarget
+                    == sender
+                )
 
 
             ------------------------------------------------------------
@@ -607,74 +765,107 @@ return {
             ------------------------------------------------------------
 
             local lower =
-                message:lower()
-
-            lower =
-                lower:gsub("^%s+", "")
-
-            lower =
-                lower:gsub("%s+$", "")
-
-
-            ------------------------------------------------------------
-            -- !ATEEZDANCE
-            ------------------------------------------------------------
-
-            if lower == "!pakodidance" then
-
-                print(
-                    "[PakodiDance] Command diterima | Bot:",
-                    LocalPlayer.Name,
-                    "| Admin:",
-                    sender.Name
+                message
+                :lower()
+                :gsub(
+                    "^%s+",
+                    ""
+                )
+                :gsub(
+                    "%s+$",
+                    ""
                 )
 
-                playPakodiDance()
 
-                return
-
-            end
-
-
-            ------------------------------------------------------------
-            -- !UNATEEZDANCE
-            ------------------------------------------------------------
-
-            if lower == "!unpakodidance" then
-
-                print(
-                    "[PakodiDance] UnPakodiDance | Bot:",
-                    LocalPlayer.Name,
-                    "| Admin:",
-                    sender.Name
-                )
-
-                if _G.BotVars.ActiveMode
-                    == "pakodidance" then
-
-                    _G.BotVars.ActiveMode = nil
-
-                end
-
-                stopPakodiDance()
-
-                return
-
-            end
-
-
-            ------------------------------------------------------------
+            ----------------------------------------------------------------
             -- !STOP
-            ------------------------------------------------------------
+            --
+            -- HANYA ADMIN
+            ----------------------------------------------------------------
 
             if lower == "!stop" then
 
+                if not isAdmin then
+
+                    print(
+                        "[PakodiDance] !stop ditolak:",
+                        sender.Name,
+                        "bukan Admin."
+                    )
+
+                    return
+
+                end
+
+
                 print(
-                    "[PakodiDance] Stop | Bot:",
-                    LocalPlayer.Name,
-                    "| Admin:",
+                    "[PakodiDance] !stop diterima | Admin:",
                     sender.Name
                 )
+
+
+                --------------------------------------------------------
+                -- CLEAR GLOBAL STATE
+                --------------------------------------------------------
+
+                _G.BotVars.ActiveMode = nil
+
+                _G.BotVars.CommandTarget = nil
+
+
+                --------------------------------------------------------
+                -- STOP SEMUA MODE
+                --------------------------------------------------------
+
+                for _, stopFunction in pairs(
+                    _G.BotVars.ModeControllers
+                ) do
+
+                    if type(stopFunction)
+                        == "function" then
+
+                        pcall(function()
+
+                            stopFunction()
+
+                        end)
+
+                    end
+
+                end
+
+
+                return
+
+            end
+
+
+            ----------------------------------------------------------------
+            -- !UNPAKODIDANCE
+            --
+            -- HANYA ADMIN
+            ----------------------------------------------------------------
+
+            if lower == "!unpakodidance" then
+
+                if not isAdmin then
+
+                    print(
+                        "[PakodiDance] !unpakodidance ditolak:",
+                        sender.Name,
+                        "bukan Admin."
+                    )
+
+                    return
+
+                end
+
+
+                print(
+                    "[PakodiDance] !unpakodidance diterima | Admin:",
+                    sender.Name
+                )
+
 
                 if _G.BotVars.ActiveMode
                     == "pakodidance" then
@@ -683,7 +874,133 @@ return {
 
                 end
 
+
                 stopPakodiDance()
+
+
+                return
+
+            end
+
+
+            ----------------------------------------------------------------
+            -- !PAKODIDANCE
+            --
+            -- ADMIN:
+            --     !pakodidance
+            --
+            -- COMMAND TARGET:
+            --     !pakodidance
+            ----------------------------------------------------------------
+
+            if lower == "!pakodidance" then
+
+                if not isAdmin
+                    and not isCommandTarget then
+
+                    print(
+                        "[PakodiDance] !pakodidance ditolak:",
+                        sender.Name
+                    )
+
+                    return
+
+                end
+
+
+                print(
+                    "[PakodiDance] !pakodidance diterima | Sender:",
+                    sender.Name,
+                    "| Admin:",
+                    isAdmin,
+                    "| CommandTarget:",
+                    isCommandTarget
+                )
+
+
+                --------------------------------------------------------
+                -- SENDER MENJADI COMMAND TARGET
+                --------------------------------------------------------
+
+                _G.BotVars.CommandTarget =
+                    sender
+
+
+                playPakodiDance(
+                    sender
+                )
+
+
+                return
+
+            end
+
+
+            ----------------------------------------------------------------
+            -- !PAKODIDANCE PLAYER
+            --
+            -- HANYA ADMIN
+            ----------------------------------------------------------------
+
+            local targetName =
+                lower:match(
+                    "^!pakodidance%s+(.+)$"
+                )
+
+
+            if targetName then
+
+                if not isAdmin then
+
+                    print(
+                        "[PakodiDance] !pakodidance PLAYER ditolak:",
+                        sender.Name,
+                        "bukan Admin."
+                    )
+
+                    return
+
+                end
+
+
+                local target =
+                    findPlayerByName(
+                        targetName
+                    )
+
+
+                if not target then
+
+                    warn(
+                        "[PakodiDance] Player tidak ditemukan:",
+                        targetName
+                    )
+
+                    return
+
+                end
+
+
+                print(
+                    "[PakodiDance] Target dipilih:",
+                    target.Name,
+                    "| Admin:",
+                    sender.Name
+                )
+
+
+                --------------------------------------------------------
+                -- SET COMMAND TARGET
+                --------------------------------------------------------
+
+                _G.BotVars.CommandTarget =
+                    target
+
+
+                playPakodiDance(
+                    target
+                )
+
 
                 return
 
@@ -705,7 +1022,9 @@ return {
                 return
             end
 
+
             connectedPlayers[player] = true
+
 
             player.Chatted:Connect(
                 function(message)
@@ -781,15 +1100,18 @@ return {
                 danceGeneration =
                     danceGeneration + 1
 
+
                 local generation =
                     danceGeneration
 
+
                 danceTrack = nil
+
                 dancing = false
 
 
                 --------------------------------------------------------
-                -- JIKA MASIH MODE ATEEZ DANCE
+                -- JIKA MASIH MODE PAKODIDANCE
                 --------------------------------------------------------
 
                 if _G.BotVars.ActiveMode
@@ -808,6 +1130,7 @@ return {
                         return
 
                     end
+
 
                     playPakodiDance()
 

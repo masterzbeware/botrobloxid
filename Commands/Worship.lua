@@ -68,8 +68,6 @@ return {
         local danceTrack = nil
         local dancing = false
 
-        -- Generation digunakan untuk memastikan proses lama
-        -- dari !stop / !worship tidak mengganggu command terbaru.
         local danceGeneration = 0
 
 
@@ -98,6 +96,7 @@ return {
                 return
             end
 
+
             local humanoid =
                 character:FindFirstChildOfClass(
                     "Humanoid"
@@ -116,11 +115,12 @@ return {
                 and generation ~= danceGeneration then
 
                 return
+
             end
 
 
             ------------------------------------------------------------
-            -- STOP ATEEZ DANCE
+            -- STOP WORSHIP TRACK
             ------------------------------------------------------------
 
             if danceTrack then
@@ -131,7 +131,9 @@ return {
                 danceTrack = nil
 
                 pcall(function()
+
                     oldTrack:Stop(0.15)
+
                 end)
 
             end
@@ -145,6 +147,7 @@ return {
                 humanoid:FindFirstChildOfClass(
                     "Animator"
                 )
+
 
             if animator then
 
@@ -162,7 +165,9 @@ return {
                         == Enum.AnimationPriority.Action4 then
 
                         pcall(function()
+
                             track:Stop(0.15)
+
                         end)
 
                     end
@@ -177,43 +182,52 @@ return {
             ------------------------------------------------------------
 
             local animateScript =
-                character:FindFirstChild("Animate")
+                character:FindFirstChild(
+                    "Animate"
+                )
+
 
             if animateScript
                 and animateScript:IsA("LocalScript") then
 
                 pcall(function()
+
                     animateScript.Enabled = false
+
                 end)
+
 
                 task.wait()
 
-                --------------------------------------------------------
-                -- VALIDATE GENERATION AGAIN
-                --------------------------------------------------------
 
                 if generation
                     and generation ~= danceGeneration then
 
                     return
+
                 end
 
+
                 pcall(function()
+
                     animateScript.Enabled = true
+
                 end)
 
             end
 
 
             ------------------------------------------------------------
-            -- FORCE HUMANOID BACK TO RUNNING
+            -- FORCE RUNNING
             ------------------------------------------------------------
 
             if generation
                 and generation ~= danceGeneration then
 
                 return
+
             end
+
 
             pcall(function()
 
@@ -229,17 +243,22 @@ return {
             ------------------------------------------------------------
 
             local cleanupGeneration =
-                generation or danceGeneration
+                generation
+                or danceGeneration
+
 
             task.defer(function()
 
                 task.wait(0.1)
 
+
                 if cleanupGeneration
                     ~= danceGeneration then
 
                     return
+
                 end
+
 
                 if humanoid
                     and humanoid.Parent then
@@ -265,20 +284,22 @@ return {
 
 
         ----------------------------------------------------------------
-        -- STOP ATEEZ DANCE
+        -- STOP WORSHIP
         ----------------------------------------------------------------
 
         local function stopWorship()
 
             ------------------------------------------------------------
-            -- INVALIDATE SEMUA PROSES LAMA
+            -- INVALIDATE PROSES LAMA
             ------------------------------------------------------------
 
             danceGeneration =
                 danceGeneration + 1
 
+
             local generation =
                 danceGeneration
+
 
             dancing = false
 
@@ -294,8 +315,11 @@ return {
 
                 danceTrack = nil
 
+
                 pcall(function()
+
                     oldTrack:Stop(0.15)
+
                 end)
 
             end
@@ -308,6 +332,16 @@ return {
             restoreNormalAnimation(
                 generation
             )
+
+
+            ----------------------------------------------------------------
+            -- PENTING:
+            --
+            -- JANGAN:
+            -- _G.BotVars.CommandTarget = nil
+            --
+            -- CommandTarget hanya dihapus oleh !stop ADMIN.
+            ----------------------------------------------------------------
 
         end
 
@@ -334,7 +368,9 @@ return {
                     and type(stopFunction) == "function" then
 
                     pcall(function()
+
                         stopFunction()
+
                     end)
 
                 end
@@ -345,10 +381,10 @@ return {
 
 
         ----------------------------------------------------------------
-        -- PLAY ATEEZ DANCE
+        -- PLAY WORSHIP
         ----------------------------------------------------------------
 
-        local function playWorship()
+        local function playWorship(targetPlayer)
 
             ------------------------------------------------------------
             -- NEW GENERATION
@@ -356,6 +392,7 @@ return {
 
             danceGeneration =
                 danceGeneration + 1
+
 
             local generation =
                 danceGeneration
@@ -370,6 +407,24 @@ return {
 
 
             ------------------------------------------------------------
+            -- SET COMMAND TARGET
+            --
+            -- Jika target diberikan oleh Admin:
+            -- target menjadi CommandTarget.
+            --
+            -- Jika dipanggil tanpa target:
+            -- caller sudah menjadi CommandTarget dari handler.
+            ------------------------------------------------------------
+
+            if targetPlayer then
+
+                _G.BotVars.CommandTarget =
+                    targetPlayer
+
+            end
+
+
+            ------------------------------------------------------------
             -- STOP MODE LAIN
             ------------------------------------------------------------
 
@@ -380,13 +435,16 @@ return {
             -- VALIDATE GENERATION
             ------------------------------------------------------------
 
-            if generation ~= danceGeneration then
+            if generation
+                ~= danceGeneration then
+
                 return
+
             end
 
 
             ------------------------------------------------------------
-            -- STOP PREVIOUS DANCE TRACK
+            -- STOP PREVIOUS TRACK
             ------------------------------------------------------------
 
             if danceTrack then
@@ -396,8 +454,11 @@ return {
 
                 danceTrack = nil
 
+
                 pcall(function()
+
                     oldTrack:Stop(0.1)
+
                 end)
 
             end
@@ -410,10 +471,12 @@ return {
             local character =
                 getCharacter()
 
+
             local humanoid =
                 character:FindFirstChildOfClass(
                     "Humanoid"
                 )
+
 
             if not humanoid then
 
@@ -429,12 +492,13 @@ return {
             ------------------------------------------------------------
             -- PLAY FE ANIMATION WITH RETRY
             ------------------------------------------------------------
-            -- Menggunakan Humanoid:PlayEmoteAndGetAnimTrackById()
-            -- sehingga animasi dijalankan sebagai FE animation.
 
             local maxAttempts = 3
+
             local success = false
+
             local result = nil
+
 
             for attempt = 1, maxAttempts do
 
@@ -442,8 +506,11 @@ return {
                 -- COMMAND SUDAH BERGANTI
                 --------------------------------------------------------
 
-                if generation ~= danceGeneration then
+                if generation
+                    ~= danceGeneration then
+
                     return
+
                 end
 
 
@@ -461,38 +528,47 @@ return {
 
                     end)
 
+
                 if ok and track then
 
                     success = true
+
                     result = track
+
                     break
 
                 end
+
 
                 result = track
 
 
                 --------------------------------------------------------
-                -- JIKA GAGAL, BERI WAKTU UNTUK ANIMATOR
+                -- RETRY
                 --------------------------------------------------------
 
                 if attempt < maxAttempts then
+
                     task.wait(0.1)
+
                 end
 
             end
 
 
             ------------------------------------------------------------
-            -- VALIDATE GENERATION SETELAH RETRY
+            -- VALIDATE GENERATION
             ------------------------------------------------------------
 
-            if generation ~= danceGeneration then
+            if generation
+                ~= danceGeneration then
 
                 if result then
 
                     pcall(function()
+
                         result:Stop(0)
+
                     end)
 
                 end
@@ -509,7 +585,9 @@ return {
             if success and result then
 
                 danceTrack = result
+
                 dancing = true
+
 
                 print(
                     "[Worship] FE Animation berhasil dimainkan:",
@@ -525,21 +603,28 @@ return {
 
                 task.spawn(function()
 
-                    local track = result
-                    local trackGeneration = generation
+                    local track =
+                        result
+
+
+                    local trackGeneration =
+                        generation
+
 
                     if not track then
                         return
                     end
 
+
                     pcall(function()
+
                         track.Stopped:Wait()
+
                     end)
 
 
                     ----------------------------------------------------
-                    -- HANYA BOLEH MEMBERSIHKAN TRACK
-                    -- JIKA MASIH TRACK + GENERATION YANG SAMA
+                    -- CLEAN TRACK ONLY IF STILL VALID
                     ----------------------------------------------------
 
                     if danceTrack == track
@@ -552,6 +637,7 @@ return {
                     end
 
                 end)
+
 
             else
 
@@ -571,6 +657,67 @@ return {
 
 
         ----------------------------------------------------------------
+        -- FIND PLAYER
+        ----------------------------------------------------------------
+
+        local function findPlayerByName(name)
+
+            if not name
+                or name == "" then
+
+                return nil
+
+            end
+
+
+            name =
+                name:lower()
+
+
+            ------------------------------------------------------------
+            -- EXACT USERNAME / DISPLAY NAME
+            ------------------------------------------------------------
+
+            for _, player in ipairs(
+                Players:GetPlayers()
+            ) do
+
+                if player.Name:lower() == name
+                    or player.DisplayName:lower() == name then
+
+                    return player
+
+                end
+
+            end
+
+
+            ------------------------------------------------------------
+            -- PREFIX USERNAME
+            ------------------------------------------------------------
+
+            for _, player in ipairs(
+                Players:GetPlayers()
+            ) do
+
+                if player.Name:lower():sub(
+                    1,
+                    #name
+                ) == name then
+
+                    return player
+
+                end
+
+            end
+
+
+            return nil
+
+        end
+
+
+        ----------------------------------------------------------------
         -- COMMAND HANDLER
         ----------------------------------------------------------------
 
@@ -579,8 +726,11 @@ return {
             sender
         )
 
-            if not message or not sender then
+            if not message
+                or not sender then
+
                 return
+
             end
 
 
@@ -590,6 +740,7 @@ return {
 
             local isAdmin = false
 
+
             pcall(function()
 
                 isAdmin =
@@ -597,9 +748,20 @@ return {
 
             end)
 
-            if not isAdmin then
-                return
-            end
+
+            ------------------------------------------------------------
+            -- CURRENT COMMAND TARGET
+            ------------------------------------------------------------
+
+            local commandTarget =
+                _G.BotVars.CommandTarget
+
+
+            local isCommandTarget =
+                (
+                    commandTarget
+                    == sender
+                )
 
 
             ------------------------------------------------------------
@@ -607,74 +769,107 @@ return {
             ------------------------------------------------------------
 
             local lower =
-                message:lower()
-
-            lower =
-                lower:gsub("^%s+", "")
-
-            lower =
-                lower:gsub("%s+$", "")
-
-
-            ------------------------------------------------------------
-            -- !ATEEZDANCE
-            ------------------------------------------------------------
-
-            if lower == "!worship" then
-
-                print(
-                    "[Worship] Command diterima | Bot:",
-                    LocalPlayer.Name,
-                    "| Admin:",
-                    sender.Name
+                message
+                :lower()
+                :gsub(
+                    "^%s+",
+                    ""
+                )
+                :gsub(
+                    "%s+$",
+                    ""
                 )
 
-                playWorship()
 
-                return
-
-            end
-
-
-            ------------------------------------------------------------
-            -- !UNATEEZDANCE
-            ------------------------------------------------------------
-
-            if lower == "!unworship" then
-
-                print(
-                    "[Worship] UnWorship | Bot:",
-                    LocalPlayer.Name,
-                    "| Admin:",
-                    sender.Name
-                )
-
-                if _G.BotVars.ActiveMode
-                    == "worship" then
-
-                    _G.BotVars.ActiveMode = nil
-
-                end
-
-                stopWorship()
-
-                return
-
-            end
-
-
-            ------------------------------------------------------------
+            ----------------------------------------------------------------
             -- !STOP
-            ------------------------------------------------------------
+            --
+            -- HANYA ADMIN
+            ----------------------------------------------------------------
 
             if lower == "!stop" then
 
+                if not isAdmin then
+
+                    print(
+                        "[Worship] !stop ditolak:",
+                        sender.Name,
+                        "bukan Admin."
+                    )
+
+                    return
+
+                end
+
+
                 print(
-                    "[Worship] Stop | Bot:",
-                    LocalPlayer.Name,
-                    "| Admin:",
+                    "[Worship] !stop diterima | Admin:",
                     sender.Name
                 )
+
+
+                --------------------------------------------------------
+                -- CLEAR GLOBAL STATE
+                --------------------------------------------------------
+
+                _G.BotVars.ActiveMode = nil
+
+                _G.BotVars.CommandTarget = nil
+
+
+                --------------------------------------------------------
+                -- STOP SEMUA MODE
+                --------------------------------------------------------
+
+                for _, stopFunction in pairs(
+                    _G.BotVars.ModeControllers
+                ) do
+
+                    if type(stopFunction)
+                        == "function" then
+
+                        pcall(function()
+
+                            stopFunction()
+
+                        end)
+
+                    end
+
+                end
+
+
+                return
+
+            end
+
+
+            ----------------------------------------------------------------
+            -- !UNWORSHIP
+            --
+            -- HANYA ADMIN
+            ----------------------------------------------------------------
+
+            if lower == "!unworship" then
+
+                if not isAdmin then
+
+                    print(
+                        "[Worship] !unworship ditolak:",
+                        sender.Name,
+                        "bukan Admin."
+                    )
+
+                    return
+
+                end
+
+
+                print(
+                    "[Worship] !unworship diterima | Admin:",
+                    sender.Name
+                )
+
 
                 if _G.BotVars.ActiveMode
                     == "worship" then
@@ -683,7 +878,133 @@ return {
 
                 end
 
+
                 stopWorship()
+
+
+                return
+
+            end
+
+
+            ----------------------------------------------------------------
+            -- !WORSHIP
+            --
+            -- ADMIN:
+            --     !worship
+            --
+            -- COMMAND TARGET:
+            --     !worship
+            ----------------------------------------------------------------
+
+            if lower == "!worship" then
+
+                if not isAdmin
+                    and not isCommandTarget then
+
+                    print(
+                        "[Worship] !worship ditolak:",
+                        sender.Name
+                    )
+
+                    return
+
+                end
+
+
+                print(
+                    "[Worship] !worship diterima | Sender:",
+                    sender.Name,
+                    "| Admin:",
+                    isAdmin,
+                    "| CommandTarget:",
+                    isCommandTarget
+                )
+
+
+                --------------------------------------------------------
+                -- TARGET = SENDER
+                --------------------------------------------------------
+
+                _G.BotVars.CommandTarget =
+                    sender
+
+
+                playWorship(
+                    sender
+                )
+
+
+                return
+
+            end
+
+
+            ----------------------------------------------------------------
+            -- !WORSHIP PLAYER
+            --
+            -- HANYA ADMIN
+            ----------------------------------------------------------------
+
+            local targetName =
+                lower:match(
+                    "^!worship%s+(.+)$"
+                )
+
+
+            if targetName then
+
+                if not isAdmin then
+
+                    print(
+                        "[Worship] !worship PLAYER ditolak:",
+                        sender.Name,
+                        "bukan Admin."
+                    )
+
+                    return
+
+                end
+
+
+                local target =
+                    findPlayerByName(
+                        targetName
+                    )
+
+
+                if not target then
+
+                    warn(
+                        "[Worship] Player tidak ditemukan:",
+                        targetName
+                    )
+
+                    return
+
+                end
+
+
+                print(
+                    "[Worship] Target dipilih:",
+                    target.Name,
+                    "| Admin:",
+                    sender.Name
+                )
+
+
+                --------------------------------------------------------
+                -- SET COMMAND TARGET
+                --------------------------------------------------------
+
+                _G.BotVars.CommandTarget =
+                    target
+
+
+                playWorship(
+                    target
+                )
+
 
                 return
 
@@ -705,7 +1026,9 @@ return {
                 return
             end
 
+
             connectedPlayers[player] = true
+
 
             player.Chatted:Connect(
                 function(message)
@@ -781,15 +1104,18 @@ return {
                 danceGeneration =
                     danceGeneration + 1
 
+
                 local generation =
                     danceGeneration
 
+
                 danceTrack = nil
+
                 dancing = false
 
 
                 --------------------------------------------------------
-                -- JIKA MASIH MODE ATEEZ DANCE
+                -- JIKA MASIH MODE WORSHIP
                 --------------------------------------------------------
 
                 if _G.BotVars.ActiveMode
@@ -798,16 +1124,13 @@ return {
                     task.wait(0.5)
 
 
-                    ----------------------------------------------------
-                    -- PASTIKAN BELUM ADA COMMAND BARU
-                    ----------------------------------------------------
-
                     if generation
                         ~= danceGeneration then
 
                         return
 
                     end
+
 
                     playWorship()
 
