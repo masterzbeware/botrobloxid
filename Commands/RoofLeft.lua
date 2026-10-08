@@ -43,21 +43,17 @@ return {
 
 
         ----------------------------------------------------------------
-        -- PLACE ID
+        -- PLACE
         ----------------------------------------------------------------
 
         local TANPANAMA_PLACE_ID =
             119031818630096
 
 
-        ----------------------------------------------------------------
-        -- PLACE CHECK
-        ----------------------------------------------------------------
-
         if game.PlaceId ~= TANPANAMA_PLACE_ID then
 
             warn(
-                "[RoofLeft] Command tidak aktif di place ini.",
+                "[RoofLeft] Command hanya aktif di TANPANAMA.",
                 "PlaceId:",
                 game.PlaceId
             )
@@ -101,7 +97,7 @@ return {
         if not Admin then
 
             warn(
-                "[RoofLeft] Admin.lua tidak menghasilkan module."
+                "[RoofLeft] Admin.lua tidak ditemukan."
             )
 
             return
@@ -143,21 +139,6 @@ return {
         ----------------------------------------------------------------
         -- BOT ORDER
         ----------------------------------------------------------------
-        -- Formasi:
-        --
-        -- Bot 1
-        -- Bot 2
-        -- Bot 3
-        -- Bot 4
-        -- Bot 5
-        -- Bot 6
-        -- Bot 7
-        -- Bot 8
-        -- Bot 9
-        -- Bot 10
-        --
-        -- Bot 1 berada paling depan.
-        ----------------------------------------------------------------
 
         local botOrder = {
 
@@ -176,116 +157,127 @@ return {
 
 
         ----------------------------------------------------------------
-        -- ROOF KIRI ROUTE
+        -- ROOF LEFT CHECKPOINTS
+        ----------------------------------------------------------------
+        --
+        -- Urutan:
+        --
+        -- 1. Roof Kiri Step 1
+        -- 2. Roof Kiri Step 2
+        -- 3. Roof Kiri Step 1 kanan
+        -- 4. Roof Kiri Step 2 kanan
+        -- 5. Roof Kiri Step 3 kanan
+        -- 6. Roof Kiri Step 4 kanan
+        -- 7. Roof Kiri Middle
+        --
         ----------------------------------------------------------------
 
-        local route = {
+        local checkpoints = {
 
-            ------------------------------------------------------------
-            -- STEP 1
-            ------------------------------------------------------------
+            {
+                Name = "Roof Kiri Step 1",
 
-            Vector3.new(
-                2759.09,
-                5.04,
-                6.04
-            ),
+                Position = Vector3.new(
+                    2759.09,
+                    5.04,
+                    6.04
+                )
+            },
 
-            ------------------------------------------------------------
-            -- STEP 2
-            ------------------------------------------------------------
+            {
+                Name = "Roof Kiri Step 2",
 
-            Vector3.new(
-                2758.87,
-                5.04,
-                16.71
-            ),
+                Position = Vector3.new(
+                    2758.87,
+                    5.04,
+                    16.71
+                )
+            },
 
-            ------------------------------------------------------------
-            -- STEP 1 KANAN
-            ------------------------------------------------------------
+            {
+                Name = "Roof Kiri Step 1 kanan",
 
-            Vector3.new(
-                2737.54,
-                5.04,
-                16.33
-            ),
+                Position = Vector3.new(
+                    2737.54,
+                    5.04,
+                    16.33
+                )
+            },
 
-            ------------------------------------------------------------
-            -- STEP 2 KANAN
-            ------------------------------------------------------------
+            {
+                Name = "Roof Kiri Step 2 kanan",
 
-            Vector3.new(
-                2725.21,
-                16.51,
-                16.25
-            ),
+                Position = Vector3.new(
+                    2725.21,
+                    16.51,
+                    16.25
+                )
+            },
 
-            ------------------------------------------------------------
-            -- STEP 3 KANAN
-            ------------------------------------------------------------
+            {
+                Name = "Roof Kiri Step 3 kanan",
 
-            Vector3.new(
-                2707.95,
-                28.83,
-                16.14
-            ),
+                Position = Vector3.new(
+                    2707.95,
+                    28.83,
+                    16.14
+                )
+            },
 
-            ------------------------------------------------------------
-            -- STEP 4 KANAN
-            ------------------------------------------------------------
+            {
+                Name = "Roof Kiri Step 4 kanan",
 
-            Vector3.new(
-                2707.56,
-                28.75,
-                2.06
-            ),
+                Position = Vector3.new(
+                    2707.56,
+                    28.75,
+                    2.06
+                )
+            },
 
-            ------------------------------------------------------------
-            -- ROOF KIRI MIDDLE
-            ------------------------------------------------------------
+            {
+                Name = "Roof Kiri Middle",
 
-            Vector3.new(
-                2760.92,
-                28.78,
-                -1.82
-            ),
+                Position = Vector3.new(
+                    2760.92,
+                    28.78,
+                    -1.82
+                )
+            },
 
         }
 
 
         ----------------------------------------------------------------
-        -- FORMATION DISTANCE
-        ----------------------------------------------------------------
-        --
-        -- Mengikuti konsep Follow.lua.
-        --
-        -- Bot 1 = leader
-        -- Bot 2 = 1 x spacing di belakang
-        -- Bot 3 = 2 x spacing di belakang
-        -- dst.
-        --
-        -- Jarak default = 2 studs.
-        --
-        -- Distance.lua tetap digunakan apabila pasangan bot
-        -- mempunyai konfigurasi jarak khusus.
+        -- CONFIG
         ----------------------------------------------------------------
 
+        -- Jarak dasar antar bot.
+        -- Follow.lua juga menggunakan 2 sebagai default.
         local DEFAULT_DISTANCE = 2
+
+        -- Jarak toleransi dianggap sudah sampai.
+        local ARRIVAL_DISTANCE = 1.5
+
+        -- Jarak agar follower tidak terlalu menempel.
+        local FOLLOW_REACHED_DISTANCE = 1.5
+
+        -- Delay kecil setelah semua bot membentuk formasi
+        -- sebelum lanjut ke checkpoint berikutnya.
+        local FORMATION_DELAY = 0.25
 
 
         ----------------------------------------------------------------
         -- VARIABLES
         ----------------------------------------------------------------
 
-        local humanoid
-        local myHRP
+        local humanoid = nil
+        local myHRP = nil
 
-        local roofLeftActive = false
-        local roofLeftConnection = nil
+        local active = false
 
-        local currentRouteDistance = 0
-        local routeFinished = false
+        local currentCheckpoint = 1
+
+        local movementConnection = nil
 
 
         ----------------------------------------------------------------
@@ -314,6 +306,136 @@ return {
 
 
         updateCharacter()
+
+
+        ----------------------------------------------------------------
+        -- GET BOT INDEX
+        ----------------------------------------------------------------
+
+        local function getBotIndex()
+
+            return table.find(
+                botOrder,
+                tostring(
+                    LocalPlayer.UserId
+                )
+            )
+
+        end
+
+
+        ----------------------------------------------------------------
+        -- GET BOT PLAYER
+        ----------------------------------------------------------------
+
+        local function getBotPlayer(index)
+
+            local userId =
+                tonumber(
+                    botOrder[index]
+                )
+
+            if not userId then
+                return nil
+            end
+
+            return Players:GetPlayerByUserId(
+                userId
+            )
+
+        end
+
+
+        ----------------------------------------------------------------
+        -- GET FORMATION DISTANCE
+        ----------------------------------------------------------------
+        --
+        -- Prinsipnya sama dengan Follow.lua.
+        --
+        -- Bot 1:
+        --     target utama
+        --
+        -- Bot 2:
+        --     mengikuti Bot 1
+        --
+        -- Bot 3:
+        --     mengikuti Bot 2
+        --
+        -- dst.
+        --
+        ----------------------------------------------------------------
+
+        local function getDistanceBetweenBots(
+            botIndexA,
+            botIndexB
+        )
+
+            local userIdA =
+                botOrder[botIndexA]
+
+            local userIdB =
+                botOrder[botIndexB]
+
+
+            if Distance then
+
+                local specialDistance =
+                    Distance:GetDistance(
+                        userIdA,
+                        userIdB
+                    )
+
+
+                if specialDistance then
+                    return specialDistance
+                end
+
+            end
+
+
+            return DEFAULT_DISTANCE
+
+        end
+
+
+        ----------------------------------------------------------------
+        -- GET TARGET PLAYER FOR BOT
+        ----------------------------------------------------------------
+        --
+        -- Bot 1:
+        --     tidak mengikuti player.
+        --     Bot 1 menuju checkpoint.
+        --
+        -- Bot 2:
+        --     mengikuti Bot 1.
+        --
+        -- Bot 3:
+        --     mengikuti Bot 2.
+        --
+        -- dst.
+        ----------------------------------------------------------------
+
+        local function getFollowPlayer()
+
+            local myIndex =
+                getBotIndex()
+
+
+            if not myIndex then
+                return nil
+            end
+
+
+            if myIndex == 1 then
+                return nil
+            end
+
+
+            return getBotPlayer(
+                myIndex - 1
+            )
+
+        end
 
 
         ----------------------------------------------------------------
@@ -400,289 +522,14 @@ return {
 
 
         ----------------------------------------------------------------
-        -- CALCULATE ROUTE SEGMENTS
+        -- GET CURRENT CHECKPOINT
         ----------------------------------------------------------------
 
-        local segments = {}
-        local totalRouteLength = 0
-
-
-        for i = 1, #route - 1 do
-
-            local a = route[i]
-            local b = route[i + 1]
-
-            local length =
-                (b - a).Magnitude
-
-
-            segments[i] = {
-                Start = a,
-                Finish = b,
-                Length = length,
-                StartDistance = totalRouteLength,
-                EndDistance =
-                    totalRouteLength + length,
-            }
-
-
-            totalRouteLength =
-                totalRouteLength + length
-
-        end
-
-
-        ----------------------------------------------------------------
-        -- GET POSITION ON ROUTE
-        ----------------------------------------------------------------
-
-        local function getPositionOnRoute(distance)
-
-            if distance <= 0 then
-                return route[1]
-            end
-
-
-            if distance >= totalRouteLength then
-                return route[#route]
-            end
-
-
-            for _, segment in ipairs(segments) do
-
-                if distance >= segment.StartDistance
-                    and distance <= segment.EndDistance then
-
-                    local alpha =
-                        (
-                            distance
-                            - segment.StartDistance
-                        )
-                        /
-                        segment.Length
-
-
-                    return segment.Start:Lerp(
-                        segment.Finish,
-                        alpha
-                    )
-
-                end
-
-            end
-
-
-            return route[#route]
-
-        end
-
-
-        ----------------------------------------------------------------
-        -- GET ROUTE DISTANCE FROM POSITION
-        ----------------------------------------------------------------
-        --
-        -- Digunakan supaya setiap bot bisa mengetahui posisi
-        -- progresnya di sepanjang jalur.
-        ----------------------------------------------------------------
-
-        local function getClosestRouteDistance(position)
-
-            local bestDistance = 0
-            local bestDifference = math.huge
-
-
-            for _, segment in ipairs(segments) do
-
-                local segmentVector =
-                    segment.Finish
-                    - segment.Start
-
-
-                local segmentLengthSquared =
-                    segmentVector:Dot(
-                        segmentVector
-                    )
-
-
-                if segmentLengthSquared > 0 then
-
-                    local alpha =
-                        (
-                            position
-                            - segment.Start
-                        ):Dot(segmentVector)
-                        /
-                        segmentLengthSquared
-
-
-                    alpha =
-                        math.clamp(
-                            alpha,
-                            0,
-                            1
-                        )
-
-
-                    local closestPoint =
-                        segment.Start
-                        + segmentVector * alpha
-
-
-                    local difference =
-                        (
-                            position
-                            - closestPoint
-                        ).Magnitude
-
-
-                    if difference < bestDifference then
-
-                        bestDifference =
-                            difference
-
-
-                        bestDistance =
-                            segment.StartDistance
-                            +
-                            segment.Length
-                            * alpha
-
-                    end
-
-                end
-
-            end
-
-
-            return bestDistance
-
-        end
-
-
-        ----------------------------------------------------------------
-        -- GET BOT INDEX
-        ----------------------------------------------------------------
-
-        local function getBotIndex()
-
-            return table.find(
-                botOrder,
-                tostring(
-                    LocalPlayer.UserId
-                )
-            )
-
-        end
-
-
-        ----------------------------------------------------------------
-        -- GET FORMATION DISTANCE
-        ----------------------------------------------------------------
-
-        local function getFormationDistance()
-
-            local myIndex =
-                getBotIndex()
-
-
-            if not myIndex then
-                return DEFAULT_DISTANCE
-            end
-
-
-            ------------------------------------------------------------
-            -- Bot pertama tidak mempunyai jarak belakang.
-            ------------------------------------------------------------
-
-            if myIndex <= 1 then
-                return 0
-            end
-
-
-            ------------------------------------------------------------
-            -- Ikuti konfigurasi Distance.lua apabila tersedia.
-            ------------------------------------------------------------
-
-            local previousBotId =
-                botOrder[myIndex - 1]
-
-
-            local currentBotId =
-                botOrder[myIndex]
-
-
-            local specialDistance =
-                Distance:GetDistance(
-                    currentBotId,
-                    previousBotId
-                )
-
-
-            if specialDistance then
-                return specialDistance
-            end
-
-
-            return DEFAULT_DISTANCE
-
-        end
-
-
-        ----------------------------------------------------------------
-        -- GET TARGET DISTANCE
-        ----------------------------------------------------------------
-
-        local function getTargetRouteDistance()
-
-            local myIndex =
-                getBotIndex()
-
-
-            if not myIndex then
-                return currentRouteDistance
-            end
-
-
-            ------------------------------------------------------------
-            -- Bot 1 menjadi leader.
-            ------------------------------------------------------------
-
-            if myIndex == 1 then
-                return currentRouteDistance
-            end
-
-
-            ------------------------------------------------------------
-            -- Setiap bot berada sedikit di belakang bot sebelumnya.
-            --
-            -- Karena Distance.lua memiliki pasangan:
-            --
-            -- Bot 1 - Bot 2 = 2
-            -- Bot 3 - Bot 4 = 2
-            -- ...
-            --
-            -- Untuk formasi baris penuh, kita gunakan jarak 2
-            -- antar setiap bot.
-            ------------------------------------------------------------
-
-            local spacing =
-                getFormationDistance()
-
-
-            local targetDistance =
-                currentRouteDistance
-                -
-                (
-                    spacing
-                    *
-                    (myIndex - 1)
-                )
-
-
-            return math.max(
-                0,
-                targetDistance
-            )
+        local function getCurrentCheckpoint()
+
+            return checkpoints[
+                currentCheckpoint
+            ]
 
         end
 
@@ -693,14 +540,14 @@ return {
 
         local function stopRoofLeft()
 
-            roofLeftActive = false
-            routeFinished = false
+            active = false
 
 
-            if roofLeftConnection then
+            if movementConnection then
 
-                roofLeftConnection:Disconnect()
-                roofLeftConnection = nil
+                movementConnection:Disconnect()
+
+                movementConnection = nil
 
             end
 
@@ -720,7 +567,7 @@ return {
 
 
         ----------------------------------------------------------------
-        -- REGISTER MODE CONTROLLER
+        -- REGISTER MODE
         ----------------------------------------------------------------
 
         _G.BotVars.ModeControllers.roofleft =
@@ -740,9 +587,288 @@ return {
                 if name ~= "roofleft"
                     and type(stopFunction) == "function" then
 
-                    pcall(stopFunction)
+                    pcall(
+                        stopFunction
+                    )
 
                 end
+
+            end
+
+        end
+
+
+        ----------------------------------------------------------------
+        -- CHECK BOT ARRIVAL
+        ----------------------------------------------------------------
+
+        local function isBotAtPosition(
+            player,
+            position,
+            distance
+        )
+
+            if not player then
+                return false
+            end
+
+
+            local character =
+                player.Character
+
+
+            if not character then
+                return false
+            end
+
+
+            local hrp =
+                character:FindFirstChild(
+                    "HumanoidRootPart"
+                )
+
+
+            if not hrp then
+                return false
+            end
+
+
+            return (
+                hrp.Position
+                -
+                position
+            ).Magnitude
+            <= distance
+
+        end
+
+
+        ----------------------------------------------------------------
+        -- CHECK ALL BOTS AT CHECKPOINT
+        ----------------------------------------------------------------
+
+        local function areAllBotsAtCheckpoint(
+            position
+        )
+
+            for index = 1, #botOrder do
+
+                local bot =
+                    getBotPlayer(index)
+
+
+                if not bot then
+
+                    return false
+
+                end
+
+
+                if not isBotAtPosition(
+                    bot,
+                    position,
+                    ARRIVAL_DISTANCE
+                ) then
+
+                    return false
+
+                end
+
+            end
+
+
+            return true
+
+        end
+
+
+        ----------------------------------------------------------------
+        -- MOVE BOT 1
+        ----------------------------------------------------------------
+        --
+        -- Bot 1 adalah leader.
+        --
+        -- Dia langsung menuju checkpoint.
+        ----------------------------------------------------------------
+
+        local function moveLeader()
+
+            local checkpoint =
+                getCurrentCheckpoint()
+
+
+            if not checkpoint then
+                return
+            end
+
+
+            local targetPosition =
+                checkpoint.Position
+
+
+            local distance =
+                (
+                    myHRP.Position
+                    -
+                    targetPosition
+                ).Magnitude
+
+
+            if distance > ARRIVAL_DISTANCE then
+
+                humanoid.AutoRotate = true
+
+                humanoid:MoveTo(
+                    targetPosition
+                )
+
+            else
+
+                humanoid:MoveTo(
+                    myHRP.Position
+                )
+
+                humanoid.AutoRotate = false
+
+            end
+
+        end
+
+
+        ----------------------------------------------------------------
+        -- MOVE FOLLOWER
+        ----------------------------------------------------------------
+        --
+        -- Ini dibuat mengikuti prinsip Follow.lua.
+        --
+        -- Follower tidak langsung teleport ke checkpoint.
+        --
+        -- Dia mengikuti HumanoidRootPart bot sebelumnya.
+        ----------------------------------------------------------------
+
+        local function moveFollower()
+
+            local myIndex =
+                getBotIndex()
+
+
+            if not myIndex
+                or myIndex <= 1 then
+
+                return
+
+            end
+
+
+            local previousBot =
+                getFollowPlayer()
+
+
+            if not previousBot then
+                return
+            end
+
+
+            local previousCharacter =
+                previousBot.Character
+
+
+            if not previousCharacter then
+                return
+            end
+
+
+            local previousHRP =
+                previousCharacter:
+                FindFirstChild(
+                    "HumanoidRootPart"
+                )
+
+
+            if not previousHRP then
+                return
+            end
+
+
+            ------------------------------------------------------------
+            -- DISTANCE
+            ------------------------------------------------------------
+
+            local distance =
+                getDistanceBetweenBots(
+                    myIndex,
+                    myIndex - 1
+                )
+
+
+            ------------------------------------------------------------
+            -- TARGET POSITION
+            ------------------------------------------------------------
+            --
+            -- Sama seperti Follow.lua:
+            --
+            -- previousHRP.Position
+            -- -
+            -- previousHRP.CFrame.LookVector * distance
+            --
+            ------------------------------------------------------------
+
+            local targetPosition =
+                previousHRP.Position
+                -
+                (
+                    previousHRP.CFrame.LookVector
+                    *
+                    distance
+                )
+
+
+            ------------------------------------------------------------
+            -- MOVE
+            ------------------------------------------------------------
+
+            local distanceToTarget =
+                (
+                    myHRP.Position
+                    -
+                    targetPosition
+                ).Magnitude
+
+
+            if distanceToTarget
+                > FOLLOW_REACHED_DISTANCE then
+
+                humanoid.AutoRotate = true
+
+                humanoid:MoveTo(
+                    targetPosition
+                )
+
+            else
+
+                humanoid:MoveTo(
+                    myHRP.Position
+                )
+
+                humanoid.AutoRotate = false
+
+
+                --------------------------------------------------------
+                -- ROTASI SAMA DENGAN BOT SEBELUMNYA
+                --------------------------------------------------------
+
+                local previousRotation =
+                    previousHRP.CFrame
+                    -
+                    previousHRP.Position
+
+
+                myHRP.CFrame =
+                    CFrame.new(
+                        myHRP.Position
+                    )
+                    *
+                    previousRotation
 
             end
 
@@ -774,16 +900,18 @@ return {
             -- RESET
             ------------------------------------------------------------
 
-            if roofLeftConnection then
+            if movementConnection then
 
-                roofLeftConnection:Disconnect()
-                roofLeftConnection = nil
+                movementConnection:Disconnect()
+
+                movementConnection = nil
 
             end
 
 
-            roofLeftActive = true
-            routeFinished = false
+            active = true
+
+            currentCheckpoint = 1
 
 
             ------------------------------------------------------------
@@ -797,7 +925,7 @@ return {
             if not myIndex then
 
                 warn(
-                    "[RoofLeft] Player ini bukan salah satu Bot."
+                    "[RoofLeft] Player ini bukan Bot 1-10."
                 )
 
                 stopRoofLeft()
@@ -808,48 +936,16 @@ return {
 
 
             ------------------------------------------------------------
-            -- MULAI DARI POSISI ROUTE TERDEKAT
-            ------------------------------------------------------------
-
-            currentRouteDistance =
-                getClosestRouteDistance(
-                    myHRP.Position
-                )
-
-
-            ------------------------------------------------------------
-            -- BOT 1 DIARAHKAN KE STEP 1
-            --
-            -- Bot lain juga akan mengejar posisi route mereka
-            -- berdasarkan jarak formasi.
-            ------------------------------------------------------------
-
-            if myIndex == 1 then
-
-                currentRouteDistance = 0
-
-            else
-
-                currentRouteDistance =
-                    math.max(
-                        0,
-                        currentRouteDistance
-                    )
-
-            end
-
-
-            ------------------------------------------------------------
             -- CHAT
             ------------------------------------------------------------
 
             sendChat(
-                "Roof Left!"
+                "Yes, Sir!"
             )
 
 
             print(
-                "[RoofLeft] Started."
+                "[RoofLeft] Dimulai."
             )
 
             print(
@@ -857,14 +953,19 @@ return {
                 myIndex
             )
 
+            print(
+                "[RoofLeft] Checkpoint:",
+                getCurrentCheckpoint().Name
+            )
+
 
             ------------------------------------------------------------
             -- MOVEMENT LOOP
             ------------------------------------------------------------
 
-            roofLeftConnection =
+            movementConnection =
                 RunService.Heartbeat:Connect(
-                    function(deltaTime)
+                    function()
 
                         ------------------------------------------------
                         -- ACTIVE MODE CHECK
@@ -884,7 +985,7 @@ return {
                         -- ACTIVE CHECK
                         ------------------------------------------------
 
-                        if not roofLeftActive then
+                        if not active then
                             return
                         end
 
@@ -902,146 +1003,20 @@ return {
 
 
                         ------------------------------------------------
-                        -- ROUTE PROGRESS
-                        ------------------------------------------------
-                        --
-                        -- Bot 1 bergerak sepanjang route.
-                        --
-                        -- Semua bot menggunakan progres route yang
-                        -- sama sehingga formasi tetap berbaris.
+                        -- CURRENT CHECKPOINT
                         ------------------------------------------------
 
-                        if myIndex == 1 then
-
-                            if currentRouteDistance
-                                < totalRouteLength then
-
-                                ------------------------------------------------
-                                -- Kecepatan gerak mengikuti Humanoid.WalkSpeed.
-                                ------------------------------------------------
-
-                                local speed =
-                                    math.max(
-                                        humanoid.WalkSpeed,
-                                        1
-                                    )
+                        local checkpoint =
+                            getCurrentCheckpoint()
 
 
-                                currentRouteDistance =
-                                    math.min(
-                                        totalRouteLength,
-                                        currentRouteDistance
-                                        +
-                                        (
-                                            speed
-                                            * deltaTime
-                                        )
-                                    )
+                        if not checkpoint then
 
-                            else
-
-                                routeFinished = true
-
-                            end
-
-                        else
-
-                            ------------------------------------------------
-                            -- Bot follower membaca posisi aktualnya
-                            -- terhadap route.
-                            ------------------------------------------------
-
-                            local actualRouteDistance =
-                                getClosestRouteDistance(
-                                    myHRP.Position
-                                )
-
-
-                            local desiredDistance =
-                                getTargetRouteDistance()
-
-
-                            ------------------------------------------------
-                            -- Bila terlalu jauh di belakang,
-                            -- percepat progres route internal.
-                            ------------------------------------------------
-
-                            if actualRouteDistance
-                                < desiredDistance - 0.5 then
-
-                                currentRouteDistance =
-                                    math.min(
-                                        totalRouteLength,
-                                        currentRouteDistance
-                                        +
-                                        (
-                                            math.max(
-                                                humanoid.WalkSpeed,
-                                                1
-                                            )
-                                            * deltaTime
-                                        )
-                                    )
-
-                            elseif actualRouteDistance
-                                > desiredDistance + 0.5 then
-
-                                currentRouteDistance =
-                                    math.max(
-                                        0,
-                                        currentRouteDistance
-                                        -
-                                        (
-                                            math.max(
-                                                humanoid.WalkSpeed,
-                                                1
-                                            )
-                                            * deltaTime
-                                        )
-                                    )
-
-                            end
-
-                        end
-
-
-                        ------------------------------------------------
-                        -- TARGET ROUTE POSITION
-                        ------------------------------------------------
-
-                        local targetDistance =
-                            getTargetRouteDistance()
-
-
-                        local targetPosition =
-                            getPositionOnRoute(
-                                targetDistance
+                            print(
+                                "[RoofLeft] Semua checkpoint selesai."
                             )
 
-
-                        ------------------------------------------------
-                        -- DISTANCE TO TARGET
-                        ------------------------------------------------
-
-                        local distanceToTarget =
-                            (
-                                myHRP.Position
-                                -
-                                targetPosition
-                            ).Magnitude
-
-
-                        ------------------------------------------------
-                        -- MOVE
-                        ------------------------------------------------
-
-                        if distanceToTarget > 1.5 then
-
-                            humanoid.AutoRotate = true
-
-                            humanoid:MoveTo(
-                                targetPosition
-                            )
+                            stopRoofLeft()
 
                             return
 
@@ -1049,61 +1024,154 @@ return {
 
 
                         ------------------------------------------------
-                        -- ARRIVED
+                        -- BOT 1 = LEADER
                         ------------------------------------------------
 
-                        humanoid.AutoRotate = false
+                        if myIndex == 1 then
 
+                            moveLeader()
 
-                        ------------------------------------------------
-                        -- FACE DIRECTION ROUTE
-                        ------------------------------------------------
+                        else
 
-                        local lookDistance =
-                            math.min(
-                                totalRouteLength,
-                                targetDistance + 1
-                            )
+                            ------------------------------------------------
+                            -- BOT 2-10 = FOLLOWER
+                            ------------------------------------------------
 
-
-                        local lookPosition =
-                            getPositionOnRoute(
-                                lookDistance
-                            )
-
-
-                        local direction =
-                            lookPosition
-                            -
-                            myHRP.Position
-
-
-                        if direction.Magnitude > 0.05 then
-
-                            myHRP.CFrame =
-                                CFrame.lookAt(
-                                    myHRP.Position,
-                                    myHRP.Position
-                                    + direction.Unit
-                                )
-
-                        end
-
-
-                        ------------------------------------------------
-                        -- FINAL POSITION
-                        ------------------------------------------------
-
-                        if routeFinished
-                            and targetDistance
-                                >= totalRouteLength then
-
-                            humanoid.AutoRotate = false
+                            moveFollower()
 
                         end
 
                     end
                 )
+
+
+            ----------------------------------------------------------------
+            -- CHECKPOINT MANAGER
+            ----------------------------------------------------------------
+            --
+            -- Setiap bot sendiri-sendiri mengetahui kapan dia sudah
+            -- sampai checkpoint.
+            --
+            -- Tetapi checkpoint TIDAK boleh maju hanya karena satu bot
+            -- sudah sampai.
+            --
+            -- Semua Bot 1-10 harus sudah berada di checkpoint.
+            ----------------------------------------------------------------
+
+            task.spawn(
+                function()
+
+                    while active do
+
+                        ------------------------------------------------
+                        -- ACTIVE MODE
+                        ------------------------------------------------
+
+                        if _G.BotVars.ActiveMode
+                            ~= "roofleft" then
+
+                            return
+
+                        end
+
+
+                        ------------------------------------------------
+                        -- CURRENT CHECKPOINT
+                        ------------------------------------------------
+
+                        local checkpoint =
+                            getCurrentCheckpoint()
+
+
+                        if not checkpoint then
+
+                            stopRoofLeft()
+
+                            return
+
+                        end
+
+
+                        ------------------------------------------------
+                        -- WAIT ALL BOTS
+                        ------------------------------------------------
+
+                        if areAllBotsAtCheckpoint(
+                            checkpoint.Position
+                        ) then
+
+                            print(
+                                "[RoofLeft] Semua bot sampai:",
+                                checkpoint.Name
+                            )
+
+
+                            ------------------------------------------------
+                            -- FORMATION DELAY
+                            ------------------------------------------------
+
+                            task.wait(
+                                FORMATION_DELAY
+                            )
+
+
+                            ------------------------------------------------
+                            -- DOUBLE CHECK
+                            ------------------------------------------------
+
+                            if not active then
+                                return
+                            end
+
+
+                            if _G.BotVars.ActiveMode
+                                ~= "roofleft" then
+
+                                return
+
+                            end
+
+
+                            ------------------------------------------------
+                            -- NEXT CHECKPOINT
+                            ------------------------------------------------
+
+                            currentCheckpoint =
+                                currentCheckpoint + 1
+
+
+                            local nextCheckpoint =
+                                getCurrentCheckpoint()
+
+
+                            if nextCheckpoint then
+
+                                print(
+                                    "[RoofLeft] Menuju:",
+                                    nextCheckpoint.Name
+                                )
+
+                            else
+
+                                print(
+                                    "[RoofLeft] Roof Kiri selesai."
+                                )
+
+                                stopRoofLeft()
+
+                                return
+
+                            end
+
+                        end
+
+
+                        task.wait(0.1)
+
+                    end
+
+                end
+            )
 
         end
 
@@ -1315,7 +1383,7 @@ return {
 
                 if _G.BotVars.ActiveMode
                     == "roofleft"
-                    and roofLeftActive then
+                    and active then
 
                     startRoofLeft()
 
@@ -1334,8 +1402,8 @@ return {
         print("[RoofLeft] Place: TANPANAMA")
         print("[RoofLeft] PlaceId:", TANPANAMA_PLACE_ID)
         print("[RoofLeft] Command: !roofleft")
-        print("[RoofLeft] Bots: 10")
-        print("[RoofLeft] Route points:", #route)
+        print("[RoofLeft] Checkpoints:", #checkpoints)
+        print("[RoofLeft] Bots:", #botOrder)
         print("----------------------------------------")
 
     end
