@@ -82,12 +82,10 @@ return {
             CurrentPlaceName =
                 "Cidro Janji"
 
-
         elseif PlaceId == PLACE_TANPANAMA then
 
             CurrentPlaceName =
                 "TANPANAMA"
-
 
         else
 
@@ -410,7 +408,7 @@ return {
         local function stopSync()
 
             --------------------------------------------------
-            -- CLEAR SYNC STATE
+            -- CLEAR ACTIVE MODE
             --------------------------------------------------
 
             if _G.BotVars.ActiveMode
@@ -420,6 +418,10 @@ return {
                     nil
             end
 
+
+            --------------------------------------------------
+            -- CLEAR SYNC TARGET
+            --------------------------------------------------
 
             _G.BotVars.SyncTarget =
                 nil
@@ -519,6 +521,24 @@ return {
 
 
             --------------------------------------------------
+            -- STOP OTHER MODES
+            --------------------------------------------------
+
+            for modeName, stopFunction in pairs(
+                _G.BotVars.ModeControllers
+            ) do
+
+                if modeName ~= "sync"
+                    and type(stopFunction) == "function" then
+
+                    pcall(stopFunction)
+
+                end
+
+            end
+
+
+            --------------------------------------------------
             -- SET ACTIVE MODE
             --------------------------------------------------
 
@@ -526,15 +546,23 @@ return {
                 "sync"
 
 
+            --------------------------------------------------
+            -- IMPORTANT
+            --
+            -- Sync sekarang menggunakan CommandTarget
+            -- seperti Follow / Backline / Circle.
+            --------------------------------------------------
+
+            _G.BotVars.CommandTarget =
+                target
+
+
             _G.BotVars.SyncTarget =
                 target
 
 
             --------------------------------------------------
-            -- STOP FOLLOW CONNECTION
-            --
-            -- Follow.lua akan melihat ActiveMode
-            -- bukan lagi "follow" lalu berhenti.
+            -- FIRE REMOTE
             --------------------------------------------------
 
             local success, err =
@@ -578,6 +606,9 @@ return {
                 )
 
                 _G.BotVars.ActiveMode =
+                    nil
+
+                _G.BotVars.CommandTarget =
                     nil
 
                 _G.BotVars.SyncTarget =
@@ -626,7 +657,8 @@ return {
             -- ADMIN CHECK
             --------------------------------------------------
 
-            local isAdmin = false
+            local isAdmin =
+                false
 
 
             local adminSuccess =
@@ -638,11 +670,21 @@ return {
                 end)
 
 
-            if not adminSuccess
-                or not isAdmin then
+            if not adminSuccess then
 
                 return
             end
+
+
+            --------------------------------------------------
+            -- COMMAND TARGET CHECK
+            --------------------------------------------------
+
+            local isCommandTarget =
+                (
+                    _G.BotVars.CommandTarget
+                    == sender
+                )
 
 
             --------------------------------------------------
@@ -668,6 +710,7 @@ return {
 
 
             if message == "" then
+
                 return
             end
 
@@ -684,6 +727,7 @@ return {
 
 
             if not command then
+
                 return
             end
 
@@ -718,12 +762,23 @@ return {
 
                 --------------------------------------------------
                 -- !sync
-                --------------------------------------------------
-                -- Sync ke sender
+                --
+                -- Admin:
+                -- Sync ke dirinya sendiri
+                --
+                -- CommandTarget:
+                -- Sync ke dirinya sendiri
                 --------------------------------------------------
 
                 if not targetName
                     or targetName == "" then
+
+                    if not isAdmin
+                        and not isCommandTarget then
+
+                        return
+                    end
+
 
                     requestSync(
                         sender
@@ -735,7 +790,15 @@ return {
 
                 --------------------------------------------------
                 -- !sync username
+                --
+                -- HANYA ADMIN
                 --------------------------------------------------
+
+                if not isAdmin then
+
+                    return
+                end
+
 
                 local target =
                     findPlayer(
@@ -755,7 +818,7 @@ return {
 
 
                 --------------------------------------------------
-                -- SYNC TARGET
+                -- ADMIN MEMILIH TARGET BARU
                 --------------------------------------------------
 
                 requestSync(
@@ -769,11 +832,55 @@ return {
 
             --------------------------------------------------
             -- !STOP
+            --
+            -- HANYA ADMIN
             --------------------------------------------------
 
             if command == "!stop" then
 
-                stopSync()
+                if not isAdmin then
+
+                    return
+                end
+
+
+                --------------------------------------------------
+                -- CLEAR GLOBAL TARGET
+                --------------------------------------------------
+
+                _G.BotVars.ActiveMode =
+                    nil
+
+                _G.BotVars.CommandTarget =
+                    nil
+
+                _G.BotVars.SyncTarget =
+                    nil
+
+
+                --------------------------------------------------
+                -- STOP ALL MODE CONTROLLERS
+                --------------------------------------------------
+
+                for modeName, stopFunction in pairs(
+                    _G.BotVars.ModeControllers
+                ) do
+
+                    if type(stopFunction) ==
+                        "function" then
+
+                        pcall(
+                            stopFunction
+                        )
+
+                    end
+
+                end
+
+
+                print(
+                    "[Sync] Semua mode dihentikan oleh Admin."
+                )
 
                 return
             end
@@ -823,7 +930,6 @@ return {
             Players.PlayerAdded:Connect(
                 function(player)
 
-
                     if connections[player] then
 
                         connections[player]:Disconnect()
@@ -857,7 +963,6 @@ return {
             Players.PlayerRemoving:Connect(
                 function(player)
 
-
                     if connections[player] then
 
                         connections[player]:Disconnect()
@@ -877,10 +982,8 @@ return {
         _G.BotVars.SyncPlace =
             CurrentPlaceName
 
-
         _G.BotVars.SyncPlaceId =
             PlaceId
-
 
         _G.BotVars.SyncRemote =
             SyncRemote
@@ -891,15 +994,46 @@ return {
         --------------------------------------------------
 
         print("----------------------------------------")
-        print("[Sync] Loaded successfully.")
-        print("[Sync] Place:", CurrentPlaceName)
-        print("[Sync] PlaceId:", PlaceId)
-        print("[Sync] Remote:", SyncRemote:GetFullName())
-        print("[Sync] ModeController: sync")
-        print("[Sync] Commands:")
-        print("[Sync] !sync")
-        print("[Sync] !sync username/displayname")
-        print("[Sync] !stop")
+
+        print(
+            "[Sync] Loaded successfully."
+        )
+
+        print(
+            "[Sync] Place:",
+            CurrentPlaceName
+        )
+
+        print(
+            "[Sync] PlaceId:",
+            PlaceId
+        )
+
+        print(
+            "[Sync] Remote:",
+            SyncRemote:GetFullName()
+        )
+
+        print(
+            "[Sync] ModeController: sync"
+        )
+
+        print(
+            "[Sync] Commands:"
+        )
+
+        print(
+            "[Sync] !sync"
+        )
+
+        print(
+            "[Sync] !sync username/displayname"
+        )
+
+        print(
+            "[Sync] !stop"
+        )
+
         print("----------------------------------------")
 
     end

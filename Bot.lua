@@ -36,40 +36,28 @@ _G.BotVars.Modules = {}
 local commandFiles = {
     "Perfix.lua",
     "Main.lua",
-    "Follow.lua",
-    "Frontline.lua",
+    "Agree.lua",
+    "Arrow.lua",
+    "Backline.lua",
+    "BrazilDance.lua",
     "Circle.lua",
+    "Collision.lua",
+    "Follow.lua",
     "Fourline.lua",
+    "Frontline.lua",
+    "Glowstick.lua",
+    "KangoraDance.lua",
+    "Message.lua",
+    "PakodiDance.lua",
+    "PargoyDance.lua",
+    "PushUp.lua",
     "Rest.lua",
     "Salute.lua",
     "Sit.lua",
-    "Agree.lua",
-    "Backline.lua",
-    "PushUp.lua",
-    "Diamond.lua",
-    "Message.lua",
-    "Collision.lua",
-    "AteezDance.lua",
-    "GabresDance.lua",
-    "PakodiDance.lua",
-    "KangoraDance.lua",
-    "AsmaraDance.lua",
-    "PargoyDance.lua",
-    "VacationDance.lua",
-    "BrazilDance.lua",
-    "KetlinDance.lua",
-    "HarleyDance.lua",
-    "HeeseungDance.lua",
-    "Worship.lua",
-    "Centerline.lua",
-    "StormDance.lua",
-    "ScubaDance.lua",
-    "Sync.lua",
     "Square.lua",
-    "TwoLine.lua",
-    "Vformation.lua",
-    "Arrow.lua",
-    "Glowstick.lua",
+    "Sync.lua",
+    "Twoline.lua",
+    "Worship.lua",
 }
 
 for _, fileName in ipairs(commandFiles) do
@@ -103,36 +91,26 @@ end
 -- ✅ EXECUTION ORDER
 jalankan("perfix")
 jalankan("main")
-jalankan("follow")
-jalankan("frontline")
+jalankan("agree")
+jalankan("arrow")
+jalankan("backline")
+jalankan("brazildance")
 jalankan("circle")
+jalankan("follow")
 jalankan("fourline")
+jalankan("frontline")
+jalankan("glowstick")
+jalankan("kangoradance")
+jalankan("message")
+jalankan("pakodidance")
+jalankan("pargoydance")
+jalankan("pushup")
 jalankan("rest")
 jalankan("salute")
 jalankan("sit")
-jalankan("agree")
-jalankan("backline")
-jalankan("pushup")
-jalankan("message")
-jalankan("collision")
-jalankan("ateezdance")
-jalankan("gabresdance")
-jalankan("pakodidance")
-jalankan("kangoradance")
-jalankan("asmaradance")
-jalankan("pargoydance")
-jalankan("vacationdance")
-jalankan("brazildance")
-jalankan("ketlindance")
-jalankan("harleydance")
-jalankan("heeseungdance")
-jalankan("worship")
-jalankan("centerline")
-jalankan("stormdance")
-jalankan("sync")
 jalankan("square")
+jalankan("sync")
 jalankan("twoline")
-jalankan("arrow")
-jalankan("glowstick")
+jalankan("worship")
 
 print("✅ Bot.lua loaded — All systems active.")
