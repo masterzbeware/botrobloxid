@@ -116,6 +116,27 @@ return {
 
 
         --------------------------------------------------
+        -- EVENTS FOLDER
+        --------------------------------------------------
+
+        local EventsFolder =
+            ReplicatedStorage:WaitForChild(
+                "Events",
+                10
+            )
+
+        if not EventsFolder then
+
+            warn(
+                "[Sync] Folder ReplicatedStorage.Events tidak ditemukan."
+            )
+
+            _G.BotVars.SyncLoaded = false
+            return
+        end
+
+
+        --------------------------------------------------
         -- SYNC REMOTE
         --------------------------------------------------
 
@@ -128,23 +149,6 @@ return {
 
         if PlaceId == PLACE_CIDRO then
 
-            local EventsFolder =
-                ReplicatedStorage:WaitForChild(
-                    "Events",
-                    10
-                )
-
-            if not EventsFolder then
-
-                warn(
-                    "[Sync] Events tidak ditemukan."
-                )
-
-                _G.BotVars.SyncLoaded = false
-                return
-            end
-
-
             SyncRemote =
                 EventsFolder:WaitForChild(
                     "RequestSync",
@@ -154,7 +158,7 @@ return {
             if not SyncRemote then
 
                 warn(
-                    "[Sync] RequestSync tidak ditemukan."
+                    "[Sync] RemoteEvent RequestSync tidak ditemukan."
                 )
 
                 _G.BotVars.SyncLoaded = false
@@ -174,23 +178,6 @@ return {
 
         elseif PlaceId == PLACE_TANPANAMA then
 
-            local EventsFolder =
-                ReplicatedStorage:WaitForChild(
-                    "Events",
-                    10
-                )
-
-            if not EventsFolder then
-
-                warn(
-                    "[Sync] Events tidak ditemukan."
-                )
-
-                _G.BotVars.SyncLoaded = false
-                return
-            end
-
-
             local DanceFolder =
                 EventsFolder:WaitForChild(
                     "Dance",
@@ -200,7 +187,7 @@ return {
             if not DanceFolder then
 
                 warn(
-                    "[Sync] Events.Dance tidak ditemukan."
+                    "[Sync] Folder Events.Dance tidak ditemukan."
                 )
 
                 _G.BotVars.SyncLoaded = false
@@ -217,7 +204,7 @@ return {
             if not SyncRemote then
 
                 warn(
-                    "[Sync] startSync tidak ditemukan."
+                    "[Sync] RemoteEvent startSync tidak ditemukan."
                 )
 
                 _G.BotVars.SyncLoaded = false
@@ -432,6 +419,67 @@ return {
 
 
         --------------------------------------------------
+        -- STOP SYNC
+        --------------------------------------------------
+
+        local function stopSync()
+
+            --------------------------------------------------
+            -- STOP HANYA UNTUK TANPANAMA
+            --------------------------------------------------
+
+            if PlaceId ~= PLACE_TANPANAMA then
+
+                warn(
+                    "[Sync] !stop hanya tersedia di TANPANAMA."
+                )
+
+                return false
+            end
+
+
+            local success, err =
+                pcall(function()
+
+                    --------------------------------------------------
+                    -- TANPANAMA
+                    --
+                    -- startSync(
+                    --     LocalPlayer,
+                    --     false
+                    -- )
+                    --------------------------------------------------
+
+                    SyncRemote:FireServer(
+                        LocalPlayer,
+                        false
+                    )
+
+                end)
+
+
+            if not success then
+
+                warn(
+                    "[Sync] Stop sync gagal:",
+                    err
+                )
+
+                return false
+            end
+
+
+            print(
+                "[Sync] Sync dihentikan.",
+                "Player:",
+                LocalPlayer.Name
+            )
+
+            return true
+        end
+
+
+        --------------------------------------------------
         -- HANDLE COMMAND
         --------------------------------------------------
 
@@ -513,7 +561,8 @@ return {
 
                 --------------------------------------------------
                 -- !sync
-                -- Sync ke sender
+                --
+                -- Sync ke player yang mengirim command
                 --------------------------------------------------
 
                 if not targetName
@@ -527,6 +576,8 @@ return {
 
                 --------------------------------------------------
                 -- !sync username
+                --
+                -- !sync displayname
                 --------------------------------------------------
 
                 local target =
@@ -545,13 +596,26 @@ return {
 
 
                 --------------------------------------------------
-                -- EXECUTE
+                -- EXECUTE SYNC
                 --------------------------------------------------
 
                 requestSync(target)
 
                 return
             end
+
+
+            --------------------------------------------------
+            -- !STOP
+            --------------------------------------------------
+
+            if command == "!stop" then
+
+                stopSync()
+
+                return
+            end
+
         end
 
 
@@ -662,8 +726,10 @@ return {
         print("[Sync] Place:", CurrentPlaceName)
         print("[Sync] PlaceId:", PlaceId)
         print("[Sync] Remote:", SyncRemote:GetFullName())
-        print("[Sync] Command: !sync")
-        print("[Sync] Command: !sync username/displayname")
+        print("[Sync] Commands:")
+        print("[Sync] !sync")
+        print("[Sync] !sync username/displayname")
+        print("[Sync] !stop")
         print("----------------------------------------")
 
     end
