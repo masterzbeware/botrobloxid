@@ -14,7 +14,6 @@ return {
             return
         end
 
-
         ----------------------------------------------------------------
         -- GLOBAL MODE SYSTEM
         ----------------------------------------------------------------
@@ -23,7 +22,6 @@ return {
 
         _G.BotVars.ModeControllers =
             _G.BotVars.ModeControllers or {}
-
 
         ----------------------------------------------------------------
         -- LOAD ADMIN
@@ -52,7 +50,6 @@ return {
             end
         end
 
-
         ----------------------------------------------------------------
         -- FE ANIMATION ID
         ----------------------------------------------------------------
@@ -60,15 +57,13 @@ return {
         local PUSHUP_ANIMATION_ID =
             "93738573538058"
 
-
         ----------------------------------------------------------------
         -- VARIABLES
         ----------------------------------------------------------------
 
-        local pushupTrack = nil
-        local pushingUp = false
-        local pushupGeneration = 0
-
+        local danceTrack = nil
+        local dancing = false
+        local danceGeneration = 0
 
         ----------------------------------------------------------------
         -- GET CHARACTER
@@ -80,7 +75,6 @@ return {
                 or LocalPlayer.CharacterAdded:Wait()
 
         end
-
 
         ----------------------------------------------------------------
         -- RESTORE NORMAL ANIMATION
@@ -95,7 +89,6 @@ return {
                 return
             end
 
-
             local humanoid =
                 character:FindFirstChildOfClass(
                     "Humanoid"
@@ -105,36 +98,33 @@ return {
                 return
             end
 
-
             ------------------------------------------------------------
             -- VALIDATE GENERATION
             ------------------------------------------------------------
 
             if generation
-                and generation ~= pushupGeneration then
+                and generation ~= danceGeneration then
 
                 return
 
             end
 
-
             ------------------------------------------------------------
             -- STOP PUSHUP
             ------------------------------------------------------------
 
-            if pushupTrack then
+            if danceTrack then
 
                 local oldTrack =
-                    pushupTrack
+                    danceTrack
 
-                pushupTrack = nil
+                danceTrack = nil
 
                 pcall(function()
                     oldTrack:Stop(0.15)
                 end)
 
             end
-
 
             ------------------------------------------------------------
             -- STOP ACTION TRACKS
@@ -170,7 +160,6 @@ return {
 
             end
 
-
             ------------------------------------------------------------
             -- RESTART DEFAULT ANIMATE
             ------------------------------------------------------------
@@ -187,14 +176,12 @@ return {
 
                 task.wait()
 
-
                 if generation
-                    and generation ~= pushupGeneration then
+                    and generation ~= danceGeneration then
 
                     return
 
                 end
-
 
                 pcall(function()
                     animateScript.Enabled = true
@@ -202,18 +189,16 @@ return {
 
             end
 
-
             ------------------------------------------------------------
             -- FORCE RUNNING
             ------------------------------------------------------------
 
             if generation
-                and generation ~= pushupGeneration then
+                and generation ~= danceGeneration then
 
                 return
 
             end
-
 
             pcall(function()
 
@@ -223,26 +208,23 @@ return {
 
             end)
 
-
             ------------------------------------------------------------
             -- DELAYED RUNNING STATE
             ------------------------------------------------------------
 
             local cleanupGeneration =
-                generation or pushupGeneration
+                generation or danceGeneration
 
             task.defer(function()
 
                 task.wait(0.1)
 
-
                 if cleanupGeneration
-                    ~= pushupGeneration then
+                    ~= danceGeneration then
 
                     return
 
                 end
-
 
                 if humanoid
                     and humanoid.Parent then
@@ -259,13 +241,11 @@ return {
 
             end)
 
-
             print(
                 "[Pushup] Animasi normal dipulihkan."
             )
 
         end
-
 
         ----------------------------------------------------------------
         -- STOP PUSHUP
@@ -277,36 +257,30 @@ return {
 
         local function stopPushup()
 
-            ------------------------------------------------------------
-            -- INVALIDATE PROSES LAMA
-            ------------------------------------------------------------
-
-            pushupGeneration =
-                pushupGeneration + 1
+            danceGeneration =
+                danceGeneration + 1
 
             local generation =
-                pushupGeneration
+                danceGeneration
 
-            pushingUp = false
-
+            dancing = false
 
             ------------------------------------------------------------
             -- STOP TRACK
             ------------------------------------------------------------
 
-            if pushupTrack then
+            if danceTrack then
 
                 local oldTrack =
-                    pushupTrack
+                    danceTrack
 
-                pushupTrack = nil
+                danceTrack = nil
 
                 pcall(function()
                     oldTrack:Stop(0.15)
                 end)
 
             end
-
 
             ------------------------------------------------------------
             -- RESTORE NORMAL ANIMATION
@@ -318,14 +292,12 @@ return {
 
         end
 
-
         ----------------------------------------------------------------
         -- REGISTER CONTROLLER
         ----------------------------------------------------------------
 
         _G.BotVars.ModeControllers.pushup =
             stopPushup
-
 
         ----------------------------------------------------------------
         -- STOP OTHER MODES
@@ -350,24 +322,13 @@ return {
 
         end
 
-
         ----------------------------------------------------------------
         -- FIND PLAYER
         ----------------------------------------------------------------
 
         local function findPlayerByName(name)
 
-            if not name
-                or name == "" then
-
-                return nil
-
-            end
-
-
-            name =
-                name:lower()
-
+            name = name:lower()
 
             ------------------------------------------------------------
             -- EXACT USERNAME / DISPLAY NAME
@@ -385,7 +346,6 @@ return {
                 end
 
             end
-
 
             ------------------------------------------------------------
             -- USERNAME PREFIX
@@ -406,28 +366,27 @@ return {
 
             end
 
-
             return nil
 
         end
-
 
         ----------------------------------------------------------------
         -- PLAY PUSHUP
         ----------------------------------------------------------------
 
-        local function playPushup(targetPlayer)
+        local function playPushup(
+            targetPlayer
+        )
 
             ------------------------------------------------------------
             -- NEW GENERATION
             ------------------------------------------------------------
 
-            pushupGeneration =
-                pushupGeneration + 1
+            danceGeneration =
+                danceGeneration + 1
 
             local generation =
-                pushupGeneration
-
+                danceGeneration
 
             ------------------------------------------------------------
             -- SET ACTIVE MODE
@@ -435,7 +394,6 @@ return {
 
             _G.BotVars.ActiveMode =
                 "pushup"
-
 
             ------------------------------------------------------------
             -- SET COMMAND TARGET
@@ -448,43 +406,36 @@ return {
 
             end
 
-
             ------------------------------------------------------------
             -- STOP MODE LAIN
             ------------------------------------------------------------
 
             stopOtherModes()
 
-
             ------------------------------------------------------------
             -- VALIDATE GENERATION
             ------------------------------------------------------------
 
-            if generation
-                ~= pushupGeneration then
-
+            if generation ~= danceGeneration then
                 return
-
             end
 
-
             ------------------------------------------------------------
-            -- STOP PREVIOUS PUSHUP TRACK
+            -- STOP PREVIOUS TRACK
             ------------------------------------------------------------
 
-            if pushupTrack then
+            if danceTrack then
 
                 local oldTrack =
-                    pushupTrack
+                    danceTrack
 
-                pushupTrack = nil
+                danceTrack = nil
 
                 pcall(function()
                     oldTrack:Stop(0.1)
                 end)
 
             end
-
 
             ------------------------------------------------------------
             -- GET CHARACTER
@@ -493,12 +444,10 @@ return {
             local character =
                 getCharacter()
 
-
             local humanoid =
                 character:FindFirstChildOfClass(
                     "Humanoid"
                 )
-
 
             if not humanoid then
 
@@ -510,35 +459,19 @@ return {
 
             end
 
-
             ------------------------------------------------------------
             -- PLAY FE ANIMATION WITH RETRY
             ------------------------------------------------------------
 
             local maxAttempts = 3
-
             local success = false
-
             local result = nil
-
 
             for attempt = 1, maxAttempts do
 
-                --------------------------------------------------------
-                -- COMMAND SUDAH BERGANTI
-                --------------------------------------------------------
-
-                if generation
-                    ~= pushupGeneration then
-
+                if generation ~= danceGeneration then
                     return
-
                 end
-
-
-                --------------------------------------------------------
-                -- PLAY FE ANIMATION
-                --------------------------------------------------------
 
                 local ok, track =
                     pcall(function()
@@ -550,7 +483,6 @@ return {
 
                     end)
 
-
                 if ok and track then
 
                     success = true
@@ -560,29 +492,19 @@ return {
 
                 end
 
-
                 result = track
 
-
-                --------------------------------------------------------
-                -- RETRY
-                --------------------------------------------------------
-
                 if attempt < maxAttempts then
-
                     task.wait(0.1)
-
                 end
 
             end
 
-
             ------------------------------------------------------------
-            -- VALIDATE GENERATION AFTER RETRY
+            -- VALIDATE GENERATION
             ------------------------------------------------------------
 
-            if generation
-                ~= pushupGeneration then
+            if generation ~= danceGeneration then
 
                 if result then
 
@@ -596,16 +518,14 @@ return {
 
             end
 
-
             ------------------------------------------------------------
             -- RESULT
             ------------------------------------------------------------
 
             if success and result then
 
-                pushupTrack = result
-                pushingUp = true
-
+                danceTrack = result
+                dancing = true
 
                 print(
                     "[Pushup] FE Animation berhasil dimainkan:",
@@ -614,40 +534,30 @@ return {
                     LocalPlayer.Name
                 )
 
-
                 --------------------------------------------------------
                 -- MONITOR TRACK
                 --------------------------------------------------------
 
                 task.spawn(function()
 
-                    local track =
-                        result
-
+                    local track = result
                     local trackGeneration =
                         generation
-
 
                     if not track then
                         return
                     end
 
-
                     pcall(function()
                         track.Stopped:Wait()
                     end)
 
-
-                    ----------------------------------------------------
-                    -- CLEAN TRACK ONLY IF STILL VALID
-                    ----------------------------------------------------
-
-                    if pushupTrack == track
-                        and pushingUp
+                    if danceTrack == track
+                        and dancing
                         and trackGeneration
-                            == pushupGeneration then
+                            == danceGeneration then
 
-                        pushupTrack = nil
+                        danceTrack = nil
 
                     end
 
@@ -669,7 +579,6 @@ return {
 
         end
 
-
         ----------------------------------------------------------------
         -- COMMAND HANDLER
         ----------------------------------------------------------------
@@ -686,7 +595,6 @@ return {
 
             end
 
-
             ------------------------------------------------------------
             -- ADMIN CHECK
             ------------------------------------------------------------
@@ -700,19 +608,6 @@ return {
 
             end)
 
-
-            ------------------------------------------------------------
-            -- CURRENT COMMAND TARGET
-            ------------------------------------------------------------
-
-            local commandTarget =
-                _G.BotVars.CommandTarget
-
-
-            local isCommandTarget =
-                commandTarget == sender
-
-
             ------------------------------------------------------------
             -- CLEAN MESSAGE
             ------------------------------------------------------------
@@ -723,12 +618,21 @@ return {
                 :gsub("^%s+", "")
                 :gsub("%s+$", "")
 
+            ------------------------------------------------------------
+            -- CURRENT COMMAND TARGET
+            ------------------------------------------------------------
 
-            ----------------------------------------------------------------
+            local commandTarget =
+                _G.BotVars.CommandTarget
+
+            local isCommandTarget =
+                commandTarget == sender
+
+            ------------------------------------------------------------
             -- !STOP
             --
             -- HANYA ADMIN
-            ----------------------------------------------------------------
+            ------------------------------------------------------------
 
             if lower == "!stop" then
 
@@ -736,32 +640,14 @@ return {
                     return
                 end
 
-
-                print(
-                    "[Pushup] !stop diterima | Admin:",
-                    sender.Name
-                )
-
-
-                --------------------------------------------------------
-                -- CLEAR GLOBAL STATE
-                --------------------------------------------------------
-
                 _G.BotVars.ActiveMode = nil
-
                 _G.BotVars.CommandTarget = nil
-
-
-                --------------------------------------------------------
-                -- STOP SEMUA MODE
-                --------------------------------------------------------
 
                 for _, stopFunction in pairs(
                     _G.BotVars.ModeControllers
                 ) do
 
-                    if type(stopFunction)
-                        == "function" then
+                    if type(stopFunction) == "function" then
 
                         pcall(function()
                             stopFunction()
@@ -771,30 +657,21 @@ return {
 
                 end
 
-
                 return
 
             end
 
-
-            ----------------------------------------------------------------
-            -- !UNPUSHUP
+            ------------------------------------------------------------
+            -- !UNUPDANCE
             --
             -- HANYA ADMIN
-            ----------------------------------------------------------------
+            ------------------------------------------------------------
 
-            if lower == "!unpushup" then
+            if lower == "!unupdance" then
 
                 if not isAdmin then
                     return
                 end
-
-
-                print(
-                    "[Pushup] !unpushup diterima | Admin:",
-                    sender.Name
-                )
-
 
                 if _G.BotVars.ActiveMode
                     == "pushup" then
@@ -803,24 +680,21 @@ return {
 
                 end
 
-
                 stopPushup()
-
 
                 return
 
             end
 
-
-            ----------------------------------------------------------------
-            -- !PUSHUP
+            ------------------------------------------------------------
+            -- !UPDANCE
             --
             -- ADMIN:
-            --     !pushup
+            -- !updance
             --
             -- COMMAND TARGET:
-            --     !pushup
-            ----------------------------------------------------------------
+            -- !updance
+            ------------------------------------------------------------
 
             if lower == "!updance" then
 
@@ -831,46 +705,27 @@ return {
 
                 end
 
-
-                print(
-                    "[Pushup] !pushup diterima | Sender:",
-                    sender.Name,
-                    "| Admin:",
-                    isAdmin,
-                    "| CommandTarget:",
-                    isCommandTarget
-                )
-
-
-                --------------------------------------------------------
-                -- SENDER MENJADI COMMAND TARGET
-                --------------------------------------------------------
-
                 _G.BotVars.CommandTarget =
                     sender
-
 
                 playPushup(
                     sender
                 )
 
-
                 return
 
             end
 
-
-            ----------------------------------------------------------------
-            -- !PUSHUP PLAYER
+            ------------------------------------------------------------
+            -- !UPDANCE PLAYER
             --
             -- HANYA ADMIN
-            ----------------------------------------------------------------
+            ------------------------------------------------------------
 
             local targetName =
                 lower:match(
                     "^!updance%s+(.+)$"
                 )
-
 
             if targetName then
 
@@ -878,45 +733,21 @@ return {
                     return
                 end
 
-
                 local target =
                     findPlayerByName(
                         targetName
                     )
 
-
                 if not target then
-
-                    warn(
-                        "[Pushup] Player tidak ditemukan:",
-                        targetName
-                    )
-
                     return
-
                 end
-
-
-                print(
-                    "[Pushup] Target dipilih:",
-                    target.Name,
-                    "| Admin:",
-                    sender.Name
-                )
-
-
-                --------------------------------------------------------
-                -- SET COMMAND TARGET
-                --------------------------------------------------------
 
                 _G.BotVars.CommandTarget =
                     target
 
-
                 playPushup(
                     target
                 )
-
 
                 return
 
@@ -924,13 +755,11 @@ return {
 
         end
 
-
         ----------------------------------------------------------------
         -- CHAT CONNECTION
         ----------------------------------------------------------------
 
         local connectedPlayers = {}
-
 
         local function connectPlayerChat(player)
 
@@ -938,9 +767,7 @@ return {
                 return
             end
 
-
             connectedPlayers[player] = true
-
 
             player.Chatted:Connect(
                 function(message)
@@ -954,7 +781,6 @@ return {
             )
 
         end
-
 
         ----------------------------------------------------------------
         -- EXISTING PLAYERS
@@ -970,7 +796,6 @@ return {
 
         end
 
-
         ----------------------------------------------------------------
         -- PLAYER ADDED
         ----------------------------------------------------------------
@@ -985,7 +810,6 @@ return {
             end
         )
 
-
         ----------------------------------------------------------------
         -- PLAYER REMOVING
         ----------------------------------------------------------------
@@ -998,7 +822,6 @@ return {
             end
         )
 
-
         ----------------------------------------------------------------
         -- CHARACTER RESPAWN
         ----------------------------------------------------------------
@@ -1008,18 +831,14 @@ return {
 
                 task.wait(1)
 
-
-                pushupGeneration =
-                    pushupGeneration + 1
-
+                danceGeneration =
+                    danceGeneration + 1
 
                 local generation =
-                    pushupGeneration
+                    danceGeneration
 
-
-                pushupTrack = nil
-                pushingUp = false
-
+                danceTrack = nil
+                dancing = false
 
                 --------------------------------------------------------
                 -- RESTART JIKA MODE MASIH AKTIF
@@ -1030,14 +849,12 @@ return {
 
                     task.wait(0.5)
 
-
                     if generation
-                        ~= pushupGeneration then
+                        ~= danceGeneration then
 
                         return
 
                     end
-
 
                     playPushup(
                         _G.BotVars.CommandTarget
@@ -1047,7 +864,6 @@ return {
 
             end
         )
-
 
         ----------------------------------------------------------------
         -- READY
