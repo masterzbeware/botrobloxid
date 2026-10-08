@@ -1,119 +1,30 @@
 return {
-
     Execute = function()
-
-        ----------------------------------------------------------------
-        -- SERVICES
-        ----------------------------------------------------------------
 
         local Players = game:GetService("Players")
         local RunService = game:GetService("RunService")
-        local TextChatService = game:GetService("TextChatService")
-        local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
         local LocalPlayer = Players.LocalPlayer
-
         if not LocalPlayer then
-            warn("[TwoLine] LocalPlayer tidak ditemukan.")
             return
         end
-
-
-        ----------------------------------------------------------------
-        -- GLOBAL
-        ----------------------------------------------------------------
 
         _G.BotVars = _G.BotVars or {}
+        _G.BotVars.ModeControllers = _G.BotVars.ModeControllers or {}
 
-        _G.BotVars.ModeControllers =
-            _G.BotVars.ModeControllers or {}
+        -- =========================
+        -- ADMIN
+        -- =========================
 
+        local Admin = loadstring(game:HttpGet(
+            "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
+        ))()
 
-        ----------------------------------------------------------------
-        -- LOAD ADMIN
-        ----------------------------------------------------------------
-
-        local Admin
-
-        local adminSuccess, adminResult =
-            pcall(function()
-
-                return loadstring(game:HttpGet(
-                    "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
-                ))()
-
-            end)
-
-        if not adminSuccess or not adminResult then
-
-            warn(
-                "[TwoLine] Gagal load Admin.lua"
-            )
-
-            return
-
-        end
-
-        Admin = adminResult
-
-
-        ----------------------------------------------------------------
-        -- LOAD DISTANCE
-        ----------------------------------------------------------------
-
-        local Distance
-
-        local distanceSuccess, distanceResult =
-            pcall(function()
-
-                return loadstring(game:HttpGet(
-                    "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Distance.lua"
-                ))()
-
-            end)
-
-        if not distanceSuccess or not distanceResult then
-
-            warn(
-                "[TwoLine] Gagal load Distance.lua"
-            )
-
-            return
-
-        end
-
-        Distance = distanceResult
-
-
-        ----------------------------------------------------------------
-        -- VARIABLES
-        ----------------------------------------------------------------
-
-        local humanoid = nil
-        local myHRP = nil
-
-        local twoLining = false
-        local targetPlayer = nil
-        local twoLineConnection = nil
-
-
-        ----------------------------------------------------------------
-        -- FORMATION
-        ----------------------------------------------------------------
-
-        local sideDistance = 3
-        local rowDistance = 3
-
-        local adminTwoLineDistance = 3
-        local defaultBotTwoLineDistance = 2
-
-
-        ----------------------------------------------------------------
+        -- =========================
         -- BOT ORDER
-        ----------------------------------------------------------------
+        -- =========================
 
         local botOrder = {
-
             "11611503633", -- Bot 1
             "11611591921", -- Bot 2
             "11611597741", -- Bot 3
@@ -125,979 +36,283 @@ return {
             "11774472805", -- Bot 9
             "11774494628", -- Bot 10
             "11775829997", -- Bot 11
-            "11775843339", -- Bot 12,
-
+            "11775843339", -- Bot 12
         }
 
+        -- =========================
+        -- SETTINGS
+        -- =========================
 
-        ----------------------------------------------------------------
-        -- UPDATE CHARACTER
-        ----------------------------------------------------------------
+        local SIDE_SPACING = 3
+        local ROW_SPACING = 3
 
-        local function updateCharacter()
+        local connection = nil
+        local active = false
 
-            local character =
-                LocalPlayer.Character
-                or LocalPlayer.CharacterAdded:Wait()
+        -- =========================
+        -- STOP FORMATION
+        -- =========================
 
-            humanoid =
-                character:WaitForChild("Humanoid")
+        local function stopTwoline()
+            active = false
 
-            myHRP =
-                character:WaitForChild("HumanoidRootPart")
-
-            humanoid.AutoRotate = true
-
+            if connection then
+                connection:Disconnect()
+                connection = nil
+            end
         end
 
-
-        updateCharacter()
-
-
-        ----------------------------------------------------------------
-        -- SEND CHAT
-        ----------------------------------------------------------------
-
-        local function sendChat(message)
-
-            pcall(function()
-
-                local channels =
-                    TextChatService:FindFirstChild(
-                        "TextChannels"
-                    )
-
-                if channels then
-
-                    local channel =
-                        channels:FindFirstChild(
-                            "RBXGeneral"
-                        )
-
-                    if channel then
-
-                        channel:SendAsync(message)
-
-                        return
-
-                    end
-
-                end
-
-
-                --------------------------------------------------------
-                -- LEGACY FALLBACK
-                --------------------------------------------------------
-
-                local chatEvents =
-                    ReplicatedStorage:FindFirstChild(
-                        "DefaultChatSystemChatEvents"
-                    )
-
-                if chatEvents then
-
-                    local request =
-                        chatEvents:FindFirstChild(
-                            "SayMessageRequest"
-                        )
-
-                    if request then
-
-                        request:FireServer(
-                            message,
-                            "All"
-                        )
-
-                    end
-
-                end
-
-            end)
-
+        -- Hentikan formasi sebelumnya
+        if _G.BotVars.ModeControllers.twoline then
+            _G.BotVars.ModeControllers.twoline()
         end
 
+        -- =========================
+        -- GET BOT POSITION
+        -- =========================
 
-        ----------------------------------------------------------------
-        -- STOP TWO LINE
-        ----------------------------------------------------------------
+        local function getBotPosition(targetHRP, botIndex)
 
-        local function stopTwoLine()
+            -- 2 bot setiap baris
+            local botsPerRow = 2
 
-            twoLining = false
-            targetPlayer = nil
+            local row = math.floor((botIndex - 1) / botsPerRow)
+            local column = (botIndex - 1) % botsPerRow
 
+            -- Posisi kiri / kanan
+            local xOffset
 
-            if twoLineConnection then
-
-                twoLineConnection:Disconnect()
-                twoLineConnection = nil
-
+            if column == 0 then
+                xOffset = -SIDE_SPACING / 2
+            else
+                xOffset = SIDE_SPACING / 2
             end
 
+            -- Semakin ke bawah, semakin jauh ke belakang
+            local zOffset = ROW_SPACING * (row + 1)
 
-            if humanoid then
+            local targetCF = targetHRP.CFrame
 
-                humanoid.AutoRotate = true
+            local position =
+                targetHRP.Position
+                + targetCF.RightVector * xOffset
+                - targetCF.LookVector * zOffset
 
-            end
-
+            return position
         end
 
+        -- =========================
+        -- FIND TARGET
+        -- =========================
 
-        ----------------------------------------------------------------
-        -- REGISTER CONTROLLER
-        ----------------------------------------------------------------
+        local function getTarget()
+            local target = _G.BotVars.CommandTarget
 
-        _G.BotVars.ModeControllers.twoline =
-            stopTwoLine
-
-
-        ----------------------------------------------------------------
-        -- STOP OTHER MODES
-        ----------------------------------------------------------------
-
-        local function stopOtherModes()
-
-            for name, stopFunction in pairs(
-                _G.BotVars.ModeControllers
-            ) do
-
-                if name ~= "twoline"
-                    and type(stopFunction) == "function" then
-
-                    pcall(function()
-
-                        stopFunction()
-
-                    end)
-
-                end
-
-            end
-
-        end
-
-
-        ----------------------------------------------------------------
-        -- FIND PLAYER
-        ----------------------------------------------------------------
-
-        local function findPlayerByName(name)
-
-            if not name or name == "" then
+            if not target then
                 return nil
             end
 
-            name = name:lower()
-
-
-            ------------------------------------------------------------
-            -- EXACT USERNAME
-            ------------------------------------------------------------
-
-            for _, player in ipairs(
-                Players:GetPlayers()
-            ) do
-
-                if player.Name:lower() == name then
-                    return player
-                end
-
+            if not target.Character then
+                return nil
             end
 
-
-            ------------------------------------------------------------
-            -- EXACT DISPLAY NAME
-            ------------------------------------------------------------
-
-            for _, player in ipairs(
-                Players:GetPlayers()
-            ) do
-
-                if player.DisplayName:lower() == name then
-                    return player
-                end
-
-            end
-
-
-            ------------------------------------------------------------
-            -- USERNAME PREFIX
-            ------------------------------------------------------------
-
-            for _, player in ipairs(
-                Players:GetPlayers()
-            ) do
-
-                if player.Name:lower():sub(
-                    1,
-                    #name
-                ) == name then
-
-                    return player
-
-                end
-
-            end
-
-
-            ------------------------------------------------------------
-            -- DISPLAY NAME PREFIX
-            ------------------------------------------------------------
-
-            for _, player in ipairs(
-                Players:GetPlayers()
-            ) do
-
-                if player.DisplayName:lower():sub(
-                    1,
-                    #name
-                ) == name then
-
-                    return player
-
-                end
-
-            end
-
-
-            return nil
-
+            return target
         end
 
+        -- =========================
+        -- START TWOLINE
+        -- =========================
 
-        ----------------------------------------------------------------
-        -- TWO LINE OFFSET
-        ----------------------------------------------------------------
+        local function startTwoline(target)
 
-        local function getTwoLineOffset(
-            index,
-            distance
-        )
+            stopTwoline()
 
-            local row =
-                math.floor(
-                    (index - 1) / 2
-                )
-
-            local x
-
-            if index % 2 == 1 then
-                x = -sideDistance
-            else
-                x = sideDistance
-            end
-
-            local z =
-                -(
-                    distance
-                    +
-                    (row * rowDistance)
-                )
-
-            return Vector3.new(
-                x,
-                0,
-                z
-            )
-
-        end
-
-
-        ----------------------------------------------------------------
-        -- START TWO LINE
-        ----------------------------------------------------------------
-
-        local function startTwoLine(player)
-
-            if not player then
+            if not target then
                 return
             end
 
-
-            print(
-                "[TwoLine] START TWO LINE:",
-                player.Name
-            )
-
-
-            ------------------------------------------------------------
-            -- STOP MODE LAIN
-            ------------------------------------------------------------
-
-            stopOtherModes()
-
-
-            ------------------------------------------------------------
-            -- GLOBAL STATE
-            ------------------------------------------------------------
-
-            _G.BotVars.ActiveMode =
-                "twoline"
-
-            _G.BotVars.CommandTarget =
-                player
-
-
-            ------------------------------------------------------------
-            -- STOP CONNECTION LAMA
-            ------------------------------------------------------------
-
-            if twoLineConnection then
-
-                twoLineConnection:Disconnect()
-                twoLineConnection = nil
-
-            end
-
-
-            twoLining = true
-            targetPlayer = player
-
-
-            ------------------------------------------------------------
-            -- BOT INDEX
-            ------------------------------------------------------------
-
-            local myIndex =
-                table.find(
-                    botOrder,
-                    tostring(
-                        LocalPlayer.UserId
-                    )
-                )
-
-
-            if not myIndex then
-
-                warn(
-                    "[TwoLine] UserId bukan bot:",
-                    LocalPlayer.UserId,
-                    LocalPlayer.Name
-                )
-
-                stopTwoLine()
-
+            if not target.Character then
                 return
-
             end
 
+            local targetHRP =
+                target.Character:FindFirstChild("HumanoidRootPart")
 
-            print(
-                "[TwoLine] Bot:",
-                LocalPlayer.Name,
-                "| Index:",
-                myIndex,
-                "| Target:",
-                player.Name
-            )
+            if not targetHRP then
+                return
+            end
 
+            active = true
 
-            ------------------------------------------------------------
-            -- CHAT
-            ------------------------------------------------------------
+            connection = RunService.Heartbeat:Connect(function()
 
-            sendChat("Yes, Sir!")
+                if not active then
+                    return
+                end
 
+                -- Pastikan target masih valid
+                if not target.Parent then
+                    stopTwoline()
+                    return
+                end
 
-            ------------------------------------------------------------
-            -- LOOP
-            ------------------------------------------------------------
+                if not target.Character then
+                    return
+                end
 
-            twoLineConnection =
-                RunService.Heartbeat:Connect(
-                    function()
+                targetHRP =
+                    target.Character:FindFirstChild("HumanoidRootPart")
 
-                        if _G.BotVars.ActiveMode
-                            ~= "twoline" then
+                if not targetHRP then
+                    return
+                end
 
-                            stopTwoLine()
+                for index, userId in ipairs(botOrder) do
 
-                            return
+                    local botPlayer =
+                        Players:GetPlayerByUserId(tonumber(userId))
 
-                        end
+                    if botPlayer
+                        and botPlayer.Character then
 
+                        local humanoid =
+                            botPlayer.Character:FindFirstChildOfClass("Humanoid")
 
-                        if not twoLining then
-                            return
-                        end
+                        local botHRP =
+                            botPlayer.Character:FindFirstChild("HumanoidRootPart")
 
+                        if humanoid and botHRP then
 
-                        if not humanoid
-                            or not myHRP then
+                            local position =
+                                getBotPosition(targetHRP, index)
 
-                            return
+                            humanoid:MoveTo(position)
 
-                        end
-
-
-                        if not targetPlayer then
-                            return
-
-                        end
-
-
-                        local targetCharacter =
-                            targetPlayer.Character
-
-                        if not targetCharacter then
-                            return
-                        end
-
-
-                        local targetHRP =
-                            targetCharacter:FindFirstChild(
-                                "HumanoidRootPart"
+                            -- Bot menghadap arah yang sama dengan Admin/Player
+                            botHRP.CFrame = CFrame.lookAt(
+                                botHRP.Position,
+                                botHRP.Position + targetHRP.CFrame.LookVector
                             )
-
-                        if not targetHRP then
-                            return
                         end
-
-
-                        ------------------------------------------------
-                        -- DISTANCE
-                        ------------------------------------------------
-
-                        local distance =
-                            defaultBotTwoLineDistance
-
-
-                        if Admin:IsAdmin(
-                            targetPlayer
-                        ) then
-
-                            distance =
-                                adminTwoLineDistance
-
-                        end
-
-
-                        local specialDistance =
-                            Distance:GetDistance(
-                                tostring(
-                                    LocalPlayer.UserId
-                                ),
-                                tostring(
-                                    targetPlayer.UserId
-                                )
-                            )
-
-
-                        if specialDistance then
-
-                            distance =
-                                specialDistance
-
-                        end
-
-
-                        ------------------------------------------------
-                        -- OFFSET
-                        ------------------------------------------------
-
-                        local offset =
-                            getTwoLineOffset(
-                                myIndex,
-                                distance
-                            )
-
-
-                        ------------------------------------------------
-                        -- WORLD POSITION
-                        ------------------------------------------------
-
-                        local right =
-                            targetHRP.CFrame.RightVector
-
-                        local forward =
-                            targetHRP.CFrame.LookVector
-
-
-                        local targetPosition =
-                            targetHRP.Position
-                            +
-                            (right * offset.X)
-                            +
-                            (forward * offset.Z)
-
-
-                        ------------------------------------------------
-                        -- MOVE
-                        ------------------------------------------------
-
-                        local distanceToTarget =
-                            (
-                                myHRP.Position
-                                -
-                                targetPosition
-                            ).Magnitude
-
-
-                        if distanceToTarget > 1.5 then
-
-                            humanoid.AutoRotate = true
-
-                            humanoid:MoveTo(
-                                targetPosition
-                            )
-
-                            return
-
-                        end
-
-
-                        ------------------------------------------------
-                        -- FACE TARGET
-                        ------------------------------------------------
-
-                        humanoid.AutoRotate = false
-
-                        myHRP.CFrame =
-                            CFrame.lookAt(
-                                myHRP.Position,
-                                myHRP.Position
-                                +
-                                targetHRP.CFrame.LookVector
-                            )
-
                     end
-                )
-
+                end
+            end)
         end
 
-
-        ----------------------------------------------------------------
+        -- =========================
         -- COMMAND HANDLER
-        ----------------------------------------------------------------
+        -- =========================
 
-        local function handleCommand(
-            message,
-            sender
-        )
+        local function handleCommand(message)
 
-            if not message then
-                return
-            end
+            local args = string.split(message, " ")
+            local command = string.lower(args[1] or "")
 
-            if not sender then
-                return
-            end
+            -- =====================
+            -- !TWOLINE
+            -- =====================
 
+            if command == "!twoline" then
 
-            ------------------------------------------------------------
-            -- NORMALIZE
-            ------------------------------------------------------------
+                local sender = LocalPlayer
 
-            local lower =
-                tostring(message)
-                :lower()
-                :gsub("^%s+", "")
-                :gsub("%s+$", "")
+                -- Admin bisa menentukan target
+                if Admin:IsAdmin(sender) then
 
+                    local target = sender
 
-            if lower == "" then
-                return
-            end
+                    if args[2] then
 
+                        local requestedName =
+                            string.lower(args[2])
 
-            ------------------------------------------------------------
-            -- ADMIN
-            ------------------------------------------------------------
+                        for _, player in ipairs(Players:GetPlayers()) do
 
-            local isAdmin = false
+                            if string.lower(player.Name)
+                                == requestedName
+                                or string.lower(player.DisplayName)
+                                == requestedName then
 
-            pcall(function()
+                                target = player
+                                break
+                            end
+                        end
+                    end
 
-                isAdmin =
-                    Admin:IsAdmin(sender)
+                    _G.BotVars.CommandTarget = target
 
-            end)
+                    _G.BotVars.ActiveMode = "twoline"
 
-
-            ------------------------------------------------------------
-            -- COMMAND TARGET
-            ------------------------------------------------------------
-
-            local isCommandTarget =
-                (
-                    _G.BotVars.CommandTarget
-                    == sender
-                )
-
-
-            ------------------------------------------------------------
-            -- DEBUG SEMUA TWOLINE
-            ------------------------------------------------------------
-
-            if lower:sub(1, 8) == "!twoline" then
-
-                print(
-                    "[TwoLine] CHAT RECEIVED:",
-                    lower,
-                    "| Sender:",
-                    sender.Name,
-                    "| Admin:",
-                    isAdmin,
-                    "| CommandTarget:",
-                    isCommandTarget
-                )
-
-            end
-
-
-            ----------------------------------------------------------------
-            -- !STOP
-            ----------------------------------------------------------------
-
-            if lower == "!stop" then
-
-                if not isAdmin then
-
-                    print(
-                        "[TwoLine] !stop DITOLAK:",
-                        sender.Name
-                    )
+                    startTwoline(target)
 
                     return
-
                 end
 
+                -- Player yang sudah menjadi CommandTarget
+                if _G.BotVars.CommandTarget == sender then
+
+                    _G.BotVars.ActiveMode = "twoline"
+
+                    startTwoline(sender)
+
+                    return
+                end
+
+                return
+            end
+
+            -- =====================
+            -- !STOP / !UNTWOLINE
+            -- =====================
+
+            if command == "!stop"
+                or command == "!untwoline" then
+
+                if not Admin:IsAdmin(LocalPlayer) then
+                    return
+                end
 
                 _G.BotVars.ActiveMode = nil
                 _G.BotVars.CommandTarget = nil
 
-
-                for _, stopFunction in pairs(
-                    _G.BotVars.ModeControllers
-                ) do
+                -- Hentikan semua mode
+                for _, stopFunction
+                    in pairs(_G.BotVars.ModeControllers) do
 
                     if type(stopFunction) == "function" then
-
-                        pcall(
-                            stopFunction
-                        )
-
+                        pcall(stopFunction)
                     end
-
                 end
-
-
-                print(
-                    "[TwoLine] Semua mode dihentikan."
-                )
 
                 return
-
             end
-
-
-            ----------------------------------------------------------------
-            -- !UNTWOLINE
-            ----------------------------------------------------------------
-
-            if lower == "!untwoline" then
-
-                if not isAdmin then
-                    return
-                end
-
-
-                if _G.BotVars.ActiveMode
-                    == "twoline" then
-
-                    _G.BotVars.ActiveMode = nil
-
-                end
-
-
-                stopTwoLine()
-
-
-                print(
-                    "[TwoLine] TwoLine dihentikan."
-                )
-
-                return
-
-            end
-
-
-            ----------------------------------------------------------------
-            -- !TWOLINE
-            --
-            -- ADMIN ATAU COMMAND TARGET
-            ----------------------------------------------------------------
-
-            if lower == "!twoline" then
-
-                if not isAdmin
-                    and not isCommandTarget then
-
-                    print(
-                        "[TwoLine] !twoline DITOLAK:",
-                        sender.Name
-                    )
-
-                    return
-
-                end
-
-
-                print(
-                    "[TwoLine] !twoline DITERIMA:",
-                    sender.Name
-                )
-
-
-                startTwoLine(
-                    sender
-                )
-
-                return
-
-            end
-
-
-            ----------------------------------------------------------------
-            -- !TWOLINE PLAYER
-            --
-            -- HANYA ADMIN
-            ----------------------------------------------------------------
-
-            local targetName =
-                lower:match(
-                    "^!twoline%s+(.+)$"
-                )
-
-
-            if targetName then
-
-                if not isAdmin then
-
-                    print(
-                        "[TwoLine] Target selection DITOLAK:",
-                        sender.Name
-                    )
-
-                    return
-
-                end
-
-
-                local target =
-                    findPlayerByName(
-                        targetName
-                    )
-
-
-                if not target then
-
-                    warn(
-                        "[TwoLine] PLAYER TIDAK DITEMUKAN:",
-                        targetName
-                    )
-
-                    return
-
-                end
-
-
-                print(
-                    "[TwoLine] TARGET DIPILIH:",
-                    target.Name
-                )
-
-
-                startTwoLine(
-                    target
-                )
-
-                return
-
-            end
-
         end
 
+        -- =========================
+        -- CHAT CONNECTION
+        -- =========================
 
-        ----------------------------------------------------------------
-        -- CHAT LISTENER UTAMA
-        --
-        -- PENTING:
-        -- Gunakan TextChatService.MessageReceived,
-        -- bukan hanya RBXGeneral.MessageReceived.
-        ----------------------------------------------------------------
+        local TextChatService =
+            game:GetService("TextChatService")
 
-        local textChatConnected = false
+        TextChatService.MessageReceived:Connect(function(message)
 
-
-        if TextChatService then
-
-            TextChatService.MessageReceived:Connect(
-                function(message)
-
-                    if not message then
-                        return
-                    end
-
-
-                    local textSource =
-                        message.TextSource
-
-
-                    if not textSource then
-                        return
-                    end
-
-
-                    local userId =
-                        textSource.UserId
-
-
-                    local sender =
-                        Players:GetPlayerByUserId(
-                            userId
-                        )
-
-
-                    if not sender then
-                        return
-                    end
-
-
-                    textChatConnected = true
-
-
-                    handleCommand(
-                        message.Text,
-                        sender
-                    )
-
-                end
-            )
-
-
-            print(
-                "[TwoLine] TextChatService.MessageReceived AKTIF."
-            )
-
-        end
-
-
-        ----------------------------------------------------------------
-        -- FALLBACK PLAYER.CHATTED
-        ----------------------------------------------------------------
-
-        local connectedPlayers = {}
-
-
-        local function connectPlayer(player)
-
-            if connectedPlayers[player] then
+            if not message.TextSource then
                 return
             end
 
-
-            connectedPlayers[player] = true
-
-
-            player.Chatted:Connect(
-                function(message)
-
-                    handleCommand(
-                        message,
-                        player
-                    )
-
-                end
-            )
-
-        end
-
-
-        for _, player in ipairs(
-            Players:GetPlayers()
-        ) do
-
-            connectPlayer(player)
-
-        end
-
-
-        Players.PlayerAdded:Connect(
-            function(player)
-
-                connectPlayer(player)
-
+            if message.TextSource.UserId ~= LocalPlayer.UserId then
+                return
             end
-        )
 
+            handleCommand(message.Text)
+        end)
 
-        Players.PlayerRemoving:Connect(
-            function(player)
+        -- =========================
+        -- REGISTER MODE
+        -- =========================
 
-                connectedPlayers[player] = nil
-
-            end
-        )
-
-
-        ----------------------------------------------------------------
-        -- CHARACTER RESPAWN
-        ----------------------------------------------------------------
-
-        LocalPlayer.CharacterAdded:Connect(
-            function()
-
-                task.wait(1)
-
-                updateCharacter()
-
-
-                if _G.BotVars.ActiveMode
-                    == "twoline"
-                    and targetPlayer then
-
-                    local oldTarget =
-                        targetPlayer
-
-
-                    startTwoLine(
-                        oldTarget
-                    )
-
-                end
-
-            end
-        )
-
-
-        ----------------------------------------------------------------
-        -- DONE
-        ----------------------------------------------------------------
-
-        print(
-            "[TwoLine] =================================="
-        )
-
-        print(
-            "[TwoLine] TwoLine berhasil dimuat."
-        )
-
-        print(
-            "[TwoLine] Bot:",
-            LocalPlayer.Name
-        )
-
-        print(
-            "[TwoLine] UserId:",
-            LocalPlayer.UserId
-        )
-
-        print(
-            "[TwoLine] =================================="
-        )
+        _G.BotVars.ModeControllers.twoline = stopTwoline
 
     end
-
 }
