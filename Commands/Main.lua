@@ -96,17 +96,10 @@ return {
         local commands2 = {
             "!message",
             "!collision",
-            "!ateezdance",
-            "!gabresdance",
             "!pakodidance",
             "!kangoradance",
-            "!asmaradance",
             "!pargoydance",
-            "!vacationdance",
             "!brazildance",
-            "!ketlindance",
-            "!harleydance",
-            "!heeseungdance",
             "!worship",
         }
 
