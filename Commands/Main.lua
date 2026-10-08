@@ -88,6 +88,9 @@ return {
             "!sit",
             "!agree",
             "!pushup",
+            "!square",
+            "!arrow",
+            "!twoline",
         }
 
         local commands2 = {
