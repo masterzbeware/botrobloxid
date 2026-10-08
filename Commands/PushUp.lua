@@ -822,7 +822,7 @@ return {
             --     !pushup
             ----------------------------------------------------------------
 
-            if lower == "!pushup" then
+            if lower == "!updance" then
 
                 if not isAdmin
                     and not isCommandTarget then
@@ -868,7 +868,7 @@ return {
 
             local targetName =
                 lower:match(
-                    "^!pushup%s+(.+)$"
+                    "^!updance%s+(.+)$"
                 )
 
 
