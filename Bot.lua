@@ -50,7 +50,6 @@ local commandFiles = {
     "Message.lua",
     "PakodiDance.lua",
     "PargoyDance.lua",
-    "Pushup.lua",
     "Rest.lua",
     "Salute.lua",
     "Sit.lua",
@@ -104,7 +103,6 @@ jalankan("kangoradance")
 jalankan("message")
 jalankan("pakodidance")
 jalankan("pargoydance")
-jalankan("pushup")
 jalankan("rest")
 jalankan("salute")
 jalankan("sit")
