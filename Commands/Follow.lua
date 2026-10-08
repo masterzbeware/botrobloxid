@@ -21,7 +21,8 @@ return {
         ----------------------------------------------------------------
 
         _G.BotVars = _G.BotVars or {}
-        _G.BotVars.ModeControllers = _G.BotVars.ModeControllers or {}
+        _G.BotVars.ModeControllers =
+            _G.BotVars.ModeControllers or {}
 
         ----------------------------------------------------------------
         -- LOAD ADMIN
@@ -61,21 +62,22 @@ return {
         -- BOT ORDER
         ----------------------------------------------------------------
 
-local botOrder = {
+        local botOrder = {
 
-	"11611503633", -- Bot 1
-	"11611591921", -- Bot 2
-	"11611597741", -- Bot 3
-	"11672413029", -- Bot 4
-	"11122806815", -- Bot 5
-	"11122806817", -- Bot 6
-	"11122687468", -- Bot 7
-	"11122854402", -- Bot 8
-	"11774472805", -- Bot 9
-	"11774494628", -- Bot 10
-    "11775829997", -- Bot 11
-    "11775843339", -- Bot 12
-}
+            "11611503633", -- Bot 1
+            "11611591921", -- Bot 2
+            "11611597741", -- Bot 3
+            "11672413029", -- Bot 4
+            "11122806815", -- Bot 5
+            "11122806817", -- Bot 6
+            "11122687468", -- Bot 7
+            "11122854402", -- Bot 8
+            "11774472805", -- Bot 9
+            "11774494628", -- Bot 10
+            "11775829997", -- Bot 11
+            "11775843339", -- Bot 12
+
+        }
 
         ----------------------------------------------------------------
         -- UPDATE CHARACTER
@@ -118,12 +120,15 @@ local botOrder = {
                 if channel then
 
                     pcall(function()
+
                         channel:SendAsync(message)
+
                     end)
 
                     success = true
 
                 end
+
             end
 
             if not success then
@@ -167,8 +172,22 @@ local botOrder = {
 
             following = false
             targetPlayer = nil
-            -- CommandTarget sengaja TIDAK dihapus di sini.
-            -- Target tetap berhak mengganti formasi sampai admin mengetik !stop.
+
+            ------------------------------------------------------------
+            -- CommandTarget SENGAJA TIDAK DIHAPUS.
+            --
+            -- Target yang sudah ditentukan Admin tetap mempunyai
+            -- hak untuk mengganti mode:
+            --
+            -- !frontline
+            -- !backline
+            -- !circle
+            -- !arrow
+            -- !follow
+            -- dll.
+            --
+            -- CommandTarget baru dihapus oleh !stop Admin.
+            ------------------------------------------------------------
 
             if followConnection then
 
@@ -178,7 +197,9 @@ local botOrder = {
             end
 
             if humanoid then
+
                 humanoid.AutoRotate = true
+
             end
 
         end
@@ -187,7 +208,8 @@ local botOrder = {
         -- REGISTER CONTROLLER
         ----------------------------------------------------------------
 
-        _G.BotVars.ModeControllers.follow = stopFollow
+        _G.BotVars.ModeControllers.follow =
+            stopFollow
 
         ----------------------------------------------------------------
         -- STOP SEMUA MODE LAIN
@@ -216,7 +238,15 @@ local botOrder = {
 
         local function findPlayerByName(name)
 
+            if not name or name == "" then
+                return nil
+            end
+
             name = name:lower()
+
+            ------------------------------------------------------------
+            -- EXACT USERNAME / DISPLAY NAME
+            ------------------------------------------------------------
 
             for _, player in ipairs(
                 Players:GetPlayers()
@@ -224,6 +254,44 @@ local botOrder = {
 
                 if player.Name:lower() == name
                     or player.DisplayName:lower() == name then
+
+                    return player
+
+                end
+
+            end
+
+            ------------------------------------------------------------
+            -- USERNAME PREFIX
+            ------------------------------------------------------------
+
+            for _, player in ipairs(
+                Players:GetPlayers()
+            ) do
+
+                if player.Name:lower():sub(
+                    1,
+                    #name
+                ) == name then
+
+                    return player
+
+                end
+
+            end
+
+            ------------------------------------------------------------
+            -- DISPLAY NAME PREFIX
+            ------------------------------------------------------------
+
+            for _, player in ipairs(
+                Players:GetPlayers()
+            ) do
+
+                if player.DisplayName:lower():sub(
+                    1,
+                    #name
+                ) == name then
 
                     return player
 
@@ -255,7 +323,8 @@ local botOrder = {
             -- SET ACTIVE MODE
             ------------------------------------------------------------
 
-            _G.BotVars.ActiveMode = "follow"
+            _G.BotVars.ActiveMode =
+                "follow"
 
             ------------------------------------------------------------
             -- STOP CONNECTION LAMA
@@ -268,8 +337,39 @@ local botOrder = {
 
             end
 
+            ------------------------------------------------------------
+            -- SET FOLLOW STATE
+            ------------------------------------------------------------
+
             following = true
             targetPlayer = player
+
+            ------------------------------------------------------------
+            -- PENTING:
+            --
+            -- Set CommandTarget ke target yang sedang di-follow.
+            --
+            -- Jadi jika Admin:
+            -- !follow trevkaro
+            --
+            -- maka:
+            -- CommandTarget = trevkaro
+            --
+            -- Jika trevkaro kemudian:
+            -- !frontline
+            -- !circle
+            -- !backline
+            -- !follow
+            --
+            -- semuanya tetap bisa menggunakan target tersebut.
+            ------------------------------------------------------------
+
+            _G.BotVars.CommandTarget =
+                player
+
+            ------------------------------------------------------------
+            -- CHAT
+            ------------------------------------------------------------
 
             sendChat("Yes, Sir!")
 
@@ -303,7 +403,8 @@ local botOrder = {
                         -- JIKA MODE SUDAH BERGANTI
                         ------------------------------------------------
 
-                        if _G.BotVars.ActiveMode ~= "follow" then
+                        if _G.BotVars.ActiveMode
+                            ~= "follow" then
 
                             stopFollow()
 
@@ -357,7 +458,9 @@ local botOrder = {
                         local distance =
                             defaultBotFollowDistance
 
-                        if Admin:IsAdmin(targetPlayer) then
+                        if Admin:IsAdmin(
+                            targetPlayer
+                        ) then
 
                             distance =
                                 adminFollowDistance
@@ -366,8 +469,12 @@ local botOrder = {
 
                         local specialDistance =
                             Distance:GetDistance(
-                                tostring(LocalPlayer.UserId),
-                                tostring(targetPlayer.UserId)
+                                tostring(
+                                    LocalPlayer.UserId
+                                ),
+                                tostring(
+                                    targetPlayer.UserId
+                                )
                             )
 
                         if specialDistance then
@@ -423,7 +530,7 @@ local botOrder = {
 
                         humanoid.AutoRotate = false
 
-                        local adminRotation =
+                        local targetRotation =
                             targetHRP.CFrame
                             -
                             targetHRP.Position
@@ -433,7 +540,7 @@ local botOrder = {
                                 myHRP.Position
                             )
                             *
-                            adminRotation
+                            targetRotation
 
                     end
                 )
@@ -453,16 +560,45 @@ local botOrder = {
                 return
             end
 
+            ------------------------------------------------------------
+            -- ADMIN CHECK
+            ------------------------------------------------------------
+
             local isAdmin = false
+
             pcall(function()
-                isAdmin = Admin:IsAdmin(sender)
+
+                isAdmin =
+                    Admin:IsAdmin(sender)
+
             end)
 
-            local lower = message:lower():gsub("^%s+", ""):gsub("%s+$", "")
+            ------------------------------------------------------------
+            -- COMMAND TARGET CHECK
+            ------------------------------------------------------------
+
+            local isCommandTarget =
+                (
+                    _G.BotVars.CommandTarget
+                    == sender
+                )
+
+            ------------------------------------------------------------
+            -- CLEAN MESSAGE
+            ------------------------------------------------------------
+
+            local lower =
+                message
+                :lower()
+                :gsub("^%s+", "")
+                :gsub("%s+$", "")
 
             ------------------------------------------------------------
             -- !STOP
-            -- HANYA PLAYER/ADMIN YANG BOLEH STOP SEMUA BOT.
+            --
+            -- HANYA ADMIN.
+            --
+            -- CommandTarget TIDAK boleh menggunakan !stop.
             ------------------------------------------------------------
 
             if lower == "!stop"
@@ -472,39 +608,84 @@ local botOrder = {
                     return
                 end
 
-                _G.BotVars.ActiveMode = nil
-                _G.BotVars.CommandTarget = nil
+                --------------------------------------------------------
+                -- CLEAR GLOBAL STATE
+                --------------------------------------------------------
 
-                for _, stopFunction in pairs(_G.BotVars.ModeControllers) do
-                    if type(stopFunction) == "function" then
-                        pcall(stopFunction)
+                _G.BotVars.ActiveMode =
+                    nil
+
+                _G.BotVars.CommandTarget =
+                    nil
+
+                --------------------------------------------------------
+                -- STOP SEMUA MODE
+                --------------------------------------------------------
+
+                for _, stopFunction in pairs(
+                    _G.BotVars.ModeControllers
+                ) do
+
+                    if type(stopFunction) ==
+                        "function" then
+
+                        pcall(
+                            stopFunction
+                        )
+
                     end
+
                 end
 
                 return
+
             end
 
-            ------------------------------------------------------------
+            ----------------------------------------------------------------
             -- !FOLLOW
-            -- HANYA ADMIN YANG BOLEH MEMILIH TARGET AWAL.
-            ------------------------------------------------------------
-
-            if not isAdmin then
-                return
-            end
+            --
+            -- ADA 2 JENIS:
+            --
+            -- 1. !follow
+            --    Admin ATAU CommandTarget boleh.
+            --
+            -- 2. !follow player
+            --    HANYA Admin.
+            ----------------------------------------------------------------
 
             if lower == "!follow" then
 
-                _G.BotVars.CommandTarget = sender
-                startFollow(sender)
+                ------------------------------------------------------------
+                -- ADMIN ATAU COMMAND TARGET
+                ------------------------------------------------------------
+
+                if not isAdmin
+                    and not isCommandTarget then
+
+                    return
+
+                end
+
+                ------------------------------------------------------------
+                -- FOLLOW KE SENDER
+                ------------------------------------------------------------
+
+                _G.BotVars.CommandTarget =
+                    sender
+
+                startFollow(
+                    sender
+                )
 
                 return
 
             end
 
-            ------------------------------------------------------------
+            ----------------------------------------------------------------
             -- !FOLLOW PLAYER
-            ------------------------------------------------------------
+            --
+            -- HANYA ADMIN YANG BOLEH MEMILIH TARGET BARU.
+            ----------------------------------------------------------------
 
             local targetName =
                 lower:match(
@@ -513,15 +694,41 @@ local botOrder = {
 
             if targetName then
 
+                ------------------------------------------------------------
+                -- TARGET BARU HANYA ADMIN
+                ------------------------------------------------------------
+
+                if not isAdmin then
+                    return
+                end
+
+                ------------------------------------------------------------
+                -- FIND PLAYER
+                ------------------------------------------------------------
+
                 local target =
                     findPlayerByName(
                         targetName
                     )
 
-                if target then
-                    _G.BotVars.CommandTarget = target
-                    startFollow(target)
+                if not target then
+                    return
                 end
+
+                ------------------------------------------------------------
+                -- SET COMMAND TARGET
+                ------------------------------------------------------------
+
+                _G.BotVars.CommandTarget =
+                    target
+
+                ------------------------------------------------------------
+                -- START FOLLOW
+                ------------------------------------------------------------
+
+                startFollow(
+                    target
+                )
 
                 return
 
@@ -565,7 +772,8 @@ local botOrder = {
 
                         end
 
-                    end)
+                    end
+                )
 
             end
 
@@ -624,7 +832,8 @@ local botOrder = {
 
                 updateCharacter()
 
-                if _G.BotVars.ActiveMode == "follow"
+                if _G.BotVars.ActiveMode
+                    == "follow"
                     and targetPlayer then
 
                     startFollow(

@@ -68,8 +68,6 @@ return {
         local danceTrack = nil
         local dancing = false
 
-        -- Generation digunakan untuk memastikan proses lama
-        -- dari !stop / !salute tidak mengganggu command terbaru.
         local danceGeneration = 0
 
 
@@ -120,7 +118,7 @@ return {
 
 
             ------------------------------------------------------------
-            -- STOP ATEEZ DANCE
+            -- STOP SALUTE TRACK
             ------------------------------------------------------------
 
             if danceTrack then
@@ -187,6 +185,7 @@ return {
                 end)
 
                 task.wait()
+
 
                 --------------------------------------------------------
                 -- VALIDATE GENERATION AGAIN
@@ -265,7 +264,7 @@ return {
 
 
         ----------------------------------------------------------------
-        -- STOP ATEEZ DANCE
+        -- STOP SALUTE
         ----------------------------------------------------------------
 
         local function stopSalute()
@@ -309,6 +308,18 @@ return {
                 generation
             )
 
+            ------------------------------------------------------------
+            -- PENTING:
+            -- JANGAN CLEAR CommandTarget DI SINI
+            --
+            -- Supaya setelah Salute:
+            -- Target masih bisa !follow
+            -- Target masih bisa !frontline
+            -- Target masih bisa !circle
+            -- Target masih bisa !fourline
+            -- dll.
+            ------------------------------------------------------------
+
         end
 
 
@@ -345,10 +356,10 @@ return {
 
 
         ----------------------------------------------------------------
-        -- PLAY ATEEZ DANCE
+        -- PLAY SALUTE
         ----------------------------------------------------------------
 
-        local function playSalute()
+        local function playSalute(targetPlayer)
 
             ------------------------------------------------------------
             -- NEW GENERATION
@@ -370,6 +381,18 @@ return {
 
 
             ------------------------------------------------------------
+            -- SET COMMAND TARGET
+            ------------------------------------------------------------
+
+            if targetPlayer then
+
+                _G.BotVars.CommandTarget =
+                    targetPlayer
+
+            end
+
+
+            ------------------------------------------------------------
             -- STOP MODE LAIN
             ------------------------------------------------------------
 
@@ -380,13 +403,16 @@ return {
             -- VALIDATE GENERATION
             ------------------------------------------------------------
 
-            if generation ~= danceGeneration then
+            if generation
+                ~= danceGeneration then
+
                 return
+
             end
 
 
             ------------------------------------------------------------
-            -- STOP PREVIOUS DANCE TRACK
+            -- STOP PREVIOUS SALUTE
             ------------------------------------------------------------
 
             if danceTrack then
@@ -429,8 +455,6 @@ return {
             ------------------------------------------------------------
             -- PLAY FE ANIMATION WITH RETRY
             ------------------------------------------------------------
-            -- Menggunakan Humanoid:PlayEmoteAndGetAnimTrackById()
-            -- sehingga animasi dijalankan sebagai FE animation.
 
             local maxAttempts = 3
             local success = false
@@ -442,8 +466,11 @@ return {
                 -- COMMAND SUDAH BERGANTI
                 --------------------------------------------------------
 
-                if generation ~= danceGeneration then
+                if generation
+                    ~= danceGeneration then
+
                     return
+
                 end
 
 
@@ -465,6 +492,7 @@ return {
 
                     success = true
                     result = track
+
                     break
 
                 end
@@ -473,21 +501,24 @@ return {
 
 
                 --------------------------------------------------------
-                -- JIKA GAGAL, BERI WAKTU UNTUK ANIMATOR
+                -- RETRY
                 --------------------------------------------------------
 
                 if attempt < maxAttempts then
+
                     task.wait(0.1)
+
                 end
 
             end
 
 
-            ------------------------------------------------------------
-            -- VALIDATE GENERATION SETELAH RETRY
-            ------------------------------------------------------------
+            ----------------------------------------------------------------
+            -- VALIDATE GENERATION AFTER RETRY
+            ----------------------------------------------------------------
 
-            if generation ~= danceGeneration then
+            if generation
+                ~= danceGeneration then
 
                 if result then
 
@@ -502,9 +533,9 @@ return {
             end
 
 
-            ------------------------------------------------------------
+            ----------------------------------------------------------------
             -- RESULT
-            ------------------------------------------------------------
+            ----------------------------------------------------------------
 
             if success and result then
 
@@ -515,7 +546,11 @@ return {
                     "[Salute] FE Animation berhasil dimainkan:",
                     SALUTE_ANIMATION_ID,
                     "| Bot:",
-                    LocalPlayer.Name
+                    LocalPlayer.Name,
+                    "| Target:",
+                    _G.BotVars.CommandTarget
+                        and _G.BotVars.CommandTarget.Name
+                        or "None"
                 )
 
 
@@ -526,7 +561,9 @@ return {
                 task.spawn(function()
 
                     local track = result
-                    local trackGeneration = generation
+
+                    local trackGeneration =
+                        generation
 
                     if not track then
                         return
@@ -538,8 +575,7 @@ return {
 
 
                     ----------------------------------------------------
-                    -- HANYA BOLEH MEMBERSIHKAN TRACK
-                    -- JIKA MASIH TRACK + GENERATION YANG SAMA
+                    -- CLEANUP ONLY IF STILL SAME TRACK
                     ----------------------------------------------------
 
                     if danceTrack == track
@@ -571,6 +607,61 @@ return {
 
 
         ----------------------------------------------------------------
+        -- FIND PLAYER
+        ----------------------------------------------------------------
+
+        local function findPlayerByName(name)
+
+            if not name or name == "" then
+                return nil
+            end
+
+            local search =
+                name:lower()
+
+            ------------------------------------------------------------
+            -- EXACT MATCH
+            ------------------------------------------------------------
+
+            for _, player in ipairs(
+                Players:GetPlayers()
+            ) do
+
+                if player.Name:lower()
+                    == search then
+
+                    return player
+
+                end
+
+            end
+
+
+            ------------------------------------------------------------
+            -- PREFIX MATCH
+            ------------------------------------------------------------
+
+            for _, player in ipairs(
+                Players:GetPlayers()
+            ) do
+
+                if player.Name:lower():sub(
+                    1,
+                    #search
+                ) == search then
+
+                    return player
+
+                end
+
+            end
+
+            return nil
+
+        end
+
+
+        ----------------------------------------------------------------
         -- COMMAND HANDLER
         ----------------------------------------------------------------
 
@@ -597,9 +688,13 @@ return {
 
             end)
 
-            if not isAdmin then
-                return
-            end
+
+            ------------------------------------------------------------
+            -- COMMAND TARGET CHECK
+            ------------------------------------------------------------
+
+            local isCommandTarget =
+                (_G.BotVars.CommandTarget == sender)
 
 
             ------------------------------------------------------------
@@ -616,65 +711,91 @@ return {
                 lower:gsub("%s+$", "")
 
 
-            ------------------------------------------------------------
-            -- !ATEEZDANCE
-            ------------------------------------------------------------
-
-            if lower == "!salute" then
-
-                print(
-                    "[Salute] Command diterima | Bot:",
-                    LocalPlayer.Name,
-                    "| Admin:",
-                    sender.Name
-                )
-
-                playSalute()
-
-                return
-
-            end
-
-
-            ------------------------------------------------------------
-            -- !UNATEEZDANCE
-            ------------------------------------------------------------
-
-            if lower == "!unsalute" then
-
-                print(
-                    "[Salute] UnSalute | Bot:",
-                    LocalPlayer.Name,
-                    "| Admin:",
-                    sender.Name
-                )
-
-                if _G.BotVars.ActiveMode
-                    == "salute" then
-
-                    _G.BotVars.ActiveMode = nil
-
-                end
-
-                stopSalute()
-
-                return
-
-            end
-
-
-            ------------------------------------------------------------
+            ----------------------------------------------------------------
             -- !STOP
-            ------------------------------------------------------------
+            --
+            -- HANYA ADMIN
+            ----------------------------------------------------------------
 
             if lower == "!stop" then
 
+                if not isAdmin then
+
+                    print(
+                        "[Salute] !stop ditolak:",
+                        sender.Name,
+                        "bukan Admin."
+                    )
+
+                    return
+
+                end
+
+
                 print(
-                    "[Salute] Stop | Bot:",
-                    LocalPlayer.Name,
-                    "| Admin:",
+                    "[Salute] Stop | Admin:",
                     sender.Name
                 )
+
+
+                --------------------------------------------------------
+                -- CLEAR GLOBAL MODE
+                --------------------------------------------------------
+
+                _G.BotVars.ActiveMode = nil
+                _G.BotVars.CommandTarget = nil
+
+
+                --------------------------------------------------------
+                -- STOP SEMUA MODE
+                --------------------------------------------------------
+
+                for _, stopFunction in pairs(
+                    _G.BotVars.ModeControllers
+                ) do
+
+                    if type(stopFunction)
+                        == "function" then
+
+                        pcall(function()
+                            stopFunction()
+                        end)
+
+                    end
+
+                end
+
+                return
+
+            end
+
+
+            ----------------------------------------------------------------
+            -- !UNSALUTE
+            --
+            -- HANYA ADMIN
+            ----------------------------------------------------------------
+
+            if lower == "!unsalute" then
+
+                if not isAdmin then
+
+                    print(
+                        "[Salute] !unsalute ditolak:",
+                        sender.Name,
+                        "bukan Admin."
+                    )
+
+                    return
+
+                end
+
+
+                print(
+                    "[Salute] UnSalute | Admin:",
+                    sender.Name
+                )
+
 
                 if _G.BotVars.ActiveMode
                     == "salute" then
@@ -683,7 +804,123 @@ return {
 
                 end
 
+
                 stopSalute()
+
+                return
+
+            end
+
+
+            ----------------------------------------------------------------
+            -- !SALUTE
+            --
+            -- ADMIN:
+            --     !salute
+            --     -> Target = Admin
+            --
+            -- COMMAND TARGET:
+            --     !salute
+            --     -> Target = dirinya sendiri
+            --
+            -- PLAYER BIASA:
+            --     ditolak
+            ----------------------------------------------------------------
+
+            if lower == "!salute" then
+
+                if not isAdmin
+                    and not isCommandTarget then
+
+                    print(
+                        "[Salute] !salute ditolak:",
+                        sender.Name
+                    )
+
+                    return
+
+                end
+
+
+                print(
+                    "[Salute] Command diterima | Sender:",
+                    sender.Name,
+                    "| Admin:",
+                    isAdmin,
+                    "| CommandTarget:",
+                    isCommandTarget
+                )
+
+
+                --------------------------------------------------------
+                -- TARGET = SENDER
+                --------------------------------------------------------
+
+                _G.BotVars.CommandTarget =
+                    sender
+
+
+                playSalute(sender)
+
+                return
+
+            end
+
+
+            ----------------------------------------------------------------
+            -- !SALUTE PLAYER
+            --
+            -- HANYA ADMIN
+            ----------------------------------------------------------------
+
+            local targetName =
+                lower:match(
+                    "^!salute%s+(.+)$"
+                )
+
+            if targetName then
+
+                if not isAdmin then
+
+                    print(
+                        "[Salute] Target command ditolak:",
+                        sender.Name,
+                        "bukan Admin."
+                    )
+
+                    return
+
+                end
+
+
+                local target =
+                    findPlayerByName(targetName)
+
+                if not target then
+
+                    warn(
+                        "[Salute] Player tidak ditemukan:",
+                        targetName
+                    )
+
+                    return
+
+                end
+
+
+                print(
+                    "[Salute] Target dipilih:",
+                    target.Name,
+                    "| Admin:",
+                    sender.Name
+                )
+
+
+                _G.BotVars.CommandTarget =
+                    target
+
+
+                playSalute(target)
 
                 return
 
@@ -729,9 +966,7 @@ return {
             Players:GetPlayers()
         ) do
 
-            connectPlayerChat(
-                player
-            )
+            connectPlayerChat(player)
 
         end
 
@@ -743,9 +978,7 @@ return {
         Players.PlayerAdded:Connect(
             function(player)
 
-                connectPlayerChat(
-                    player
-                )
+                connectPlayerChat(player)
 
             end
         )
@@ -789,7 +1022,7 @@ return {
 
 
                 --------------------------------------------------------
-                -- JIKA MASIH MODE ATEEZ DANCE
+                -- JIKA MASIH MODE SALUTE
                 --------------------------------------------------------
 
                 if _G.BotVars.ActiveMode
@@ -809,7 +1042,20 @@ return {
 
                     end
 
-                    playSalute()
+
+                    ----------------------------------------------------
+                    -- AMBIL TARGET LAMA
+                    ----------------------------------------------------
+
+                    local target =
+                        _G.BotVars.CommandTarget
+
+
+                    ----------------------------------------------------
+                    -- PLAY SALUTE LAGI
+                    ----------------------------------------------------
+
+                    playSalute(target)
 
                 end
 

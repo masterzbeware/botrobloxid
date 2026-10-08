@@ -22,7 +22,8 @@ return {
         ----------------------------------------------------------------
 
         _G.BotVars = _G.BotVars or {}
-        _G.BotVars.ModeControllers = _G.BotVars.ModeControllers or {}
+        _G.BotVars.ModeControllers =
+            _G.BotVars.ModeControllers or {}
 
 
         ----------------------------------------------------------------
@@ -33,16 +34,22 @@ return {
 
         do
             local success, result = pcall(function()
+
                 return loadstring(game:HttpGet(
                     "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
                 ))()
+
             end)
 
             if success and result then
+
                 Admin = result
+
             else
+
                 warn("[Fourline] Gagal load Admin.lua.")
                 return
+
             end
         end
 
@@ -55,16 +62,22 @@ return {
 
         do
             local success, result = pcall(function()
+
                 return loadstring(game:HttpGet(
                     "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Distance.lua"
                 ))()
+
             end)
 
             if success and result then
+
                 Distance = result
+
             else
+
                 warn("[Fourline] Gagal load Distance.lua.")
                 return
+
             end
         end
 
@@ -89,10 +102,7 @@ return {
         local adminFourlineDistance = 6
         local defaultBotFourlineDistance = 6
 
-        -- Jarak antar bot kiri-kanan
         local formationSpacing = 3
-
-        -- Jarak antar baris
         local rowSpacing = 3
 
 
@@ -100,33 +110,22 @@ return {
         -- BOT ORDER
         ----------------------------------------------------------------
 
-        -- FORMASI:
-        --
-        --          PLAYER
-        --
-        --       B1   B2   B3   B4
-        --       B5   B6   B7   B8
-        --        B9  B10  B11
-        --
-        -- Semua bot berada DI BELAKANG player
-        -- dan menghadap ke arah yang sama.
+        local botOrder = {
 
-local botOrder = {
+            "11611503633", -- Bot 1
+            "11611591921", -- Bot 2
+            "11611597741", -- Bot 3
+            "11672413029", -- Bot 4
+            "11122806815", -- Bot 5
+            "11122806817", -- Bot 6
+            "11122687468", -- Bot 7
+            "11122854402", -- Bot 8
+            "11774472805", -- Bot 9
+            "11774494628", -- Bot 10
+            "11775829997", -- Bot 11
+            "11775843339", -- Bot 12
 
-	"11611503633", -- Bot 1
-	"11611591921", -- Bot 2
-	"11611597741", -- Bot 3
-	"11672413029", -- Bot 4
-	"11122806815", -- Bot 5
-	"11122806817", -- Bot 6
-	"11122687468", -- Bot 7
-	"11122854402", -- Bot 8
-	"11774472805", -- Bot 9
-	"11774494628", -- Bot 10
-    "11775829997", -- Bot 11
-    "11775843339", -- Bot 12
-}
-
+        }
 
 
         ----------------------------------------------------------------
@@ -220,6 +219,14 @@ local botOrder = {
             fourlining = false
             targetPlayer = nil
 
+            ------------------------------------------------------------
+            -- CommandTarget TIDAK DIHAPUS.
+            --
+            -- Kalau Fourline berhenti karena pindah ke mode lain,
+            -- target tetap mempunyai hak untuk menjalankan mode lain.
+            --
+            -- CommandTarget hanya dihapus oleh !stop Admin.
+            ------------------------------------------------------------
 
             if fourlineConnection then
 
@@ -230,7 +237,9 @@ local botOrder = {
 
 
             if humanoid then
+
                 humanoid.AutoRotate = true
+
             end
 
         end
@@ -258,7 +267,9 @@ local botOrder = {
                     and type(stopFunction) == "function" then
 
                     pcall(function()
+
                         stopFunction()
+
                     end)
 
                 end
@@ -274,11 +285,15 @@ local botOrder = {
 
         local function findPlayerByName(name)
 
-            if not name then
+            if not name
+                or name == "" then
+
                 return nil
+
             end
 
-            name = name:lower()
+            name =
+                name:lower()
 
 
             ------------------------------------------------------------
@@ -300,7 +315,7 @@ local botOrder = {
 
 
             ------------------------------------------------------------
-            -- PARTIAL USERNAME
+            -- USERNAME PREFIX
             ------------------------------------------------------------
 
             for _, player in ipairs(
@@ -315,7 +330,16 @@ local botOrder = {
                     return player
 
                 end
+            end
 
+
+            ------------------------------------------------------------
+            -- DISPLAY NAME PREFIX
+            ------------------------------------------------------------
+
+            for _, player in ipairs(
+                Players:GetPlayers()
+            ) do
 
                 if player.DisplayName:lower():sub(
                     1,
@@ -325,7 +349,6 @@ local botOrder = {
                     return player
 
                 end
-
             end
 
 
@@ -341,7 +364,9 @@ local botOrder = {
         local function getMyIndex()
 
             local userId =
-                tostring(LocalPlayer.UserId)
+                tostring(
+                    LocalPlayer.UserId
+                )
 
             return table.find(
                 botOrder,
@@ -379,7 +404,8 @@ local botOrder = {
             -- ACTIVE MODE
             ------------------------------------------------------------
 
-            _G.BotVars.ActiveMode = "fourline"
+            _G.BotVars.ActiveMode =
+                "fourline"
 
 
             ------------------------------------------------------------
@@ -418,10 +444,6 @@ local botOrder = {
                     LocalPlayer.UserId
                 )
 
-                warn(
-                    "[Fourline] Tambahkan UserId bot ini ke botOrder."
-                )
-
                 _G.BotVars.ActiveMode = nil
 
                 stopFourline()
@@ -436,8 +458,20 @@ local botOrder = {
             ------------------------------------------------------------
 
             fourlining = true
-            targetPlayer = player
-            _G.BotVars.CommandTarget = player
+
+            targetPlayer =
+                player
+
+
+            ------------------------------------------------------------
+            -- IMPORTANT
+            --
+            -- Target selalu disimpan sebagai CommandTarget.
+            ------------------------------------------------------------
+
+            _G.BotVars.CommandTarget =
+                player
+
 
             sendChat("Yes, Sir!")
 
@@ -574,7 +608,7 @@ local botOrder = {
 
 
                         ------------------------------------------------
-                        -- FORMATION SETTINGS
+                        -- FORMATION
                         ------------------------------------------------
 
                         local columnCount = 4
@@ -606,7 +640,8 @@ local botOrder = {
 
                         local remainingBots =
                             #botOrder
-                            - (
+                            -
+                            (
                                 row
                                 * columnCount
                             )
@@ -640,7 +675,8 @@ local botOrder = {
                                 column
                                 - centerColumn
                             )
-                            * formationSpacing
+                            *
+                            formationSpacing
 
 
                         ------------------------------------------------
@@ -648,22 +684,13 @@ local botOrder = {
                         ------------------------------------------------
 
                         local depthOffset =
-                            row * rowSpacing
+                            row
+                            *
+                            rowSpacing
 
 
                         ----------------------------------------------------------------
                         -- TARGET POSITION
-                        ----------------------------------------------------------------
-                        --
-                        -- PENTING:
-                        --
-                        -- Gunakan MINUS LookVector.
-                        --
-                        -- LookVector = arah DEPAN Player
-                        --
-                        -- -LookVector = arah BELAKANG Player
-                        --
-                        -- Jadi bot akan berada di belakang Player.
                         ----------------------------------------------------------------
 
                         local targetPosition =
@@ -673,9 +700,11 @@ local botOrder = {
 
                             (
                                 targetHRP.CFrame.LookVector
-                                * (
+                                *
+                                (
                                     distance
-                                    + depthOffset
+                                    +
+                                    depthOffset
                                 )
                             )
 
@@ -683,7 +712,8 @@ local botOrder = {
 
                             (
                                 targetHRP.CFrame.RightVector
-                                * horizontalOffset
+                                *
+                                horizontalOffset
                             )
 
 
@@ -700,7 +730,7 @@ local botOrder = {
 
 
                         ------------------------------------------------
-                        -- MOVE TO FORMATION
+                        -- MOVE
                         ------------------------------------------------
 
                         if distanceToTarget > 1.5 then
@@ -724,13 +754,7 @@ local botOrder = {
 
 
                         ----------------------------------------------------------------
-                        -- FACE SAME DIRECTION AS PLAYER
-                        ----------------------------------------------------------------
-                        --
-                        -- Bot tidak membelakangi Player.
-                        --
-                        -- Bot menghadap ke arah yang sama
-                        -- dengan Player/Admin.
+                        -- FACE SAME DIRECTION
                         ----------------------------------------------------------------
 
                         local forwardDirection =
@@ -741,7 +765,8 @@ local botOrder = {
                             CFrame.lookAt(
                                 myHRP.Position,
                                 myHRP.Position
-                                + forwardDirection
+                                +
+                                forwardDirection
                             )
 
                     end
@@ -759,25 +784,63 @@ local botOrder = {
             sender
         )
 
-            if not message or not sender then
+            if not message
+                or not sender then
+
                 return
+
             end
 
+
+            ------------------------------------------------------------
+            -- ADMIN CHECK
+            ------------------------------------------------------------
+
             local isAdmin = false
+
             pcall(function()
-                isAdmin = Admin:IsAdmin(sender)
+
+                isAdmin =
+                    Admin:IsAdmin(sender)
+
             end)
 
-            local lower =
-                message:lower():gsub("^%s+", ""):gsub("%s+$", "")
+
+            ------------------------------------------------------------
+            -- COMMAND TARGET
+            ------------------------------------------------------------
 
             local commandTarget =
                 _G.BotVars.CommandTarget
 
+
             ------------------------------------------------------------
+            -- CHECK TARGET
+            ------------------------------------------------------------
+
+            local isCommandTarget =
+                (
+                    sender
+                    == commandTarget
+                )
+
+
+            ------------------------------------------------------------
+            -- CLEAN MESSAGE
+            ------------------------------------------------------------
+
+            local lower =
+                message
+                :lower()
+                :gsub("^%s+", "")
+                :gsub("%s+$", "")
+
+
+            ----------------------------------------------------------------
             -- !STOP
-            -- HANYA PLAYER/ADMIN YANG BOLEH STOP SEMUA MODE.
-            ------------------------------------------------------------
+            --
+            -- HANYA ADMIN
+            ----------------------------------------------------------------
 
             if lower == "!stop"
                 or lower == "!unfourline" then
@@ -786,46 +849,89 @@ local botOrder = {
                     return
                 end
 
-                _G.BotVars.ActiveMode = nil
-                _G.BotVars.CommandTarget = nil
 
-                for _, stopFunction in pairs(_G.BotVars.ModeControllers) do
-                    if type(stopFunction) == "function" then
-                        pcall(stopFunction)
+                ------------------------------------------------------------
+                -- CLEAR GLOBAL STATE
+                ------------------------------------------------------------
+
+                _G.BotVars.ActiveMode =
+                    nil
+
+                _G.BotVars.CommandTarget =
+                    nil
+
+
+                ------------------------------------------------------------
+                -- STOP SEMUA MODE
+                ------------------------------------------------------------
+
+                for _, stopFunction in pairs(
+                    _G.BotVars.ModeControllers
+                ) do
+
+                    if type(stopFunction)
+                        == "function" then
+
+                        pcall(
+                            stopFunction
+                        )
+
                     end
+
                 end
 
                 return
+
             end
 
-            ------------------------------------------------------------
+
+            ----------------------------------------------------------------
+            -- !FOURLINE
+            --
+            -- Admin ATAU CommandTarget.
+            --
             -- !fourline
-            -- Admin boleh menjalankan kapan saja.
-            -- Target aktif juga boleh mengganti formasi, tetapi hanya
-            -- dengan command tanpa nama player.
-            ------------------------------------------------------------
+            -- = kembali ke diri sendiri
+            ----------------------------------------------------------------
 
             if lower == "!fourline" then
 
-                if not isAdmin and sender ~= commandTarget then
+                if not isAdmin
+                    and not isCommandTarget then
+
                     return
+
                 end
 
-                _G.BotVars.CommandTarget = sender
-                startFourline(sender)
+
+                ------------------------------------------------------------
+                -- TARGET ADALAH SENDER
+                ------------------------------------------------------------
+
+                _G.BotVars.CommandTarget =
+                    sender
+
+
+                startFourline(
+                    sender
+                )
 
                 return
+
             end
 
-            ------------------------------------------------------------
-            -- !fourline PLAYER
-            -- HANYA ADMIN YANG boleh memilih target baru.
-            ------------------------------------------------------------
+
+            ----------------------------------------------------------------
+            -- !FOURLINE PLAYER
+            --
+            -- HANYA ADMIN.
+            ----------------------------------------------------------------
 
             local targetName =
                 lower:match(
                     "^!fourline%s+(.+)$"
                 )
+
 
             if targetName then
 
@@ -833,30 +939,46 @@ local botOrder = {
                     return
                 end
 
+
                 local target =
                     findPlayerByName(
                         targetName
                     )
 
-                if target then
-                    _G.BotVars.CommandTarget = target
-                    startFourline(target)
+
+                if not target then
+
+                    warn(
+                        "[Fourline] Player tidak ditemukan:",
+                        targetName
+                    )
+
+                    return
+
                 end
 
+
+                ------------------------------------------------------------
+                -- ADMIN MEMILIH TARGET BARU
+                ------------------------------------------------------------
+
+                _G.BotVars.CommandTarget =
+                    target
+
+
+                startFourline(
+                    target
+                )
+
                 return
+
             end
 
         end
 
-----------------------------------------------------------------
-        -- CHAT HANDLER
+
         ----------------------------------------------------------------
-        --
-        -- Tidak menggunakan:
-        --
-        -- TextChatService.OnIncomingMessage
-        --
-        -- supaya tidak bentrok dengan Follow / Frontline / Circle.
+        -- CHAT CONNECTION
         ----------------------------------------------------------------
 
         local connectedPlayers = {}
@@ -867,6 +989,7 @@ local botOrder = {
             if connectedPlayers[player] then
                 return
             end
+
 
             connectedPlayers[player] = true
 
@@ -893,7 +1016,9 @@ local botOrder = {
             Players:GetPlayers()
         ) do
 
-            connectPlayerChat(player)
+            connectPlayerChat(
+                player
+            )
 
         end
 
@@ -905,7 +1030,9 @@ local botOrder = {
         Players.PlayerAdded:Connect(
             function(player)
 
-                connectPlayerChat(player)
+                connectPlayerChat(
+                    player
+                )
 
             end
         )
@@ -918,12 +1045,14 @@ local botOrder = {
         Players.PlayerRemoving:Connect(
             function(player)
 
-                connectedPlayers[player] = nil
+                connectedPlayers[player] =
+                    nil
 
 
                 if targetPlayer == player then
 
-                    _G.BotVars.ActiveMode = nil
+                    _G.BotVars.ActiveMode =
+                        nil
 
                     stopFourline()
 
@@ -956,7 +1085,9 @@ local botOrder = {
                     local currentTarget =
                         targetPlayer
 
+
                     task.wait(0.2)
+
 
                     startFourline(
                         currentTarget
