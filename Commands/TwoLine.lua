@@ -108,7 +108,6 @@ return {
         ----------------------------------------------------------------
 
         local sideDistance = 3
-
         local rowDistance = 3
 
         local adminTwoLineDistance = 3
@@ -151,18 +150,15 @@ return {
                 LocalPlayer.Character
                 or LocalPlayer.CharacterAdded:Wait()
 
-
             humanoid =
                 character:WaitForChild(
                     "Humanoid"
                 )
 
-
             myHRP =
                 character:WaitForChild(
                     "HumanoidRootPart"
                 )
-
 
             humanoid.AutoRotate = true
 
@@ -180,7 +176,6 @@ return {
 
             local success = false
 
-
             if TextChatService
                 and TextChatService.TextChannels then
 
@@ -188,7 +183,6 @@ return {
                     TextChatService.TextChannels:FindFirstChild(
                         "RBXGeneral"
                     )
-
 
                 if channel then
 
@@ -200,13 +194,11 @@ return {
 
                     end)
 
-
                     success = true
 
                 end
 
             end
-
 
             if not success then
 
@@ -217,14 +209,12 @@ return {
                             "DefaultChatSystemChatEvents"
                         )
 
-
                     if chatEvents then
 
                         local sayMessageRequest =
                             chatEvents:FindFirstChild(
                                 "SayMessageRequest"
                             )
-
 
                         if sayMessageRequest then
 
@@ -247,37 +237,31 @@ return {
         ----------------------------------------------------------------
         -- STOP TWO LINE
         ----------------------------------------------------------------
+        --
+        -- PENTING:
+        -- CommandTarget TIDAK dihapus di sini.
+        --
+        -- CommandTarget hanya dihapus oleh:
+        -- Admin -> !stop
+        ----------------------------------------------------------------
 
         local function stopTwoLine()
 
             twoLining = false
-
             targetPlayer = nil
-
 
             if twoLineConnection then
 
                 twoLineConnection:Disconnect()
-
                 twoLineConnection = nil
 
             end
-
 
             if humanoid then
 
                 humanoid.AutoRotate = true
 
             end
-
-
-            ----------------------------------------------------------------
-            -- PENTING:
-            --
-            -- JANGAN CLEAR CommandTarget.
-            --
-            -- CommandTarget hanya dihapus oleh !stop ADMIN.
-            ----------------------------------------------------------------
 
         end
 
@@ -326,10 +310,8 @@ return {
                 return nil
             end
 
-
             name =
                 name:lower()
-
 
             ------------------------------------------------------------
             -- EXACT USERNAME / DISPLAY NAME
@@ -347,7 +329,6 @@ return {
                 end
 
             end
-
 
             ------------------------------------------------------------
             -- PREFIX USERNAME
@@ -368,7 +349,6 @@ return {
 
             end
 
-
             return nil
 
         end
@@ -387,6 +367,7 @@ return {
         --        B5              B6
         --        B7              B8
         --        B9              B10
+        --        B11             B12
         --
         ----------------------------------------------------------------
 
@@ -395,9 +376,9 @@ return {
             distance
         )
 
-            ----------------------------------------------------------------
+            ------------------------------------------------------------
             -- SISI KIRI
-            ----------------------------------------------------------------
+            ------------------------------------------------------------
 
             if index % 2 == 1 then
 
@@ -406,10 +387,8 @@ return {
                         (index - 1) / 2
                     )
 
-
                 local x =
                     -sideDistance
-
 
                 local z =
                     -(
@@ -417,7 +396,6 @@ return {
                         +
                         (row * rowDistance)
                     )
-
 
                 return Vector3.new(
                     x,
@@ -428,19 +406,17 @@ return {
             end
 
 
-            ----------------------------------------------------------------
+            ------------------------------------------------------------
             -- SISI KANAN
-            ----------------------------------------------------------------
+            ------------------------------------------------------------
 
             local row =
                 math.floor(
                     (index - 2) / 2
                 )
 
-
             local x =
                 sideDistance
-
 
             local z =
                 -(
@@ -448,7 +424,6 @@ return {
                     +
                     (row * rowDistance)
                 )
-
 
             return Vector3.new(
                 x,
@@ -468,7 +443,6 @@ return {
             if not player then
                 return
             end
-
 
             ----------------------------------------------------------------
             -- STOP MODE LAIN
@@ -500,14 +474,12 @@ return {
             if twoLineConnection then
 
                 twoLineConnection:Disconnect()
-
                 twoLineConnection = nil
 
             end
 
 
             twoLining = true
-
             targetPlayer = player
 
 
@@ -579,6 +551,7 @@ return {
 
                         if not targetPlayer then
                             return
+
                         end
 
 
@@ -680,7 +653,7 @@ return {
 
 
                         ------------------------------------------------
-                        -- DISTANCE
+                        -- DISTANCE TO POSITION
                         ------------------------------------------------
 
                         local distanceToTarget =
@@ -699,11 +672,9 @@ return {
 
                             humanoid.AutoRotate = true
 
-
                             humanoid:MoveTo(
                                 targetPosition
                             )
-
 
                             return
 
@@ -712,11 +683,10 @@ return {
 
                         ------------------------------------------------
                         -- SUDAH SAMPAI
-                        -- MENGHADAP SESUAI ARAH TARGET
+                        -- HADAP SAMA DENGAN TARGET
                         ------------------------------------------------
 
                         humanoid.AutoRotate = false
-
 
                         myHRP.CFrame =
                             CFrame.lookAt(
@@ -754,7 +724,6 @@ return {
             ----------------------------------------------------------------
 
             local isAdmin = false
-
 
             pcall(function()
 
@@ -819,18 +788,17 @@ return {
                 )
 
 
-                ------------------------------------------------------------
+                --------------------------------------------------------
                 -- CLEAR GLOBAL STATE
-                ------------------------------------------------------------
+                --------------------------------------------------------
 
                 _G.BotVars.ActiveMode = nil
-
                 _G.BotVars.CommandTarget = nil
 
 
-                ------------------------------------------------------------
+                --------------------------------------------------------
                 -- STOP SEMUA MODE
-                ------------------------------------------------------------
+                --------------------------------------------------------
 
                 for _, stopFunction in pairs(
                     _G.BotVars.ModeControllers
@@ -887,10 +855,10 @@ return {
 
                     _G.BotVars.ActiveMode = nil
 
-                    stopTwoLine()
-
                 end
 
+
+                stopTwoLine()
 
                 return
 
@@ -932,9 +900,9 @@ return {
                 )
 
 
-                ------------------------------------------------------------
-                -- TARGET = SENDER
-                ------------------------------------------------------------
+                --------------------------------------------------------
+                -- SENDER MENJADI TARGET
+                --------------------------------------------------------
 
                 _G.BotVars.CommandTarget =
                     sender
@@ -1003,9 +971,9 @@ return {
                 )
 
 
-                ------------------------------------------------------------
+                --------------------------------------------------------
                 -- SET COMMAND TARGET
-                ------------------------------------------------------------
+                --------------------------------------------------------
 
                 _G.BotVars.CommandTarget =
                     target
@@ -1152,7 +1120,6 @@ return {
             function()
 
                 task.wait(1)
-
 
                 updateCharacter()
 
