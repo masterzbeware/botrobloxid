@@ -283,6 +283,7 @@ local executionOrder = {
     "lineformation",
     "stagger",
     "centerline",
+    "scubadance",
 }
 
 for _, name in ipairs(executionOrder) do
