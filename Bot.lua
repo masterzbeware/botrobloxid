@@ -63,7 +63,7 @@ _G.BotVars = {
 local windowOk, Window = pcall(function()
     return Library:CreateWindow({
         Title = "MasterZ HUB",
-        Footer = "1.0.2",
+        Footer = "1.0.0",
         Icon = 0,
     })
 end)
@@ -91,6 +91,10 @@ local commandFiles = {
 
     -- BrazilDance sekarang berada di subfolder Dance
     "Dance/BrazilDance.lua",
+    "Dance/KangoraDance.lua",
+    "Dance/PakodiDance.lua",
+    "Dance/PargoyDance.lua",
+    "Dance/ScubaDance.lua",
 
     "Circle.lua",
     "Collision.lua",
