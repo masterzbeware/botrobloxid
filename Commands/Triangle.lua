@@ -1,4 +1,3 @@
-
 return {
     Execute = function()
 
@@ -14,8 +13,7 @@ return {
         end
 
         _G.BotVars = _G.BotVars or {}
-        _G.BotVars.ModeControllers =
-            _G.BotVars.ModeControllers or {}
+        _G.BotVars.ModeControllers = _G.BotVars.ModeControllers or {}
 
         --------------------------------------------------
         -- ADMIN
@@ -60,6 +58,10 @@ return {
 
         local active = false
         local connection = nil
+        local targetPlayer = nil
+
+        -- Cari urutan bot untuk akun yang menjalankan script ini.
+        local botIndex = table.find(botOrder, tostring(LocalPlayer.UserId))
 
         --------------------------------------------------
         -- STOP TRIANGLE
@@ -67,10 +69,27 @@ return {
 
         local function stopTriangle()
             active = false
+            targetPlayer = nil
 
             if connection then
                 connection:Disconnect()
                 connection = nil
+            end
+        end
+
+        --------------------------------------------------
+        -- STOP MODE LAIN
+        --------------------------------------------------
+
+        local function stopOtherModes()
+            for modeName, stopFunction in pairs(
+                _G.BotVars.ModeControllers
+            ) do
+                if modeName ~= "triangle"
+                    and type(stopFunction) == "function" then
+
+                    pcall(stopFunction)
+                end
             end
         end
 
@@ -103,11 +122,11 @@ return {
                 botsInRow = 5
             end
 
-            -- Pusatkan setiap baris
+            -- Pusatkan setiap baris.
             local xOffset =
                 (column - (botsInRow - 1) / 2) * SIDE_SPACING
 
-            -- Baris berikutnya lebih jauh ke belakang
+            -- Setiap baris berada lebih jauh di belakang target.
             local zOffset = ROW_SPACING * (row + 1)
 
             local targetCF = targetHRP.CFrame
@@ -123,21 +142,42 @@ return {
 
         local function startTriangle(target)
 
+            if not botIndex then
+                warn(
+                    "[Triangle] Akun ini tidak terdaftar di botOrder:",
+                    LocalPlayer.Name,
+                    LocalPlayer.UserId
+                )
+                return
+            end
+
+            if not target or not target.Parent then
+                warn("[Triangle] Target tidak ditemukan!")
+                return
+            end
+
+            if not target.Character
+                or not target.Character:FindFirstChild("HumanoidRootPart") then
+
+                warn("[Triangle] Character atau HumanoidRootPart target belum siap!")
+                return
+            end
+
             stopTriangle()
+            stopOtherModes()
 
-            if not target or not target.Character then
-                warn("[Triangle] Target atau Character tidak ditemukan!")
-                return
-            end
-
-            if not target.Character:FindFirstChild("HumanoidRootPart") then
-                warn("[Triangle] HumanoidRootPart target tidak ditemukan!")
-                return
-            end
-
+            targetPlayer = target
             active = true
 
-            print("[Triangle] Aktif untuk:", target.Name)
+            _G.BotVars.CommandTarget = target
+            _G.BotVars.ActiveMode = "triangle"
+
+            print(
+                "[Triangle] Aktif untuk:",
+                target.Name,
+                "| Bot:",
+                botIndex
+            )
 
             connection = RunService.Heartbeat:Connect(function()
 
@@ -145,49 +185,53 @@ return {
                     return
                 end
 
-                if not target.Parent or not target.Character then
+                if not targetPlayer or not targetPlayer.Parent then
                     stopTriangle()
                     return
                 end
 
+                local targetCharacter = targetPlayer.Character
+
+                if not targetCharacter then
+                    return
+                end
+
                 local targetHRP =
-                    target.Character:FindFirstChild("HumanoidRootPart")
+                    targetCharacter:FindFirstChild("HumanoidRootPart")
 
                 if not targetHRP then
                     return
                 end
 
-                for index, userId in ipairs(botOrder) do
+                -- Setiap client hanya menggerakkan bot miliknya sendiri.
+                local character = LocalPlayer.Character
 
-                    local botPlayer =
-                        Players:GetPlayerByUserId(tonumber(userId))
-
-                    if botPlayer and botPlayer.Character then
-
-                        local character = botPlayer.Character
-
-                        local humanoid =
-                            character:FindFirstChildOfClass("Humanoid")
-
-                        local botHRP =
-                            character:FindFirstChild("HumanoidRootPart")
-
-                        if humanoid and botHRP then
-
-                            local position =
-                                getBotPosition(targetHRP, index)
-
-                            humanoid:MoveTo(position)
-
-                            -- Arahkan bot searah dengan target
-                            botHRP.CFrame = CFrame.lookAt(
-                                botHRP.Position,
-                                botHRP.Position
-                                    + targetHRP.CFrame.LookVector
-                            )
-                        end
-                    end
+                if not character then
+                    return
                 end
+
+                local humanoid =
+                    character:FindFirstChildOfClass("Humanoid")
+
+                local botHRP =
+                    character:FindFirstChild("HumanoidRootPart")
+
+                if not humanoid or not botHRP then
+                    return
+                end
+
+                local position =
+                    getBotPosition(targetHRP, botIndex)
+
+                humanoid:MoveTo(position)
+
+                -- Hadapkan bot ke arah yang sama dengan target.
+                local lookVector = targetHRP.CFrame.LookVector
+
+                botHRP.CFrame = CFrame.lookAt(
+                    botHRP.Position,
+                    botHRP.Position + lookVector
+                )
             end)
         end
 
@@ -197,15 +241,30 @@ return {
 
         local function findPlayer(name)
 
-            if not name then
+            if not name or name == "" then
                 return nil
             end
 
             name = string.lower(name)
 
+            -- Cocokkan username atau display name secara tepat.
             for _, player in ipairs(Players:GetPlayers()) do
                 if string.lower(player.Name) == name
                     or string.lower(player.DisplayName) == name then
+
+                    return player
+                end
+            end
+
+            -- Jika tidak ditemukan, coba awalan username/display name.
+            for _, player in ipairs(Players:GetPlayers()) do
+                if string.sub(
+                    string.lower(player.Name), 1, #name
+                ) == name
+                    or string.sub(
+                        string.lower(player.DisplayName), 1, #name
+                    ) == name then
+
                     return player
                 end
             end
@@ -217,13 +276,19 @@ return {
         -- COMMAND HANDLER
         --------------------------------------------------
 
-        local function handleCommand(message)
+        local function handleCommand(message, sender)
 
-            local args = string.split(
-                string.gsub(message, "^%s*(.-)%s*$", "%1"),
-                " "
-            )
+            if not message or not sender then
+                return
+            end
 
+            local trimmed = string.match(message, "^%s*(.-)%s*$")
+
+            if not trimmed or trimmed == "" then
+                return
+            end
+
+            local args = string.split(trimmed, " ")
             local command = string.lower(args[1] or "")
 
             --------------------------------------------------
@@ -232,15 +297,19 @@ return {
 
             if command == "!triangle" then
 
-                print("[Triangle] Command diterima:", message)
+                print(
+                    "[Triangle] Command diterima dari:",
+                    sender.Name,
+                    "|",
+                    trimmed
+                )
 
-                if Admin:IsAdmin(LocalPlayer) then
+                -- Admin dapat memilih target.
+                if Admin:IsAdmin(sender) then
 
                     local target = LocalPlayer
 
-                    -- Admin dapat menentukan target
                     if args[2] and args[2] ~= "" then
-
                         local foundPlayer = findPlayer(args[2])
 
                         if not foundPlayer then
@@ -254,19 +323,14 @@ return {
                         target = foundPlayer
                     end
 
-                    _G.BotVars.CommandTarget = target
-                    _G.BotVars.ActiveMode = "triangle"
-
                     startTriangle(target)
                     return
                 end
 
-                -- Target yang sudah dipilih admin dapat mengganti formasi
-                if _G.BotVars.CommandTarget == LocalPlayer then
-
-                    _G.BotVars.ActiveMode = "triangle"
-
-                    startTriangle(LocalPlayer)
+                -- Target pilihan admin boleh mengaktifkan formasi
+                -- untuk dirinya sendiri dengan !triangle.
+                if _G.BotVars.CommandTarget == sender then
+                    startTriangle(sender)
                 end
 
                 return
@@ -279,16 +343,17 @@ return {
             if command == "!stop"
                 or command == "!untriangle" then
 
-                if not Admin:IsAdmin(LocalPlayer) then
+                -- Hanya admin yang boleh menghentikan semua mode.
+                if not Admin:IsAdmin(sender) then
                     return
                 end
 
                 _G.BotVars.ActiveMode = nil
                 _G.BotVars.CommandTarget = nil
 
-                for _, stopFunction
-                    in pairs(_G.BotVars.ModeControllers) do
-
+                for _, stopFunction in pairs(
+                    _G.BotVars.ModeControllers
+                ) do
                     if type(stopFunction) == "function" then
                         pcall(stopFunction)
                     end
@@ -299,12 +364,114 @@ return {
         end
 
         --------------------------------------------------
-        -- CHAT LISTENER
+        -- DEDUPLIKASI PESAN CHAT
         --------------------------------------------------
 
-        TextChatService.SendingMessage:Connect(function(message)
-            if message then
-                handleCommand(message.Text)
+        -- Kedua listener dapat menerima pesan yang sama.
+        -- Gunakan kunci sender + isi pesan agar tidak diproses dua kali.
+        local lastMessages = {}
+        local DEDUPE_WINDOW = 1.5
+
+        local function processMessage(message, sender)
+
+            if not sender or not message then
+                return
+            end
+
+            local normalized = string.lower(
+                string.match(message, "^%s*(.-)%s*$") or ""
+            )
+
+            if normalized == "" then
+                return
+            end
+
+            local key = tostring(sender.UserId) .. ":" .. normalized
+            local now = os.clock()
+            local previous = lastMessages[key]
+
+            if previous and now - previous < DEDUPE_WINDOW then
+                return
+            end
+
+            lastMessages[key] = now
+            handleCommand(message, sender)
+        end
+
+        --------------------------------------------------
+        -- CHAT LISTENER 1: RBXGeneral.MessageReceived
+        --------------------------------------------------
+
+        local function connectTextChannel()
+
+            local textChannels = TextChatService:FindFirstChild("TextChannels")
+            local generalChannel = textChannels
+                and textChannels:FindFirstChild("RBXGeneral")
+
+            if not generalChannel then
+                warn("[Triangle] RBXGeneral belum ditemukan.")
+                return
+            end
+
+            generalChannel.MessageReceived:Connect(function(textMessage)
+
+                if not textMessage or not textMessage.TextSource then
+                    return
+                end
+
+                local sender = Players:GetPlayerByUserId(
+                    textMessage.TextSource.UserId
+                )
+
+                if sender then
+                    processMessage(textMessage.Text, sender)
+                end
+            end)
+        end
+
+        connectTextChannel()
+
+        --------------------------------------------------
+        -- CHAT LISTENER 2: Player.Chatted
+        --------------------------------------------------
+
+        local connectedPlayers = {}
+
+        local function connectPlayer(player)
+
+            if connectedPlayers[player] then
+                return
+            end
+
+            connectedPlayers[player] = true
+
+            player.Chatted:Connect(function(message)
+                processMessage(message, player)
+            end)
+        end
+
+        -- Hubungkan pemain yang sudah ada.
+        for _, player in ipairs(Players:GetPlayers()) do
+            connectPlayer(player)
+        end
+
+        -- Hubungkan pemain yang masuk setelah script berjalan.
+        Players.PlayerAdded:Connect(connectPlayer)
+
+        Players.PlayerRemoving:Connect(function(player)
+            connectedPlayers[player] = nil
+        end)
+
+        --------------------------------------------------
+        -- CHARACTER RESPAWN
+        --------------------------------------------------
+
+        LocalPlayer.CharacterAdded:Connect(function()
+            task.wait(1)
+
+            if active and targetPlayer then
+                local currentTarget = targetPlayer
+                startTriangle(currentTarget)
             end
         end)
 
