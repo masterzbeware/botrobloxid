@@ -95,6 +95,9 @@ local commandFiles = {
     "Dance/PakodiDance.lua",
     "Dance/PargoyDance.lua",
     "Dance/ScubaDance.lua",
+    "Dance/KetlinDance.lua",
+    "Dance/TripoutDance.lua",
+    "Dance/HulaDance.lua",
 
     "Circle.lua",
     "Collision.lua",
@@ -284,6 +287,9 @@ local executionOrder = {
     "stagger",
     "centerline",
     "scubadance",
+    "ketlindance",
+    "tripoutdance",
+    "huladance",
 }
 
 for _, name in ipairs(executionOrder) do
