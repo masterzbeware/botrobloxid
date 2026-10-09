@@ -24,7 +24,7 @@ _G.BotVars = {
 
 local Window = Library:CreateWindow({
     Title = "MasterZ HUB",
-    Footer = "1.0.0",
+    Footer = "1.0.1",
     Icon = 0
 })
 
@@ -71,7 +71,7 @@ for _, fileName in ipairs(commandFiles) do
         if loader then
             local successModule, moduleTable = pcall(loader)
             if successModule and type(moduleTable) == "table" then
-                local key = fileName:gsub("%.lua$", ""):lower()
+                local key = fileName("([^/]+)%.lua$")()
                 _G.BotVars.Modules[key] = moduleTable
                 print("[Bot.lua] Loaded:", key)
             end
