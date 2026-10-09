@@ -21,8 +21,8 @@ return {
         ----------------------------------------------------------------
 
         _G.BotVars = _G.BotVars or {}
-        _G.BotVars.ModeControllers = _G.BotVars.ModeControllers or {}
-_G.BotVars.CommandTarget = _G.BotVars.CommandTarget or nil
+        _G.BotVars.ModeControllers =
+            _G.BotVars.ModeControllers or {}
 
         ----------------------------------------------------------------
         -- LOAD ADMIN
@@ -55,32 +55,30 @@ _G.BotVars.CommandTarget = _G.BotVars.CommandTarget or nil
         -- FORMATION DISTANCE
         ----------------------------------------------------------------
 
-        -- Jarak barisan B1-B11 dari Player/Admin.
         local adminBacklineDistance = 6
         local defaultBotBacklineDistance = 6
 
-        -- Jarak antar bot di barisan.
+        -- Jarak antar bot dalam barisan.
         local formationSpacing = 3
 
         ----------------------------------------------------------------
         -- BOT ORDER
         ----------------------------------------------------------------
 
-local botOrder = {
-
-	"11611503633", -- Bot 1
-	"11611591921", -- Bot 2
-	"11611597741", -- Bot 3
-	"11672413029", -- Bot 4
-	"11122806815", -- Bot 5
-	"11122806817", -- Bot 6
-	"11122687468", -- Bot 7
-	"11122854402", -- Bot 8
-	"11774472805", -- Bot 9
-	"11774494628", -- Bot 10
-    "11775829997", -- Bot 11
-    "11775843339", -- Bot 12
-}
+        local botOrder = {
+            "11611503633", -- Bot 1
+            "11611591921", -- Bot 2
+            "11611597741", -- Bot 3
+            "11672413029", -- Bot 4
+            "11122806815", -- Bot 5
+            "11122806817", -- Bot 6
+            "11122687468", -- Bot 7
+            "11122854402", -- Bot 8
+            "11774472805", -- Bot 9
+            "11774494628", -- Bot 10
+            "11775829997", -- Bot 11
+            "11775843339", -- Bot 12
+        }
 
         ----------------------------------------------------------------
         -- UPDATE CHARACTER
@@ -122,11 +120,9 @@ local botOrder = {
 
                 if channel then
 
-                    pcall(function()
+                    success = pcall(function()
                         channel:SendAsync(message)
                     end)
-
-                    success = true
 
                 end
             end
@@ -174,10 +170,8 @@ local botOrder = {
             targetPlayer = nil
 
             if backlineConnection then
-
                 backlineConnection:Disconnect()
                 backlineConnection = nil
-
             end
 
             if humanoid then
@@ -190,7 +184,8 @@ local botOrder = {
         -- REGISTER CONTROLLER
         ----------------------------------------------------------------
 
-        _G.BotVars.ModeControllers.backline = stopBackline
+        _G.BotVars.ModeControllers.backline =
+            stopBackline
 
         ----------------------------------------------------------------
         -- STOP SEMUA MODE LAIN
@@ -219,11 +214,14 @@ local botOrder = {
 
         local function findPlayerByName(name)
 
+            if not name or name == "" then
+                return nil
+            end
+
             name = name:lower()
 
-            for _, player in ipairs(
-                Players:GetPlayers()
-            ) do
+            -- Exact username atau display name.
+            for _, player in ipairs(Players:GetPlayers()) do
 
                 if player.Name:lower() == name
                     or player.DisplayName:lower() == name then
@@ -234,7 +232,65 @@ local botOrder = {
 
             end
 
+            -- Username prefix.
+            for _, player in ipairs(Players:GetPlayers()) do
+
+                if player.Name:lower():sub(
+                    1,
+                    #name
+                ) == name then
+
+                    return player
+
+                end
+
+            end
+
+            -- Display name prefix.
+            for _, player in ipairs(Players:GetPlayers()) do
+
+                if player.DisplayName:lower():sub(
+                    1,
+                    #name
+                ) == name then
+
+                    return player
+
+                end
+
+            end
+
             return nil
+
+        end
+
+        ----------------------------------------------------------------
+        -- MENGAMBIL DAFTAR BOT AKTIF
+        ----------------------------------------------------------------
+
+        local function getActiveBots()
+
+            local activeBots = {}
+
+            for _, botUserId in ipairs(botOrder) do
+
+                local botPlayer =
+                    Players:GetPlayerByUserId(
+                        tonumber(botUserId)
+                    )
+
+                if botPlayer then
+
+                    table.insert(
+                        activeBots,
+                        botUserId
+                    )
+
+                end
+
+            end
+
+            return activeBots
 
         end
 
@@ -265,34 +321,35 @@ local botOrder = {
             ------------------------------------------------------------
 
             if backlineConnection then
-
                 backlineConnection:Disconnect()
                 backlineConnection = nil
-
             end
+
+            ------------------------------------------------------------
+            -- SET STATE
+            ------------------------------------------------------------
 
             backlining = true
             targetPlayer = player
+
             _G.BotVars.CommandTarget = player
 
             sendChat("Yes, Sir!")
 
             ------------------------------------------------------------
-            -- CARI INDEX BOT
+            -- VALIDASI BOT
             ------------------------------------------------------------
 
-            local myIndex =
-                table.find(
-                    botOrder,
-                    tostring(LocalPlayer.UserId)
-                )
+            local activeBots = getActiveBots()
 
-            if not myIndex then
+            local activeIndex = table.find(
+                activeBots,
+                tostring(LocalPlayer.UserId)
+            )
 
+            if not activeIndex then
                 stopBackline()
-
                 return
-
             end
 
             ------------------------------------------------------------
@@ -300,165 +357,171 @@ local botOrder = {
             ------------------------------------------------------------
 
             backlineConnection =
-                RunService.Heartbeat:Connect(
-                    function()
+                RunService.Heartbeat:Connect(function()
 
-                        ------------------------------------------------
-                        -- JIKA MODE SUDAH BERGANTI
-                        ------------------------------------------------
+                    ----------------------------------------------------
+                    -- JIKA MODE SUDAH BERGANTI
+                    ----------------------------------------------------
 
-                        if _G.BotVars.ActiveMode ~= "backline" then
+                    if _G.BotVars.ActiveMode ~= "backline" then
+                        stopBackline()
+                        return
+                    end
 
-                            stopBackline()
+                    ----------------------------------------------------
+                    -- VALIDASI
+                    ----------------------------------------------------
 
-                            return
+                    if not backlining then
+                        return
+                    end
 
-                        end
+                    if not humanoid
+                        or not myHRP
+                        or humanoid.Health <= 0 then
 
-                        ------------------------------------------------
-                        -- VALIDASI
-                        ------------------------------------------------
+                        return
+                    end
 
-                        if not backlining then
-                            return
-                        end
+                    if not targetPlayer then
+                        return
+                    end
 
-                        if not humanoid
-                            or not myHRP then
+                    ----------------------------------------------------
+                    -- TARGET CHARACTER
+                    ----------------------------------------------------
 
-                            return
+                    local targetCharacter =
+                        targetPlayer.Character
 
-                        end
+                    if not targetCharacter then
+                        return
+                    end
 
-                        if not targetPlayer then
-                            return
-                        end
+                    local targetHRP =
+                        targetCharacter:FindFirstChild(
+                            "HumanoidRootPart"
+                        )
 
-                        ------------------------------------------------
-                        -- TARGET CHARACTER
-                        ------------------------------------------------
+                    if not targetHRP then
+                        return
+                    end
 
-                        local targetCharacter =
-                            targetPlayer.Character
+                    ----------------------------------------------------
+                    -- PERBARUI DAFTAR BOT AKTIF
+                    ----------------------------------------------------
 
-                        if not targetCharacter then
-                            return
-                        end
+                    activeBots = getActiveBots()
 
-                        local targetHRP =
-                            targetCharacter:FindFirstChild(
-                                "HumanoidRootPart"
-                            )
+                    activeIndex = table.find(
+                        activeBots,
+                        tostring(LocalPlayer.UserId)
+                    )
 
-                        if not targetHRP then
-                            return
-                        end
+                    if not activeIndex then
+                        return
+                    end
 
-                        ------------------------------------------------
-                        -- DISTANCE
-                        ------------------------------------------------
+                    ----------------------------------------------------
+                    -- DISTANCE
+                    ----------------------------------------------------
 
-                        local distance =
-                            defaultBotBacklineDistance
+                    local distance =
+                        defaultBotBacklineDistance
 
-                        if Admin:IsAdmin(targetPlayer) then
+                    if Admin:IsAdmin(targetPlayer) then
 
-                            distance =
-                                adminBacklineDistance
-
-                        end
-
-                        local specialDistance =
-                            Distance:GetDistance(
-                                tostring(LocalPlayer.UserId),
-                                tostring(targetPlayer.UserId)
-                            )
-
-                        if specialDistance then
-
-                            distance =
-                                specialDistance
-
-                        end
-
-                        ------------------------------------------------
-                        -- FORMATION POSITION
-                        --
-                        --             Player/Admin
-                        -- B1  B2  B3 ... B11
-                        --
-                        -- Semua bot berada DI BELAKANG target.
-                        -- myIndex 1..11 diubah menjadi offset
-                        -- kiri/kanan dengan B6 sebagai titik tengah.
-                        ------------------------------------------------
-
-                        local centerIndex =
-                            (#botOrder + 1) / 2
-
-                        local horizontalOffset =
-                            (myIndex - centerIndex)
-                            * formationSpacing
-
-                        local targetPosition =
-                            targetHRP.Position
-                            -
-                            (
-                                targetHRP.CFrame.LookVector
-                                * distance
-                            )
-                            +
-                            (
-                                targetHRP.CFrame.RightVector
-                                * horizontalOffset
-                            )
-
-                        ------------------------------------------------
-                        -- JARAK
-                        ------------------------------------------------
-
-                        local distanceToTarget =
-                            (
-                                myHRP.Position
-                                -
-                                targetPosition
-                            ).Magnitude
-
-                        ------------------------------------------------
-                        -- JALAN
-                        ------------------------------------------------
-
-                        if distanceToTarget > 1.5 then
-
-                            humanoid.AutoRotate = true
-
-                            humanoid:MoveTo(
-                                targetPosition
-                            )
-
-                            return
-
-                        end
-
-                        ------------------------------------------------
-                        -- SUDAH SAMPAI
-                        ------------------------------------------------
-
-                        humanoid.AutoRotate = false
-
-                        local adminRotation =
-                            targetHRP.CFrame
-                            -
-                            targetHRP.Position
-
-                        myHRP.CFrame =
-                            CFrame.new(
-                                myHRP.Position
-                            )
-                            *
-                            adminRotation
+                        distance =
+                            adminBacklineDistance
 
                     end
-                )
+
+                    local specialDistance =
+                        Distance:GetDistance(
+                            tostring(LocalPlayer.UserId),
+                            tostring(targetPlayer.UserId)
+                        )
+
+                    if specialDistance then
+                        distance = specialDistance
+                    end
+
+                    ----------------------------------------------------
+                    -- HITUNG TITIK TENGAH FORMASI
+                    ----------------------------------------------------
+
+                    local activeBotCount = #activeBots
+
+                    local centerIndex =
+                        (activeBotCount + 1) / 2
+
+                    ----------------------------------------------------
+                    -- HITUNG OFFSET HORIZONTAL
+                    ----------------------------------------------------
+
+                    local horizontalOffset =
+                        (activeIndex - centerIndex)
+                        * formationSpacing
+
+                    ----------------------------------------------------
+                    -- POSISI BACKLINE
+                    --
+                    -- Semua bot berada DI BELAKANG target.
+                    -- Offset horizontal mengikuti urutan bot aktif.
+                    ----------------------------------------------------
+
+                    local targetPosition =
+                        targetHRP.Position
+                        - (
+                            targetHRP.CFrame.LookVector
+                            * distance
+                        )
+                        + (
+                            targetHRP.CFrame.RightVector
+                            * horizontalOffset
+                        )
+
+                    ----------------------------------------------------
+                    -- JARAK KE POSISI TUJUAN
+                    ----------------------------------------------------
+
+                    local distanceToTarget =
+                        (
+                            myHRP.Position
+                            - targetPosition
+                        ).Magnitude
+
+                    ----------------------------------------------------
+                    -- JALAN KE POSISI
+                    ----------------------------------------------------
+
+                    if distanceToTarget > 1.5 then
+
+                        humanoid.AutoRotate = true
+
+                        humanoid:MoveTo(
+                            targetPosition
+                        )
+
+                        return
+
+                    end
+
+                    ----------------------------------------------------
+                    -- SUDAH SAMPAI
+                    ----------------------------------------------------
+
+                    humanoid.AutoRotate = false
+
+                    local targetRotation =
+                        targetHRP.CFrame
+                        - targetHRP.Position
+
+                    myHRP.CFrame =
+                        CFrame.new(myHRP.Position)
+                        * targetRotation
+
+                end)
 
         end
 
@@ -466,19 +529,37 @@ local botOrder = {
         -- COMMAND HANDLER
         ----------------------------------------------------------------
 
-        local function handleCommand(
-            message,
-            sender
-        )
+        local function handleCommand(message, sender)
 
-            local isAdmin = Admin:IsAdmin(sender)
-            local isCommandTarget = (_G.BotVars.CommandTarget == sender)
+            if not message or not sender then
+                return
+            end
+
+            ------------------------------------------------------------
+            -- ADMIN CHECK
+            ------------------------------------------------------------
+
+            local isAdmin = false
+
+            pcall(function()
+                isAdmin = Admin:IsAdmin(sender)
+            end)
+
+            local isCommandTarget =
+                (_G.BotVars.CommandTarget == sender)
+
+            ------------------------------------------------------------
+            -- CLEAN MESSAGE
+            ------------------------------------------------------------
 
             local lower =
                 message:lower()
+                :gsub("^%s+", "")
+                :gsub("%s+$", "")
 
             ------------------------------------------------------------
             -- !BACKLINE
+            -- ADMIN ATAU COMMAND TARGET
             ------------------------------------------------------------
 
             if lower == "!backline" then
@@ -490,17 +571,15 @@ local botOrder = {
                 startBackline(sender)
 
                 return
-
             end
 
             ------------------------------------------------------------
             -- !BACKLINE PLAYER
+            -- HANYA ADMIN
             ------------------------------------------------------------
 
             local targetName =
-                lower:match(
-                    "^!backline%s+(.+)$"
-                )
+                lower:match("^!backline%s+(.+)$")
 
             if targetName then
 
@@ -509,22 +588,18 @@ local botOrder = {
                 end
 
                 local target =
-                    findPlayerByName(
-                        targetName
-                    )
+                    findPlayerByName(targetName)
 
                 if target then
-
                     startBackline(target)
-
                 end
 
                 return
-
             end
 
             ------------------------------------------------------------
-            -- !STOP
+            -- !STOP / !UNBACKLINE
+            -- HANYA ADMIN
             ------------------------------------------------------------
 
             if lower == "!stop"
@@ -537,14 +612,17 @@ local botOrder = {
                 _G.BotVars.ActiveMode = nil
                 _G.BotVars.CommandTarget = nil
 
-                for name, stopFunction in pairs(_G.BotVars.ModeControllers) do
+                for _, stopFunction in pairs(
+                    _G.BotVars.ModeControllers
+                ) do
+
                     if type(stopFunction) == "function" then
                         pcall(stopFunction)
                     end
+
                 end
 
                 return
-
             end
 
         end
@@ -572,17 +650,10 @@ local botOrder = {
 
                         local sender =
                             userId
-                            and Players:GetPlayerByUserId(
-                                userId
-                            )
+                            and Players:GetPlayerByUserId(userId)
 
                         if sender then
-
-                            handleCommand(
-                                message.Text,
-                                sender
-                            )
-
+                            handleCommand(message.Text, sender)
                         end
 
                     end
@@ -596,20 +667,13 @@ local botOrder = {
         -- FALLBACK CHAT
         ----------------------------------------------------------------
 
-        for _, player in ipairs(
-            Players:GetPlayers()
-        ) do
+        for _, player in ipairs(Players:GetPlayers()) do
 
-            player.Chatted:Connect(
-                function(message)
+            player.Chatted:Connect(function(message)
 
-                    handleCommand(
-                        message,
-                        player
-                    )
+                handleCommand(message, player)
 
-                end
-            )
+            end)
 
         end
 
@@ -617,45 +681,34 @@ local botOrder = {
         -- PLAYER ADDED
         ----------------------------------------------------------------
 
-        Players.PlayerAdded:Connect(
-            function(player)
+        Players.PlayerAdded:Connect(function(player)
 
-                player.Chatted:Connect(
-                    function(message)
+            player.Chatted:Connect(function(message)
 
-                        handleCommand(
-                            message,
-                            player
-                        )
+                handleCommand(message, player)
 
-                    end
-                )
+            end)
 
-            end
-        )
+        end)
 
         ----------------------------------------------------------------
         -- CHARACTER RESPAWN
         ----------------------------------------------------------------
 
-        LocalPlayer.CharacterAdded:Connect(
-            function()
+        LocalPlayer.CharacterAdded:Connect(function()
 
-                task.wait(1)
+            task.wait(1)
 
-                updateCharacter()
+            updateCharacter()
 
-                if _G.BotVars.ActiveMode == "backline"
-                    and targetPlayer then
+            if _G.BotVars.ActiveMode == "backline"
+                and targetPlayer then
 
-                    startBackline(
-                        targetPlayer
-                    )
-
-                end
+                startBackline(targetPlayer)
 
             end
-        )
+
+        end)
 
     end
 }

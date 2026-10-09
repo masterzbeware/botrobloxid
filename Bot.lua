@@ -39,7 +39,7 @@ local commandFiles = {
     "Agree.lua",
     "Arrow.lua",
     "Backline.lua",
-    "BrazilDance.lua",
+    "Dance/BrazilDance.lua",
     "Circle.lua",
     "Collision.lua",
     "Follow.lua",
