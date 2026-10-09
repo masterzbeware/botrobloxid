@@ -58,6 +58,7 @@ local commandFiles = {
     "Worship.lua",
     "LineFormation.lua",
     "Stagger.lua",
+    "Centerline.lua",
 }
 
 for _, fileName in ipairs(commandFiles) do
@@ -112,5 +113,6 @@ jalankan("sync")
 jalankan("worship")
 jalankan("lineformation")
 jalankan("stagger")
+jalankan("centerline")
 
 print("✅ Bot.lua loaded — All systems active.")
