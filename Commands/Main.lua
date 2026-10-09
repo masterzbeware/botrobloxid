@@ -91,8 +91,6 @@ return {
             "!square",
             "!arrow",
             "!stagger",
-            "!triangle",
-            "!centerline",
         }
 
         local commands2 = {
