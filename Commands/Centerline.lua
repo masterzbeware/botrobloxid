@@ -233,58 +233,54 @@ return {
 
             return nil
         end
+------------------------------------------------------------
+-- GET CENTERLINE POSITION
+------------------------------------------------------------
 
-        ------------------------------------------------------------
-        -- GET CENTERLINE POSITION
-        ------------------------------------------------------------
+local function getCenterlinePosition(targetHRP, botIndex)
 
-        local function getCenterlinePosition(targetHRP, botIndex)
+    local horizontalOffset
 
-            local horizontalOffset
+    --------------------------------------------------------
+    -- BOT 1-6: SEBELAH KIRI TARGET
+    --------------------------------------------------------
 
-            --------------------------------------------------------
-            -- BOT 1-6: SEBELAH KIRI TARGET
-            --------------------------------------------------------
+    if botIndex <= 6 then
 
-            if botIndex <= 6 then
+        -- Bot 6 paling dekat dengan target.
+        -- Bot 1 paling jauh dari target.
 
-                -- Bot 6 paling dekat dengan target.
-                -- Bot 1 paling jauh dari target.
+        horizontalOffset =
+            -(7 - botIndex) * spacing
 
-                horizontalOffset =
-                    -(7 - botIndex) * spacing
+    --------------------------------------------------------
+    -- BOT 7-12: SEBELAH KANAN TARGET
+    --------------------------------------------------------
 
-            --------------------------------------------------------
-            -- BOT 7-12: SEBELAH KANAN TARGET
-            --------------------------------------------------------
+    else
 
-            else
+        -- Bot 7 paling dekat dengan target.
+        -- Bot 12 paling jauh dari target.
 
-                -- Bot 7 paling dekat dengan target.
-                -- Bot 12 paling jauh dari target.
+        horizontalOffset =
+            (botIndex - 6) * spacing
+    end
 
-                horizontalOffset =
-                    (botIndex - 6) * spacing
-            end
+    --------------------------------------------------------
+    -- ARAH KANAN TARGET
+    --------------------------------------------------------
 
-            --------------------------------------------------------
-            -- ARAH TARGET
-            --------------------------------------------------------
+    local right =
+        targetHRP.CFrame.RightVector
 
-            local right =
-                targetHRP.CFrame.RightVector
+    --------------------------------------------------------
+    -- POSISI AKHIR
+    -- TEPAT SEJAJAR DENGAN TARGET
+    --------------------------------------------------------
 
-            local backward =
-                -targetHRP.CFrame.LookVector
-
-            --------------------------------------------------------
-            -- POSISI AKHIR
-            --------------------------------------------------------
-
-            return targetHRP.Position
-                + right * horizontalOffset
-                + backward * rowSpacing
-        end
+    return targetHRP.Position
+        + right * horizontalOffset
+end
 
         ------------------------------------------------------------
         -- START CENTERLINE
