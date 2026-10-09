@@ -1,3 +1,10 @@
+-- KangoraDance.lua
+-- Command:
+-- !kangoradance
+-- !kangoradance <username>
+-- !unkangoradance
+-- !stop
+
 return {
     Execute = function()
 
@@ -15,65 +22,74 @@ return {
         end
 
         ----------------------------------------------------------------
-        -- GLOBAL MODE SYSTEM
+        -- BOT VARIABLES
         ----------------------------------------------------------------
 
         _G.BotVars = _G.BotVars or {}
-
         _G.BotVars.ModeControllers =
             _G.BotVars.ModeControllers or {}
+        _G.BotVars.AdditionalAdmins =
+            _G.BotVars.AdditionalAdmins or {}
+
+        local MODE_NAME = "kangoradance"
 
         ----------------------------------------------------------------
-        -- LOAD ADMIN
+        -- LOAD ADMIN MODULE
         ----------------------------------------------------------------
 
-        local Admin
+        local AdminModule = nil
 
-        do
-            local success, result = pcall(function()
+        pcall(function()
+            local url =
+                "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
 
-                return loadstring(game:HttpGet(
-                    "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
-                ))()
+            local source = game:HttpGet(url)
+            local loader = loadstring(source)
 
-            end)
-
-            if success and result then
-
-                Admin = result
-
-            else
-
-                warn("[KangoraDance] Gagal load Admin.lua.")
-                return
-
+            if loader then
+                AdminModule = loader()
             end
+        end)
+
+        if not AdminModule then
+            warn("[KangoraDance] Gagal load Admin.lua.")
+            return
         end
 
         ----------------------------------------------------------------
-        -- FE ANIMATION ID
+        -- CONFIGURATION
         ----------------------------------------------------------------
 
-        local KANGORA_DANCE_ANIMATION_ID =
-            "82187133586641"
+        local KANGORA_DANCE_ANIMATION_ID = "82187133586641"
 
         ----------------------------------------------------------------
-        -- VARIABLES
+        -- STATE
         ----------------------------------------------------------------
 
         local danceTrack = nil
         local dancing = false
         local danceGeneration = 0
+        local connectedPlayers = {}
+
+        local playerAddedConnection = nil
+        local playerRemovingConnection = nil
+        local characterAddedConnection = nil
 
         ----------------------------------------------------------------
-        -- GET CHARACTER
+        -- CHARACTER
         ----------------------------------------------------------------
 
         local function getCharacter()
+            local character = LocalPlayer.Character
 
-            return LocalPlayer.Character
-                or LocalPlayer.CharacterAdded:Wait()
+            if not character then
+                return nil, nil
+            end
 
+            local humanoid =
+                character:FindFirstChildOfClass("Humanoid")
+
+            return character, humanoid
         end
 
         ----------------------------------------------------------------
@@ -81,83 +97,57 @@ return {
         ----------------------------------------------------------------
 
         local function restoreNormalAnimation(generation)
-
-            local character =
-                LocalPlayer.Character
-
-            if not character then
+            if generation ~= danceGeneration then
                 return
             end
 
-            local humanoid =
-                character:FindFirstChildOfClass(
-                    "Humanoid"
-                )
-
-            if not humanoid then
-                return
-            end
-
-            ------------------------------------------------------------
-            -- VALIDATE GENERATION
-            ------------------------------------------------------------
-
-            if generation
-                and generation ~= danceGeneration then
-
-                return
-
-            end
-
-            ------------------------------------------------------------
-            -- STOP KANGORA DANCE
-            ------------------------------------------------------------
+            local character, humanoid = getCharacter()
 
             if danceTrack then
-
-                local oldTrack =
-                    danceTrack
-
+                local oldTrack = danceTrack
                 danceTrack = nil
 
                 pcall(function()
-                    oldTrack:Stop(0.15)
+                    oldTrack:Stop(0.2)
                 end)
+            end
 
+            if not character then
+                dancing = false
+                return
             end
 
             ------------------------------------------------------------
             -- STOP ACTION TRACKS
             ------------------------------------------------------------
 
-            local animator =
-                humanoid:FindFirstChildOfClass(
-                    "Animator"
-                )
+            if humanoid then
+                local animator =
+                    humanoid:FindFirstChildOfClass("Animator")
 
-            if animator then
+                local tracks = {}
 
-                for _, track in ipairs(
-                    animator:GetPlayingAnimationTracks()
-                ) do
-
-                    if track.Priority
-                        == Enum.AnimationPriority.Action
-                        or track.Priority
-                        == Enum.AnimationPriority.Action2
-                        or track.Priority
-                        == Enum.AnimationPriority.Action3
-                        or track.Priority
-                        == Enum.AnimationPriority.Action4 then
-
-                        pcall(function()
-                            track:Stop(0.15)
-                        end)
-
-                    end
-
+                if animator then
+                    tracks = animator:GetPlayingAnimationTracks()
+                else
+                    tracks = humanoid:GetPlayingAnimationTracks()
                 end
 
+                for _, track in ipairs(tracks) do
+                    if track.Priority == Enum.AnimationPriority.Action
+                        or track.Priority == Enum.AnimationPriority.Action2
+                        or track.Priority == Enum.AnimationPriority.Action3
+                        or track.Priority == Enum.AnimationPriority.Action4 then
+
+                        pcall(function()
+                            track:Stop(0.2)
+                        end)
+                    end
+                end
+            end
+
+            if generation ~= danceGeneration then
+                return
             end
 
             ------------------------------------------------------------
@@ -171,132 +161,89 @@ return {
                 and animateScript:IsA("LocalScript") then
 
                 pcall(function()
-                    animateScript.Enabled = false
+                    animateScript.Disabled = true
                 end)
 
-                task.wait()
+                task.wait(0.1)
 
-                if generation
-                    and generation ~= danceGeneration then
-
+                if generation ~= danceGeneration then
                     return
-
                 end
 
-                pcall(function()
-                    animateScript.Enabled = true
-                end)
+                if animateScript.Parent then
+                    pcall(function()
+                        animateScript.Disabled = false
+                    end)
+                end
+            end
 
+            if generation ~= danceGeneration then
+                return
             end
 
             ------------------------------------------------------------
             -- FORCE RUNNING
             ------------------------------------------------------------
 
-            if generation
-                and generation ~= danceGeneration then
-
-                return
-
+            if humanoid then
+                pcall(function()
+                    humanoid:ChangeState(
+                        Enum.HumanoidStateType.Running
+                    )
+                end)
             end
-
-            pcall(function()
-
-                humanoid:ChangeState(
-                    Enum.HumanoidStateType.Running
-                )
-
-            end)
 
             ------------------------------------------------------------
             -- DELAYED RUNNING STATE
             ------------------------------------------------------------
 
-            local cleanupGeneration =
-                generation or danceGeneration
-
-            task.defer(function()
-
-                task.wait(0.1)
-
-                if cleanupGeneration
-                    ~= danceGeneration then
-
+            task.delay(0.25, function()
+                if generation ~= danceGeneration then
                     return
-
                 end
 
-                if humanoid
-                    and humanoid.Parent then
+                local _, currentHumanoid = getCharacter()
 
+                if currentHumanoid then
                     pcall(function()
-
-                        humanoid:ChangeState(
+                        currentHumanoid:ChangeState(
                             Enum.HumanoidStateType.Running
                         )
-
                     end)
-
                 end
 
+                dancing = false
             end)
-
-            print(
-                "[KangoraDance] Animasi normal dipulihkan."
-            )
-
         end
 
         ----------------------------------------------------------------
         -- STOP KANGORA DANCE
         ----------------------------------------------------------------
-        --
-        -- TIDAK menghapus CommandTarget.
-        --
-        ----------------------------------------------------------------
 
         local function stopKangoraDance()
+            danceGeneration += 1
 
-            danceGeneration =
-                danceGeneration + 1
-
-            local generation =
-                danceGeneration
+            local generation = danceGeneration
 
             dancing = false
 
-            ------------------------------------------------------------
-            -- STOP TRACK
-            ------------------------------------------------------------
-
             if danceTrack then
-
-                local oldTrack =
-                    danceTrack
-
+                local oldTrack = danceTrack
                 danceTrack = nil
 
                 pcall(function()
-                    oldTrack:Stop(0.15)
+                    oldTrack:Stop(0.2)
                 end)
-
             end
 
-            ------------------------------------------------------------
-            -- RESTORE NORMAL ANIMATION
-            ------------------------------------------------------------
-
-            restoreNormalAnimation(
-                generation
-            )
-
+            restoreNormalAnimation(generation)
         end
 
         ----------------------------------------------------------------
-        -- REGISTER CONTROLLER
+        -- REGISTER MODE CONTROLLER
         ----------------------------------------------------------------
 
-        _G.BotVars.ModeControllers.kangoradance =
+        _G.BotVars.ModeControllers[MODE_NAME] =
             stopKangoraDance
 
         ----------------------------------------------------------------
@@ -304,22 +251,44 @@ return {
         ----------------------------------------------------------------
 
         local function stopOtherModes()
-
-            for name, stopFunction in pairs(
+            for modeName, stopFunction in pairs(
                 _G.BotVars.ModeControllers
             ) do
-
-                if name ~= "kangoradance"
+                if modeName ~= MODE_NAME
                     and type(stopFunction) == "function" then
 
-                    pcall(function()
-                        stopFunction()
-                    end)
-
+                    pcall(stopFunction)
                 end
+            end
+        end
 
+        ----------------------------------------------------------------
+        -- ADMIN CHECK
+        ----------------------------------------------------------------
+
+        local function isAdmin(player)
+            if not player then
+                return false
             end
 
+            if AdminModule and type(AdminModule) == "table" then
+                local success, result = pcall(function()
+                    if type(AdminModule.IsAdmin) == "function" then
+                        return AdminModule:IsAdmin(player)
+                    end
+
+                    return false
+                end)
+
+                if success and result == true then
+                    return true
+                end
+            end
+
+            local additionalAdmins =
+                _G.BotVars.AdditionalAdmins or {}
+
+            return additionalAdmins[player.UserId] == true
         end
 
         ----------------------------------------------------------------
@@ -327,300 +296,228 @@ return {
         ----------------------------------------------------------------
 
         local function findPlayerByName(name)
-
-            name = name:lower()
-
-            ------------------------------------------------------------
-            -- EXACT USERNAME / DISPLAY NAME
-            ------------------------------------------------------------
-
-            for _, player in ipairs(
-                Players:GetPlayers()
-            ) do
-
-                if player.Name:lower() == name
-                    or player.DisplayName:lower() == name then
-
-                    return player
-
-                end
-
+            if not name or name == "" then
+                return nil
             end
 
-            ------------------------------------------------------------
-            -- USERNAME PREFIX
-            ------------------------------------------------------------
+            name = string.lower(
+                name:match("^%s*(.-)%s*$")
+            )
 
-            for _, player in ipairs(
-                Players:GetPlayers()
-            ) do
+            -- Exact username atau DisplayName
+            for _, player in ipairs(Players:GetPlayers()) do
+                if string.lower(player.Name) == name
+                    or string.lower(player.DisplayName) == name then
 
-                if player.Name:lower():sub(
+                    return player
+                end
+            end
+
+            -- Username prefix
+            for _, player in ipairs(Players:GetPlayers()) do
+                if string.sub(
+                    string.lower(player.Name),
                     1,
                     #name
                 ) == name then
 
                     return player
-
                 end
-
             end
 
             return nil
-
         end
 
         ----------------------------------------------------------------
         -- PLAY KANGORA DANCE
         ----------------------------------------------------------------
 
-        local function playKangoraDance(
-            targetPlayer
-        )
+        local function playKangoraDance(targetPlayer)
+            danceGeneration += 1
 
-            ------------------------------------------------------------
-            -- NEW GENERATION
-            ------------------------------------------------------------
+            local generation = danceGeneration
 
-            danceGeneration =
-                danceGeneration + 1
-
-            local generation =
-                danceGeneration
-
-            ------------------------------------------------------------
-            -- SET ACTIVE MODE
-            ------------------------------------------------------------
-
-            _G.BotVars.ActiveMode =
-                "kangoradance"
-
-            ------------------------------------------------------------
-            -- SET COMMAND TARGET
-            ------------------------------------------------------------
+            _G.BotVars.ActiveMode = MODE_NAME
 
             if targetPlayer then
-
-                _G.BotVars.CommandTarget =
-                    targetPlayer
-
-            end
-
-            ------------------------------------------------------------
-            -- STOP MODE LAIN
-            ------------------------------------------------------------
-
-            stopOtherModes()
-
-            ------------------------------------------------------------
-            -- VALIDATE GENERATION
-            ------------------------------------------------------------
-
-            if generation ~= danceGeneration then
-                return
+                _G.BotVars.CommandTarget = targetPlayer
             end
 
             ------------------------------------------------------------
             -- STOP PREVIOUS TRACK
             ------------------------------------------------------------
 
+            dancing = false
+
             if danceTrack then
-
-                local oldTrack =
-                    danceTrack
-
+                local oldTrack = danceTrack
                 danceTrack = nil
 
                 pcall(function()
-                    oldTrack:Stop(0.1)
+                    oldTrack:Stop(0.2)
                 end)
-
             end
 
             ------------------------------------------------------------
-            -- GET CHARACTER
+            -- STOP OTHER MODES
             ------------------------------------------------------------
 
-            local character =
-                getCharacter()
+            stopOtherModes()
 
-            local humanoid =
-                character:FindFirstChildOfClass(
-                    "Humanoid"
-                )
-
-            if not humanoid then
-
-                warn(
-                    "[KangoraDance] Humanoid tidak ditemukan."
-                )
-
+            if generation ~= danceGeneration then
                 return
-
             end
 
             ------------------------------------------------------------
-            -- PLAY FE ANIMATION WITH RETRY
+            -- VALIDATE CHARACTER
             ------------------------------------------------------------
 
+            local character, humanoid = getCharacter()
+
+            if not character or not humanoid then
+                warn(
+                    "[KangoraDance] Character atau Humanoid tidak ditemukan."
+                )
+                return
+            end
+
+            if humanoid.Health <= 0 then
+                warn("[KangoraDance] Humanoid tidak hidup.")
+                return
+            end
+
+            ------------------------------------------------------------
+            -- PLAY ANIMATION WITH RETRY
+            ------------------------------------------------------------
+
+            local track = nil
+            local lastError = nil
             local maxAttempts = 3
-            local success = false
-            local result = nil
 
             for attempt = 1, maxAttempts do
+                if generation ~= danceGeneration then
+                    return
+                end
+
+                local currentCharacter, currentHumanoid =
+                    getCharacter()
+
+                if currentCharacter ~= character
+                    or currentHumanoid ~= humanoid
+                    or humanoid.Health <= 0 then
+
+                    return
+                end
+
+                local success, result = pcall(function()
+                    return humanoid:PlayEmoteAndGetAnimTrackById(
+                        KANGORA_DANCE_ANIMATION_ID
+                    )
+                end)
+
+                if success and result then
+                    track = result
+                    break
+                end
+
+                lastError = result
+
+                if attempt < maxAttempts then
+                    task.wait(0.15)
+                end
+            end
+
+            ------------------------------------------------------------
+            -- VALIDATE RESULT
+            ------------------------------------------------------------
+
+            if generation ~= danceGeneration then
+                if track then
+                    pcall(function()
+                        track:Stop(0.2)
+                    end)
+                end
+
+                return
+            end
+
+            local latestCharacter, latestHumanoid =
+                getCharacter()
+
+            if not track
+                or latestCharacter ~= character
+                or latestHumanoid ~= humanoid
+                or humanoid.Health <= 0 then
+
+                warn(
+                    "[KangoraDance] Gagal memainkan animasi setelah "
+                    .. maxAttempts
+                    .. " percobaan. Periksa Animation ID dan izin animasi.",
+                    lastError or ""
+                )
+
+                dancing = false
+                restoreNormalAnimation(generation)
+                return
+            end
+
+            ------------------------------------------------------------
+            -- SAVE TRACK
+            ------------------------------------------------------------
+
+            danceTrack = track
+            dancing = true
+
+            print(
+                "[KangoraDance] Animasi berhasil dimainkan:",
+                KANGORA_DANCE_ANIMATION_ID,
+                "| Bot:",
+                LocalPlayer.Name
+            )
+
+            ------------------------------------------------------------
+            -- MONITOR TRACK
+            ------------------------------------------------------------
+
+            task.spawn(function()
+                local success = pcall(function()
+                    track.Stopped:Wait()
+                end)
+
+                if not success then
+                    return
+                end
 
                 if generation ~= danceGeneration then
                     return
                 end
 
-                local ok, track =
-                    pcall(function()
-
-                        return humanoid:
-                            PlayEmoteAndGetAnimTrackById(
-                                KANGORA_DANCE_ANIMATION_ID
-                            )
-
-                    end)
-
-                if ok and track then
-
-                    success = true
-                    result = track
-
-                    break
-
+                if danceTrack ~= track then
+                    return
                 end
 
-                result = track
+                danceTrack = nil
 
-                if attempt < maxAttempts then
-                    task.wait(0.1)
+                if dancing then
+                    restoreNormalAnimation(generation)
                 end
-
-            end
-
-            ------------------------------------------------------------
-            -- VALIDATE GENERATION
-            ------------------------------------------------------------
-
-            if generation ~= danceGeneration then
-
-                if result then
-
-                    pcall(function()
-                        result:Stop(0)
-                    end)
-
-                end
-
-                return
-
-            end
-
-            ------------------------------------------------------------
-            -- RESULT
-            ------------------------------------------------------------
-
-            if success and result then
-
-                danceTrack = result
-                dancing = true
-
-                print(
-                    "[KangoraDance] FE Animation berhasil dimainkan:",
-                    KANGORA_DANCE_ANIMATION_ID,
-                    "| Bot:",
-                    LocalPlayer.Name
-                )
-
-                --------------------------------------------------------
-                -- MONITOR TRACK
-                --------------------------------------------------------
-
-                task.spawn(function()
-
-                    local track = result
-                    local trackGeneration =
-                        generation
-
-                    if not track then
-                        return
-                    end
-
-                    pcall(function()
-                        track.Stopped:Wait()
-                    end)
-
-                    if danceTrack == track
-                        and dancing
-                        and trackGeneration
-                            == danceGeneration then
-
-                        danceTrack = nil
-
-                    end
-
-                end)
-
-            else
-
-                warn(
-                    "[KangoraDance] FE Animation gagal dimainkan setelah",
-                    maxAttempts,
-                    "percobaan.",
-                    "| Bot:",
-                    LocalPlayer.Name,
-                    "| Last Error:",
-                    result
-                )
-
-            end
-
+            end)
         end
 
         ----------------------------------------------------------------
-        -- COMMAND HANDLER
+        -- CHAT COMMAND HANDLER
         ----------------------------------------------------------------
 
-        local function handleCommand(
-            message,
-            sender
-        )
-
-            if not message
-                or not sender then
-
+        local function handleCommand(message, sender)
+            if not message or not sender then
                 return
-
             end
 
-            ------------------------------------------------------------
-            -- ADMIN CHECK
-            ------------------------------------------------------------
+            local lower = string.lower(
+                message:match("^%s*(.-)%s*$")
+            )
 
-            local isAdmin = false
-
-            pcall(function()
-
-                isAdmin =
-                    Admin:IsAdmin(sender)
-
-            end)
-
-            ------------------------------------------------------------
-            -- CLEAN MESSAGE
-            ------------------------------------------------------------
-
-            local lower =
-                message
-                :lower()
-                :gsub("^%s+", "")
-                :gsub("%s+$", "")
-
-            ------------------------------------------------------------
-            -- CURRENT COMMAND TARGET
-            ------------------------------------------------------------
+            local admin = isAdmin(sender)
 
             local commandTarget =
                 _G.BotVars.CommandTarget
@@ -629,14 +526,11 @@ return {
                 commandTarget == sender
 
             ------------------------------------------------------------
-            -- !STOP
-            --
-            -- HANYA ADMIN
+            -- !stop (ADMIN ONLY)
             ------------------------------------------------------------
 
             if lower == "!stop" then
-
-                if not isAdmin then
+                if not admin then
                     return
                 end
 
@@ -646,179 +540,110 @@ return {
                 for _, stopFunction in pairs(
                     _G.BotVars.ModeControllers
                 ) do
-
                     if type(stopFunction) == "function" then
-
-                        pcall(function()
-                            stopFunction()
-                        end)
-
+                        pcall(stopFunction)
                     end
-
                 end
 
                 return
-
             end
 
             ------------------------------------------------------------
-            -- !UNKANGORADANCE
-            --
-            -- HANYA ADMIN
+            -- !unkangoradance (ADMIN ONLY)
             ------------------------------------------------------------
 
             if lower == "!unkangoradance" then
-
-                if not isAdmin then
+                if not admin then
                     return
                 end
 
-                if _G.BotVars.ActiveMode
-                    == "kangoradance" then
-
+                if _G.BotVars.ActiveMode == MODE_NAME then
                     _G.BotVars.ActiveMode = nil
-
                 end
 
                 stopKangoraDance()
-
                 return
-
             end
 
             ------------------------------------------------------------
-            -- !KANGORADANCE
-            --
-            -- ADMIN:
-            -- !kangoradance
-            --
-            -- COMMAND TARGET:
             -- !kangoradance
             ------------------------------------------------------------
 
             if lower == "!kangoradance" then
-
-                if not isAdmin
-                    and not isCommandTarget then
-
+                if not admin and not isCommandTarget then
                     return
-
                 end
 
-                _G.BotVars.CommandTarget =
-                    sender
+                _G.BotVars.CommandTarget = sender
 
-                playKangoraDance(
-                    sender
-                )
-
+                playKangoraDance(sender)
                 return
-
             end
 
             ------------------------------------------------------------
-            -- !KANGORADANCE PLAYER
-            --
-            -- HANYA ADMIN
+            -- !kangoradance <username> (ADMIN ONLY)
             ------------------------------------------------------------
 
-            local targetName =
-                lower:match(
-                    "^!kangoradance%s+(.+)$"
-                )
+            local targetName = lower:match(
+                "^!kangoradance%s+(.+)$"
+            )
 
             if targetName then
-
-                if not isAdmin then
+                if not admin then
                     return
                 end
 
-                local target =
-                    findPlayerByName(
-                        targetName
-                    )
+                targetName = targetName:match("^%s*(.-)%s*$")
+
+                local target = findPlayerByName(targetName)
 
                 if not target then
+                    warn(
+                        "[KangoraDance] Player tidak ditemukan: "
+                        .. targetName
+                    )
                     return
                 end
 
-                _G.BotVars.CommandTarget =
-                    target
+                _G.BotVars.CommandTarget = target
 
-                playKangoraDance(
-                    target
-                )
-
+                playKangoraDance(target)
                 return
-
             end
-
         end
 
         ----------------------------------------------------------------
-        -- CHAT CONNECTION
+        -- CONNECT CHAT
         ----------------------------------------------------------------
 
-        local connectedPlayers = {}
-
         local function connectPlayerChat(player)
-
             if connectedPlayers[player] then
                 return
             end
 
-            connectedPlayers[player] = true
-
-            player.Chatted:Connect(
+            connectedPlayers[player] = player.Chatted:Connect(
                 function(message)
-
-                    handleCommand(
-                        message,
-                        player
-                    )
-
+                    handleCommand(message, player)
                 end
             )
-
         end
 
-        ----------------------------------------------------------------
-        -- EXISTING PLAYERS
-        ----------------------------------------------------------------
-
-        for _, player in ipairs(
-            Players:GetPlayers()
-        ) do
-
-            connectPlayerChat(
-                player
-            )
-
+        for _, player in ipairs(Players:GetPlayers()) do
+            connectPlayerChat(player)
         end
 
-        ----------------------------------------------------------------
-        -- PLAYER ADDED
-        ----------------------------------------------------------------
-
-        Players.PlayerAdded:Connect(
-            function(player)
-
-                connectPlayerChat(
-                    player
-                )
-
-            end
+        playerAddedConnection = Players.PlayerAdded:Connect(
+            connectPlayerChat
         )
 
-        ----------------------------------------------------------------
-        -- PLAYER REMOVING
-        ----------------------------------------------------------------
-
-        Players.PlayerRemoving:Connect(
+        playerRemovingConnection = Players.PlayerRemoving:Connect(
             function(player)
+                local connection = connectedPlayers[player]
 
-                connectedPlayers[player] = nil
-
+                if connection then
+                    connection:Disconnect()
+                    connectedPlayers[player] = nil
+                end
             end
         )
 
@@ -826,55 +651,44 @@ return {
         -- CHARACTER RESPAWN
         ----------------------------------------------------------------
 
-        LocalPlayer.CharacterAdded:Connect(
+        characterAddedConnection = LocalPlayer.CharacterAdded:Connect(
             function()
-
-                task.wait(1)
-
-                danceGeneration =
-                    danceGeneration + 1
-
-                local generation =
-                    danceGeneration
+                danceGeneration += 1
 
                 danceTrack = nil
                 dancing = false
 
-                --------------------------------------------------------
-                -- RESTART JIKA MODE MASIH AKTIF
-                --------------------------------------------------------
+                local respawnGeneration = danceGeneration
 
-                if _G.BotVars.ActiveMode
-                    == "kangoradance" then
+                task.wait(1)
 
+                if respawnGeneration ~= danceGeneration then
+                    return
+                end
+
+                if _G.BotVars.ActiveMode == MODE_NAME then
                     task.wait(0.5)
 
-                    if generation
-                        ~= danceGeneration then
-
+                    if respawnGeneration ~= danceGeneration then
                         return
-
                     end
 
                     playKangoraDance(
-                        _G.BotVars.CommandTarget
+                        _G.BotVars.CommandTarget or LocalPlayer
                     )
-
                 end
-
             end
         )
 
         ----------------------------------------------------------------
-        -- READY
+        -- LOADED
         ----------------------------------------------------------------
 
         print(
-            "[KangoraDance] Loaded untuk:",
-            LocalPlayer.Name,
-            "| FE Animation:",
-            KANGORA_DANCE_ANIMATION_ID
+            "[KangoraDance] Loaded untuk: "
+            .. LocalPlayer.Name
+            .. " | Animation ID: "
+            .. KANGORA_DANCE_ANIMATION_ID
         )
-
     end
 }

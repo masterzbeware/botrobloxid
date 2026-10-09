@@ -26,7 +26,12 @@ return {
         ----------------------------------------------------------------
 
         _G.BotVars = _G.BotVars or {}
-        _G.BotVars.ModeControllers = _G.BotVars.ModeControllers or {}
+        _G.BotVars.ModeControllers =
+            _G.BotVars.ModeControllers or {}
+        _G.BotVars.AdditionalAdmins =
+            _G.BotVars.AdditionalAdmins or {}
+
+        local MODE_NAME = "ketlindance"
 
         ----------------------------------------------------------------
         -- LOAD ADMIN MODULE
@@ -59,6 +64,7 @@ return {
         local danceTrack = nil
         local dancing = false
         local danceGeneration = 0
+        local connectedPlayers = {}
 
         ----------------------------------------------------------------
         -- CHARACTER
@@ -71,7 +77,8 @@ return {
                 return nil, nil
             end
 
-            local humanoid = character:FindFirstChildOfClass("Humanoid")
+            local humanoid =
+                character:FindFirstChildOfClass("Humanoid")
 
             return character, humanoid
         end
@@ -81,6 +88,10 @@ return {
         ----------------------------------------------------------------
 
         local function restoreNormalAnimation(generation)
+            if generation ~= danceGeneration then
+                return
+            end
+
             local character, humanoid = getCharacter()
 
             if danceTrack then
@@ -91,37 +102,71 @@ return {
                 danceTrack = nil
             end
 
-            if character then
+            if not character then
+                dancing = false
+                return
+            end
+
+            if humanoid then
                 for _, track in ipairs(
-                    humanoid and humanoid:GetPlayingAnimationTracks() or {}
+                    humanoid:GetPlayingAnimationTracks()
                 ) do
-                    if track.Priority == Enum.AnimationPriority.Action then
+                    if track.Priority == Enum.AnimationPriority.Action
+                        or track.Priority == Enum.AnimationPriority.Action2
+                        or track.Priority == Enum.AnimationPriority.Action3
+                        or track.Priority == Enum.AnimationPriority.Action4 then
+
                         pcall(function()
                             track:Stop(0.2)
                         end)
                     end
                 end
+            end
 
-                local animate = character:FindFirstChild("Animate")
+            if generation ~= danceGeneration then
+                return
+            end
 
-                if animate and animate:IsA("LocalScript") then
-                    pcall(function()
-                        animate.Disabled = true
-                        task.wait(0.1)
-                        animate.Disabled = false
-                    end)
-                end
+            local animate = character:FindFirstChild("Animate")
+
+            if animate and animate:IsA("LocalScript") then
+                pcall(function()
+                    animate.Disabled = true
+                    task.wait(0.1)
+
+                    if generation ~= danceGeneration then
+                        return
+                    end
+
+                    animate.Disabled = false
+                end)
+            end
+
+            if generation ~= danceGeneration then
+                return
             end
 
             if humanoid then
                 pcall(function()
-                    humanoid:ChangeState(Enum.HumanoidStateType.Running)
+                    humanoid:ChangeState(
+                        Enum.HumanoidStateType.Running
+                    )
                 end)
             end
 
             task.delay(0.25, function()
                 if generation ~= danceGeneration then
                     return
+                end
+
+                local _, currentHumanoid = getCharacter()
+
+                if currentHumanoid then
+                    pcall(function()
+                        currentHumanoid:ChangeState(
+                            Enum.HumanoidStateType.Running
+                        )
+                    end)
                 end
 
                 dancing = false
@@ -154,7 +199,8 @@ return {
         -- REGISTER MODE CONTROLLER
         ----------------------------------------------------------------
 
-        _G.BotVars.ModeControllers.ketlindance = stopKetlinDance
+        _G.BotVars.ModeControllers[MODE_NAME] =
+            stopKetlinDance
 
         ----------------------------------------------------------------
         -- STOP OTHER MODES
@@ -164,7 +210,7 @@ return {
             for modeName, stopFunction in pairs(
                 _G.BotVars.ModeControllers
             ) do
-                if modeName ~= "ketlindance"
+                if modeName ~= MODE_NAME
                     and type(stopFunction) == "function" then
 
                     pcall(stopFunction)
@@ -181,26 +227,16 @@ return {
                 return false
             end
 
-            if player == LocalPlayer then
-                return true
-            end
-
-            if AdminModule then
+            if AdminModule and type(AdminModule) == "table" then
                 local success, result = pcall(function()
-                    if type(AdminModule) == "table" then
-                        if type(AdminModule.IsAdmin) == "function" then
-                            return AdminModule.IsAdmin(player)
-                        end
-
-                        if type(AdminModule.isAdmin) == "function" then
-                            return AdminModule.isAdmin(player)
-                        end
+                    if type(AdminModule.IsAdmin) == "function" then
+                        return AdminModule:IsAdmin(player)
                     end
 
                     return false
                 end)
 
-                if success and result then
+                if success and result == true then
                     return true
                 end
             end
@@ -208,15 +244,7 @@ return {
             local additionalAdmins =
                 _G.BotVars.AdditionalAdmins or {}
 
-            for _, adminName in ipairs(additionalAdmins) do
-                if string.lower(tostring(adminName))
-                    == string.lower(player.Name) then
-
-                    return true
-                end
-            end
-
-            return false
+            return additionalAdmins[player.UserId] == true
         end
 
         ----------------------------------------------------------------
@@ -228,8 +256,11 @@ return {
                 return nil
             end
 
-            name = string.lower(name)
+            name = string.lower(
+                name:match("^%s*(.-)%s*$")
+            )
 
+            -- Exact username atau DisplayName
             for _, player in ipairs(Players:GetPlayers()) do
                 if string.lower(player.Name) == name
                     or string.lower(player.DisplayName) == name then
@@ -238,12 +269,14 @@ return {
                 end
             end
 
+            -- Username dengan awalan yang cocok
             for _, player in ipairs(Players:GetPlayers()) do
                 if string.sub(
                     string.lower(player.Name),
                     1,
                     #name
                 ) == name then
+
                     return player
                 end
             end
@@ -256,16 +289,29 @@ return {
         ----------------------------------------------------------------
 
         local function playKetlinDance(targetPlayer)
-            local character, humanoid = getCharacter()
-
-            if not character or not humanoid then
-                warn("[KetlinDance] Character atau Humanoid tidak ditemukan.")
-                return
-            end
-
             danceGeneration += 1
 
             local generation = danceGeneration
+
+            local character, humanoid = getCharacter()
+
+            if not character or not humanoid then
+                warn(
+                    "[KetlinDance] Character atau Humanoid tidak ditemukan."
+                )
+                return
+            end
+
+            if humanoid.Health <= 0 then
+                warn("[KetlinDance] Humanoid tidak hidup.")
+                return
+            end
+
+            _G.BotVars.ActiveMode = MODE_NAME
+
+            if targetPlayer then
+                _G.BotVars.CommandTarget = targetPlayer
+            end
 
             if danceTrack then
                 pcall(function()
@@ -275,52 +321,105 @@ return {
                 danceTrack = nil
             end
 
+            dancing = false
+
             stopOtherModes()
 
-            _G.BotVars.ActiveMode = "ketlindance"
-
-            if targetPlayer then
-                _G.BotVars.CommandTarget = targetPlayer
-            end
-
-            dancing = true
-
-            local success, track = pcall(function()
-                return humanoid:PlayEmoteAndGetAnimTrackById(
-                    KETLIN_DANCE_ANIMATION_ID
-                )
-            end)
-
-            if not success or not track then
-                warn(
-                    "[KetlinDance] Gagal memainkan animasi. " ..
-                    "Pastikan Animation ID dapat digunakan."
-                )
-
-                dancing = false
-                return
-            end
-
             if generation ~= danceGeneration then
-                pcall(function()
-                    track:Stop(0.2)
-                end)
+                return
+            end
+
+            -- Stop mode lain mungkin memerlukan waktu untuk selesai.
+            -- Pastikan karakter masih sama sebelum memulai animasi.
+            local currentCharacter, currentHumanoid = getCharacter()
+
+            if currentCharacter ~= character
+                or currentHumanoid ~= humanoid
+                or humanoid.Health <= 0 then
 
                 return
             end
 
-            danceTrack = track
+            local track = nil
 
-            track.Stopped:Connect(function()
+            for attempt = 1, 3 do
                 if generation ~= danceGeneration then
                     return
                 end
 
-                danceTrack = nil
-                dancing = false
+                local success, result = pcall(function()
+                    return humanoid:PlayEmoteAndGetAnimTrackById(
+                        KETLIN_DANCE_ANIMATION_ID
+                    )
+                end)
 
-                if _G.BotVars.ActiveMode == "ketlindance" then
-                    restoreNormalAnimation(generation)
+                if success and result then
+                    track = result
+                    break
+                end
+
+                if attempt < 3 then
+                    task.wait(0.15)
+                end
+            end
+
+            if generation ~= danceGeneration then
+                if track then
+                    pcall(function()
+                        track:Stop(0.2)
+                    end)
+                end
+
+                return
+            end
+
+            local latestCharacter, latestHumanoid = getCharacter()
+
+            if not track
+                or latestCharacter ~= character
+                or latestHumanoid ~= humanoid
+                or humanoid.Health <= 0 then
+
+                warn(
+                    "[KetlinDance] Gagal memainkan animasi setelah 3 percobaan. " ..
+                    "Periksa Animation ID dan izin penggunaan animasi."
+                )
+
+                if _G.BotVars.ActiveMode == MODE_NAME then
+                    _G.BotVars.ActiveMode = nil
+                end
+
+                dancing = false
+                restoreNormalAnimation(generation)
+                return
+            end
+
+            danceTrack = track
+            dancing = true
+
+            local trackGeneration = generation
+
+            task.spawn(function()
+                local success = pcall(function()
+                    track.Stopped:Wait()
+                end)
+
+                if not success then
+                    return
+                end
+
+                if trackGeneration ~= danceGeneration then
+                    return
+                end
+
+                if danceTrack ~= track then
+                    return
+                end
+
+                danceTrack = nil
+
+                if dancing then
+                    restoreNormalAnimation(trackGeneration)
                 end
             end)
         end
@@ -334,7 +433,9 @@ return {
                 return
             end
 
-            local lowerMessage = string.lower(message)
+            local lowerMessage = string.lower(
+                message:match("^%s*(.-)%s*$")
+            )
 
             ------------------------------------------------------------
             -- !stop
@@ -368,7 +469,7 @@ return {
                     return
                 end
 
-                if _G.BotVars.ActiveMode == "ketlindance" then
+                if _G.BotVars.ActiveMode == MODE_NAME then
                     _G.BotVars.ActiveMode = nil
                 end
 
@@ -383,6 +484,7 @@ return {
             if lowerMessage == "!ketlindance" then
                 if not isAdmin(player)
                     and _G.BotVars.CommandTarget ~= player then
+
                     return
                 end
 
@@ -411,8 +513,8 @@ return {
 
                 if not targetPlayer then
                     warn(
-                        "[KetlinDance] Player tidak ditemukan: " ..
-                        targetName
+                        "[KetlinDance] Player tidak ditemukan: "
+                        .. targetName
                     )
 
                     return
@@ -428,8 +530,6 @@ return {
         ----------------------------------------------------------------
         -- CONNECT CHAT
         ----------------------------------------------------------------
-
-        local connectedPlayers = {}
 
         local function connectPlayer(player)
             if connectedPlayers[player] then
@@ -463,10 +563,22 @@ return {
         ----------------------------------------------------------------
 
         LocalPlayer.CharacterAdded:Connect(function()
+            danceGeneration += 1
+            danceTrack = nil
+            dancing = false
+
+            local respawnGeneration = danceGeneration
+
             task.wait(1)
 
-            if _G.BotVars.ActiveMode == "ketlindance" then
-                playKetlinDance(LocalPlayer)
+            if respawnGeneration ~= danceGeneration then
+                return
+            end
+
+            if _G.BotVars.ActiveMode == MODE_NAME then
+                playKetlinDance(
+                    _G.BotVars.CommandTarget or LocalPlayer
+                )
             end
         end)
 
@@ -474,7 +586,11 @@ return {
         -- LOADED
         ----------------------------------------------------------------
 
-        print("[KetlinDance] Loaded untuk: " .. LocalPlayer.Name)
-
+        print(
+            "[KetlinDance] Loaded untuk: "
+            .. LocalPlayer.Name
+            .. " | Animation ID: "
+            .. KETLIN_DANCE_ANIMATION_ID
+        )
     end
 }

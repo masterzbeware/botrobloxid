@@ -25,7 +25,12 @@ return {
         ----------------------------------------------------------------
 
         _G.BotVars = _G.BotVars or {}
-        _G.BotVars.ModeControllers = _G.BotVars.ModeControllers or {}
+        _G.BotVars.ModeControllers =
+            _G.BotVars.ModeControllers or {}
+        _G.BotVars.AdditionalAdmins =
+            _G.BotVars.AdditionalAdmins or {}
+
+        local MODE_NAME = "huladance"
 
         ----------------------------------------------------------------
         -- LOAD ADMIN MODULE
@@ -44,6 +49,11 @@ return {
                 AdminModule = loader()
             end
         end)
+
+        if not AdminModule then
+            warn("[HulaDance] Gagal load Admin.lua.")
+            return
+        end
 
         ----------------------------------------------------------------
         -- CONFIGURATION
@@ -71,7 +81,8 @@ return {
                 return nil, nil
             end
 
-            local humanoid = character:FindFirstChildOfClass("Humanoid")
+            local humanoid =
+                character:FindFirstChildOfClass("Humanoid")
 
             return character, humanoid
         end
@@ -81,49 +92,116 @@ return {
         ----------------------------------------------------------------
 
         local function restoreNormalAnimation(generation)
+            if generation ~= danceGeneration then
+                return
+            end
+
             local character, humanoid = getCharacter()
 
             if danceTrack then
-                pcall(function()
-                    danceTrack:Stop(0.2)
-                end)
-
+                local oldTrack = danceTrack
                 danceTrack = nil
+
+                pcall(function()
+                    oldTrack:Stop(0.2)
+                end)
             end
 
-            if character then
-                if humanoid then
-                    for _, track in ipairs(
-                        humanoid:GetPlayingAnimationTracks()
-                    ) do
-                        if track.Priority == Enum.AnimationPriority.Action then
-                            pcall(function()
-                                track:Stop(0.2)
-                            end)
-                        end
-                    end
+            if not character then
+                dancing = false
+                return
+            end
+
+            ------------------------------------------------------------
+            -- STOP ACTION TRACKS
+            ------------------------------------------------------------
+
+            if humanoid then
+                local animator =
+                    humanoid:FindFirstChildOfClass("Animator")
+
+                local tracks
+
+                if animator then
+                    tracks = animator:GetPlayingAnimationTracks()
+                else
+                    tracks = humanoid:GetPlayingAnimationTracks()
                 end
 
-                local animate = character:FindFirstChild("Animate")
+                for _, track in ipairs(tracks) do
+                    if track.Priority == Enum.AnimationPriority.Action
+                        or track.Priority == Enum.AnimationPriority.Action2
+                        or track.Priority == Enum.AnimationPriority.Action3
+                        or track.Priority == Enum.AnimationPriority.Action4 then
 
-                if animate and animate:IsA("LocalScript") then
+                        pcall(function()
+                            track:Stop(0.2)
+                        end)
+                    end
+                end
+            end
+
+            if generation ~= danceGeneration then
+                return
+            end
+
+            ------------------------------------------------------------
+            -- RESTART DEFAULT ANIMATE
+            ------------------------------------------------------------
+
+            local animate = character:FindFirstChild("Animate")
+
+            if animate and animate:IsA("LocalScript") then
+                pcall(function()
+                    animate.Disabled = true
+                end)
+
+                task.wait(0.1)
+
+                if generation ~= danceGeneration then
+                    return
+                end
+
+                if animate.Parent then
                     pcall(function()
-                        animate.Disabled = true
-                        task.wait(0.1)
                         animate.Disabled = false
                     end)
                 end
             end
 
+            if generation ~= danceGeneration then
+                return
+            end
+
+            ------------------------------------------------------------
+            -- FORCE RUNNING
+            ------------------------------------------------------------
+
             if humanoid then
                 pcall(function()
-                    humanoid:ChangeState(Enum.HumanoidStateType.Running)
+                    humanoid:ChangeState(
+                        Enum.HumanoidStateType.Running
+                    )
                 end)
             end
+
+            ------------------------------------------------------------
+            -- DELAYED RUNNING STATE
+            ------------------------------------------------------------
 
             task.delay(0.25, function()
                 if generation ~= danceGeneration then
                     return
+                end
+
+                local _, currentHumanoid = getCharacter()
+
+                if currentHumanoid then
+                    pcall(function()
+                        currentHumanoid:ChangeState(
+                            Enum.HumanoidStateType.Running
+                        )
+                    end)
                 end
 
                 dancing = false
@@ -136,16 +214,18 @@ return {
 
         local function stopHulaDance()
             danceGeneration += 1
-            dancing = false
 
             local generation = danceGeneration
 
-            if danceTrack then
-                pcall(function()
-                    danceTrack:Stop(0.2)
-                end)
+            dancing = false
 
+            if danceTrack then
+                local oldTrack = danceTrack
                 danceTrack = nil
+
+                pcall(function()
+                    oldTrack:Stop(0.2)
+                end)
             end
 
             restoreNormalAnimation(generation)
@@ -155,7 +235,7 @@ return {
         -- REGISTER MODE CONTROLLER
         ----------------------------------------------------------------
 
-        _G.BotVars.ModeControllers.huladance = stopHulaDance
+        _G.BotVars.ModeControllers[MODE_NAME] = stopHulaDance
 
         ----------------------------------------------------------------
         -- STOP OTHER MODES
@@ -165,8 +245,9 @@ return {
             for modeName, stopFunction in pairs(
                 _G.BotVars.ModeControllers
             ) do
-                if modeName ~= "huladance"
+                if modeName ~= MODE_NAME
                     and type(stopFunction) == "function" then
+
                     pcall(stopFunction)
                 end
             end
@@ -181,38 +262,24 @@ return {
                 return false
             end
 
-            if player == LocalPlayer then
-                return true
-            end
-
             if AdminModule and type(AdminModule) == "table" then
                 local success, result = pcall(function()
                     if type(AdminModule.IsAdmin) == "function" then
-                        return AdminModule.IsAdmin(player)
-                    end
-
-                    if type(AdminModule.isAdmin) == "function" then
-                        return AdminModule.isAdmin(player)
+                        return AdminModule:IsAdmin(player)
                     end
 
                     return false
                 end)
 
-                if success and result then
+                if success and result == true then
                     return true
                 end
             end
 
-            for _, adminName in ipairs(
+            local additionalAdmins =
                 _G.BotVars.AdditionalAdmins or {}
-            ) do
-                if string.lower(tostring(adminName))
-                    == string.lower(player.Name) then
-                    return true
-                end
-            end
 
-            return false
+            return additionalAdmins[player.UserId] == true
         end
 
         ----------------------------------------------------------------
@@ -224,21 +291,27 @@ return {
                 return nil
             end
 
-            name = string.lower(name)
+            name = string.lower(
+                name:match("^%s*(.-)%s*$")
+            )
 
+            -- Exact username atau DisplayName
             for _, player in ipairs(Players:GetPlayers()) do
                 if string.lower(player.Name) == name
                     or string.lower(player.DisplayName) == name then
+
                     return player
                 end
             end
 
+            -- Username prefix
             for _, player in ipairs(Players:GetPlayers()) do
                 if string.sub(
                     string.lower(player.Name),
                     1,
                     #name
                 ) == name then
+
                     return player
                 end
             end
@@ -251,69 +324,171 @@ return {
         ----------------------------------------------------------------
 
         local function playHulaDance(targetPlayer)
-            local character, humanoid = getCharacter()
-
-            if not character or not humanoid then
-                warn("[HulaDance] Character atau Humanoid tidak ditemukan.")
-                return
-            end
-
             danceGeneration += 1
+
             local generation = danceGeneration
 
-            if danceTrack then
-                pcall(function()
-                    danceTrack:Stop(0.2)
-                end)
-
-                danceTrack = nil
-            end
-
-            stopOtherModes()
-
-            _G.BotVars.ActiveMode = "huladance"
+            _G.BotVars.ActiveMode = MODE_NAME
 
             if targetPlayer then
                 _G.BotVars.CommandTarget = targetPlayer
             end
 
-            dancing = true
+            ------------------------------------------------------------
+            -- STOP PREVIOUS TRACK
+            ------------------------------------------------------------
 
-            local success, track = pcall(function()
-                return humanoid:PlayEmoteAndGetAnimTrackById(
-                    HULA_DANCE_ANIMATION_ID
-                )
-            end)
+            dancing = false
 
-            if not success or not track then
-                warn(
-                    "[HulaDance] Gagal memainkan animasi. " ..
-                    "Pastikan Animation ID dapat digunakan."
-                )
+            if danceTrack then
+                local oldTrack = danceTrack
+                danceTrack = nil
 
-                dancing = false
-                return
+                pcall(function()
+                    oldTrack:Stop(0.2)
+                end)
             end
+
+            ------------------------------------------------------------
+            -- STOP OTHER MODES
+            ------------------------------------------------------------
+
+            stopOtherModes()
 
             if generation ~= danceGeneration then
-                pcall(function()
-                    track:Stop(0.2)
-                end)
-
                 return
             end
 
-            danceTrack = track
+            ------------------------------------------------------------
+            -- VALIDATE CHARACTER
+            ------------------------------------------------------------
 
-            track.Stopped:Connect(function()
+            local character, humanoid = getCharacter()
+
+            if not character or not humanoid then
+                warn(
+                    "[HulaDance] Character atau Humanoid tidak ditemukan."
+                )
+                return
+            end
+
+            if humanoid.Health <= 0 then
+                warn("[HulaDance] Humanoid tidak hidup.")
+                return
+            end
+
+            ------------------------------------------------------------
+            -- PLAY ANIMATION WITH RETRY
+            ------------------------------------------------------------
+
+            local track = nil
+            local lastError = nil
+            local maxAttempts = 3
+
+            for attempt = 1, maxAttempts do
                 if generation ~= danceGeneration then
                     return
                 end
 
-                danceTrack = nil
-                dancing = false
+                local currentCharacter, currentHumanoid =
+                    getCharacter()
 
-                if _G.BotVars.ActiveMode == "huladance" then
+                if currentCharacter ~= character
+                    or currentHumanoid ~= humanoid
+                    or humanoid.Health <= 0 then
+
+                    return
+                end
+
+                local success, result = pcall(function()
+                    return humanoid:PlayEmoteAndGetAnimTrackById(
+                        HULA_DANCE_ANIMATION_ID
+                    )
+                end)
+
+                if success and result then
+                    track = result
+                    break
+                end
+
+                lastError = result
+
+                if attempt < maxAttempts then
+                    task.wait(0.15)
+                end
+            end
+
+            ------------------------------------------------------------
+            -- VALIDATE RESULT
+            ------------------------------------------------------------
+
+            if generation ~= danceGeneration then
+                if track then
+                    pcall(function()
+                        track:Stop(0.2)
+                    end)
+                end
+
+                return
+            end
+
+            local latestCharacter, latestHumanoid = getCharacter()
+
+            if not track
+                or latestCharacter ~= character
+                or latestHumanoid ~= humanoid
+                or humanoid.Health <= 0 then
+
+                warn(
+                    "[HulaDance] Gagal memainkan animasi setelah "
+                    .. maxAttempts
+                    .. " percobaan. Periksa Animation ID dan izin animasi.",
+                    lastError or ""
+                )
+
+                dancing = false
+                restoreNormalAnimation(generation)
+                return
+            end
+
+            ------------------------------------------------------------
+            -- SAVE TRACK
+            ------------------------------------------------------------
+
+            danceTrack = track
+            dancing = true
+
+            print(
+                "[HulaDance] Animasi berhasil dimainkan:",
+                HULA_DANCE_ANIMATION_ID,
+                "| Bot:",
+                LocalPlayer.Name
+            )
+
+            ------------------------------------------------------------
+            -- MONITOR TRACK
+            ------------------------------------------------------------
+
+            task.spawn(function()
+                local success = pcall(function()
+                    track.Stopped:Wait()
+                end)
+
+                if not success then
+                    return
+                end
+
+                if generation ~= danceGeneration then
+                    return
+                end
+
+                if danceTrack ~= track then
+                    return
+                end
+
+                danceTrack = nil
+
+                if dancing then
                     restoreNormalAnimation(generation)
                 end
             end)
@@ -328,14 +503,21 @@ return {
                 return
             end
 
-            local lowerMessage = string.lower(message)
+            local lowerMessage = string.lower(
+                message:match("^%s*(.-)%s*$")
+            )
+
+            local admin = isAdmin(player)
+
+            local isCommandTarget =
+                _G.BotVars.CommandTarget == player
 
             ------------------------------------------------------------
-            -- !stop
+            -- !stop (ADMIN ONLY)
             ------------------------------------------------------------
 
             if lowerMessage == "!stop" then
-                if not isAdmin(player) then
+                if not admin then
                     return
                 end
 
@@ -354,15 +536,15 @@ return {
             end
 
             ------------------------------------------------------------
-            -- !unhuladance
+            -- !unhuladance (ADMIN ONLY)
             ------------------------------------------------------------
 
             if lowerMessage == "!unhuladance" then
-                if not isAdmin(player) then
+                if not admin then
                     return
                 end
 
-                if _G.BotVars.ActiveMode == "huladance" then
+                if _G.BotVars.ActiveMode == MODE_NAME then
                     _G.BotVars.ActiveMode = nil
                 end
 
@@ -375,19 +557,18 @@ return {
             ------------------------------------------------------------
 
             if lowerMessage == "!huladance" then
-                if not isAdmin(player)
-                    and _G.BotVars.CommandTarget ~= player then
+                if not admin and not isCommandTarget then
                     return
                 end
 
                 _G.BotVars.CommandTarget = player
-                playHulaDance(player)
 
+                playHulaDance(player)
                 return
             end
 
             ------------------------------------------------------------
-            -- !huladance <username>
+            -- !huladance <username> (ADMIN ONLY)
             ------------------------------------------------------------
 
             local targetName = lowerMessage:match(
@@ -395,7 +576,7 @@ return {
             )
 
             if targetName then
-                if not isAdmin(player) then
+                if not admin then
                     return
                 end
 
@@ -408,13 +589,12 @@ return {
                         "[HulaDance] Player tidak ditemukan: "
                         .. targetName
                     )
-
                     return
                 end
 
                 _G.BotVars.CommandTarget = targetPlayer
-                playHulaDance(targetPlayer)
 
+                playHulaDance(targetPlayer)
                 return
             end
         end
@@ -455,10 +635,29 @@ return {
         ----------------------------------------------------------------
 
         LocalPlayer.CharacterAdded:Connect(function()
+            danceGeneration += 1
+
+            danceTrack = nil
+            dancing = false
+
+            local respawnGeneration = danceGeneration
+
             task.wait(1)
 
-            if _G.BotVars.ActiveMode == "huladance" then
-                playHulaDance(LocalPlayer)
+            if respawnGeneration ~= danceGeneration then
+                return
+            end
+
+            if _G.BotVars.ActiveMode == MODE_NAME then
+                task.wait(0.5)
+
+                if respawnGeneration ~= danceGeneration then
+                    return
+                end
+
+                playHulaDance(
+                    _G.BotVars.CommandTarget or LocalPlayer
+                )
             end
         end)
 
@@ -466,7 +665,11 @@ return {
         -- LOADED
         ----------------------------------------------------------------
 
-        print("[HulaDance] Loaded untuk: " .. LocalPlayer.Name)
-
+        print(
+            "[HulaDance] Loaded untuk: "
+            .. LocalPlayer.Name
+            .. " | Animation ID: "
+            .. HULA_DANCE_ANIMATION_ID
+        )
     end
 }

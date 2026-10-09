@@ -25,7 +25,12 @@ return {
         ----------------------------------------------------------------
 
         _G.BotVars = _G.BotVars or {}
-        _G.BotVars.ModeControllers = _G.BotVars.ModeControllers or {}
+
+        _G.BotVars.ModeControllers =
+            _G.BotVars.ModeControllers or {}
+
+        _G.BotVars.AdditionalAdmins =
+            _G.BotVars.AdditionalAdmins or {}
 
         ----------------------------------------------------------------
         -- LOAD ADMIN MODULE
@@ -33,23 +38,35 @@ return {
 
         local AdminModule = nil
 
-        pcall(function()
-            local url =
-                "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
+        local ADMIN_URL =
+            "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
 
-            local source = game:HttpGet(url)
+        local adminSuccess, adminResult = pcall(function()
+            local source = game:HttpGet(ADMIN_URL)
             local loader = loadstring(source)
 
-            if loader then
-                AdminModule = loader()
+            if not loader then
+                error("loadstring gagal membuat fungsi.")
             end
+
+            return loader()
         end)
+
+        if adminSuccess and type(adminResult) == "table" then
+            AdminModule = adminResult
+        else
+            warn(
+                "[TripoutDance] Gagal memuat Admin.lua:",
+                tostring(adminResult)
+            )
+        end
 
         ----------------------------------------------------------------
         -- CONFIGURATION
         ----------------------------------------------------------------
 
         local TRIPOUT_DANCE_ANIMATION_ID = "85930126865362"
+        local MODE_NAME = "tripoutdance"
 
         ----------------------------------------------------------------
         -- STATE
@@ -71,105 +88,10 @@ return {
                 return nil, nil
             end
 
-            local humanoid = character:FindFirstChildOfClass("Humanoid")
+            local humanoid =
+                character:FindFirstChildOfClass("Humanoid")
 
             return character, humanoid
-        end
-
-        ----------------------------------------------------------------
-        -- RESTORE NORMAL ANIMATION
-        ----------------------------------------------------------------
-
-        local function restoreNormalAnimation(generation)
-            local character, humanoid = getCharacter()
-
-            if danceTrack then
-                pcall(function()
-                    danceTrack:Stop(0.2)
-                end)
-
-                danceTrack = nil
-            end
-
-            if character then
-                if humanoid then
-                    for _, track in ipairs(
-                        humanoid:GetPlayingAnimationTracks()
-                    ) do
-                        if track.Priority == Enum.AnimationPriority.Action then
-                            pcall(function()
-                                track:Stop(0.2)
-                            end)
-                        end
-                    end
-                end
-
-                local animate = character:FindFirstChild("Animate")
-
-                if animate and animate:IsA("LocalScript") then
-                    pcall(function()
-                        animate.Disabled = true
-                        task.wait(0.1)
-                        animate.Disabled = false
-                    end)
-                end
-            end
-
-            if humanoid then
-                pcall(function()
-                    humanoid:ChangeState(Enum.HumanoidStateType.Running)
-                end)
-            end
-
-            task.delay(0.25, function()
-                if generation ~= danceGeneration then
-                    return
-                end
-
-                dancing = false
-            end)
-        end
-
-        ----------------------------------------------------------------
-        -- STOP TRIPOUT DANCE
-        ----------------------------------------------------------------
-
-        local function stopTripoutDance()
-            danceGeneration += 1
-            dancing = false
-
-            local generation = danceGeneration
-
-            if danceTrack then
-                pcall(function()
-                    danceTrack:Stop(0.2)
-                end)
-
-                danceTrack = nil
-            end
-
-            restoreNormalAnimation(generation)
-        end
-
-        ----------------------------------------------------------------
-        -- REGISTER MODE CONTROLLER
-        ----------------------------------------------------------------
-
-        _G.BotVars.ModeControllers.tripoutdance = stopTripoutDance
-
-        ----------------------------------------------------------------
-        -- STOP OTHER MODES
-        ----------------------------------------------------------------
-
-        local function stopOtherModes()
-            for modeName, stopFunction in pairs(
-                _G.BotVars.ModeControllers
-            ) do
-                if modeName ~= "tripoutdance"
-                    and type(stopFunction) == "function" then
-                    pcall(stopFunction)
-                end
-            end
         end
 
         ----------------------------------------------------------------
@@ -181,38 +103,158 @@ return {
                 return false
             end
 
-            if player == LocalPlayer then
+            if AdminModule
+                and type(AdminModule) == "table"
+                and type(AdminModule.IsAdmin) == "function" then
+
+                local success, result = pcall(function()
+                    return AdminModule:IsAdmin(player)
+                end)
+
+                if success and result == true then
+                    return true
+                end
+            end
+
+            -- AdditionalAdmins menggunakan UserId sebagai key.
+            local additionalAdmins =
+                _G.BotVars.AdditionalAdmins or {}
+
+            if additionalAdmins[player.UserId] == true then
                 return true
             end
 
-            if AdminModule and type(AdminModule) == "table" then
-                local success, result = pcall(function()
-                    if type(AdminModule.IsAdmin) == "function" then
-                        return AdminModule.IsAdmin(player)
-                    end
+            return false
+        end
 
-                    if type(AdminModule.isAdmin) == "function" then
-                        return AdminModule.isAdmin(player)
-                    end
+        ----------------------------------------------------------------
+        -- STOP OWN TRACK
+        ----------------------------------------------------------------
 
-                    return false
+        local function stopOwnTrack(fadeTime)
+            local track = danceTrack
+            danceTrack = nil
+
+            if track then
+                pcall(function()
+                    track:Stop(fadeTime or 0.1)
+                end)
+            end
+        end
+
+        ----------------------------------------------------------------
+        -- RESTORE NORMAL ANIMATION
+        ----------------------------------------------------------------
+
+        local function restoreNormalAnimation(generation)
+            if generation ~= danceGeneration then
+                return
+            end
+
+            stopOwnTrack(0.1)
+
+            local character, humanoid = getCharacter()
+
+            if not character or not humanoid then
+                dancing = false
+                return
+            end
+
+            -- Hentikan track Action yang mungkin tertinggal.
+            local animator =
+                humanoid:FindFirstChildOfClass("Animator")
+
+            if animator then
+                for _, track in ipairs(
+                    animator:GetPlayingAnimationTracks()
+                ) do
+                    if track.Priority == Enum.AnimationPriority.Action
+                        or track.Priority == Enum.AnimationPriority.Action2
+                        or track.Priority == Enum.AnimationPriority.Action3
+                        or track.Priority == Enum.AnimationPriority.Action4 then
+
+                        pcall(function()
+                            track:Stop(0.1)
+                        end)
+                    end
+                end
+            end
+
+            -- Pulihkan animasi normal Roblox.
+            local animate = character:FindFirstChild("Animate")
+
+            if animate and animate:IsA("LocalScript") then
+                pcall(function()
+                    animate.Disabled = true
                 end)
 
-                if success and result then
-                    return true
+                task.wait(0.1)
+
+                if generation ~= danceGeneration then
+                    return
+                end
+
+                if animate.Parent then
+                    pcall(function()
+                        animate.Disabled = false
+                    end)
                 end
             end
 
-            for _, adminName in ipairs(
-                _G.BotVars.AdditionalAdmins or {}
-            ) do
-                if string.lower(tostring(adminName))
-                    == string.lower(player.Name) then
-                    return true
-                end
+            if generation ~= danceGeneration then
+                return
             end
 
-            return false
+            if humanoid.Parent and humanoid.Health > 0 then
+                pcall(function()
+                    humanoid:ChangeState(
+                        Enum.HumanoidStateType.Running
+                    )
+                end)
+            end
+
+            dancing = false
+        end
+
+        ----------------------------------------------------------------
+        -- STOP TRIPOUT DANCE
+        ----------------------------------------------------------------
+
+        local function stopTripoutDance()
+            danceGeneration += 1
+
+            local generation = danceGeneration
+
+            dancing = false
+            stopOwnTrack(0.1)
+
+            restoreNormalAnimation(generation)
+        end
+
+        ----------------------------------------------------------------
+        -- REGISTER MODE CONTROLLER
+        ----------------------------------------------------------------
+
+        _G.BotVars.ModeControllers[MODE_NAME] =
+            stopTripoutDance
+
+        ----------------------------------------------------------------
+        -- STOP OTHER MODES
+        ----------------------------------------------------------------
+
+        local function stopOtherModes()
+            local controllers =
+                _G.BotVars.ModeControllers or {}
+
+            for modeName, stopFunction in pairs(controllers) do
+                if modeName ~= MODE_NAME
+                    and type(stopFunction) == "function" then
+
+                    pcall(function()
+                        stopFunction()
+                    end)
+                end
+            end
         end
 
         ----------------------------------------------------------------
@@ -224,21 +266,25 @@ return {
                 return nil
             end
 
-            name = string.lower(name)
+            local searchName = string.lower(name)
 
+            -- Prioritaskan username atau DisplayName yang persis.
             for _, player in ipairs(Players:GetPlayers()) do
-                if string.lower(player.Name) == name
-                    or string.lower(player.DisplayName) == name then
+                if string.lower(player.Name) == searchName
+                    or string.lower(player.DisplayName) == searchName then
+
                     return player
                 end
             end
 
+            -- Jika tidak ada kecocokan persis, cari awalan username.
             for _, player in ipairs(Players:GetPlayers()) do
                 if string.sub(
                     string.lower(player.Name),
                     1,
-                    #name
-                ) == name then
+                    #searchName
+                ) == searchName then
+
                     return player
                 end
             end
@@ -254,66 +300,123 @@ return {
             local character, humanoid = getCharacter()
 
             if not character or not humanoid then
-                warn("[TripoutDance] Character atau Humanoid tidak ditemukan.")
+                warn(
+                    "[TripoutDance] Character atau Humanoid tidak ditemukan."
+                )
                 return
             end
 
-            danceGeneration += 1
-            local generation = danceGeneration
-
-            if danceTrack then
-                pcall(function()
-                    danceTrack:Stop(0.2)
-                end)
-
-                danceTrack = nil
+            if humanoid.Health <= 0 then
+                return
             end
 
+            -- Batalkan operasi dance sebelumnya.
+            danceGeneration += 1
+
+            local generation = danceGeneration
+
+            dancing = false
+            stopOwnTrack(0.1)
+
+            -- Hentikan mode lain sebelum memulai TripoutDance.
             stopOtherModes()
 
-            _G.BotVars.ActiveMode = "tripoutdance"
+            if generation ~= danceGeneration then
+                return
+            end
+
+            _G.BotVars.ActiveMode = MODE_NAME
 
             if targetPlayer then
                 _G.BotVars.CommandTarget = targetPlayer
             end
 
-            dancing = true
+            ------------------------------------------------------------
+            -- PLAY WITH RETRIES
+            ------------------------------------------------------------
 
-            local success, track = pcall(function()
-                return humanoid:PlayEmoteAndGetAnimTrackById(
-                    TRIPOUT_DANCE_ANIMATION_ID
-                )
-            end)
+            local track = nil
+            local lastError = nil
 
-            if not success or not track then
+            for attempt = 1, 3 do
+                if generation ~= danceGeneration then
+                    return
+                end
+
+                local success, result = pcall(function()
+                    return humanoid:PlayEmoteAndGetAnimTrackById(
+                        TRIPOUT_DANCE_ANIMATION_ID
+                    )
+                end)
+
+                if success and result then
+                    track = result
+                    break
+                end
+
+                lastError = result
+
+                if attempt < 3 then
+                    task.wait(0.15)
+                end
+
+                -- Pastikan karakter tidak berganti saat menunggu.
+                if LocalPlayer.Character ~= character then
+                    return
+                end
+
+                if humanoid.Health <= 0 then
+                    return
+                end
+            end
+
+            ------------------------------------------------------------
+            -- VALIDATE RESULT
+            ------------------------------------------------------------
+
+            if generation ~= danceGeneration then
+                if track then
+                    pcall(function()
+                        track:Stop(0)
+                    end)
+                end
+
+                return
+            end
+
+            if not track then
                 warn(
-                    "[TripoutDance] Gagal memainkan animasi. " ..
-                    "Pastikan Animation ID dapat digunakan."
+                    "[TripoutDance] Animasi gagal setelah 3 percobaan:",
+                    TRIPOUT_DANCE_ANIMATION_ID,
+                    "| Error:",
+                    tostring(lastError)
                 )
 
                 dancing = false
                 return
             end
 
-            if generation ~= danceGeneration then
-                pcall(function()
-                    track:Stop(0.2)
-                end)
-
-                return
-            end
-
             danceTrack = track
+            dancing = true
+
+            ------------------------------------------------------------
+            -- TRACK STOPPED
+            ------------------------------------------------------------
 
             track.Stopped:Connect(function()
                 if generation ~= danceGeneration then
                     return
                 end
 
+                if danceTrack ~= track then
+                    return
+                end
+
                 danceTrack = nil
                 dancing = false
 
-                if _G.BotVars.ActiveMode == "tripoutdance" then
+                -- Jangan mengganggu mode lain yang sudah aktif.
+                if _G.BotVars.ActiveMode == MODE_NAME then
                     restoreNormalAnimation(generation)
                 end
             end)
@@ -324,29 +427,36 @@ return {
         ----------------------------------------------------------------
 
         local function handleChat(player, message)
-            if not player or not message then
+            if not player or type(message) ~= "string" then
                 return
             end
 
-            local lowerMessage = string.lower(message)
+            local lowerMessage = string.lower(
+                message:match("^%s*(.-)%s*$")
+            )
+
+            local admin = isAdmin(player)
 
             ------------------------------------------------------------
             -- !stop
             ------------------------------------------------------------
 
             if lowerMessage == "!stop" then
-                if not isAdmin(player) then
+                if not admin then
                     return
                 end
 
                 _G.BotVars.ActiveMode = nil
                 _G.BotVars.CommandTarget = nil
 
-                for _, stopFunction in pairs(
-                    _G.BotVars.ModeControllers
-                ) do
+                local controllers =
+                    _G.BotVars.ModeControllers or {}
+
+                for _, stopFunction in pairs(controllers) do
                     if type(stopFunction) == "function" then
-                        pcall(stopFunction)
+                        pcall(function()
+                            stopFunction()
+                        end)
                     end
                 end
 
@@ -358,12 +468,13 @@ return {
             ------------------------------------------------------------
 
             if lowerMessage == "!untripoutdance" then
-                if not isAdmin(player) then
+                if not admin then
                     return
                 end
 
-                if _G.BotVars.ActiveMode == "tripoutdance" then
+                if _G.BotVars.ActiveMode == MODE_NAME then
                     _G.BotVars.ActiveMode = nil
+                    _G.BotVars.CommandTarget = nil
                 end
 
                 stopTripoutDance()
@@ -375,14 +486,14 @@ return {
             ------------------------------------------------------------
 
             if lowerMessage == "!tripoutdance" then
-                if not isAdmin(player)
+                if not admin
                     and _G.BotVars.CommandTarget ~= player then
                     return
                 end
 
                 _G.BotVars.CommandTarget = player
-                playTripoutDance(player)
 
+                playTripoutDance(player)
                 return
             end
 
@@ -395,26 +506,27 @@ return {
             )
 
             if targetName then
-                if not isAdmin(player) then
+                if not admin then
                     return
                 end
 
-                targetName = targetName:match("^%s*(.-)%s*$")
+                targetName =
+                    targetName:match("^%s*(.-)%s*$")
 
-                local targetPlayer = findPlayerByName(targetName)
+                local targetPlayer =
+                    findPlayerByName(targetName)
 
                 if not targetPlayer then
                     warn(
-                        "[TripoutDance] Player tidak ditemukan: "
-                        .. targetName
+                        "[TripoutDance] Pemain tidak ditemukan:",
+                        targetName
                     )
-
                     return
                 end
 
                 _G.BotVars.CommandTarget = targetPlayer
-                playTripoutDance(targetPlayer)
 
+                playTripoutDance(targetPlayer)
                 return
             end
         end
@@ -428,11 +540,10 @@ return {
                 return
             end
 
-            connectedPlayers[player] = player.Chatted:Connect(
-                function(message)
+            connectedPlayers[player] =
+                player.Chatted:Connect(function(message)
                     handleChat(player, message)
-                end
-            )
+                end)
         end
 
         for _, player in ipairs(Players:GetPlayers()) do
@@ -455,10 +566,16 @@ return {
         ----------------------------------------------------------------
 
         LocalPlayer.CharacterAdded:Connect(function()
-            task.wait(1)
+            task.wait(0.5)
 
-            if _G.BotVars.ActiveMode == "tripoutdance" then
-                playTripoutDance(LocalPlayer)
+            if _G.BotVars.ActiveMode ~= MODE_NAME then
+                return
+            end
+
+            if not dancing then
+                playTripoutDance(
+                    _G.BotVars.CommandTarget or LocalPlayer
+                )
             end
         end)
 
@@ -466,7 +583,9 @@ return {
         -- LOADED
         ----------------------------------------------------------------
 
-        print("[TripoutDance] Loaded untuk: " .. LocalPlayer.Name)
+        print(
+            "[TripoutDance] Loaded untuk: " .. LocalPlayer.Name
+        )
 
     end
 }

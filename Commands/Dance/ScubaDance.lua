@@ -1,3 +1,10 @@
+-- ScubaDance.lua
+-- Command:
+-- !scubadance
+-- !scubadance <username>
+-- !unscubadance
+-- !stop
+
 return {
     Execute = function()
 
@@ -14,66 +21,125 @@ return {
         end
 
         ----------------------------------------------------------------
-        -- GLOBAL MODE SYSTEM
+        -- BOT VARIABLES
         ----------------------------------------------------------------
 
         _G.BotVars = _G.BotVars or {}
+
         _G.BotVars.ModeControllers =
             _G.BotVars.ModeControllers or {}
 
+        _G.BotVars.AdditionalAdmins =
+            _G.BotVars.AdditionalAdmins or {}
+
         ----------------------------------------------------------------
-        -- LOAD ADMIN
+        -- LOAD ADMIN MODULE
         ----------------------------------------------------------------
 
-        local Admin
+        local AdminModule = nil
 
-        do
-            local success, result = pcall(function()
-                local source = game:HttpGet(
-                    "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
-                )
+        local ADMIN_URL =
+            "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
 
-                local loader, compileError = loadstring(source)
+        local adminSuccess, adminResult = pcall(function()
+            local source = game:HttpGet(ADMIN_URL)
+            local loader, compileError = loadstring(source)
 
-                if not loader then
-                    error(compileError or "Gagal compile Admin.lua")
-                end
-
-                return loader()
-            end)
-
-            if success and result then
-                Admin = result
-            else
-                warn(
-                    "[ScubaDance] Gagal load Admin.lua:",
-                    tostring(result)
-                )
-                return
+            if not loader then
+                error(compileError or "Gagal compile Admin.lua")
             end
+
+            return loader()
+        end)
+
+        if adminSuccess and type(adminResult) == "table" then
+            AdminModule = adminResult
+        else
+            warn(
+                "[ScubaDance] Gagal memuat Admin.lua:",
+                tostring(adminResult)
+            )
         end
 
         ----------------------------------------------------------------
-        -- FE ANIMATION ID
+        -- CONFIGURATION
         ----------------------------------------------------------------
 
         local SCUBA_DANCE_ANIMATION_ID = "70919402339484"
+        local MODE_NAME = "scubadance"
 
         ----------------------------------------------------------------
-        -- VARIABLES
+        -- STATE
         ----------------------------------------------------------------
 
         local danceTrack = nil
         local dancing = false
         local danceGeneration = 0
+        local connectedPlayers = {}
 
         ----------------------------------------------------------------
-        -- GET CHARACTER
+        -- CHARACTER
         ----------------------------------------------------------------
 
         local function getCharacter()
-            return LocalPlayer.Character
-                or LocalPlayer.CharacterAdded:Wait()
+            local character = LocalPlayer.Character
+
+            if not character then
+                return nil, nil
+            end
+
+            local humanoid =
+                character:FindFirstChildOfClass("Humanoid")
+
+            return character, humanoid
+        end
+
+        ----------------------------------------------------------------
+        -- ADMIN CHECK
+        ----------------------------------------------------------------
+
+        local function isAdmin(player)
+            if not player then
+                return false
+            end
+
+            if AdminModule
+                and type(AdminModule) == "table"
+                and type(AdminModule.IsAdmin) == "function" then
+
+                local success, result = pcall(function()
+                    return AdminModule:IsAdmin(player)
+                end)
+
+                if success and result == true then
+                    return true
+                end
+            end
+
+            -- AdditionalAdmins menggunakan UserId sebagai key.
+            local additionalAdmins =
+                _G.BotVars.AdditionalAdmins or {}
+
+            if additionalAdmins[player.UserId] == true then
+                return true
+            end
+
+            return false
+        end
+
+        ----------------------------------------------------------------
+        -- STOP OWN TRACK
+        ----------------------------------------------------------------
+
+        local function stopOwnTrack(fadeTime)
+            local track = danceTrack
+            danceTrack = nil
+
+            if track then
+                pcall(function()
+                    track:Stop(fadeTime or 0.1)
+                end)
+            end
         end
 
         ----------------------------------------------------------------
@@ -81,40 +147,17 @@ return {
         ----------------------------------------------------------------
 
         local function restoreNormalAnimation(generation)
-
-            local character = LocalPlayer.Character
-
-            if not character then
+            if generation ~= danceGeneration then
                 return
             end
 
-            local humanoid =
-                character:FindFirstChildOfClass("Humanoid")
+            stopOwnTrack(0.1)
 
-            if not humanoid then
+            local character, humanoid = getCharacter()
+
+            if not character or not humanoid then
+                dancing = false
                 return
-            end
-
-            ------------------------------------------------------------
-            -- VALIDATE GENERATION
-            ------------------------------------------------------------
-
-            if generation
-                and generation ~= danceGeneration then
-                return
-            end
-
-            ------------------------------------------------------------
-            -- STOP SCUBA DANCE TRACK
-            ------------------------------------------------------------
-
-            if danceTrack then
-                local oldTrack = danceTrack
-                danceTrack = nil
-
-                pcall(function()
-                    oldTrack:Stop(0.15)
-                end)
             end
 
             ------------------------------------------------------------
@@ -136,7 +179,7 @@ return {
                         or priority == Enum.AnimationPriority.Action4 then
 
                         pcall(function()
-                            track:Stop(0.15)
+                            track:Stop(0.1)
                         end)
                     end
                 end
@@ -153,83 +196,52 @@ return {
                 and animateScript:IsA("LocalScript") then
 
                 pcall(function()
-                    animateScript.Enabled = false
+                    animateScript.Disabled = true
                 end)
 
-                task.wait()
+                task.wait(0.1)
 
-                if generation
-                    and generation ~= danceGeneration then
+                if generation ~= danceGeneration then
                     return
                 end
 
-                pcall(function()
-                    animateScript.Enabled = true
-                end)
+                if animateScript.Parent then
+                    pcall(function()
+                        animateScript.Disabled = false
+                    end)
+                end
             end
 
             ------------------------------------------------------------
             -- FORCE RUNNING
             ------------------------------------------------------------
 
-            if generation
-                and generation ~= danceGeneration then
+            if generation ~= danceGeneration then
                 return
             end
 
-            pcall(function()
-                humanoid:ChangeState(
-                    Enum.HumanoidStateType.Running
-                )
-            end)
+            if humanoid.Parent and humanoid.Health > 0 then
+                pcall(function()
+                    humanoid:ChangeState(
+                        Enum.HumanoidStateType.Running
+                    )
+                end)
+            end
 
-            ------------------------------------------------------------
-            -- DELAYED RUNNING STATE
-            ------------------------------------------------------------
-
-            local cleanupGeneration =
-                generation or danceGeneration
-
-            task.defer(function()
-                task.wait(0.1)
-
-                if cleanupGeneration ~= danceGeneration then
-                    return
-                end
-
-                if humanoid and humanoid.Parent then
-                    pcall(function()
-                        humanoid:ChangeState(
-                            Enum.HumanoidStateType.Running
-                        )
-                    end)
-                end
-            end)
-
-            print("[ScubaDance] Animasi normal dipulihkan.")
+            dancing = false
         end
 
         ----------------------------------------------------------------
         -- STOP SCUBA DANCE
-        -- Tidak menghapus CommandTarget.
         ----------------------------------------------------------------
 
         local function stopScubaDance()
-
-            danceGeneration = danceGeneration + 1
+            danceGeneration += 1
 
             local generation = danceGeneration
 
             dancing = false
-
-            if danceTrack then
-                local oldTrack = danceTrack
-                danceTrack = nil
-
-                pcall(function()
-                    oldTrack:Stop(0.15)
-                end)
-            end
+            stopOwnTrack(0.1)
 
             restoreNormalAnimation(generation)
         end
@@ -238,7 +250,7 @@ return {
         -- REGISTER MODE CONTROLLER
         ----------------------------------------------------------------
 
-        _G.BotVars.ModeControllers.scubadance =
+        _G.BotVars.ModeControllers[MODE_NAME] =
             stopScubaDance
 
         ----------------------------------------------------------------
@@ -246,11 +258,11 @@ return {
         ----------------------------------------------------------------
 
         local function stopOtherModes()
+            local controllers =
+                _G.BotVars.ModeControllers or {}
 
-            for name, stopFunction in pairs(
-                _G.BotVars.ModeControllers
-            ) do
-                if name ~= "scubadance"
+            for modeName, stopFunction in pairs(controllers) do
+                if modeName ~= MODE_NAME
                     and type(stopFunction) == "function" then
 
                     pcall(function()
@@ -265,30 +277,29 @@ return {
         ----------------------------------------------------------------
 
         local function findPlayerByName(name)
-
             if not name or name == "" then
                 return nil
             end
 
-            name = name:lower()
+            local searchName = string.lower(name)
 
-            ------------------------------------------------------------
-            -- EXACT USERNAME / DISPLAY NAME
-            ------------------------------------------------------------
-
+            -- Cocokkan username atau DisplayName secara persis.
             for _, player in ipairs(Players:GetPlayers()) do
-                if player.Name:lower() == name
-                    or player.DisplayName:lower() == name then
+                if string.lower(player.Name) == searchName
+                    or string.lower(player.DisplayName) == searchName then
+
                     return player
                 end
             end
 
-            ------------------------------------------------------------
-            -- USERNAME PREFIX
-            ------------------------------------------------------------
-
+            -- Jika tidak ada kecocokan persis, cari awalan username.
             for _, player in ipairs(Players:GetPlayers()) do
-                if player.Name:lower():sub(1, #name) == name then
+                if string.sub(
+                    string.lower(player.Name),
+                    1,
+                    #searchName
+                ) == searchName then
+
                     return player
                 end
             end
@@ -301,28 +312,29 @@ return {
         ----------------------------------------------------------------
 
         local function playScubaDance(targetPlayer)
+            local character, humanoid = getCharacter()
+
+            if not character or not humanoid then
+                warn(
+                    "[ScubaDance] Character atau Humanoid tidak ditemukan."
+                )
+                return
+            end
+
+            if humanoid.Health <= 0 then
+                return
+            end
 
             ------------------------------------------------------------
             -- NEW GENERATION
             ------------------------------------------------------------
 
-            danceGeneration = danceGeneration + 1
+            danceGeneration += 1
 
             local generation = danceGeneration
 
-            ------------------------------------------------------------
-            -- SET ACTIVE MODE
-            ------------------------------------------------------------
-
-            _G.BotVars.ActiveMode = "scubadance"
-
-            ------------------------------------------------------------
-            -- SET COMMAND TARGET
-            ------------------------------------------------------------
-
-            if targetPlayer then
-                _G.BotVars.CommandTarget = targetPlayer
-            end
+            dancing = false
+            stopOwnTrack(0.1)
 
             ------------------------------------------------------------
             -- STOP OTHER MODES
@@ -335,187 +347,154 @@ return {
             end
 
             ------------------------------------------------------------
-            -- STOP PREVIOUS TRACK
+            -- SET ACTIVE MODE AND TARGET
             ------------------------------------------------------------
 
-            if danceTrack then
-                local oldTrack = danceTrack
-                danceTrack = nil
+            _G.BotVars.ActiveMode = MODE_NAME
 
-                pcall(function()
-                    oldTrack:Stop(0.1)
-                end)
+            if targetPlayer then
+                _G.BotVars.CommandTarget = targetPlayer
             end
 
             ------------------------------------------------------------
-            -- GET CHARACTER
+            -- PLAY WITH RETRIES
             ------------------------------------------------------------
 
-            local character = getCharacter()
+            local track = nil
+            local lastError = nil
 
-            local humanoid =
-                character:FindFirstChildOfClass("Humanoid")
-
-            if not humanoid then
-                warn("[ScubaDance] Humanoid tidak ditemukan.")
-                return
-            end
-
-            ------------------------------------------------------------
-            -- PLAY FE ANIMATION WITH RETRY
-            ------------------------------------------------------------
-
-            local maxAttempts = 3
-            local success = false
-            local result = nil
-
-            for attempt = 1, maxAttempts do
-
+            for attempt = 1, 3 do
                 if generation ~= danceGeneration then
                     return
                 end
 
-                local ok, track = pcall(function()
-                    return humanoid:
-                        PlayEmoteAndGetAnimTrackById(
-                            SCUBA_DANCE_ANIMATION_ID
-                        )
+                local success, result = pcall(function()
+                    return humanoid:PlayEmoteAndGetAnimTrackById(
+                        SCUBA_DANCE_ANIMATION_ID
+                    )
                 end)
 
-                if ok and track then
-                    success = true
-                    result = track
+                if success and result then
+                    track = result
                     break
                 end
 
-                result = track
+                lastError = result
 
-                if attempt < maxAttempts then
-                    task.wait(0.1)
+                if attempt < 3 then
+                    task.wait(0.15)
+                end
+
+                -- Pastikan karakter tidak berubah saat menunggu.
+                if LocalPlayer.Character ~= character then
+                    return
+                end
+
+                if humanoid.Health <= 0 then
+                    return
                 end
             end
 
             ------------------------------------------------------------
-            -- VALIDATE GENERATION
+            -- VALIDATE RESULT
             ------------------------------------------------------------
 
             if generation ~= danceGeneration then
-                if result then
+                if track then
                     pcall(function()
-                        result:Stop(0)
+                        track:Stop(0)
                     end)
                 end
 
                 return
             end
 
-            ------------------------------------------------------------
-            -- RESULT
-            ------------------------------------------------------------
-
-            if success and result then
-
-                danceTrack = result
-                dancing = true
-
-                print(
-                    "[ScubaDance] FE Animation berhasil dimainkan:",
-                    SCUBA_DANCE_ANIMATION_ID,
-                    "| Bot:",
-                    LocalPlayer.Name
-                )
-
-                --------------------------------------------------------
-                -- MONITOR TRACK
-                --------------------------------------------------------
-
-                task.spawn(function()
-
-                    local track = result
-                    local trackGeneration = generation
-
-                    pcall(function()
-                        track.Stopped:Wait()
-                    end)
-
-                    if danceTrack == track
-                        and dancing
-                        and trackGeneration == danceGeneration then
-
-                        danceTrack = nil
-                        dancing = false
-                    end
-                end)
-
-            else
-
+            if not track then
                 warn(
-                    "[ScubaDance] Animasi gagal dimainkan setelah",
-                    maxAttempts,
-                    "percobaan.",
-                    "| Bot:",
-                    LocalPlayer.Name,
-                    "| Last Error:",
-                    tostring(result)
+                    "[ScubaDance] Animasi gagal setelah 3 percobaan:",
+                    SCUBA_DANCE_ANIMATION_ID,
+                    "| Error:",
+                    tostring(lastError)
                 )
-            end
-        end
 
-        ----------------------------------------------------------------
-        -- COMMAND HANDLER
-        ----------------------------------------------------------------
-
-        local function handleCommand(message, sender)
-
-            if not message or not sender then
+                dancing = false
                 return
             end
 
             ------------------------------------------------------------
-            -- ADMIN CHECK
+            -- SET TRACK
             ------------------------------------------------------------
 
-            local isAdmin = false
+            danceTrack = track
+            dancing = true
 
-            pcall(function()
-                isAdmin = Admin:IsAdmin(sender)
+            print(
+                "[ScubaDance] Animasi berhasil dimainkan:",
+                SCUBA_DANCE_ANIMATION_ID,
+                "| Bot:",
+                LocalPlayer.Name
+            )
+
+            ------------------------------------------------------------
+            -- TRACK STOPPED
+            ------------------------------------------------------------
+
+            track.Stopped:Connect(function()
+                if generation ~= danceGeneration then
+                    return
+                end
+
+                if danceTrack ~= track then
+                    return
+                end
+
+                danceTrack = nil
+                dancing = false
+
+                -- Jangan mengganggu mode lain yang sedang aktif.
+                if _G.BotVars.ActiveMode == MODE_NAME then
+                    restoreNormalAnimation(generation)
+                end
             end)
+        end
 
-            ------------------------------------------------------------
-            -- NORMALIZE MESSAGE
-            ------------------------------------------------------------
+        ----------------------------------------------------------------
+        -- CHAT COMMAND HANDLER
+        ----------------------------------------------------------------
 
-            local lower = message:lower()
-                :gsub("^%s+", "")
-                :gsub("%s+$", "")
+        local function handleCommand(message, player)
+            if not player or type(message) ~= "string" then
+                return
+            end
 
-            ------------------------------------------------------------
-            -- CURRENT COMMAND TARGET
-            ------------------------------------------------------------
+            local lowerMessage = string.lower(
+                message:match("^%s*(.-)%s*$")
+            )
+
+            local admin = isAdmin(player)
 
             local commandTarget =
                 _G.BotVars.CommandTarget
 
             local isCommandTarget =
-                commandTarget == sender
+                commandTarget == player
 
             ------------------------------------------------------------
-            -- !STOP
-            -- HANYA ADMIN
+            -- !stop
             ------------------------------------------------------------
 
-            if lower == "!stop" then
-
-                if not isAdmin then
+            if lowerMessage == "!stop" then
+                if not admin then
                     return
                 end
 
                 _G.BotVars.ActiveMode = nil
                 _G.BotVars.CommandTarget = nil
 
-                for _, stopFunction in pairs(
-                    _G.BotVars.ModeControllers
-                ) do
+                local controllers =
+                    _G.BotVars.ModeControllers or {}
+
+                for _, stopFunction in pairs(controllers) do
                     if type(stopFunction) == "function" then
                         pcall(function()
                             stopFunction()
@@ -528,18 +507,17 @@ return {
             end
 
             ------------------------------------------------------------
-            -- !UNSCUBADANCE
-            -- HANYA ADMIN
+            -- !unscubadance
             ------------------------------------------------------------
 
-            if lower == "!unscubadance" then
-
-                if not isAdmin then
+            if lowerMessage == "!unscubadance" then
+                if not admin then
                     return
                 end
 
-                if _G.BotVars.ActiveMode == "scubadance" then
+                if _G.BotVars.ActiveMode == MODE_NAME then
                     _G.BotVars.ActiveMode = nil
+                    _G.BotVars.CommandTarget = nil
                 end
 
                 stopScubaDance()
@@ -549,70 +527,67 @@ return {
             end
 
             ------------------------------------------------------------
-            -- !SCUBADANCE
-            -- ADMIN ATAU COMMAND TARGET
+            -- !scubadance
             ------------------------------------------------------------
 
-            if lower == "!scubadance" then
-
-                if not isAdmin and not isCommandTarget then
+            if lowerMessage == "!scubadance" then
+                if not admin and not isCommandTarget then
                     return
                 end
 
-                _G.BotVars.CommandTarget = sender
+                _G.BotVars.CommandTarget = player
 
-                playScubaDance(sender)
+                playScubaDance(player)
                 return
             end
 
             ------------------------------------------------------------
-            -- !SCUBADANCE PLAYER
-            -- HANYA ADMIN
+            -- !scubadance <username>
             ------------------------------------------------------------
 
-            local targetName =
-                lower:match("^!scubadance%s+(.+)$")
+            local targetName = lowerMessage:match(
+                "^!scubadance%s+(.+)$"
+            )
 
             if targetName then
-
-                if not isAdmin then
+                if not admin then
                     return
                 end
 
-                local target = findPlayerByName(targetName)
+                targetName =
+                    targetName:match("^%s*(.-)%s*$")
 
-                if not target then
+                local targetPlayer =
+                    findPlayerByName(targetName)
+
+                if not targetPlayer then
                     warn(
-                        "[ScubaDance] Player tidak ditemukan:",
+                        "[ScubaDance] Pemain tidak ditemukan:",
                         targetName
                     )
                     return
                 end
 
-                _G.BotVars.CommandTarget = target
+                _G.BotVars.CommandTarget = targetPlayer
 
-                playScubaDance(target)
+                playScubaDance(targetPlayer)
                 return
             end
         end
 
         ----------------------------------------------------------------
-        -- CHAT CONNECTION
+        -- CONNECT CHAT
         ----------------------------------------------------------------
 
-        local connectedPlayers = {}
-
         local function connectPlayerChat(player)
-
             if connectedPlayers[player] then
                 return
             end
 
-            connectedPlayers[player] = true
-
-            player.Chatted:Connect(function(message)
-                handleCommand(message, player)
-            end)
+            connectedPlayers[player] =
+                player.Chatted:Connect(function(message)
+                    handleCommand(message, player)
+                end)
         end
 
         ----------------------------------------------------------------
@@ -627,16 +602,19 @@ return {
         -- PLAYER ADDED
         ----------------------------------------------------------------
 
-        Players.PlayerAdded:Connect(function(player)
-            connectPlayerChat(player)
-        end)
+        Players.PlayerAdded:Connect(connectPlayerChat)
 
         ----------------------------------------------------------------
         -- PLAYER REMOVING
         ----------------------------------------------------------------
 
         Players.PlayerRemoving:Connect(function(player)
-            connectedPlayers[player] = nil
+            local connection = connectedPlayers[player]
+
+            if connection then
+                connection:Disconnect()
+                connectedPlayers[player] = nil
+            end
         end)
 
         ----------------------------------------------------------------
@@ -644,26 +622,15 @@ return {
         ----------------------------------------------------------------
 
         LocalPlayer.CharacterAdded:Connect(function()
+            task.wait(0.5)
 
-            task.wait(1)
+            if _G.BotVars.ActiveMode ~= MODE_NAME then
+                return
+            end
 
-            danceGeneration = danceGeneration + 1
-
-            local generation = danceGeneration
-
-            danceTrack = nil
-            dancing = false
-
-            if _G.BotVars.ActiveMode == "scubadance" then
-
-                task.wait(0.5)
-
-                if generation ~= danceGeneration then
-                    return
-                end
-
+            if not dancing then
                 playScubaDance(
-                    _G.BotVars.CommandTarget
+                    _G.BotVars.CommandTarget or LocalPlayer
                 )
             end
         end)
@@ -675,8 +642,9 @@ return {
         print(
             "[ScubaDance] Loaded untuk:",
             LocalPlayer.Name,
-            "| FE Animation:",
+            "| Animation ID:",
             SCUBA_DANCE_ANIMATION_ID
         )
+
     end
 }
