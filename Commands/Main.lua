@@ -93,20 +93,22 @@ return {
             "!stagger",
         }
 
-        local commands2 = {
-            "!message",
-            "!collision",
-            "!brazildance",
-            "!huladance",
-            "!kangoradance",
-            "!ketlindance",
-            "!pakodindance",
-            "!pargoyndance",
-            "!scubandance",
-            "!tomatondance",
-            "!tripoutndance",
-            "!worship",
-        }
+local commands2 = {
+    "!message",
+    "!collision",
+    "!brazildance",
+    "!huladance",
+    "!kangoradance",
+    "!ketlindance",
+    "!mydawgdance",
+    "!pakodidance",
+    "!pargoydance",
+    "!scubadance",
+    "!tomatodance",
+    "!trackmakerdance",
+    "!tripoutdance",
+    "!worship",
+}
 
         for _, commandName in ipairs(commands1) do
             CommandGroup1:AddLabel(commandName)
