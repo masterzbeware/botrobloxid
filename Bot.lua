@@ -63,7 +63,7 @@ _G.BotVars = {
 local windowOk, Window = pcall(function()
     return Library:CreateWindow({
         Title = "MasterZ HUB",
-        Footer = "1.0.5",
+        Footer = "1.0.0",
         Icon = 0,
     })
 end)
@@ -95,7 +95,6 @@ local commandFiles = {
     "Dance/PakodiDance.lua",
     "Dance/PargoyDance.lua",
     "Dance/ScubaDance.lua",
-    "Dance/KetlinDance.lua",
     "Dance/TripoutDance.lua",
     "Dance/HulaDance.lua",
     "Dance/TomatoDance.lua",
@@ -287,7 +286,6 @@ local executionOrder = {
     "stagger",
     "centerline",
     "scubadance",
-    "ketlindance",
     "tripoutdance",
     "huladance",
     "tomatodance",
