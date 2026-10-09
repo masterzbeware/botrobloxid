@@ -1,14 +1,46 @@
-local repoBase = "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Commands/"
-local obsidianRepo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
+-- Bot.lua
+-- MasterZ HUB
+-- Loader command dengan logging error yang jelas.
+-- Mendukung subfolder seperti Commands/Dance/BrazilDance.lua
 
--- Load Obsidian
-local success, Library = pcall(function()
-    return loadstring(game:HttpGet(obsidianRepo .. "Library.lua"))()
+--------------------------------------------------
+-- REPOSITORY
+--------------------------------------------------
+
+local repoBase =
+    "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Commands/"
+
+local obsidianRepo =
+    "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
+
+--------------------------------------------------
+-- LOAD OBSIDIAN
+--------------------------------------------------
+
+local libraryOk, Library = pcall(function()
+    local source = game:HttpGet(
+        obsidianRepo .. "Library.lua"
+    )
+
+    local loader, compileError = loadstring(source)
+
+    if not loader then
+        error(compileError or "Gagal compile Obsidian Library")
+    end
+
+    return loader()
 end)
 
-if not success or not Library then
-    error("[Bot.lua] Gagal load Obsidian Library")
+if not libraryOk or not Library then
+    error(
+        "[Bot.lua] Gagal load Obsidian Library: "
+        .. tostring(Library)
+    )
 end
+
+--------------------------------------------------
+-- GLOBAL VARIABLES
+--------------------------------------------------
 
 _G.BotVars = {
     Players = game:GetService("Players"),
@@ -16,30 +48,50 @@ _G.BotVars = {
     RunService = game:GetService("RunService"),
     LocalPlayer = game:GetService("Players").LocalPlayer,
 
-    -- Target yang dipilih oleh admin melalui !follow.
-    -- Target ini boleh mengganti formasi dengan !frontline/!circle/!fourline.
-    -- Hanya admin yang boleh mengakhiri semuanya dengan !stop.
     CommandTarget = nil,
+    ActiveMode = nil,
+    ModeControllers = {},
+    AdditionalAdmins = {},
+    Modules = {},
+    Tabs = {},
 }
 
-local Window = Library:CreateWindow({
-    Title = "MasterZ HUB",
-    Footer = "1.0.1",
-    Icon = 0
-})
+--------------------------------------------------
+-- CREATE WINDOW
+--------------------------------------------------
+
+local windowOk, Window = pcall(function()
+    return Library:CreateWindow({
+        Title = "MasterZ HUB",
+        Footer = "1.0.2",
+        Icon = 0,
+    })
+end)
+
+if not windowOk or not Window then
+    error(
+        "[Bot.lua] Gagal membuat Window: "
+        .. tostring(Window)
+    )
+end
 
 _G.BotVars.Library = Library
 _G.BotVars.MainWindow = Window
-_G.BotVars.Modules = {}
 
--- ✅ SEMUA COMMAND
+--------------------------------------------------
+-- COMMAND FILES
+--------------------------------------------------
+
 local commandFiles = {
     "Perfix.lua",
     "Main.lua",
     "Agree.lua",
     "Arrow.lua",
     "Backline.lua",
+
+    -- BrazilDance sekarang berada di subfolder Dance
     "Dance/BrazilDance.lua",
+
     "Circle.lua",
     "Collision.lua",
     "Follow.lua",
@@ -61,58 +113,180 @@ local commandFiles = {
     "Centerline.lua",
 }
 
+--------------------------------------------------
+-- LOAD COMMAND MODULES
+--------------------------------------------------
+
 for _, fileName in ipairs(commandFiles) do
-    local ok, response = pcall(function()
-        return game:HttpGet(repoBase .. fileName)
+    local url = repoBase .. fileName
+
+    print("[Bot.lua] Mengambil:", url)
+
+    --------------------------------------------------
+    -- DOWNLOAD SOURCE
+    --------------------------------------------------
+
+    local httpOk, source = pcall(function()
+        return game:HttpGet(url)
     end)
 
-    if ok and response then
-        local loader = loadstring(response)
-        if loader then
-            local successModule, moduleTable = pcall(loader)
-            if successModule and type(moduleTable) == "table" then
-                local key = fileName("([^/]+)%.lua$")()
-                _G.BotVars.Modules[key] = moduleTable
-                print("[Bot.lua] Loaded:", key)
-            end
-        end
+    if not httpOk then
+        warn(
+            "[Bot.lua] HTTP GAGAL:",
+            fileName,
+            tostring(source)
+        )
+        continue
     end
+
+    if type(source) ~= "string" or source == "" then
+        warn(
+            "[Bot.lua] Source kosong:",
+            fileName
+        )
+        continue
+    end
+
+    --------------------------------------------------
+    -- COMPILE SOURCE
+    --------------------------------------------------
+
+    local loader, compileError = loadstring(source)
+
+    if not loader then
+        warn(
+            "[Bot.lua] SYNTAX ERROR:",
+            fileName,
+            tostring(compileError)
+        )
+        continue
+    end
+
+    --------------------------------------------------
+    -- EXECUTE MODULE CHUNK
+    --------------------------------------------------
+
+    local moduleOk, moduleTable = pcall(loader)
+
+    if not moduleOk then
+        warn(
+            "[Bot.lua] MODULE ERROR:",
+            fileName,
+            tostring(moduleTable)
+        )
+        continue
+    end
+
+    if type(moduleTable) ~= "table" then
+        warn(
+            "[Bot.lua] Return module bukan table:",
+            fileName
+        )
+        continue
+    end
+
+    --------------------------------------------------
+    -- REGISTER MODULE
+    --------------------------------------------------
+
+    -- Ambil nama file saja, bukan nama folder.
+    -- Dance/BrazilDance.lua -> brazildance
+    local key = fileName:match("([^/]+)%.lua$")
+
+    if not key then
+        warn(
+            "[Bot.lua] Nama module tidak valid:",
+            fileName
+        )
+        continue
+    end
+
+    key = key:lower()
+
+    _G.BotVars.Modules[key] = moduleTable
+
+    print("[Bot.lua] Loaded:", key)
 end
 
-task.wait(0.3)
+--------------------------------------------------
+-- EXECUTION FUNCTION
+--------------------------------------------------
 
 local function jalankan(name)
+    name = name:lower()
+
     local module = _G.BotVars.Modules[name]
-    if module and module.Execute then
-        module.Execute()
-        print("[Bot.lua] Executed:", name)
+
+    if not module then
+        warn(
+            "[Bot.lua] Module tidak ditemukan:",
+            name
+        )
+        return false
     end
+
+    if type(module.Execute) ~= "function" then
+        warn(
+            "[Bot.lua] Module tidak memiliki Execute():",
+            name
+        )
+        return false
+    end
+
+    local executeOk, executeError = pcall(function()
+        module.Execute()
+    end)
+
+    if not executeOk then
+        warn(
+            "[Bot.lua] EXECUTE ERROR:",
+            name,
+            tostring(executeError)
+        )
+        return false
+    end
+
+    print("[Bot.lua] Executed:", name)
+    return true
 end
 
--- ✅ EXECUTION ORDER
-jalankan("perfix")
-jalankan("main")
-jalankan("agree")
-jalankan("arrow")
-jalankan("backline")
-jalankan("brazildance")
-jalankan("circle")
-jalankan("follow")
-jalankan("fourline")
-jalankan("frontline")
-jalankan("glowstick")
-jalankan("kangoradance")
-jalankan("message")
-jalankan("pakodidance")
-jalankan("pargoydance")
-jalankan("rest")
-jalankan("salute")
-jalankan("sit")
-jalankan("square")
-jalankan("sync")
-jalankan("worship")
-jalankan("lineformation")
-jalankan("stagger")
-jalankan("centerline")
+--------------------------------------------------
+-- EXECUTION ORDER
+--------------------------------------------------
 
-print("✅ Bot.lua loaded — All systems active.")
+local executionOrder = {
+    "perfix",
+    "main",
+    "agree",
+    "arrow",
+    "backline",
+    "brazildance",
+    "circle",
+    "follow",
+    "fourline",
+    "frontline",
+    "glowstick",
+    "kangoradance",
+    "message",
+    "pakodidance",
+    "pargoydance",
+    "rest",
+    "salute",
+    "sit",
+    "square",
+    "sync",
+    "worship",
+    "lineformation",
+    "stagger",
+    "centerline",
+}
+
+for _, name in ipairs(executionOrder) do
+    jalankan(name)
+end
+
+--------------------------------------------------
+-- FINISHED
+--------------------------------------------------
+
+print("[Bot.lua] Proses pemuatan command selesai.")
