@@ -58,8 +58,8 @@ return {
         -- FORMATION SETTINGS
         ----------------------------------------------------------------
 
-        local spacing = 3
-        local rowSpacing = 3
+        local spacing = 4
+        local rowSpacing = 4
 
         ----------------------------------------------------------------
         -- BOT ORDER: 11 BOTS
