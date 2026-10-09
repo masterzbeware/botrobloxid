@@ -59,7 +59,7 @@ return {
         -- Jarak antar bot.
         local spacing = 3
 
-        -- Jarak baris dari target.
+        -- Jarak baris pertama dari target dan antarbaris.
         local rowSpacing = 3
 
         ----------------------------------------------------------------
@@ -67,7 +67,6 @@ return {
         ----------------------------------------------------------------
 
         local botOrder = {
-
             "11611503633", -- Bot 1
             "11611591921", -- Bot 2
             "11611597741", -- Bot 3
@@ -80,7 +79,6 @@ return {
             "11774494628", -- Bot 10
             "11775829997", -- Bot 11
             "11775843339", -- Bot 12
-
         }
 
         ----------------------------------------------------------------
@@ -123,11 +121,9 @@ return {
 
                 if channel then
 
-                    pcall(function()
+                    success = pcall(function()
                         channel:SendAsync(message)
                     end)
-
-                    success = true
 
                 end
 
@@ -177,10 +173,8 @@ return {
             currentLineMode = nil
 
             if lineConnection then
-
                 lineConnection:Disconnect()
                 lineConnection = nil
-
             end
 
             if humanoid then
@@ -228,13 +222,8 @@ return {
 
             name = name:lower()
 
-            ------------------------------------------------------------
-            -- EXACT NAME
-            ------------------------------------------------------------
-
-            for _, player in ipairs(
-                Players:GetPlayers()
-            ) do
+            -- Exact username atau display name.
+            for _, player in ipairs(Players:GetPlayers()) do
 
                 if player.Name:lower() == name
                     or player.DisplayName:lower() == name then
@@ -245,13 +234,8 @@ return {
 
             end
 
-            ------------------------------------------------------------
-            -- USERNAME PREFIX
-            ------------------------------------------------------------
-
-            for _, player in ipairs(
-                Players:GetPlayers()
-            ) do
+            -- Username prefix.
+            for _, player in ipairs(Players:GetPlayers()) do
 
                 if player.Name:lower():sub(
                     1,
@@ -264,13 +248,8 @@ return {
 
             end
 
-            ------------------------------------------------------------
-            -- DISPLAY NAME PREFIX
-            ------------------------------------------------------------
-
-            for _, player in ipairs(
-                Players:GetPlayers()
-            ) do
+            -- Display name prefix.
+            for _, player in ipairs(Players:GetPlayers()) do
 
                 if player.DisplayName:lower():sub(
                     1,
@@ -288,6 +267,36 @@ return {
         end
 
         ----------------------------------------------------------------
+        -- GET ACTIVE BOTS
+        ----------------------------------------------------------------
+
+        local function getActiveBots()
+
+            local activeBots = {}
+
+            for _, botUserId in ipairs(botOrder) do
+
+                local botPlayer =
+                    Players:GetPlayerByUserId(
+                        tonumber(botUserId)
+                    )
+
+                if botPlayer then
+
+                    table.insert(
+                        activeBots,
+                        botUserId
+                    )
+
+                end
+
+            end
+
+            return activeBots
+
+        end
+
+        ----------------------------------------------------------------
         -- GET FORMATION SIZE
         ----------------------------------------------------------------
 
@@ -295,25 +304,22 @@ return {
 
             if mode == 1 then
 
-                -- 12 bot dalam 1 baris
-
-                return 12, 1
+                -- Maksimal 12 bot dalam 1 baris.
+                return 12
 
             elseif mode == 2 then
 
-                -- 2 baris x 6 bot
-
-                return 6, 2
+                -- Maksimal 6 bot per baris.
+                return 6
 
             elseif mode == 3 then
 
-                -- 4 baris x 3 bot
-
-                return 3, 4
+                -- Maksimal 3 bot per baris.
+                return 3
 
             end
 
-            return nil, nil
+            return nil
 
         end
 
@@ -323,45 +329,74 @@ return {
 
         local function getBotPosition(
             targetHRP,
-            botIndex,
+            activeIndex,
+            activeBotCount,
             mode
         )
 
-            local botsPerRow, totalRows =
-                getFormation(mode)
+            ------------------------------------------------------------
+            -- JUMLAH BOT MAKSIMAL PER BARIS
+            ------------------------------------------------------------
+
+            local botsPerRow = getFormation(mode)
 
             if not botsPerRow
-                or not totalRows then
+                or activeBotCount <= 0
+                or activeIndex < 1
+                or activeIndex > activeBotCount then
 
                 return nil
 
             end
 
             ------------------------------------------------------------
-            -- ROW
+            -- HITUNG BARIS
             ------------------------------------------------------------
 
             local row =
                 math.floor(
-                    (botIndex - 1) / botsPerRow
+                    (activeIndex - 1) / botsPerRow
                 )
 
             ------------------------------------------------------------
-            -- COLUMN
+            -- HITUNG KOLOM
             ------------------------------------------------------------
 
             local column =
-                (botIndex - 1) % botsPerRow
+                (activeIndex - 1) % botsPerRow
 
             ------------------------------------------------------------
-            -- CENTER COLUMN
+            -- JUMLAH BOT PADA BARIS SAAT INI
+            ------------------------------------------------------------
+
+            local firstBotInRow =
+                row * botsPerRow
+
+            local botsInThisRow =
+                math.min(
+                    botsPerRow,
+                    activeBotCount - firstBotInRow
+                )
+
+            ------------------------------------------------------------
+            -- TITIK TENGAH BARIS
             ------------------------------------------------------------
 
             local centerColumn =
-                (botsPerRow - 1) / 2
+                (botsInThisRow - 1) / 2
 
             ------------------------------------------------------------
-            -- HORIZONTAL OFFSET
+            -- OFFSET HORIZONTAL
+            --
+            -- 3 bot:
+            -- -3, 0, 3
+            --
+            -- 5 bot:
+            -- -6, -3, 0, 3, 6
+            --
+            -- 8 bot dalam mode 2:
+            -- Baris 1: 6 bot, terpusat.
+            -- Baris 2: 2 bot, terpusat.
             ------------------------------------------------------------
 
             local horizontalOffset =
@@ -369,11 +404,11 @@ return {
                 * spacing
 
             ------------------------------------------------------------
-            -- DEPTH OFFSET
+            -- OFFSET DEPTH
+            --
+            -- Baris pertama paling dekat dengan target.
+            -- Baris selanjutnya berada semakin ke belakang.
             ------------------------------------------------------------
-
-            -- Baris pertama paling dekat dengan Admin.
-            -- Baris berikutnya semakin ke belakang.
 
             local depthOffset =
                 (row + 1) * rowSpacing
@@ -405,10 +440,7 @@ return {
         -- START LINE
         ----------------------------------------------------------------
 
-        local function startLine(
-            player,
-            mode
-        )
+        local function startLine(player, mode)
 
             if not player then
                 return
@@ -432,18 +464,15 @@ return {
             -- ACTIVE MODE
             ------------------------------------------------------------
 
-            _G.BotVars.ActiveMode =
-                "line"
+            _G.BotVars.ActiveMode = "line"
 
             ------------------------------------------------------------
             -- STOP CONNECTION LAMA
             ------------------------------------------------------------
 
             if lineConnection then
-
                 lineConnection:Disconnect()
                 lineConnection = nil
-
             end
 
             ------------------------------------------------------------
@@ -454,8 +483,23 @@ return {
             targetPlayer = player
             currentLineMode = mode
 
-            _G.BotVars.CommandTarget =
-                player
+            _G.BotVars.CommandTarget = player
+
+            ------------------------------------------------------------
+            -- CARI INDEX BOT AKTIF
+            ------------------------------------------------------------
+
+            local activeBots = getActiveBots()
+
+            local activeIndex = table.find(
+                activeBots,
+                tostring(LocalPlayer.UserId)
+            )
+
+            if not activeIndex then
+                stopLine()
+                return
+            end
 
             ------------------------------------------------------------
             -- CHAT
@@ -464,150 +508,143 @@ return {
             sendChat("Yes, Sir!")
 
             ------------------------------------------------------------
-            -- FIND BOT INDEX
-            ------------------------------------------------------------
-
-            local myIndex =
-                table.find(
-                    botOrder,
-                    tostring(LocalPlayer.UserId)
-                )
-
-            if not myIndex then
-
-                stopLine()
-
-                return
-
-            end
-
-            ------------------------------------------------------------
             -- LINE LOOP
             ------------------------------------------------------------
 
             lineConnection =
-                RunService.Heartbeat:Connect(
-                    function()
+                RunService.Heartbeat:Connect(function()
 
-                        ------------------------------------------------
-                        -- MODE CHECK
-                        ------------------------------------------------
+                    ----------------------------------------------------
+                    -- MODE CHECK
+                    ----------------------------------------------------
 
-                        if _G.BotVars.ActiveMode
-                            ~= "line" then
+                    if _G.BotVars.ActiveMode ~= "line" then
+                        stopLine()
+                        return
+                    end
 
-                            stopLine()
+                    ----------------------------------------------------
+                    -- STATE CHECK
+                    ----------------------------------------------------
 
-                            return
+                    if not lining then
+                        return
+                    end
 
-                        end
+                    if not humanoid
+                        or not myHRP
+                        or humanoid.Health <= 0 then
 
-                        ------------------------------------------------
-                        -- STATE CHECK
-                        ------------------------------------------------
+                        return
+                    end
 
-                        if not lining then
-                            return
-                        end
+                    if not targetPlayer then
+                        return
+                    end
 
-                        if not humanoid
-                            or not myHRP then
+                    ----------------------------------------------------
+                    -- TARGET CHARACTER
+                    ----------------------------------------------------
 
-                            return
+                    local targetCharacter =
+                        targetPlayer.Character
 
-                        end
+                    if not targetCharacter then
+                        return
+                    end
 
-                        if not targetPlayer then
-                            return
-                        end
+                    local targetHRP =
+                        targetCharacter:FindFirstChild(
+                            "HumanoidRootPart"
+                        )
 
-                        ------------------------------------------------
-                        -- TARGET CHARACTER
-                        ------------------------------------------------
+                    if not targetHRP then
+                        return
+                    end
 
-                        local targetCharacter =
-                            targetPlayer.Character
+                    ----------------------------------------------------
+                    -- PERBARUI BOT AKTIF
+                    ----------------------------------------------------
 
-                        if not targetCharacter then
-                            return
-                        end
+                    activeBots = getActiveBots()
 
-                        local targetHRP =
-                            targetCharacter:FindFirstChild(
-                                "HumanoidRootPart"
-                            )
+                    activeIndex = table.find(
+                        activeBots,
+                        tostring(LocalPlayer.UserId)
+                    )
 
-                        if not targetHRP then
-                            return
-                        end
+                    if not activeIndex then
+                        return
+                    end
 
-                        ------------------------------------------------
-                        -- POSITION
-                        ------------------------------------------------
+                    local activeBotCount =
+                        #activeBots
 
-                        local targetPosition =
-                            getBotPosition(
-                                targetHRP,
-                                myIndex,
-                                currentLineMode
-                            )
+                    ----------------------------------------------------
+                    -- HITUNG POSISI DINAMIS
+                    ----------------------------------------------------
 
-                        if not targetPosition then
-                            return
-                        end
+                    local targetPosition =
+                        getBotPosition(
+                            targetHRP,
+                            activeIndex,
+                            activeBotCount,
+                            currentLineMode
+                        )
 
-                        ------------------------------------------------
-                        -- DISTANCE
-                        ------------------------------------------------
+                    if not targetPosition then
+                        return
+                    end
 
-                        local distanceToTarget =
-                            (
-                                myHRP.Position
-                                - targetPosition
-                            ).Magnitude
+                    ----------------------------------------------------
+                    -- DISTANCE
+                    ----------------------------------------------------
 
-                        ------------------------------------------------
-                        -- MOVE
-                        ------------------------------------------------
-
-                        if distanceToTarget > 1.5 then
-
-                            humanoid.AutoRotate = true
-
-                            humanoid:MoveTo(
-                                targetPosition
-                            )
-
-                            return
-
-                        end
-
-                        ------------------------------------------------
-                        -- REACHED POSITION
-                        ------------------------------------------------
-
-                        humanoid.AutoRotate = false
-
-                        ------------------------------------------------
-                        -- BOT MENGHADAP ARAH YANG SAMA
-                        -- DENGAN ADMIN / PLAYER
-                        ------------------------------------------------
-
-                        local lookDirection =
-                            targetHRP.CFrame.LookVector
-
-                        local lookPosition =
+                    local distanceToTarget =
+                        (
                             myHRP.Position
-                            + lookDirection
+                            - targetPosition
+                        ).Magnitude
 
-                        myHRP.CFrame =
-                            CFrame.lookAt(
-                                myHRP.Position,
-                                lookPosition
-                            )
+                    ----------------------------------------------------
+                    -- MOVE
+                    ----------------------------------------------------
+
+                    if distanceToTarget > 1.5 then
+
+                        humanoid.AutoRotate = true
+
+                        humanoid:MoveTo(
+                            targetPosition
+                        )
+
+                        return
 
                     end
-                )
+
+                    ----------------------------------------------------
+                    -- REACHED POSITION
+                    ----------------------------------------------------
+
+                    humanoid.AutoRotate = false
+
+                    ----------------------------------------------------
+                    -- BOT MENGHADAP ARAH TARGET
+                    ----------------------------------------------------
+
+                    local lookDirection =
+                        targetHRP.CFrame.LookVector
+
+                    local lookPosition =
+                        myHRP.Position + lookDirection
+
+                    myHRP.CFrame =
+                        CFrame.lookAt(
+                            myHRP.Position,
+                            lookPosition
+                        )
+
+                end)
 
         end
 
@@ -615,16 +652,10 @@ return {
         -- COMMAND HANDLER
         ----------------------------------------------------------------
 
-        local function handleCommand(
-            message,
-            sender
-        )
+        local function handleCommand(message, sender)
 
-            if not message
-                or not sender then
-
+            if not message or not sender then
                 return
-
             end
 
             ------------------------------------------------------------
@@ -634,10 +665,7 @@ return {
             local isAdmin = false
 
             pcall(function()
-
-                isAdmin =
-                    Admin:IsAdmin(sender)
-
+                isAdmin = Admin:IsAdmin(sender)
             end)
 
             ------------------------------------------------------------
@@ -645,8 +673,7 @@ return {
             ------------------------------------------------------------
 
             local lower =
-                message
-                :lower()
+                message:lower()
                 :gsub("^%s+", "")
                 :gsub("%s+$", "")
 
@@ -658,7 +685,7 @@ return {
                 _G.BotVars.CommandTarget
 
             ------------------------------------------------------------
-            -- !STOP
+            -- !STOP / !UNLINE
             ------------------------------------------------------------
 
             if lower == "!stop"
@@ -668,29 +695,20 @@ return {
                     return
                 end
 
-                _G.BotVars.ActiveMode =
-                    nil
-
-                _G.BotVars.CommandTarget =
-                    nil
+                _G.BotVars.ActiveMode = nil
+                _G.BotVars.CommandTarget = nil
 
                 for _, stopFunction in pairs(
                     _G.BotVars.ModeControllers
                 ) do
 
-                    if type(stopFunction)
-                        == "function" then
-
-                        pcall(
-                            stopFunction
-                        )
-
+                    if type(stopFunction) == "function" then
+                        pcall(stopFunction)
                     end
 
                 end
 
                 return
-
             end
 
             ------------------------------------------------------------
@@ -698,59 +716,32 @@ return {
             ------------------------------------------------------------
 
             local mode =
-                lower:match(
-                    "^!line%s+([123])$"
-                )
+                lower:match("^!line%s+([123])$")
 
             if mode then
 
                 mode = tonumber(mode)
 
-                --------------------------------------------------------
-                -- ADMIN ATAU COMMAND TARGET
-                --------------------------------------------------------
-
-                if not isAdmin
-                    and sender ~= commandTarget then
-
+                -- Admin atau CommandTarget boleh mengganti formasi.
+                if not isAdmin and sender ~= commandTarget then
                     return
-
                 end
 
-                --------------------------------------------------------
-                -- ADMIN:
-                -- !line 1
-                --
-                -- Target menjadi Admin.
-                --------------------------------------------------------
-
+                -- Admin menjalankan formasi pada dirinya sendiri.
                 if isAdmin then
 
-                    _G.BotVars.CommandTarget =
-                        sender
+                    _G.BotVars.CommandTarget = sender
 
-                    startLine(
-                        sender,
-                        mode
-                    )
+                    startLine(sender, mode)
 
                     return
 
                 end
 
-                --------------------------------------------------------
-                -- COMMAND TARGET:
-                -- !line 1
-                --
-                -- Tetap menggunakan dirinya sebagai target.
-                --------------------------------------------------------
-
+                -- CommandTarget menjalankan formasi pada dirinya sendiri.
                 if sender == commandTarget then
 
-                    startLine(
-                        sender,
-                        mode
-                    )
+                    startLine(sender, mode)
 
                     return
 
@@ -759,47 +750,32 @@ return {
             end
 
             ------------------------------------------------------------
-            -- !LINE 1 PLAYER
-            -- !LINE 2 PLAYER
-            -- !LINE 3 PLAYER
-            --
+            -- !LINE 1 PLAYER / !LINE 2 PLAYER / !LINE 3 PLAYER
             -- HANYA ADMIN
             ------------------------------------------------------------
 
-            local modeWithPlayer =
+            local modeWithPlayer, targetName =
                 lower:match(
                     "^!line%s+([123])%s+(.+)$"
                 )
 
-            if modeWithPlayer then
-
-                local selectedMode =
-                    tonumber(
-                        modeWithPlayer:match(
-                            "^([123])"
-                        )
-                    )
-
-                local targetName =
-                    modeWithPlayer:match(
-                        "^[123]%s+(.+)$"
-                    )
+            if modeWithPlayer and targetName then
 
                 if not isAdmin then
                     return
                 end
 
+                local selectedMode =
+                    tonumber(modeWithPlayer)
+
                 local target =
-                    findPlayerByName(
-                        targetName
-                    )
+                    findPlayerByName(targetName)
 
                 if not target then
                     return
                 end
 
-                _G.BotVars.CommandTarget =
-                    target
+                _G.BotVars.CommandTarget = target
 
                 startLine(
                     target,
@@ -807,7 +783,6 @@ return {
                 )
 
                 return
-
             end
 
         end
@@ -826,30 +801,21 @@ return {
 
             if channel then
 
-                channel.MessageReceived:Connect(
-                    function(message)
+                channel.MessageReceived:Connect(function(message)
 
-                        local userId =
-                            message.TextSource
-                            and message.TextSource.UserId
+                    local userId =
+                        message.TextSource
+                        and message.TextSource.UserId
 
-                        local sender =
-                            userId
-                            and Players:GetPlayerByUserId(
-                                userId
-                            )
+                    local sender =
+                        userId
+                        and Players:GetPlayerByUserId(userId)
 
-                        if sender then
-
-                            handleCommand(
-                                message.Text,
-                                sender
-                            )
-
-                        end
-
+                    if sender then
+                        handleCommand(message.Text, sender)
                     end
-                )
+
+                end)
 
             end
 
@@ -859,20 +825,13 @@ return {
         -- FALLBACK CHAT
         ----------------------------------------------------------------
 
-        for _, player in ipairs(
-            Players:GetPlayers()
-        ) do
+        for _, player in ipairs(Players:GetPlayers()) do
 
-            player.Chatted:Connect(
-                function(message)
+            player.Chatted:Connect(function(message)
 
-                    handleCommand(
-                        message,
-                        player
-                    )
+                handleCommand(message, player)
 
-                end
-            )
+            end)
 
         end
 
@@ -880,48 +839,38 @@ return {
         -- PLAYER ADDED
         ----------------------------------------------------------------
 
-        Players.PlayerAdded:Connect(
-            function(player)
+        Players.PlayerAdded:Connect(function(player)
 
-                player.Chatted:Connect(
-                    function(message)
+            player.Chatted:Connect(function(message)
 
-                        handleCommand(
-                            message,
-                            player
-                        )
+                handleCommand(message, player)
 
-                    end
-                )
+            end)
 
-            end
-        )
+        end)
 
         ----------------------------------------------------------------
         -- CHARACTER RESPAWN
         ----------------------------------------------------------------
 
-        LocalPlayer.CharacterAdded:Connect(
-            function()
+        LocalPlayer.CharacterAdded:Connect(function()
 
-                task.wait(1)
+            task.wait(1)
 
-                updateCharacter()
+            updateCharacter()
 
-                if _G.BotVars.ActiveMode
-                    == "line"
-                    and targetPlayer
-                    and currentLineMode then
+            if _G.BotVars.ActiveMode == "line"
+                and targetPlayer
+                and currentLineMode then
 
-                    startLine(
-                        targetPlayer,
-                        currentLineMode
-                    )
-
-                end
+                startLine(
+                    targetPlayer,
+                    currentLineMode
+                )
 
             end
-        )
+
+        end)
 
     end
 }
