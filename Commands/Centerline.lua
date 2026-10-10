@@ -52,7 +52,7 @@ return {
         ----------------------------------------------------------------
 
         -- Jarak antarbot.
-        local formationSpacing = 3
+        local formationSpacing = 1.5
 
         -- Toleransi untuk menganggap bot sudah sampai.
         local arrivalTolerance = 0.5
