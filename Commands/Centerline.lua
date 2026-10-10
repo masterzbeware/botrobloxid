@@ -1,3 +1,4 @@
+
 -- Centerline.lua
 -- MasterZ HUB
 -- Formasi horizontal dengan Admin/Player di tengah.
@@ -47,21 +48,10 @@ return {
         ))()
 
         ----------------------------------------------------------------
-        -- LOAD DISTANCE
-        ----------------------------------------------------------------
-
-        local Distance = loadstring(game:HttpGet(
-            "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Distance.lua"
-        ))()
-
-        ----------------------------------------------------------------
         -- CONFIGURATION
         ----------------------------------------------------------------
 
-        -- Jarak Admin/Player dari bot terdekat.
-        local defaultCenterlineDistance = 3
-
-        -- Jarak antarbot dalam satu barisan.
+        -- Jarak antarbot.
         local formationSpacing = 3
 
         -- Toleransi untuk menganggap bot sudah sampai.
@@ -249,24 +239,16 @@ return {
         end
 
         ----------------------------------------------------------------
-        -- GET ACTIVE BOTS
+        -- GET BOT INDEX
+        -- PENTING: gunakan urutan asli botOrder.
+        -- Jangan menghitung slot dari jumlah bot aktif.
         ----------------------------------------------------------------
 
-        local function getActiveBots()
-            local activeBots = {}
-
-            for _, botUserId in ipairs(botOrder) do
-                local botPlayer =
-                    Players:GetPlayerByUserId(
-                        tonumber(botUserId)
-                    )
-
-                if botPlayer then
-                    table.insert(activeBots, botUserId)
-                end
-            end
-
-            return activeBots
+        local function getBotIndex()
+            return table.find(
+                botOrder,
+                tostring(LocalPlayer.UserId)
+            )
         end
 
         ----------------------------------------------------------------
@@ -275,6 +257,20 @@ return {
 
         local function startCenterline(player)
             if not player then
+                return
+            end
+
+            ------------------------------------------------------------
+            -- VALIDATE BOT
+            ------------------------------------------------------------
+
+            local botIndex = getBotIndex()
+
+            if not botIndex then
+                warn(
+                    "[Centerline] Bot tidak ditemukan dalam botOrder:",
+                    LocalPlayer.UserId
+                )
                 return
             end
 
@@ -309,22 +305,6 @@ return {
             _G.BotVars.CommandTarget = player
 
             sendChat("Yes, Sir!")
-
-            ------------------------------------------------------------
-            -- VALIDATE BOT
-            ------------------------------------------------------------
-
-            local activeBots = getActiveBots()
-
-            local activeIndex = table.find(
-                activeBots,
-                tostring(LocalPlayer.UserId)
-            )
-
-            if not activeIndex then
-                stopCenterline()
-                return
-            end
 
             ------------------------------------------------------------
             -- CENTERLINE LOOP
@@ -376,64 +356,44 @@ return {
                     end
 
                     ----------------------------------------------------
-                    -- REFRESH ACTIVE BOT ORDER
+                    -- CALCULATE FIXED HORIZONTAL SLOT
                     ----------------------------------------------------
 
-                    activeBots = getActiveBots()
+                    local horizontalOffset
 
-                    activeIndex = table.find(
-                        activeBots,
-                        tostring(LocalPlayer.UserId)
-                    )
+                    if botIndex <= 5 then
+                        -- Bot 1 sampai Bot 5 di sebelah kiri.
+                        --
+                        -- Bot 1 = -5 slot
+                        -- Bot 2 = -4 slot
+                        -- Bot 3 = -3 slot
+                        -- Bot 4 = -2 slot
+                        -- Bot 5 = -1 slot
 
-                    if not activeIndex then
-                        return
+                        horizontalOffset =
+                            (botIndex - 6) * formationSpacing
+                    else
+                        -- Bot 6 sampai Bot 12 di sebelah kanan.
+                        --
+                        -- Bot 6  = +1 slot
+                        -- Bot 7  = +2 slot
+                        -- Bot 8  = +3 slot
+                        -- Bot 9  = +4 slot
+                        -- Bot 10 = +5 slot
+                        -- Bot 11 = +6 slot
+                        -- Bot 12 = +7 slot
+
+                        horizontalOffset =
+                            (botIndex - 5) * formationSpacing
                     end
-
-                    ----------------------------------------------------
-                    -- DISTANCE FROM CENTER
-                    ----------------------------------------------------
-
-                    local centerDistance =
-                        defaultCenterlineDistance
-
-                    local specialDistance =
-                        Distance:GetDistance(
-                            tostring(LocalPlayer.UserId),
-                            tostring(targetPlayer.UserId)
-                        )
-
-                    if specialDistance then
-                        centerDistance = specialDistance
-                    end
-
-                    ----------------------------------------------------
-                    -- CALCULATE HORIZONTAL OFFSET
-                    ----------------------------------------------------
-
-                    local activeBotCount = #activeBots
-
-                    -- Setiap bot mendapatkan slot berdasarkan urutan.
-                    -- Bot di bagian awal berada di kiri.
-                    -- Bot di bagian akhir berada di kanan.
-
-                    local centerIndex =
-                        (activeBotCount + 1) / 2
-
-                    local horizontalOffset =
-                        (activeIndex - centerIndex)
-                        * formationSpacing
 
                     ----------------------------------------------------
                     -- FORMATION POSITION
                     ----------------------------------------------------
 
-                    -- Seluruh bot berada pada garis horizontal
-                    -- yang melewati posisi target.
-                    --
-                    -- Tidak ada offset ke depan/belakang.
-                    --
-                    -- RightVector menentukan sisi kiri/kanan.
+                    -- Semua bot berada pada satu garis horizontal.
+                    -- RightVector menentukan posisi kiri/kanan.
+                    -- Tidak ada offset tambahan ke depan/belakang.
 
                     local targetPosition =
                         targetHRP.Position
@@ -468,9 +428,7 @@ return {
 
                     if distanceToTarget > arrivalTolerance then
                         humanoid.AutoRotate = true
-
                         humanoid:MoveTo(targetPosition)
-
                         return
                     end
 
