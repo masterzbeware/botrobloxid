@@ -1,6 +1,6 @@
 -- Bot.lua
 -- MasterZ HUB
--- Loader command dengan logging error yang jelas.
+-- Modular Command Loader
 -- Mendukung subfolder seperti Commands/Dance/BrazilDance.lua
 
 --------------------------------------------------
@@ -25,7 +25,10 @@ local libraryOk, Library = pcall(function()
     local loader, compileError = loadstring(source)
 
     if not loader then
-        error(compileError or "Gagal compile Obsidian Library")
+        error(
+            compileError or
+            "Gagal compile Obsidian Library"
+        )
     end
 
     return loader()
@@ -48,11 +51,20 @@ _G.BotVars = {
     RunService = game:GetService("RunService"),
     LocalPlayer = game:GetService("Players").LocalPlayer,
 
+    -- Global command state
     CommandTarget = nil,
     ActiveMode = nil,
+
+    -- Mode controllers
     ModeControllers = {},
+
+    -- Additional admins
     AdditionalAdmins = {},
+
+    -- Loaded modules
     Modules = {},
+
+    -- UI tabs
     Tabs = {},
 }
 
@@ -89,7 +101,7 @@ local commandFiles = {
     "Arrow.lua",
     "Backline.lua",
 
-    -- BrazilDance sekarang berada di subfolder Dance
+    -- Dance subfolder
     "Dance/BrazilDance.lua",
     "Dance/KangoraDance.lua",
     "Dance/PakodiDance.lua",
@@ -193,10 +205,9 @@ for _, fileName in ipairs(commandFiles) do
 
     --------------------------------------------------
     -- REGISTER MODULE
+    -- Dance/BrazilDance.lua -> brazildance
     --------------------------------------------------
 
-    -- Ambil nama file saja, bukan nama folder.
-    -- Dance/BrazilDance.lua -> brazildance
     local key = fileName:match("([^/]+)%.lua$")
 
     if not key then
@@ -253,6 +264,7 @@ local function jalankan(name)
     end
 
     print("[Bot.lua] Executed:", name)
+
     return true
 end
 
@@ -266,25 +278,31 @@ local executionOrder = {
     "agree",
     "arrow",
     "backline",
+
     "brazildance",
+
     "circle",
     "follow",
     "fourline",
     "frontline",
     "glowstick",
+
     "kangoradance",
     "message",
     "pakodidance",
     "pargoydance",
+
     "rest",
     "salute",
     "sit",
     "square",
     "sync",
     "worship",
+
     "lineformation",
     "stagger",
     "centerline",
+
     "scubadance",
     "tripoutdance",
     "huladance",
@@ -292,6 +310,10 @@ local executionOrder = {
     "trackmakerdance",
     "mydawgdance",
 }
+
+--------------------------------------------------
+-- EXECUTE COMMANDS
+--------------------------------------------------
 
 for _, name in ipairs(executionOrder) do
     jalankan(name)
@@ -301,4 +323,6 @@ end
 -- FINISHED
 --------------------------------------------------
 
-print("[Bot.lua] Proses pemuatan command selesai.")
+print(
+    "[Bot.lua] Proses pemuatan command selesai."
+)
