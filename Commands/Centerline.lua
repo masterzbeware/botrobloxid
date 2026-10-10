@@ -55,7 +55,7 @@ return {
         local formationSpacing = 3
 
         -- Toleransi untuk menganggap bot sudah sampai.
-        local arrivalTolerance = 1.5
+        local arrivalTolerance = 0.5
 
         ----------------------------------------------------------------
         -- BOT ORDER
@@ -395,12 +395,16 @@ return {
                     -- RightVector menentukan posisi kiri/kanan.
                     -- Tidak ada offset tambahan ke depan/belakang.
 
-                    local targetPosition =
-                        targetHRP.Position
-                        + (
-                            targetHRP.CFrame.RightVector
-                            * horizontalOffset
-                        )
+local targetPosition =
+    targetHRP.Position
+    + targetHRP.CFrame.RightVector * horizontalOffset
+
+-- Pastikan semua bot menggunakan ketinggian yang sama.
+targetPosition = Vector3.new(
+    targetPosition.X,
+    targetHRP.Position.Y,
+    targetPosition.Z
+)
 
                     ----------------------------------------------------
                     -- KEEP SAME HEIGHT AS TARGET
