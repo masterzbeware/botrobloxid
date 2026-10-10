@@ -99,7 +99,6 @@ local commands2 = {
     "!brazildance",
     "!huladance",
     "!kangoradance",
-    "!ketlindance",
     "!mydawgdance",
     "!pakodidance",
     "!pargoydance",

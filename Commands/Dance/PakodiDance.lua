@@ -1,9 +1,13 @@
+-- PakodiDance.lua
+-- Pakodi Dance dengan sistem mode bersama.
+-- Animation ID dipertahankan.
+
 return {
     Execute = function()
 
-        ----------------------------------------------------------------
+        --------------------------------------------------
         -- SERVICES
-        ----------------------------------------------------------------
+        --------------------------------------------------
 
         local Players = game:GetService("Players")
         local LocalPlayer = Players.LocalPlayer
@@ -13,350 +17,282 @@ return {
             return
         end
 
-
-        ----------------------------------------------------------------
-        -- GLOBAL MODE SYSTEM
-        ----------------------------------------------------------------
+        --------------------------------------------------
+        -- GLOBAL VARIABLES
+        --------------------------------------------------
 
         _G.BotVars = _G.BotVars or {}
-        _G.BotVars.ModeControllers =
-            _G.BotVars.ModeControllers or {}
 
+        local Vars = _G.BotVars
+        Vars.ModeControllers = Vars.ModeControllers or {}
+        Vars.AdditionalAdmins = Vars.AdditionalAdmins or {}
 
-        ----------------------------------------------------------------
-        -- LOAD ADMIN
-        ----------------------------------------------------------------
+        local MODE_NAME = "pakodidance"
+        local ANIMATION_ID = 80676655500518
+
+        --------------------------------------------------
+        -- ADMIN MODULE
+        --------------------------------------------------
 
         local AdminModule
 
-        do
-            local success, result = pcall(function()
-                return loadstring(game:HttpGet(
-                    "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
-                ))()
-            end)
+        local adminOk, adminResult = pcall(function()
+            local source = game:HttpGet(
+                "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
+            )
 
-            if success and result then
-                AdminModule = result
-            else
-                warn("[PakodiDance] Gagal load Admin.lua.")
-                return
+            local loader, compileError = loadstring(source)
+
+            if not loader then
+                error(compileError or "Gagal compile Admin.lua")
             end
+
+            return loader()
+        end)
+
+        if adminOk and type(adminResult) == "table" then
+            AdminModule = adminResult
+        else
+            warn(
+                "[PakodiDance] Gagal memuat Admin.lua:",
+                tostring(adminResult)
+            )
+            return
         end
 
-
-        ----------------------------------------------------------------
-        -- FE ANIMATION ID
-        ----------------------------------------------------------------
-
-        local PAKODI_DANCE_ANIMATION_ID = "80676655500518"
-
-
-        ----------------------------------------------------------------
-        -- VARIABLES
-        ----------------------------------------------------------------
-
-        local MODE_NAME = "pakodidance"
-
-        local danceTrack = nil
-        local dancing = false
-        local danceGeneration = 0
-
-        local connectedPlayers = {}
-        local playerAddedConnection
-        local playerRemovingConnection
-        local characterAddedConnection
-
-
-        ----------------------------------------------------------------
-        -- ADMIN CHECK
-        ----------------------------------------------------------------
-
         local function isAdmin(player)
-
             if not player then
                 return false
             end
 
-            local success, result = pcall(function()
+            local ok, result = pcall(function()
                 return AdminModule:IsAdmin(player)
             end)
 
-            if success and result == true then
+            if ok and result == true then
                 return true
             end
 
-            local additionalAdmins =
-                _G.BotVars.AdditionalAdmins or {}
-
-            return additionalAdmins[player.UserId] == true
-
+            return Vars.AdditionalAdmins[player.UserId] == true
         end
 
+        --------------------------------------------------
+        -- DANCE STATE
+        --------------------------------------------------
 
-        ----------------------------------------------------------------
+        local danceTrack = nil
+        local dancing = false
+        local danceGeneration = 0
+        local connectedPlayers = {}
+
+        --------------------------------------------------
         -- GET CHARACTER
-        ----------------------------------------------------------------
+        --------------------------------------------------
 
-        local function getCharacter()
-
-            local character = LocalPlayer.Character
-
-            if not character then
-                character = LocalPlayer.CharacterAdded:Wait()
+        local function getCharacterData(player)
+            if not player then
+                return nil, nil, nil
             end
 
+            local character = player.Character
+
             if not character then
-                return nil, nil
+                return nil, nil, nil
             end
 
-            local humanoid =
-                character:FindFirstChildOfClass("Humanoid")
+            local humanoid = character:FindFirstChildOfClass("Humanoid")
 
-            return character, humanoid
+            if not humanoid or humanoid.Health <= 0 then
+                return character, nil, nil
+            end
 
+            local animator = humanoid:FindFirstChildOfClass("Animator")
+
+            if not animator then
+                animator = Instance.new("Animator")
+                animator.Parent = humanoid
+            end
+
+            return character, humanoid, animator
         end
 
-
-        ----------------------------------------------------------------
+        --------------------------------------------------
         -- RESTORE NORMAL ANIMATION
-        ----------------------------------------------------------------
+        --------------------------------------------------
 
         local function restoreNormalAnimation(generation)
-
-            if generation
-                and generation ~= danceGeneration then
+            if generation ~= danceGeneration then
                 return
             end
 
-            local character = LocalPlayer.Character
+            local character, humanoid = getCharacterData(LocalPlayer)
 
-            if not character then
-                dancing = false
+            if not character or not humanoid then
                 return
             end
-
-            local humanoid =
-                character:FindFirstChildOfClass("Humanoid")
-
-            if not humanoid then
-                dancing = false
-                return
-            end
-
-
-            ------------------------------------------------------------
-            -- STOP PAKODI TRACK
-            ------------------------------------------------------------
 
             if danceTrack then
-
-                local oldTrack = danceTrack
-                danceTrack = nil
-
                 pcall(function()
-                    oldTrack:Stop(0.15)
+                    danceTrack:Stop(0.1)
                 end)
 
+                danceTrack = nil
             end
 
+            dancing = false
 
-            ------------------------------------------------------------
-            -- STOP ACTION TRACKS
-            ------------------------------------------------------------
-
-            local animator =
-                humanoid:FindFirstChildOfClass("Animator")
+            local animator = humanoid:FindFirstChildOfClass("Animator")
 
             if animator then
+                for _, track in ipairs(animator:GetPlayingAnimationTracks()) do
+                    if track.Priority == Enum.AnimationPriority.Action
+                        or track.Priority == Enum.AnimationPriority.Action2
+                        or track.Priority == Enum.AnimationPriority.Action3
+                        or track.Priority == Enum.AnimationPriority.Action4 then
 
-                local ok, tracks = pcall(function()
-                    return animator:GetPlayingAnimationTracks()
-                end)
-
-                if ok and tracks then
-
-                    for _, track in ipairs(tracks) do
-
-                        if track.Priority
-                            == Enum.AnimationPriority.Action
-                            or track.Priority
-                            == Enum.AnimationPriority.Action2
-                            or track.Priority
-                            == Enum.AnimationPriority.Action3
-                            or track.Priority
-                            == Enum.AnimationPriority.Action4 then
-
-                            pcall(function()
-                                track:Stop(0.15)
-                            end)
-
-                        end
-
+                        pcall(function()
+                            track:Stop(0.1)
+                        end)
                     end
-
                 end
-
             end
 
+            if generation ~= danceGeneration then
+                return
+            end
 
-            ------------------------------------------------------------
-            -- RESTART DEFAULT ANIMATE SCRIPT
-            ------------------------------------------------------------
+            local animateScript = character:FindFirstChild("Animate")
 
-            local animateScript =
-                character:FindFirstChild("Animate")
-
-            if animateScript
-                and animateScript:IsA("LocalScript") then
-
+            if animateScript and animateScript:IsA("LocalScript") then
                 pcall(function()
                     animateScript.Disabled = true
                 end)
 
                 task.wait(0.1)
 
-                if generation
-                    and generation ~= danceGeneration then
+                if generation ~= danceGeneration then
                     return
                 end
 
-                pcall(function()
-                    animateScript.Disabled = false
-                end)
-
+                if animateScript.Parent then
+                    pcall(function()
+                        animateScript.Disabled = false
+                    end)
+                end
             end
 
-
-            ------------------------------------------------------------
-            -- RESTORE HUMANOID STATE
-            ------------------------------------------------------------
-
-            if generation
-                and generation ~= danceGeneration then
+            if generation ~= danceGeneration then
                 return
             end
 
             pcall(function()
-                humanoid:ChangeState(
-                    Enum.HumanoidStateType.Running
-                )
+                humanoid:ChangeState(Enum.HumanoidStateType.Running)
             end)
 
-            dancing = false
-
-
-            ------------------------------------------------------------
-            -- DELAYED RUNNING STATE
-            ------------------------------------------------------------
-
-            local cleanupGeneration =
-                generation or danceGeneration
-
-            task.defer(function()
-
-                task.wait(0.1)
-
-                if cleanupGeneration ~= danceGeneration then
+            task.delay(0.2, function()
+                if generation ~= danceGeneration then
                     return
                 end
 
-                if humanoid
-                    and humanoid.Parent
-                    and humanoid.Health > 0 then
+                local _, currentHumanoid = getCharacterData(LocalPlayer)
 
+                if currentHumanoid and currentHumanoid.Health > 0 then
                     pcall(function()
-                        humanoid:ChangeState(
+                        currentHumanoid:ChangeState(
                             Enum.HumanoidStateType.Running
                         )
                     end)
-
                 end
-
             end)
-
-            print("[PakodiDance] Animasi normal dipulihkan.")
-
         end
 
+        --------------------------------------------------
+        -- STOP OTHER MODES
+        --------------------------------------------------
 
-        ----------------------------------------------------------------
+        local function stopOtherModes()
+            for modeName, controller in pairs(Vars.ModeControllers) do
+                if modeName ~= MODE_NAME and type(controller) == "function" then
+                    pcall(controller)
+                end
+            end
+        end
+
+        --------------------------------------------------
         -- STOP PAKODI DANCE
-        ----------------------------------------------------------------
+        --------------------------------------------------
 
         local function stopPakodiDance()
-
-            danceGeneration = danceGeneration + 1
+            danceGeneration += 1
 
             local generation = danceGeneration
 
             dancing = false
 
             if danceTrack then
-
-                local oldTrack = danceTrack
-                danceTrack = nil
-
                 pcall(function()
-                    oldTrack:Stop(0.15)
+                    danceTrack:Stop(0.1)
                 end)
 
+                danceTrack = nil
             end
 
             restoreNormalAnimation(generation)
-
-            -- CommandTarget tidak dihapus di sini.
-            -- Hanya !stop admin yang menghapus CommandTarget.
-
         end
 
+        Vars.ModeControllers[MODE_NAME] = stopPakodiDance
 
-        ----------------------------------------------------------------
-        -- REGISTER CONTROLLER
-        ----------------------------------------------------------------
+        --------------------------------------------------
+        -- FIND PLAYER
+        --------------------------------------------------
 
-        _G.BotVars.ModeControllers[MODE_NAME] =
-            stopPakodiDance
-
-
-        ----------------------------------------------------------------
-        -- STOP OTHER MODES
-        ----------------------------------------------------------------
-
-        local function stopOtherModes()
-
-            for name, stopFunction in pairs(
-                _G.BotVars.ModeControllers
-            ) do
-
-                if name ~= MODE_NAME
-                    and type(stopFunction) == "function" then
-
-                    pcall(function()
-                        stopFunction()
-                    end)
-
-                end
-
+        local function findPlayer(name)
+            if not name or name == "" then
+                return nil
             end
 
+            local searchName = name:lower()
+
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player.Name:lower() == searchName
+                    or player.DisplayName:lower() == searchName then
+                    return player
+                end
+            end
+
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player.Name:lower():sub(1, #searchName) == searchName
+                    or player.DisplayName:lower():sub(1, #searchName) == searchName then
+                    return player
+                end
+            end
+
+            return nil
         end
 
-
-        ----------------------------------------------------------------
+        --------------------------------------------------
         -- PLAY PAKODI DANCE
-        ----------------------------------------------------------------
+        --------------------------------------------------
 
         local function playPakodiDance(targetPlayer)
-
-            danceGeneration = danceGeneration + 1
+            danceGeneration += 1
 
             local generation = danceGeneration
 
-            _G.BotVars.ActiveMode = MODE_NAME
+            dancing = false
+
+            Vars.ActiveMode = MODE_NAME
 
             if targetPlayer then
-                _G.BotVars.CommandTarget = targetPlayer
+                Vars.CommandTarget = targetPlayer
+            end
+
+            if danceTrack then
+                pcall(function()
+                    danceTrack:Stop(0.1)
+                end)
+
+                danceTrack = nil
             end
 
             stopOtherModes()
@@ -365,31 +301,10 @@ return {
                 return
             end
 
-
-            ------------------------------------------------------------
-            -- STOP PREVIOUS TRACK
-            ------------------------------------------------------------
-
-            if danceTrack then
-
-                local oldTrack = danceTrack
-                danceTrack = nil
-
-                pcall(function()
-                    oldTrack:Stop(0.1)
-                end)
-
-            end
-
-
-            ------------------------------------------------------------
-            -- GET CHARACTER
-            ------------------------------------------------------------
-
-            local character, humanoid = getCharacter()
+            local character, humanoid = getCharacterData(LocalPlayer)
 
             if not character or not humanoid then
-                warn("[PakodiDance] Character atau Humanoid tidak ditemukan.")
+                warn("[PakodiDance] Character atau Humanoid tidak tersedia.")
                 return
             end
 
@@ -398,387 +313,9 @@ return {
                 return
             end
 
+            local track = nil
 
-            ------------------------------------------------------------
-            -- PLAY FE ANIMATION WITH RETRY
-            ------------------------------------------------------------
-
-            local maxAttempts = 3
-            local success = false
-            local result = nil
-
-            for attempt = 1, maxAttempts do
-
-                if generation ~= danceGeneration then
-                    return
-                end
-
-                if LocalPlayer.Character ~= character
-                    or not humanoid.Parent then
-                    return
-                end
-
-                local ok, track = pcall(function()
-                    return humanoid:PlayEmoteAndGetAnimTrackById(
-                        PAKODI_DANCE_ANIMATION_ID
-                    )
-                end)
-
-                if ok and track then
-                    success = true
-                    result = track
-                    break
-                end
-
-                result = track
-
-                if attempt < maxAttempts then
-                    task.wait(0.15)
-                end
-
-            end
-
-
-            ------------------------------------------------------------
-            -- VALIDATE AFTER RETRY
-            ------------------------------------------------------------
-
-            if generation ~= danceGeneration
-                or LocalPlayer.Character ~= character then
-
-                if result then
-                    pcall(function()
-                        result:Stop(0)
-                    end)
-                end
-
-                return
-            end
-
-
-            ------------------------------------------------------------
-            -- RESULT
-            ------------------------------------------------------------
-
-            if success and result then
-
-                danceTrack = result
-                dancing = true
-
-                print(
-                    "[PakodiDance] FE Animation berhasil dimainkan:",
-                    PAKODI_DANCE_ANIMATION_ID,
-                    "| Bot:",
-                    LocalPlayer.Name
-                )
-
-
-                --------------------------------------------------------
-                -- MONITOR TRACK
-                --------------------------------------------------------
-
-                task.spawn(function()
-
-                    local currentTrack = result
-                    local trackGeneration = generation
-
-                    pcall(function()
-                        currentTrack.Stopped:Wait()
-                    end)
-
-                    if danceTrack == currentTrack
-                        and dancing
-                        and trackGeneration == danceGeneration then
-
-                        danceTrack = nil
-
-                        restoreNormalAnimation(
-                            trackGeneration
-                        )
-
-                    end
-
-                end)
-
-            else
-
-                dancing = false
-
-                warn(
-                    "[PakodiDance] FE Animation gagal dimainkan setelah",
-                    maxAttempts,
-                    "percobaan.",
-                    "| Bot:",
-                    LocalPlayer.Name,
-                    "| Last Error:",
-                    tostring(result)
-                )
-
-            end
-
-        end
-
-
-        ----------------------------------------------------------------
-        -- FIND PLAYER
-        ----------------------------------------------------------------
-
-        local function findPlayerByName(name)
-
-            if not name or name == "" then
-                return nil
-            end
-
-            name = name:lower()
-
-            for _, player in ipairs(Players:GetPlayers()) do
-
-                if player.Name:lower() == name
-                    or player.DisplayName:lower() == name then
-
-                    return player
-                end
-
-            end
-
-            for _, player in ipairs(Players:GetPlayers()) do
-
-                if player.Name:lower():sub(1, #name) == name then
-                    return player
-                end
-
-            end
-
-            return nil
-
-        end
-
-
-        ----------------------------------------------------------------
-        -- COMMAND HANDLER
-        ----------------------------------------------------------------
-
-        local function handleCommand(message, sender)
-
-            if not message or not sender then
-                return
-            end
-
-            local lower = message:lower()
-                :gsub("^%s+", "")
-                :gsub("%s+$", "")
-
-            local senderIsAdmin = isAdmin(sender)
-
-            local commandTarget =
-                _G.BotVars.CommandTarget
-
-            local isCommandTarget =
-                commandTarget == sender
-
-
-            ------------------------------------------------------------
-            -- !STOP (ADMIN ONLY)
-            ------------------------------------------------------------
-
-            if lower == "!stop" then
-
-                if not senderIsAdmin then
-                    print(
-                        "[PakodiDance] !stop ditolak:",
-                        sender.Name,
-                        "bukan Admin."
-                    )
-                    return
-                end
-
-                print(
-                    "[PakodiDance] !stop diterima | Admin:",
-                    sender.Name
-                )
-
-                _G.BotVars.ActiveMode = nil
-                _G.BotVars.CommandTarget = nil
-
-                for _, stopFunction in pairs(
-                    _G.BotVars.ModeControllers
-                ) do
-
-                    if type(stopFunction) == "function" then
-                        pcall(stopFunction)
-                    end
-
-                end
-
-                return
-
-            end
-
-
-            ------------------------------------------------------------
-            -- !UNPAKODIDANCE (ADMIN ONLY)
-            ------------------------------------------------------------
-
-            if lower == "!unpakodidance" then
-
-                if not senderIsAdmin then
-                    print(
-                        "[PakodiDance] !unpakodidance ditolak:",
-                        sender.Name,
-                        "bukan Admin."
-                    )
-                    return
-                end
-
-                if _G.BotVars.ActiveMode == MODE_NAME then
-                    _G.BotVars.ActiveMode = nil
-                end
-
-                stopPakodiDance()
-
-                return
-
-            end
-
-
-            ------------------------------------------------------------
-            -- !PAKODIDANCE
-            ------------------------------------------------------------
-
-            if lower == "!pakodidance" then
-
-                if not senderIsAdmin and not isCommandTarget then
-                    print(
-                        "[PakodiDance] !pakodidance ditolak:",
-                        sender.Name
-                    )
-                    return
-                end
-
-                _G.BotVars.CommandTarget = sender
-
-                playPakodiDance(sender)
-
-                return
-
-            end
-
-
-            ------------------------------------------------------------
-            -- !PAKODIDANCE PLAYER (ADMIN ONLY)
-            ------------------------------------------------------------
-
-            local targetName =
-                lower:match("^!pakodidance%s+(.+)$")
-
-            if targetName then
-
-                if not senderIsAdmin then
-                    print(
-                        "[PakodiDance] !pakodidance PLAYER ditolak:",
-                        sender.Name,
-                        "bukan Admin."
-                    )
-                    return
-                end
-
-                local target = findPlayerByName(targetName)
-
-                if not target then
-                    warn(
-                        "[PakodiDance] Player tidak ditemukan:",
-                        targetName
-                    )
-                    return
-                end
-
-                _G.BotVars.CommandTarget = target
-
-                playPakodiDance(target)
-
-                return
-
-            end
-
-        end
-
-
-        ----------------------------------------------------------------
-        -- CHAT CONNECTIONS
-        ----------------------------------------------------------------
-
-        local function connectPlayerChat(player)
-
-            if connectedPlayers[player] then
-                return
-            end
-
-            connectedPlayers[player] =
-                player.Chatted:Connect(function(message)
-                    handleCommand(message, player)
-                end)
-
-        end
-
-
-        ----------------------------------------------------------------
-        -- EXISTING PLAYERS
-        ----------------------------------------------------------------
-
-        for _, player in ipairs(Players:GetPlayers()) do
-            connectPlayerChat(player)
-        end
-
-
-        ----------------------------------------------------------------
-        -- PLAYER ADDED
-        ----------------------------------------------------------------
-
-        playerAddedConnection =
-            Players.PlayerAdded:Connect(function(player)
-                connectPlayerChat(player)
-            end)
-
-
-        ----------------------------------------------------------------
-        -- PLAYER REMOVING
-        ----------------------------------------------------------------
-
-        playerRemovingConnection =
-            Players.PlayerRemoving:Connect(function(player)
-
-                local connection = connectedPlayers[player]
-
-                if connection then
-                    connection:Disconnect()
-                    connectedPlayers[player] = nil
-                end
-
-            end)
-
-
-        ----------------------------------------------------------------
-        -- CHARACTER RESPAWN
-        ----------------------------------------------------------------
-
-        characterAddedConnection =
-            LocalPlayer.CharacterAdded:Connect(function(character)
-
-                task.wait(1)
-
-                danceGeneration = danceGeneration + 1
-
-                local generation = danceGeneration
-
-                danceTrack = nil
-                dancing = false
-
-                if _G.BotVars.ActiveMode ~= MODE_NAME then
-                    return
-                end
-
-                task.wait(0.5)
-
+            for attempt = 1, 3 do
                 if generation ~= danceGeneration then
                     return
                 end
@@ -787,28 +324,226 @@ return {
                     return
                 end
 
-                if _G.BotVars.ActiveMode == MODE_NAME then
+                local success, result = pcall(function()
+                    return humanoid:PlayEmoteAndGetAnimTrackById(
+                        ANIMATION_ID
+                    )
+                end)
 
-                    local target =
-                        _G.BotVars.CommandTarget or LocalPlayer
-
-                    playPakodiDance(target)
-
+                if success and result then
+                    track = result
+                    break
                 end
 
+                if attempt < 3 then
+                    task.wait(0.15)
+                end
+            end
+
+            if generation ~= danceGeneration then
+                if track then
+                    pcall(function()
+                        track:Stop(0.1)
+                    end)
+                end
+                return
+            end
+
+            if LocalPlayer.Character ~= character then
+                if track then
+                    pcall(function()
+                        track:Stop(0.1)
+                    end)
+                end
+                return
+            end
+
+            if not track then
+                warn(
+                    "[PakodiDance] Gagal memainkan Animation ID:",
+                    ANIMATION_ID
+                )
+                restoreNormalAnimation(generation)
+                return
+            end
+
+            danceTrack = track
+            dancing = true
+
+            print(
+                "[PakodiDance] Animasi dimulai:",
+                ANIMATION_ID
+            )
+
+            local currentTrack = track
+            local currentGeneration = generation
+
+            task.spawn(function()
+                currentTrack.Stopped:Wait()
+
+                if danceGeneration ~= currentGeneration then
+                    return
+                end
+
+                if danceTrack ~= currentTrack then
+                    return
+                end
+
+                danceTrack = nil
+                dancing = false
+
+                restoreNormalAnimation(currentGeneration)
             end)
+        end
 
+        --------------------------------------------------
+        -- CHAT COMMANDS
+        --------------------------------------------------
 
-        ----------------------------------------------------------------
-        -- READY
-        ----------------------------------------------------------------
+        local function handleCommand(player, message)
+            if not player or type(message) ~= "string" then
+                return
+            end
+
+            local trimmed = message:match("^%s*(.-)%s*$")
+
+            if not trimmed or trimmed == "" then
+                return
+            end
+
+            local command = trimmed:lower()
+
+            --------------------------------------------------
+            -- !stop
+            --------------------------------------------------
+
+            if command == "!stop" then
+                if not isAdmin(player) then
+                    return
+                end
+
+                Vars.ActiveMode = nil
+                Vars.CommandTarget = nil
+
+                for _, controller in pairs(Vars.ModeControllers) do
+                    if type(controller) == "function" then
+                        pcall(controller)
+                    end
+                end
+
+                return
+            end
+
+            --------------------------------------------------
+            -- !unpakodidance
+            --------------------------------------------------
+
+            if command == "!unpakodidance" then
+                if not isAdmin(player) then
+                    return
+                end
+
+                if Vars.ActiveMode == MODE_NAME then
+                    Vars.ActiveMode = nil
+                end
+
+                stopPakodiDance()
+                return
+            end
+
+            --------------------------------------------------
+            -- !pakodidance
+            --------------------------------------------------
+
+            if command == "!pakodidance" then
+                if not isAdmin(player)
+                    and Vars.CommandTarget ~= player then
+                    return
+                end
+
+                Vars.CommandTarget = player
+                playPakodiDance(player)
+                return
+            end
+
+            --------------------------------------------------
+            -- !pakodidance username
+            --------------------------------------------------
+
+            local targetName = trimmed:match("^[!][Pp][Aa][Kk][Oo][Dd][Ii][Dd][Aa][Nn][Cc][Ee]%s+(.+)$")
+
+            if targetName then
+                if not isAdmin(player) then
+                    return
+                end
+
+                local targetPlayer = findPlayer(targetName)
+
+                if not targetPlayer then
+                    warn("[PakodiDance] Player tidak ditemukan:", targetName)
+                    return
+                end
+
+                Vars.CommandTarget = targetPlayer
+                playPakodiDance(targetPlayer)
+            end
+        end
+
+        --------------------------------------------------
+        -- CONNECT PLAYER CHAT
+        --------------------------------------------------
+
+        local function connectPlayer(player)
+            if connectedPlayers[player] then
+                return
+            end
+
+            connectedPlayers[player] = player.Chatted:Connect(function(message)
+                handleCommand(player, message)
+            end)
+        end
+
+        for _, player in ipairs(Players:GetPlayers()) do
+            connectPlayer(player)
+        end
+
+        Players.PlayerAdded:Connect(connectPlayer)
+
+        Players.PlayerRemoving:Connect(function(player)
+            if connectedPlayers[player] then
+                connectedPlayers[player]:Disconnect()
+                connectedPlayers[player] = nil
+            end
+        end)
+
+        --------------------------------------------------
+        -- RESPAWN HANDLER
+        --------------------------------------------------
+
+        LocalPlayer.CharacterAdded:Connect(function()
+            danceGeneration += 1
+
+            danceTrack = nil
+            dancing = false
+
+            local generation = danceGeneration
+
+            task.wait(0.5)
+
+            if generation ~= danceGeneration then
+                return
+            end
+
+            if Vars.ActiveMode == MODE_NAME then
+                playPakodiDance(
+                    Vars.CommandTarget or LocalPlayer
+                )
+            end
+        end)
 
         print(
-            "[PakodiDance] Loaded untuk:",
-            LocalPlayer.Name,
-            "| FE Animation:",
-            PAKODI_DANCE_ANIMATION_ID
+            "[PakodiDance] Loaded. Animation ID:",
+            ANIMATION_ID
         )
-
     end
 }
