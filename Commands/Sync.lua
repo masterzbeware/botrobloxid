@@ -5,101 +5,64 @@ return {
         -- SERVICES
         --------------------------------------------------
 
-        local Players =
-            game:GetService("Players")
+        local Players = game:GetService("Players")
+        local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-        local ReplicatedStorage =
-            game:GetService("ReplicatedStorage")
-
-        local LocalPlayer =
-            Players.LocalPlayer
-
-        local PlaceId =
-            game.PlaceId
-
-
-        --------------------------------------------------
-        -- VALIDATE LOCAL PLAYER
-        --------------------------------------------------
+        local LocalPlayer = Players.LocalPlayer
+        local PlaceId = game.PlaceId
 
         if not LocalPlayer then
-
-            warn(
-                "[Sync] LocalPlayer tidak ditemukan."
-            )
-
+            warn("[Sync] LocalPlayer tidak ditemukan.")
             return
         end
-
 
         --------------------------------------------------
         -- GLOBAL SYSTEM
         --------------------------------------------------
 
-        _G.BotVars =
-            _G.BotVars or {}
+        _G.BotVars = _G.BotVars or {}
 
-        _G.BotVars.ModeControllers =
-            _G.BotVars.ModeControllers or {}
+        local vars = _G.BotVars
 
+        vars.ModeControllers = vars.ModeControllers or {}
 
         --------------------------------------------------
         -- PREVENT DUPLICATE EXECUTE
         --------------------------------------------------
 
-        if _G.BotVars.SyncLoaded then
-
-            warn(
-                "[Sync] Sync.lua sudah aktif."
-            )
-
+        if vars.SyncLoaded then
+            warn("[Sync] Sync.lua sudah aktif.")
             return
         end
 
-        _G.BotVars.SyncLoaded = true
-
+        vars.SyncLoaded = true
 
         --------------------------------------------------
         -- PLACE CONFIGURATION
         --------------------------------------------------
 
-        local PLACE_CIDRO =
-            79312497897212
+        local PLACE_CIDRO = 79312497897212
+        local PLACE_TANPANAMA = 119031818630096
 
-        local PLACE_TANPANAMA =
-            119031818630096
-
-
-        --------------------------------------------------
-        -- DETECT PLACE
-        --------------------------------------------------
+        local IsTanpanama = PlaceId == PLACE_TANPANAMA
+        local IsCidro = PlaceId == PLACE_CIDRO
 
         local CurrentPlaceName
 
-
-        if PlaceId == PLACE_CIDRO then
-
-            CurrentPlaceName =
-                "Cidro Janji"
-
-        elseif PlaceId == PLACE_TANPANAMA then
-
-            CurrentPlaceName =
-                "TANPANAMA"
-
+        if IsCidro then
+            CurrentPlaceName = "Cidro Janji"
+        elseif IsTanpanama then
+            CurrentPlaceName = "TANPANAMA"
         else
-
             warn(
                 "[Sync] Place tidak didukung.",
                 "PlaceId:",
                 PlaceId
             )
 
-            _G.BotVars.SyncLoaded = false
-
+            vars.SyncLoaded = false
             return
         end
-
 
         print(
             "[Sync] Place terdeteksi:",
@@ -107,707 +70,400 @@ return {
             "(" .. tostring(PlaceId) .. ")"
         )
 
-
         --------------------------------------------------
-        -- ADMIN MODULE
+        -- LOAD ADMIN MODULE
         --------------------------------------------------
 
-        local Admin
-
-
-        local successAdmin,
-            resultAdmin =
-            pcall(function()
-
-                local url =
-                    "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
-
-                return loadstring(
-                    game:HttpGet(url)
-                )()
-
-            end)
-
-
-        if not successAdmin then
-
-            warn(
-                "[Sync] Gagal load Admin.lua:",
-                resultAdmin
+        local adminOk, Admin = pcall(function()
+            local source = game:HttpGet(
+                "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
             )
 
-            _G.BotVars.SyncLoaded = false
+            local loader, compileError = loadstring(source)
 
+            if not loader then
+                error(compileError)
+            end
+
+            return loader()
+        end)
+
+        if not adminOk or not Admin then
+            warn("[Sync] Gagal memuat Admin.lua:", Admin)
+            vars.SyncLoaded = false
             return
         end
 
-
-        Admin =
-            resultAdmin
-
-
-        if not Admin then
-
-            warn(
-                "[Sync] Admin.lua tidak menghasilkan module."
-            )
-
-            _G.BotVars.SyncLoaded = false
-
-            return
-        end
-
-
         --------------------------------------------------
-        -- EVENTS FOLDER
+        -- FIND EVENTS FOLDER
         --------------------------------------------------
 
         local EventsFolder =
-            ReplicatedStorage:WaitForChild(
-                "Events",
-                10
-            )
-
+            ReplicatedStorage:WaitForChild("Events", 10)
 
         if not EventsFolder then
-
             warn(
-                "[Sync] Folder ReplicatedStorage.Events tidak ditemukan."
+                "[Sync] ReplicatedStorage.Events tidak ditemukan."
             )
 
-            _G.BotVars.SyncLoaded = false
-
+            vars.SyncLoaded = false
             return
         end
 
-
         --------------------------------------------------
-        -- SYNC REMOTE
+        -- GET SYNC REMOTE
         --------------------------------------------------
 
         local SyncRemote
 
-
-        --------------------------------------------------
-        -- CIDRO JANJI
-        --------------------------------------------------
-
-        if PlaceId == PLACE_CIDRO then
-
-            SyncRemote =
-                EventsFolder:WaitForChild(
-                    "RequestSync",
-                    10
-                )
-
+        if IsCidro then
+            SyncRemote = EventsFolder:WaitForChild(
+                "RequestSync",
+                10
+            )
 
             if not SyncRemote then
-
-                warn(
-                    "[Sync] RequestSync tidak ditemukan."
-                )
-
-                _G.BotVars.SyncLoaded = false
-
+                warn("[Sync] RequestSync tidak ditemukan.")
+                vars.SyncLoaded = false
                 return
             end
 
+            print("[Sync] Remote: Events.RequestSync")
 
-            print(
-                "[Sync] Remote:",
-                "Events.RequestSync"
-            )
-
-
-        --------------------------------------------------
-        -- TANPANAMA
-        --------------------------------------------------
-
-        elseif PlaceId == PLACE_TANPANAMA then
-
+        elseif IsTanpanama then
             local DanceFolder =
-                EventsFolder:WaitForChild(
-                    "Dance",
-                    10
-                )
-
+                EventsFolder:WaitForChild("Dance", 10)
 
             if not DanceFolder then
-
-                warn(
-                    "[Sync] Events.Dance tidak ditemukan."
-                )
-
-                _G.BotVars.SyncLoaded = false
-
+                warn("[Sync] Events.Dance tidak ditemukan.")
+                vars.SyncLoaded = false
                 return
             end
 
-
-            SyncRemote =
-                DanceFolder:WaitForChild(
-                    "startSync",
-                    10
-                )
-
+            SyncRemote = DanceFolder:WaitForChild(
+                "startSync",
+                10
+            )
 
             if not SyncRemote then
-
-                warn(
-                    "[Sync] startSync tidak ditemukan."
-                )
-
-                _G.BotVars.SyncLoaded = false
-
+                warn("[Sync] startSync tidak ditemukan.")
+                vars.SyncLoaded = false
                 return
             end
 
-
-            print(
-                "[Sync] Remote:",
-                "Events.Dance.startSync"
-            )
-
+            print("[Sync] Remote: Events.Dance.startSync")
         end
-
 
         --------------------------------------------------
-        -- CHECK REMOTE
+        -- VALIDATE REMOTE
         --------------------------------------------------
 
-        if not SyncRemote then
+        if not SyncRemote
+            or not SyncRemote:IsA("RemoteEvent") then
 
-            warn(
-                "[Sync] Sync remote tidak tersedia."
-            )
-
-            _G.BotVars.SyncLoaded = false
-
+            warn("[Sync] Sync remote bukan RemoteEvent.")
+            vars.SyncLoaded = false
             return
         end
-
-
-        if not SyncRemote:IsA("RemoteEvent") then
-
-            warn(
-                "[Sync] Object sync bukan RemoteEvent:",
-                SyncRemote.ClassName
-            )
-
-            _G.BotVars.SyncLoaded = false
-
-            return
-        end
-
 
         --------------------------------------------------
         -- FIND PLAYER
         --------------------------------------------------
 
         local function findPlayer(name)
-
-            if not name
-                or name == "" then
-
+            if not name or name == "" then
                 return nil
             end
 
+            name = tostring(name):lower()
 
-            name =
-                tostring(name)
-
-
-            local lowerName =
-                string.lower(name)
-
-
-            --------------------------------------------------
-            -- EXACT USERNAME
-            --------------------------------------------------
-
-            for _, player in ipairs(
-                Players:GetPlayers()
-            ) do
-
-                if string.lower(
-                    player.Name
-                ) == lowerName then
-
+            -- Exact username
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player.Name:lower() == name then
                     return player
                 end
             end
 
-
-            --------------------------------------------------
-            -- EXACT DISPLAY NAME
-            --------------------------------------------------
-
-            for _, player in ipairs(
-                Players:GetPlayers()
-            ) do
-
-                if string.lower(
-                    player.DisplayName
-                ) == lowerName then
-
+            -- Exact display name
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player.DisplayName:lower() == name then
                     return player
                 end
             end
 
-
-            --------------------------------------------------
-            -- USERNAME PREFIX
-            --------------------------------------------------
-
-            for _, player in ipairs(
-                Players:GetPlayers()
-            ) do
-
-                if string.sub(
-                    string.lower(
-                        player.Name
-                    ),
-                    1,
-                    #name
-                ) == lowerName then
-
+            -- Username prefix
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player.Name:lower():sub(1, #name) == name then
                     return player
                 end
             end
 
-
-            --------------------------------------------------
-            -- DISPLAY NAME PREFIX
-            --------------------------------------------------
-
-            for _, player in ipairs(
-                Players:GetPlayers()
-            ) do
-
-                if string.sub(
-                    string.lower(
-                        player.DisplayName
-                    ),
-                    1,
-                    #name
-                ) == lowerName then
-
+            -- Display name prefix
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player.DisplayName:lower():sub(1, #name) == name then
                     return player
                 end
             end
-
 
             return nil
         end
 
+        --------------------------------------------------
+        -- GET CURRENT FOLLOW TARGET
+        --------------------------------------------------
+        -- PENTING:
+        --
+        -- CommandTarget dikelola oleh sistem movement,
+        -- misalnya Follow.lua.
+        --
+        -- Sync tidak boleh mengganti CommandTarget.
+        --
+        -- Jika admin sebelumnya mengetik:
+        -- !follow namaPlayer
+        --
+        -- Lalu mengetik:
+        -- !sync
+        --
+        -- target sync menggunakan CommandTarget yang sama.
+        --------------------------------------------------
+
+        local function getDefaultSyncTarget(sender)
+            local target = vars.CommandTarget
+
+            if target
+                and target:IsA("Player")
+                and target:IsDescendantOf(Players) then
+
+                return target
+            end
+
+            return sender
+        end
 
         --------------------------------------------------
         -- STOP SYNC
         --------------------------------------------------
 
         local function stopSync()
-
             --------------------------------------------------
-            -- CLEAR ACTIVE MODE
+            -- JANGAN MEMATIKAN FOLLOW
             --------------------------------------------------
-
-            if _G.BotVars.ActiveMode
-                == "sync" then
-
-                _G.BotVars.ActiveMode =
-                    nil
-            end
-
-
-            --------------------------------------------------
-            -- CLEAR SYNC TARGET
+            -- Sync adalah mode tambahan.
+            -- ActiveMode milik Follow/formasi tidak diubah.
             --------------------------------------------------
 
-            _G.BotVars.SyncTarget =
-                nil
-
+            vars.SyncTarget = nil
 
             --------------------------------------------------
-            -- TANPANAMA
+            -- TANPANAMA: REQUEST STOP
             --------------------------------------------------
 
-            if PlaceId ==
-                PLACE_TANPANAMA then
-
-                local success, err =
-                    pcall(function()
-
-                        SyncRemote:FireServer(
-                            LocalPlayer,
-                            false
-                        )
-
-                    end)
-
-
-                if not success then
-
-                    warn(
-                        "[Sync] Stop sync gagal:",
-                        err
+            if IsTanpanama then
+                local ok, err = pcall(function()
+                    SyncRemote:FireServer(
+                        LocalPlayer,
+                        false
                     )
+                end)
 
+                if not ok then
+                    warn("[Sync] Permintaan stop gagal:", err)
                     return false
                 end
 
+                print("[Sync] Permintaan stop TANPANAMA dikirim.")
+                return true
+            end
 
+            --------------------------------------------------
+            -- CIDRO JANJI
+            --------------------------------------------------
+            -- Mempertahankan perilaku lama.
+            -- Remote stop khusus Cidro belum ditambahkan,
+            -- karena argumen stop-nya belum diketahui.
+            --------------------------------------------------
+
+            if IsCidro then
                 print(
-                    "[Sync] TANPANAMA sync dihentikan."
+                    "[Sync] Target sync lokal dibersihkan untuk Cidro Janji."
                 )
 
                 return true
             end
-
-
-            --------------------------------------------------
-            -- CIDRO
-            --------------------------------------------------
-
-            if PlaceId ==
-                PLACE_CIDRO then
-
-                print(
-                    "[Sync] Cidro Janji sync state dibersihkan."
-                )
-
-                return true
-            end
-
 
             return false
         end
 
-
         --------------------------------------------------
-        -- REGISTER MODE CONTROLLER
+        -- REGISTER SYNC CONTROLLER
         --------------------------------------------------
 
-        _G.BotVars.ModeControllers.sync =
-            stopSync
-
+        vars.ModeControllers.sync = stopSync
 
         --------------------------------------------------
         -- REQUEST SYNC
         --------------------------------------------------
+        -- Sync tidak menghentikan movement mode.
+        -- Sync juga tidak mengganti CommandTarget.
+        --------------------------------------------------
 
         local function requestSync(target)
-
             if not target then
-
-                warn(
-                    "[Sync] Target tidak ditemukan."
-                )
-
+                warn("[Sync] Target tidak ditemukan.")
                 return false
             end
 
+            if not target:IsA("Player")
+                or not target:IsDescendantOf(Players) then
 
-            if not target:IsDescendantOf(
-                Players
-            ) then
-
-                warn(
-                    "[Sync] Target sudah tidak berada di Players:",
-                    target.Name
-                )
-
+                warn("[Sync] Target sudah tidak tersedia.")
                 return false
             end
 
-
             --------------------------------------------------
-            -- STOP OTHER MODES
+            -- JANGAN STOP OTHER MODES
             --------------------------------------------------
-
-            for modeName, stopFunction in pairs(
-                _G.BotVars.ModeControllers
-            ) do
-
-                if modeName ~= "sync"
-                    and type(stopFunction) == "function" then
-
-                    pcall(stopFunction)
-
-                end
-
-            end
-
-
-            --------------------------------------------------
-            -- SET ACTIVE MODE
-            --------------------------------------------------
-
-            _G.BotVars.ActiveMode =
-                "sync"
-
-
-            --------------------------------------------------
-            -- IMPORTANT
+            -- Jangan panggil stopOtherModes().
+            -- Jangan mengubah vars.ActiveMode.
+            -- Jangan mengubah vars.CommandTarget.
             --
-            -- Sync sekarang menggunakan CommandTarget
-            -- seperti Follow / Backline / Circle.
+            -- Dengan demikian Follow.lua tetap berjalan.
             --------------------------------------------------
 
-            _G.BotVars.CommandTarget =
-                target
+            local ok, err = pcall(function()
+                if IsCidro then
+                    SyncRemote:FireServer(target)
 
+                elseif IsTanpanama then
+                    SyncRemote:FireServer(target, true)
+                end
+            end)
 
-            _G.BotVars.SyncTarget =
-                target
-
-
-            --------------------------------------------------
-            -- FIRE REMOTE
-            --------------------------------------------------
-
-            local success, err =
-                pcall(function()
-
-
-                    --------------------------------------------------
-                    -- CIDRO JANJI
-                    --------------------------------------------------
-
-                    if PlaceId ==
-                        PLACE_CIDRO then
-
-                        SyncRemote:FireServer(
-                            target
-                        )
-
-
-                    --------------------------------------------------
-                    -- TANPANAMA
-                    --------------------------------------------------
-
-                    elseif PlaceId ==
-                        PLACE_TANPANAMA then
-
-                        SyncRemote:FireServer(
-                            target,
-                            true
-                        )
-
-                    end
-
-                end)
-
-
-            if not success then
-
-                warn(
-                    "[Sync] Request sync gagal:",
-                    err
-                )
-
-                _G.BotVars.ActiveMode =
-                    nil
-
-                _G.BotVars.CommandTarget =
-                    nil
-
-                _G.BotVars.SyncTarget =
-                    nil
-
+            if not ok then
+                warn("[Sync] Request sync gagal:", err)
                 return false
             end
 
+            --------------------------------------------------
+            -- ONLY UPDATE SYNC TARGET
+            --------------------------------------------------
 
-            print(
-                "[Sync] Sync berhasil."
-            )
+            vars.SyncTarget = target
 
-            print(
-                "[Sync] Place:",
-                CurrentPlaceName
-            )
+            print("[Sync] Permintaan sync dikirim.")
+            print("[Sync] Place:", CurrentPlaceName)
+            print("[Sync] Target sync:", target.Name)
 
-            print(
-                "[Sync] Target:",
-                target.Name
-            )
-
+            if vars.ActiveMode == "follow" then
+                print(
+                    "[Sync] Follow tetap aktif ke:",
+                    vars.CommandTarget
+                        and vars.CommandTarget.Name
+                        or "target sebelumnya"
+                )
+            end
 
             return true
         end
 
+        --------------------------------------------------
+        -- ADMIN CHECK
+        --------------------------------------------------
+
+        local function isAdmin(sender)
+            if not sender then
+                return false
+            end
+
+            local ok, result = pcall(function()
+                return Admin:IsAdmin(sender)
+            end)
+
+            return ok and result == true
+        end
 
         --------------------------------------------------
         -- HANDLE COMMAND
         --------------------------------------------------
 
-        local function handleCommand(
-            sender,
-            message
-        )
-
-            if not sender
-                or not message then
-
+        local function handleCommand(sender, message)
+            if not sender or not message then
                 return
             end
 
-
             --------------------------------------------------
-            -- ADMIN CHECK
-            --------------------------------------------------
-
-            local isAdmin =
-                false
-
-
-            local adminSuccess =
-                pcall(function()
-
-                    isAdmin =
-                        Admin:IsAdmin(sender)
-
-                end)
-
-
-            if not adminSuccess then
-
-                return
-            end
-
-
-            --------------------------------------------------
-            -- COMMAND TARGET CHECK
+            -- ADMIN / COMMAND TARGET
             --------------------------------------------------
 
-            local isCommandTarget =
-                (
-                    _G.BotVars.CommandTarget
-                    == sender
-                )
+            local senderIsAdmin = isAdmin(sender)
 
+            local senderIsCommandTarget =
+                vars.CommandTarget == sender
 
             --------------------------------------------------
-            -- CLEAN MESSAGE
+            -- NORMALIZE MESSAGE
             --------------------------------------------------
 
-            message =
-                tostring(message)
-
-
-            message =
-                message:gsub(
-                    "^%s+",
-                    ""
-                )
-
-
-            message =
-                message:gsub(
-                    "%s+$",
-                    ""
-                )
-
+            message = tostring(message)
+                :lower()
+                :gsub("^%s+", "")
+                :gsub("%s+$", "")
 
             if message == "" then
-
                 return
             end
 
-
-            --------------------------------------------------
-            -- SPLIT COMMAND
-            --------------------------------------------------
-
-            local command,
-                targetName =
-                message:match(
-                    "^(%S+)%s*(.*)$"
-                )
-
+            local command, targetName =
+                message:match("^(%S+)%s*(.*)$")
 
             if not command then
-
                 return
             end
 
-
-            command =
-                string.lower(command)
-
+            command = command:lower()
 
             if targetName then
-
-                targetName =
-                    targetName:gsub(
-                        "^%s+",
-                        ""
-                    )
-
-                targetName =
-                    targetName:gsub(
-                        "%s+$",
-                        ""
-                    )
-
+                targetName = targetName
+                    :gsub("^%s+", "")
+                    :gsub("%s+$", "")
             end
-
 
             --------------------------------------------------
             -- !SYNC
             --------------------------------------------------
 
             if command == "!sync" then
-
-
                 --------------------------------------------------
                 -- !sync
-                --
-                -- Admin:
-                -- Sync ke dirinya sendiri
-                --
-                -- CommandTarget:
-                -- Sync ke dirinya sendiri
+                -- Gunakan target follow yang aktif jika ada.
                 --------------------------------------------------
 
-                if not targetName
-                    or targetName == "" then
-
-                    if not isAdmin
-                        and not isCommandTarget then
+                if not targetName or targetName == "" then
+                    if not senderIsAdmin
+                        and not senderIsCommandTarget then
 
                         return
                     end
 
+                    local target =
+                        getDefaultSyncTarget(sender)
 
-                    requestSync(
-                        sender
-                    )
-
+                    requestSync(target)
                     return
                 end
-
 
                 --------------------------------------------------
                 -- !sync username
-                --
-                -- HANYA ADMIN
+                -- Hanya admin yang boleh menentukan target lain.
                 --------------------------------------------------
 
-                if not isAdmin then
-
+                if not senderIsAdmin then
                     return
                 end
 
-
-                local target =
-                    findPlayer(
-                        targetName
-                    )
-
+                local target = findPlayer(targetName)
 
                 if not target then
-
                     warn(
                         "[Sync] Player tidak ditemukan:",
                         targetName
@@ -816,225 +472,127 @@ return {
                     return
                 end
 
-
-                --------------------------------------------------
-                -- ADMIN MEMILIH TARGET BARU
-                --------------------------------------------------
-
-                requestSync(
-                    target
-                )
-
-
+                -- Tidak mengganti vars.CommandTarget.
+                requestSync(target)
                 return
             end
-
 
             --------------------------------------------------
             -- !STOP
-            --
-            -- HANYA ADMIN
+            -- Hanya admin yang boleh menghentikan semua mode.
             --------------------------------------------------
 
             if command == "!stop" then
-
-                if not isAdmin then
-
+                if not senderIsAdmin then
                     return
                 end
 
-
                 --------------------------------------------------
-                -- CLEAR GLOBAL TARGET
-                --------------------------------------------------
-
-                _G.BotVars.ActiveMode =
-                    nil
-
-                _G.BotVars.CommandTarget =
-                    nil
-
-                _G.BotVars.SyncTarget =
-                    nil
-
-
-                --------------------------------------------------
-                -- STOP ALL MODE CONTROLLERS
+                -- CLEAR GLOBAL STATE
                 --------------------------------------------------
 
-                for modeName, stopFunction in pairs(
-                    _G.BotVars.ModeControllers
+                vars.ActiveMode = nil
+                vars.CommandTarget = nil
+                vars.SyncTarget = nil
+
+                --------------------------------------------------
+                -- STOP ALL REGISTERED MODES
+                --------------------------------------------------
+
+                for _, stopFunction in pairs(
+                    vars.ModeControllers
                 ) do
-
-                    if type(stopFunction) ==
-                        "function" then
-
-                        pcall(
-                            stopFunction
-                        )
-
+                    if type(stopFunction) == "function" then
+                        pcall(stopFunction)
                     end
-
                 end
 
-
                 print(
-                    "[Sync] Semua mode dihentikan oleh Admin."
+                    "[Sync] Perintah !stop diproses oleh admin."
                 )
 
                 return
             end
-
         end
-
 
         --------------------------------------------------
         -- CHAT CONNECTIONS
         --------------------------------------------------
 
         local connections = {}
+        vars.SyncConnections = connections
 
+        --------------------------------------------------
+        -- CONNECT PLAYER CHAT
+        --------------------------------------------------
 
-        _G.BotVars.SyncConnections =
-            connections
+        local function connectPlayer(player)
+            if connections[player] then
+                connections[player]:Disconnect()
+            end
 
+            connections[player] = player.Chatted:Connect(
+                function(message)
+                    handleCommand(player, message)
+                end
+            )
+        end
 
         --------------------------------------------------
         -- EXISTING PLAYERS
         --------------------------------------------------
 
-        for _, player in ipairs(
-            Players:GetPlayers()
-        ) do
-
-            connections[player] =
-                player.Chatted:Connect(
-                    function(message)
-
-                        handleCommand(
-                            player,
-                            message
-                        )
-
-                    end
-                )
-
+        for _, player in ipairs(Players:GetPlayers()) do
+            connectPlayer(player)
         end
-
 
         --------------------------------------------------
         -- PLAYER ADDED
         --------------------------------------------------
 
         connections.PlayerAdded =
-            Players.PlayerAdded:Connect(
-                function(player)
-
-                    if connections[player] then
-
-                        connections[player]:Disconnect()
-
-                        connections[player] =
-                            nil
-                    end
-
-
-                    connections[player] =
-                        player.Chatted:Connect(
-                            function(message)
-
-                                handleCommand(
-                                    player,
-                                    message
-                                )
-
-                            end
-                        )
-
-                end
-            )
-
+            Players.PlayerAdded:Connect(function(player)
+                connectPlayer(player)
+            end)
 
         --------------------------------------------------
         -- PLAYER REMOVING
         --------------------------------------------------
 
         connections.PlayerRemoving =
-            Players.PlayerRemoving:Connect(
-                function(player)
-
-                    if connections[player] then
-
-                        connections[player]:Disconnect()
-
-                        connections[player] =
-                            nil
-                    end
-
+            Players.PlayerRemoving:Connect(function(player)
+                if connections[player] then
+                    connections[player]:Disconnect()
+                    connections[player] = nil
                 end
-            )
 
+                if vars.SyncTarget == player then
+                    vars.SyncTarget = nil
+                end
+            end)
 
         --------------------------------------------------
         -- GLOBAL INFO
         --------------------------------------------------
 
-        _G.BotVars.SyncPlace =
-            CurrentPlaceName
-
-        _G.BotVars.SyncPlaceId =
-            PlaceId
-
-        _G.BotVars.SyncRemote =
-            SyncRemote
-
+        vars.SyncPlace = CurrentPlaceName
+        vars.SyncPlaceId = PlaceId
+        vars.SyncRemote = SyncRemote
 
         --------------------------------------------------
         -- READY
         --------------------------------------------------
 
         print("----------------------------------------")
-
-        print(
-            "[Sync] Loaded successfully."
-        )
-
-        print(
-            "[Sync] Place:",
-            CurrentPlaceName
-        )
-
-        print(
-            "[Sync] PlaceId:",
-            PlaceId
-        )
-
-        print(
-            "[Sync] Remote:",
-            SyncRemote:GetFullName()
-        )
-
-        print(
-            "[Sync] ModeController: sync"
-        )
-
-        print(
-            "[Sync] Commands:"
-        )
-
-        print(
-            "[Sync] !sync"
-        )
-
-        print(
-            "[Sync] !sync username/displayname"
-        )
-
-        print(
-            "[Sync] !stop"
-        )
-
+        print("[Sync] Loaded successfully.")
+        print("[Sync] Place:", CurrentPlaceName)
+        print("[Sync] PlaceId:", PlaceId)
+        print("[Sync] Remote:", SyncRemote:GetFullName())
+        print("[Sync] Sync tidak akan mengganti movement mode.")
+        print("[Sync] Commands:")
+        print("[Sync] !sync")
+        print("[Sync] !sync username")
+        print("[Sync] !stop")
         print("----------------------------------------")
-
     end
 }
