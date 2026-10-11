@@ -1,16 +1,21 @@
 -- Glowstick.lua
 -- MasterZ HUB
--- Glowstick command untuk TANPANAMA dan Cidro-Janji
+-- TANPANAMA: SetColor berada di dalam Tool GlowStick
+-- CIDRO-JANJI: menggunakan ReplicatedStorage.GlowstickRemotes.SetColor
+--
 -- Commands:
 -- !glowstick
+-- !glowstick blue
+-- !glowstick purple
+-- !glowstick magenta
+-- !glowstick pink
 -- !glowstick red
 -- !glowstick orange
 -- !glowstick yellow
+-- !glowstick lime
 -- !glowstick green
--- !glowstick blue
--- !glowstick pink
--- !glowstick black
 -- !glowstick white
+-- !glowstick black
 -- !stop
 
 return {
@@ -31,31 +36,33 @@ return {
         end
 
         --------------------------------------------------
-        -- CONFIG
+        -- PLACE CONFIG
         --------------------------------------------------
 
         local PlaceId = game.PlaceId
+        local IsTanpanama = PlaceId == 119031818630096
+        local IsCidro = PlaceId == 79312497897212
+
         local ToolName
 
-        if PlaceId == 119031818630096 then
-            -- TANPANAMA
+        if IsTanpanama then
             ToolName = "GlowStick"
-        elseif PlaceId == 79312497897212 then
-            -- Cidro-Janji
-            ToolName = "Glowstick"
         else
             ToolName = "Glowstick"
         end
 
-        print("[Glowstick] PlaceId:", PlaceId, "Tool:", ToolName)
+        print(
+            "[Glowstick] PlaceId:", PlaceId,
+            "| Game:", IsTanpanama and "TANPANAMA"
+                or (IsCidro and "Cidro-Janji" or "Other"),
+            "| Tool:", ToolName
+        )
 
         --------------------------------------------------
         -- LOAD ADMIN MODULE
         --------------------------------------------------
 
-        local Admin
-
-        local adminOk, adminResult = pcall(function()
+        local adminOk, Admin = pcall(function()
             local source = game:HttpGet(
                 "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
             )
@@ -69,81 +76,147 @@ return {
             return loader()
         end)
 
-        if adminOk then
-            Admin = adminResult
-        else
-            warn("[Glowstick] Gagal memuat Admin.lua:", adminResult)
+        if not adminOk or not Admin then
+            warn("[Glowstick] Gagal memuat Admin.lua:", Admin)
             return
         end
 
         --------------------------------------------------
-        -- STATE
+        -- STATE / CLEANUP OLD CONNECTIONS
         --------------------------------------------------
 
-        local vars = _G.BotVars or {}
-        vars.GlowstickState = vars.GlowstickState or {}
+        _G.BotVars = _G.BotVars or {}
 
-        local state = vars.GlowstickState
-        state.Active = false
+        local vars = _G.BotVars
 
-        -- Hindari koneksi command ganda jika Execute dipanggil ulang.
-        if state.Connections then
-            for _, connection in ipairs(state.Connections) do
+        if vars.GlowstickState
+            and vars.GlowstickState.Connections then
+
+            for _, connection in ipairs(
+                vars.GlowstickState.Connections
+            ) do
                 pcall(function()
                     connection:Disconnect()
                 end)
             end
         end
 
-        state.Connections = {}
+        local state = {
+            Active = false,
+            Connections = {},
+        }
+
         vars.GlowstickState = state
 
+        local function addConnection(connection)
+            table.insert(state.Connections, connection)
+        end
+
         --------------------------------------------------
-        -- COLORS
+        -- COLORS FROM COBALT
         --------------------------------------------------
 
         local GlowstickColors = {
-            red = Color3.new(1, 0, 0),
-            orange = Color3.new(1, 0.47058823704719543, 0),
-            yellow = Color3.new(1, 0.94117647409439087, 0),
-            green = Color3.new(0.31372550129890442, 1, 0),
-            blue = Color3.new(0, 0.31372550129890442, 1),
-            pink = Color3.new(1, 0.62745100259780884, 0.86274510622024536),
-            black = Color3.new(0.039215687662363052, 0.039215687662363052, 0.039215687662363052),
-            white = Color3.new(0.94117647409439087, 0.94117647409439087, 0.94117647409439087),
+            blue = Color3.new(
+                0,
+                0.35294118523597717,
+                1
+            ),
+
+            purple = Color3.new(
+                0.58823531866073608,
+                0,
+                1
+            ),
+
+            magenta = Color3.new(
+                1,
+                0,
+                1
+            ),
+
+            pink = Color3.new(
+                1,
+                0.11764705926179886,
+                0.47058823704779886
+            ),
+
+            red = Color3.new(
+                1,
+                0,
+                0
+            ),
+
+            orange = Color3.new(
+                1,
+                0.43137255311012268,
+                0
+            ),
+
+            yellow = Color3.new(
+                1,
+                0.84313726425170898,
+                0
+            ),
+
+            lime = Color3.new(
+                0.66666668653488159,
+                1,
+                0
+            ),
+
+            green = Color3.new(
+                0,
+                0.82352942228317261,
+                0.31372550129890442
+            ),
+
+            white = Color3.new(
+                1,
+                1,
+                1
+            ),
+
+            -- Additional color retained from the old version.
+            black = Color3.new(
+                0.039215687662363052,
+                0.039215687662363052,
+                0.039215687662363052
+            ),
         }
 
         --------------------------------------------------
-        -- FIND TOOL
+        -- FIND GLOWSTICK
+        -- Check Character and Backpack.
         --------------------------------------------------
 
         local function findGlowstick()
             local character = LocalPlayer.Character
-            local backpack = LocalPlayer:FindFirstChildOfClass("Backpack")
+            local backpack =
+                LocalPlayer:FindFirstChildOfClass("Backpack")
 
-            -- Jika sudah equipped, jangan equip ulang.
+            -- Prioritize the equipped Tool.
             if character then
-                for _, child in ipairs(character:GetChildren()) do
-                    if child:IsA("Tool") then
-                        local name = child.Name:lower()
+                for _, child in ipairs(
+                    character:GetChildren()
+                ) do
+                    if child:IsA("Tool")
+                        and child.Name:lower() == "glowstick" then
 
-                        if name == "glowstick" then
-                            return child
-                        end
+                        return child
                     end
                 end
             end
 
-            -- Cari berdasarkan nama tanpa membedakan kapital.
+            -- Also check the Backpack.
             if backpack then
-                for _, child in ipairs(backpack:GetChildren()) do
-                    if child:IsA("Tool") then
-                        local name = child.Name:lower()
+                for _, child in ipairs(
+                    backpack:GetChildren()
+                ) do
+                    if child:IsA("Tool")
+                        and child.Name:lower() == "glowstick" then
 
-                        if name == ToolName:lower()
-                            or name == "glowstick" then
-                            return child
-                        end
+                        return child
                     end
                 end
             end
@@ -152,7 +225,7 @@ return {
         end
 
         --------------------------------------------------
-        -- EQUIP TOOL
+        -- EQUIP GLOWSTICK
         --------------------------------------------------
 
         local function equipGlowstick()
@@ -163,102 +236,182 @@ return {
                 return false
             end
 
-            local humanoid = character:FindFirstChildOfClass("Humanoid")
+            local humanoid =
+                character:FindFirstChildOfClass("Humanoid")
 
             if not humanoid then
                 warn("[Glowstick] Humanoid tidak ditemukan.")
                 return false
             end
 
-            local backpack = LocalPlayer:FindFirstChildOfClass("Backpack")
-
             local tool = findGlowstick()
 
             if not tool then
                 warn(
-                    "[Glowstick] Tool tidak ditemukan!",
-                    "Nama yang dicari:", ToolName,
-                    "| Backpack:", backpack ~= nil,
-                    "| PlaceId:", PlaceId
+                    "[Glowstick] Tool tidak ditemukan:",
+                    ToolName
                 )
                 return false
             end
 
-            -- Sudah berada di Character berarti sudah equipped.
             if tool.Parent == character then
-                print("[Glowstick] Tool sudah equipped:", tool.Name)
+                print(
+                    "[Glowstick] Sudah equipped:",
+                    tool.Name
+                )
                 return true
             end
 
+            local backpack =
+                LocalPlayer:FindFirstChildOfClass("Backpack")
+
             if tool.Parent ~= backpack then
                 warn(
-                    "[Glowstick] Tool ditemukan tetapi bukan di Backpack:",
+                    "[Glowstick] Tool bukan di Backpack:",
                     tool:GetFullName()
                 )
                 return false
             end
 
-            local equipOk, equipError = pcall(function()
+            local ok, err = pcall(function()
                 humanoid:EquipTool(tool)
             end)
 
-            if not equipOk then
-                warn("[Glowstick] EquipTool gagal:", equipError)
+            if not ok then
+                warn("[Glowstick] EquipTool error:", err)
                 return false
             end
 
-            -- Beri waktu singkat untuk perpindahan Tool.
             task.wait(0.25)
 
             if tool.Parent == character then
-                print("[Glowstick] Berhasil equipped:", tool.Name)
+                print(
+                    "[Glowstick] Berhasil equipped:",
+                    tool.Name
+                )
                 return true
             end
 
             warn(
-                "[Glowstick] Equip belum berhasil.",
-                "Tool:", tool.Name,
-                "| Parent:", tool.Parent and tool.Parent:GetFullName() or "nil"
+                "[Glowstick] Equip belum terkonfirmasi:",
+                tool.Name
             )
 
             return false
         end
 
         --------------------------------------------------
-        -- SET COLOR
+        -- GET SETCOLOR REMOTE
+        --------------------------------------------------
+
+        local function getSetColorRemote()
+            --------------------------------------------------
+            -- TANPANAMA
+            -- Character.GlowStick.SetColor
+            -- atau Backpack.GlowStick.SetColor
+            --------------------------------------------------
+
+            if IsTanpanama then
+                local tool = findGlowstick()
+
+                if not tool then
+                    warn(
+                        "[Glowstick] GlowStick tidak ditemukan "
+                        .. "di Character maupun Backpack."
+                    )
+                    return nil
+                end
+
+                local remote =
+                    tool:FindFirstChild("SetColor", true)
+
+                if remote and remote:IsA("RemoteEvent") then
+                    return remote
+                end
+
+                warn(
+                    "[Glowstick] RemoteEvent SetColor tidak "
+                    .. "ditemukan di dalam Tool ",
+                    tool.Name
+                )
+
+                return nil
+            end
+
+            --------------------------------------------------
+            -- CIDRO-JANJI / OTHER PLACES
+            --------------------------------------------------
+
+            local remotes =
+                ReplicatedStorage:FindFirstChild(
+                    "GlowstickRemotes"
+                )
+
+            if not remotes then
+                warn(
+                    "[Glowstick] GlowstickRemotes tidak ditemukan."
+                )
+                return nil
+            end
+
+            local remote = remotes:FindFirstChild("SetColor")
+
+            if not remote or not remote:IsA("RemoteEvent") then
+                warn(
+                    "[Glowstick] RemoteEvent SetColor tidak ditemukan."
+                )
+                return nil
+            end
+
+            return remote
+        end
+
+        --------------------------------------------------
+        -- CHANGE GLOWSTICK COLOR
         --------------------------------------------------
 
         local function setGlowstickColor(colorName)
             local color = GlowstickColors[colorName]
 
             if not color then
-                warn("[Glowstick] Warna tidak dikenal:", colorName)
-                return
+                warn(
+                    "[Glowstick] Warna tidak dikenal:",
+                    colorName
+                )
+                return false
             end
 
-            local remotes = ReplicatedStorage:FindFirstChild("GlowstickRemotes")
+            -- For TANPANAMA, the Tool must exist first.
+            -- It can still be in Backpack; equipping is not
+            -- required just to find its SetColor RemoteEvent.
 
-            if not remotes then
-                warn("[Glowstick] GlowstickRemotes tidak ditemukan.")
-                return
-            end
+            local remote = getSetColorRemote()
 
-            local setColor = remotes:FindFirstChild("SetColor")
-
-            if not setColor or not setColor:IsA("RemoteEvent") then
-                warn("[Glowstick] RemoteEvent SetColor tidak ditemukan.")
-                return
+            if not remote then
+                return false
             end
 
             local ok, err = pcall(function()
-                setColor:FireServer(color)
+                remote:FireServer(color)
             end)
 
-            if ok then
-                print("[Glowstick] Permintaan warna dikirim:", colorName)
-            else
-                warn("[Glowstick] Gagal mengirim warna:", err)
+            if not ok then
+                warn(
+                    "[Glowstick] Gagal mengirim warna:",
+                    colorName,
+                    err
+                )
+                return false
             end
+
+            print(
+                "[Glowstick] Warna dikirim:",
+                colorName,
+                "| PlaceId:",
+                PlaceId
+            )
+
+            return true
         end
 
         --------------------------------------------------
@@ -274,7 +427,8 @@ return {
                 return
             end
 
-            local humanoid = character:FindFirstChildOfClass("Humanoid")
+            local humanoid =
+                character:FindFirstChildOfClass("Humanoid")
 
             if humanoid then
                 pcall(function()
@@ -282,7 +436,7 @@ return {
                 end)
             end
 
-            print("[Glowstick] Glowstick dihentikan.")
+            print("[Glowstick] Dihentikan.")
         end
 
         --------------------------------------------------
@@ -302,7 +456,7 @@ return {
         end
 
         --------------------------------------------------
-        -- HANDLE COMMAND
+        -- HANDLE CHAT COMMAND
         --------------------------------------------------
 
         local function handleCommand(message, sender)
@@ -314,18 +468,26 @@ return {
                 return
             end
 
-            local lower = message:lower():match("^%s*(.-)%s*$")
+            local lower =
+                message:lower():match("^%s*(.-)%s*$")
+
+            --------------------------------------------------
+            -- !STOP
+            --------------------------------------------------
 
             if lower == "!stop" then
                 stopGlowstick()
                 return
             end
 
+            --------------------------------------------------
+            -- !GLOWSTICK
+            --------------------------------------------------
+
             if lower == "!glowstick" then
                 state.Active = true
 
                 task.spawn(function()
-                    -- Coba beberapa kali jika Tool baru diberikan.
                     for attempt = 1, 10 do
                         if not state.Active then
                             return
@@ -341,102 +503,126 @@ return {
                     end
 
                     warn(
-                        "[Glowstick] Gagal equip setelah 10 percobaan.",
-                        "Pastikan Tool tersedia di Backpack."
+                        "[Glowstick] Gagal equip setelah "
+                        .. "10 percobaan."
                     )
                 end)
 
                 return
             end
 
-            local colorName = lower:match("^!glowstick%s+(%a+)%s*$")
+            --------------------------------------------------
+            -- !GLOWSTICK COLOR
+            --------------------------------------------------
 
-            if colorName then
-                if not GlowstickColors[colorName] then
-                    warn("[Glowstick] Warna tidak tersedia:", colorName)
-                    return
+            local colorName =
+                lower:match("^!glowstick%s+(%a+)%s*$")
+
+            if not colorName then
+                return
+            end
+
+            if not GlowstickColors[colorName] then
+                warn(
+                    "[Glowstick] Warna tidak tersedia:",
+                    colorName
+                )
+                return
+            end
+
+            state.Active = true
+
+            task.spawn(function()
+                for attempt = 1, 10 do
+                    if not state.Active then
+                        return
+                    end
+
+                    local tool = findGlowstick()
+
+                    if tool then
+                        -- Try equipping, but color is also sent
+                        -- when the Tool remains inside Backpack.
+                        equipGlowstick()
+
+                        if state.Active then
+                            setGlowstickColor(colorName)
+                        end
+
+                        return
+                    end
+
+                    if attempt < 10 then
+                        task.wait(0.5)
+                    end
                 end
 
-                state.Active = true
-
-                task.spawn(function()
-                    local equipped = false
-
-                    for attempt = 1, 10 do
-                        if not state.Active then
-                            return
-                        end
-
-                        if equipGlowstick() then
-                            equipped = true
-                            break
-                        end
-
-                        if attempt < 10 then
-                            task.wait(0.5)
-                        end
-                    end
-
-                    if equipped and state.Active then
-                        setGlowstickColor(colorName)
-                    else
-                        warn("[Glowstick] Warna tidak dikirim karena equip gagal.")
-                    end
-                end)
-            end
+                warn(
+                    "[Glowstick] Tidak dapat mengubah warna: "
+                    .. "Tool tidak ditemukan."
+                )
+            end)
         end
 
         --------------------------------------------------
         -- CHAT CONNECTIONS
         --------------------------------------------------
 
-        local function addConnection(connection)
-            table.insert(state.Connections, connection)
-        end
+        local channels =
+            TextChatService:FindFirstChild("TextChannels")
 
-        -- Chat modern: RBXGeneral.
-        local channels = TextChatService:FindFirstChild("TextChannels")
-        local general = channels and channels:FindFirstChild("RBXGeneral")
+        local general =
+            channels and channels:FindFirstChild("RBXGeneral")
 
         if general then
-            addConnection(general.MessageReceived:Connect(function(message)
-                local source = message.TextSource
+            -- Modern TextChatService.
+            addConnection(
+                general.MessageReceived:Connect(function(message)
+                    local source = message.TextSource
 
-                if not source then
+                    if not source then
+                        return
+                    end
+
+                    local sender =
+                        Players:GetPlayerByUserId(source.UserId)
+
+                    if sender then
+                        handleCommand(message.Text, sender)
+                    end
+                end)
+            )
+        else
+            -- Legacy chat fallback.
+            local function connectPlayer(player)
+                addConnection(
+                    player.Chatted:Connect(function(message)
+                        handleCommand(message, player)
+                    end)
+                )
+            end
+
+            for _, player in ipairs(Players:GetPlayers()) do
+                connectPlayer(player)
+            end
+
+            addConnection(
+                Players.PlayerAdded:Connect(connectPlayer)
+            )
+        end
+
+        --------------------------------------------------
+        -- CHARACTER RESPAWN
+        --------------------------------------------------
+
+        addConnection(
+            LocalPlayer.CharacterAdded:Connect(function()
+                task.wait(1)
+
+                if not state.Active then
                     return
                 end
 
-                local sender = Players:GetPlayerByUserId(source.UserId)
-
-                if sender then
-                    handleCommand(message.Text, sender)
-                end
-            end))
-        else
-            warn("[Glowstick] RBXGeneral belum tersedia; menggunakan fallback chat.")
-        end
-
-        -- Fallback chat klasik.
-        local function connectPlayer(player)
-            addConnection(player.Chatted:Connect(function(message)
-                handleCommand(message, player)
-            end))
-        end
-
-        for _, player in ipairs(Players:GetPlayers()) do
-            connectPlayer(player)
-        end
-
-        addConnection(Players.PlayerAdded:Connect(connectPlayer))
-
-        --------------------------------------------------
-        -- RESPAWN
-        --------------------------------------------------
-
-        addConnection(LocalPlayer.CharacterAdded:Connect(function()
-            task.wait(1)
-
-            if state.Active then
                 task.spawn(function()
                     for attempt = 1, 10 do
                         if not state.Active then
@@ -450,14 +636,16 @@ return {
                         task.wait(0.5)
                     end
                 end)
-            end
-        end))
+            end)
+        )
 
         --------------------------------------------------
         -- DONE
         --------------------------------------------------
 
-        print("[Glowstick] Command system berhasil dimuat.")
-        print("[Glowstick] Gunakan !glowstick untuk equip dan !stop untuk unequip.")
+        print("[Glowstick] Command system loaded.")
+        print("[Glowstick] Gunakan !glowstick untuk equip.")
+        print("[Glowstick] Gunakan !glowstick blue untuk mengganti warna.")
+        print("[Glowstick] Gunakan !stop untuk unequip.")
     end
 }
