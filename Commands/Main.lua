@@ -59,6 +59,14 @@ return {
             or Tab:AddLeftGroupbox("List Command 2")
 
         --==================================================
+        -- GLOWSTICK COLORS GROUP
+        --==================================================
+
+        local GlowstickGroup =
+            (Tab.AddLeftGroupbox and Tab:AddLeftGroupbox("Glowstick Colors"))
+            or Tab:AddRightGroupbox("Glowstick Colors")
+
+        --==================================================
         -- SERVER INFO
         --==================================================
 
@@ -72,7 +80,7 @@ return {
         local StatusLabel = StatusGroup:AddLabel("Session\nOffline")
 
         --==================================================
-        -- COMMAND LIST
+        -- COMMAND LIST 1
         --==================================================
 
         local commands1 = {
@@ -93,28 +101,68 @@ return {
             "!stagger",
         }
 
-local commands2 = {
-    "!message",
-    "!collision",
-    "!brazildance",
-    "!huladance",
-    "!kangoradance",
-    "!mydawgdance",
-    "!pakodidance",
-    "!pargoydance",
-    "!scubadance",
-    "!tomatodance",
-    "!trackmakerdance",
-    "!tripoutdance",
-    "!worship",
-}
+        --==================================================
+        -- COMMAND LIST 2
+        --==================================================
+
+        local commands2 = {
+            "!message",
+            "!collision",
+            "!brazildance",
+            "!huladance",
+            "!kangoradance",
+            "!mydawgdance",
+            "!pakodidance",
+            "!pargoydance",
+            "!scubadance",
+            "!tomatodance",
+            "!trackmakerdance",
+            "!tripoutdance",
+            "!worship",
+        }
+
+        --==================================================
+        -- GLOWSTICK COMMAND LIST
+        --==================================================
+
+        local glowstickCommands = {
+            "!glowstick",
+            "!glowstick blue",
+            "!glowstick purple",
+            "!glowstick magenta",
+            "!glowstick pink",
+            "!glowstick red",
+            "!glowstick orange",
+            "!glowstick yellow",
+            "!glowstick lime",
+            "!glowstick green",
+            "!glowstick white",
+            "!glowstick black",
+            "!stop",
+        }
+
+        --==================================================
+        -- DISPLAY COMMAND LIST 1
+        --==================================================
 
         for _, commandName in ipairs(commands1) do
             CommandGroup1:AddLabel(commandName)
         end
 
+        --==================================================
+        -- DISPLAY COMMAND LIST 2
+        --==================================================
+
         for _, commandName in ipairs(commands2) do
             CommandGroup2:AddLabel(commandName)
+        end
+
+        --==================================================
+        -- DISPLAY GLOWSTICK COMMANDS
+        --==================================================
+
+        for _, commandName in ipairs(glowstickCommands) do
+            GlowstickGroup:AddLabel(commandName)
         end
 
         --==================================================
@@ -177,5 +225,6 @@ local commands2 = {
         end
 
         print("[Main] Home tab berhasil dibuat.")
+        print("[Main] Glowstick Colors list berhasil ditambahkan.")
     end
 }
