@@ -75,7 +75,7 @@ return {
         local formationSpacing = 3
 
         -- Jarak bot terdekat dari Admin/player.
-        local targetGap = 1
+        local targetGap = 0.3
 
         -- Toleransi saat bot mendekati posisi tujuan.
         local arrivalTolerance = 0.3
