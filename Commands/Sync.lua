@@ -43,16 +43,23 @@ return {
 
         local PLACE_CIDRO = 79312497897212
         local PLACE_TANPANAMA = 119031818630096
+        local PLACE_THE_BUNKER = 133943904733338
 
-        local IsTanpanama = PlaceId == PLACE_TANPANAMA
         local IsCidro = PlaceId == PLACE_CIDRO
+        local IsTanpanama = PlaceId == PLACE_TANPANAMA
+        local IsTheBunker = PlaceId == PLACE_THE_BUNKER
 
         local CurrentPlaceName
 
         if IsCidro then
             CurrentPlaceName = "Cidro Janji"
+
         elseif IsTanpanama then
             CurrentPlaceName = "TANPANAMA"
+
+        elseif IsTheBunker then
+            CurrentPlaceName = "THE BUNKER"
+
         else
             warn(
                 "[Sync] Place tidak didukung.",
@@ -89,21 +96,9 @@ return {
         end)
 
         if not adminOk or not Admin then
-            warn("[Sync] Gagal memuat Admin.lua:", Admin)
-            vars.SyncLoaded = false
-            return
-        end
-
-        --------------------------------------------------
-        -- FIND EVENTS FOLDER
-        --------------------------------------------------
-
-        local EventsFolder =
-            ReplicatedStorage:WaitForChild("Events", 10)
-
-        if not EventsFolder then
             warn(
-                "[Sync] ReplicatedStorage.Events tidak ditemukan."
+                "[Sync] Gagal memuat Admin.lua:",
+                Admin
             )
 
             vars.SyncLoaded = false
@@ -111,26 +106,58 @@ return {
         end
 
         --------------------------------------------------
-        -- GET SYNC REMOTE
+        -- FIND SYNC REMOTE
         --------------------------------------------------
 
         local SyncRemote
 
+        --------------------------------------------------
+        -- CIDRO JANJI
+        -- ReplicatedStorage.Events.RequestSync
+        --------------------------------------------------
+
         if IsCidro then
+            local EventsFolder =
+                ReplicatedStorage:WaitForChild("Events", 10)
+
+            if not EventsFolder then
+                warn(
+                    "[Sync] ReplicatedStorage.Events tidak ditemukan."
+                )
+
+                vars.SyncLoaded = false
+                return
+            end
+
             SyncRemote = EventsFolder:WaitForChild(
                 "RequestSync",
                 10
             )
 
             if not SyncRemote then
-                warn("[Sync] RequestSync tidak ditemukan.")
+                warn("[Sync] Events.RequestSync tidak ditemukan.")
                 vars.SyncLoaded = false
                 return
             end
 
-            print("[Sync] Remote: Events.RequestSync")
+        --------------------------------------------------
+        -- TANPANAMA
+        -- ReplicatedStorage.Events.Dance.startSync
+        --------------------------------------------------
 
         elseif IsTanpanama then
+            local EventsFolder =
+                ReplicatedStorage:WaitForChild("Events", 10)
+
+            if not EventsFolder then
+                warn(
+                    "[Sync] ReplicatedStorage.Events tidak ditemukan."
+                )
+
+                vars.SyncLoaded = false
+                return
+            end
+
             local DanceFolder =
                 EventsFolder:WaitForChild("Dance", 10)
 
@@ -146,12 +173,54 @@ return {
             )
 
             if not SyncRemote then
-                warn("[Sync] startSync tidak ditemukan.")
+                warn("[Sync] Events.Dance.startSync tidak ditemukan.")
                 vars.SyncLoaded = false
                 return
             end
 
-            print("[Sync] Remote: Events.Dance.startSync")
+        --------------------------------------------------
+        -- THE BUNKER
+        -- ReplicatedStorage.Remotes.Core.RequestSync
+        --------------------------------------------------
+
+        elseif IsTheBunker then
+            local RemotesFolder =
+                ReplicatedStorage:WaitForChild("Remotes", 10)
+
+            if not RemotesFolder then
+                warn(
+                    "[Sync] ReplicatedStorage.Remotes tidak ditemukan."
+                )
+
+                vars.SyncLoaded = false
+                return
+            end
+
+            local CoreFolder =
+                RemotesFolder:WaitForChild("Core", 10)
+
+            if not CoreFolder then
+                warn(
+                    "[Sync] ReplicatedStorage.Remotes.Core tidak ditemukan."
+                )
+
+                vars.SyncLoaded = false
+                return
+            end
+
+            SyncRemote = CoreFolder:WaitForChild(
+                "RequestSync",
+                10
+            )
+
+            if not SyncRemote then
+                warn(
+                    "[Sync] Remotes.Core.RequestSync tidak ditemukan."
+                )
+
+                vars.SyncLoaded = false
+                return
+            end
         end
 
         --------------------------------------------------
@@ -161,10 +230,18 @@ return {
         if not SyncRemote
             or not SyncRemote:IsA("RemoteEvent") then
 
-            warn("[Sync] Sync remote bukan RemoteEvent.")
+            warn(
+                "[Sync] Sync remote tidak tersedia atau bukan RemoteEvent."
+            )
+
             vars.SyncLoaded = false
             return
         end
+
+        print(
+            "[Sync] Remote ditemukan:",
+            SyncRemote:GetFullName()
+        )
 
         --------------------------------------------------
         -- FIND PLAYER
@@ -177,28 +254,40 @@ return {
 
             name = tostring(name):lower()
 
-            -- Exact username
+            --------------------------------------------------
+            -- EXACT USERNAME
+            --------------------------------------------------
+
             for _, player in ipairs(Players:GetPlayers()) do
                 if player.Name:lower() == name then
                     return player
                 end
             end
 
-            -- Exact display name
+            --------------------------------------------------
+            -- EXACT DISPLAY NAME
+            --------------------------------------------------
+
             for _, player in ipairs(Players:GetPlayers()) do
                 if player.DisplayName:lower() == name then
                     return player
                 end
             end
 
-            -- Username prefix
+            --------------------------------------------------
+            -- USERNAME PREFIX
+            --------------------------------------------------
+
             for _, player in ipairs(Players:GetPlayers()) do
                 if player.Name:lower():sub(1, #name) == name then
                     return player
                 end
             end
 
-            -- Display name prefix
+            --------------------------------------------------
+            -- DISPLAY NAME PREFIX
+            --------------------------------------------------
+
             for _, player in ipairs(Players:GetPlayers()) do
                 if player.DisplayName:lower():sub(1, #name) == name then
                     return player
@@ -209,23 +298,14 @@ return {
         end
 
         --------------------------------------------------
-        -- GET CURRENT FOLLOW TARGET
+        -- GET DEFAULT SYNC TARGET
         --------------------------------------------------
-        -- PENTING:
+        -- Jika ada CommandTarget yang masih berada di server,
+        -- gunakan target tersebut.
         --
-        -- CommandTarget dikelola oleh sistem movement,
-        -- misalnya Follow.lua.
+        -- Jika tidak ada target, gunakan pengirim command.
         --
-        -- Sync tidak boleh mengganti CommandTarget.
-        --
-        -- Jika admin sebelumnya mengetik:
-        -- !follow namaPlayer
-        --
-        -- Lalu mengetik:
-        -- !sync
-        --
-        -- target sync menggunakan CommandTarget yang sama.
-        --------------------------------------------------
+        -- Sync tidak mengubah CommandTarget.
 
         local function getDefaultSyncTarget(sender)
             local target = vars.CommandTarget
@@ -243,19 +323,15 @@ return {
         --------------------------------------------------
         -- STOP SYNC
         --------------------------------------------------
+        -- Mempertahankan perilaku stop yang ada.
+        -- Untuk THE BUNKER, remote stop khusus belum diketahui.
+        --------------------------------------------------
 
         local function stopSync()
-            --------------------------------------------------
-            -- JANGAN MEMATIKAN FOLLOW
-            --------------------------------------------------
-            -- Sync adalah mode tambahan.
-            -- ActiveMode milik Follow/formasi tidak diubah.
-            --------------------------------------------------
-
             vars.SyncTarget = nil
 
             --------------------------------------------------
-            -- TANPANAMA: REQUEST STOP
+            -- TANPANAMA
             --------------------------------------------------
 
             if IsTanpanama then
@@ -267,7 +343,11 @@ return {
                 end)
 
                 if not ok then
-                    warn("[Sync] Permintaan stop gagal:", err)
+                    warn(
+                        "[Sync] Permintaan stop TANPANAMA gagal:",
+                        err
+                    )
+
                     return false
                 end
 
@@ -276,16 +356,16 @@ return {
             end
 
             --------------------------------------------------
-            -- CIDRO JANJI
+            -- CIDRO / THE BUNKER
             --------------------------------------------------
-            -- Mempertahankan perilaku lama.
-            -- Remote stop khusus Cidro belum ditambahkan,
-            -- karena argumen stop-nya belum diketahui.
+            -- Hanya membersihkan target lokal.
+            -- Tidak mengirim argumen stop yang belum diketahui.
             --------------------------------------------------
 
-            if IsCidro then
+            if IsCidro or IsTheBunker then
                 print(
-                    "[Sync] Target sync lokal dibersihkan untuk Cidro Janji."
+                    "[Sync] Target sync lokal dibersihkan:",
+                    CurrentPlaceName
                 )
 
                 return true
@@ -303,9 +383,6 @@ return {
         --------------------------------------------------
         -- REQUEST SYNC
         --------------------------------------------------
-        -- Sync tidak menghentikan movement mode.
-        -- Sync juga tidak mengganti CommandTarget.
-        --------------------------------------------------
 
         local function requestSync(target)
             if not target then
@@ -316,50 +393,72 @@ return {
             if not target:IsA("Player")
                 or not target:IsDescendantOf(Players) then
 
-                warn("[Sync] Target sudah tidak tersedia.")
+                warn("[Sync] Target tidak tersedia di server.")
                 return false
             end
 
             --------------------------------------------------
-            -- JANGAN STOP OTHER MODES
-            --------------------------------------------------
-            -- Jangan panggil stopOtherModes().
-            -- Jangan mengubah vars.ActiveMode.
-            -- Jangan mengubah vars.CommandTarget.
-            --
-            -- Dengan demikian Follow.lua tetap berjalan.
+            -- FIRE REMOTE BY PLACE
             --------------------------------------------------
 
             local ok, err = pcall(function()
+
+                --------------------------------------------------
+                -- CIDRO JANJI
+                -- RequestSync:FireServer(target)
+                --------------------------------------------------
+
                 if IsCidro then
                     SyncRemote:FireServer(target)
 
+                --------------------------------------------------
+                -- TANPANAMA
+                -- startSync:FireServer(target, true)
+                --------------------------------------------------
+
                 elseif IsTanpanama then
-                    SyncRemote:FireServer(target, true)
+                    SyncRemote:FireServer(
+                        target,
+                        true
+                    )
+
+                --------------------------------------------------
+                -- THE BUNKER
+                -- RequestSync:FireServer(target)
+                --------------------------------------------------
+
+                elseif IsTheBunker then
+                    SyncRemote:FireServer(target)
                 end
+
             end)
 
             if not ok then
-                warn("[Sync] Request sync gagal:", err)
+                warn(
+                    "[Sync] Request sync gagal:",
+                    err
+                )
+
                 return false
             end
 
             --------------------------------------------------
-            -- ONLY UPDATE SYNC TARGET
+            -- SAVE SYNC TARGET
+            --------------------------------------------------
+            -- Jangan menimpa CommandTarget.
+            -- Jangan mengubah ActiveMode.
+            -- Follow dan formasi tetap menggunakan target mereka.
             --------------------------------------------------
 
             vars.SyncTarget = target
 
             print("[Sync] Permintaan sync dikirim.")
             print("[Sync] Place:", CurrentPlaceName)
-            print("[Sync] Target sync:", target.Name)
+            print("[Sync] Target:", target.Name)
 
             if vars.ActiveMode == "follow" then
                 print(
-                    "[Sync] Follow tetap aktif ke:",
-                    vars.CommandTarget
-                        and vars.CommandTarget.Name
-                        or "target sebelumnya"
+                    "[Sync] Mode follow tetap aktif."
                 )
             end
 
@@ -392,7 +491,7 @@ return {
             end
 
             --------------------------------------------------
-            -- ADMIN / COMMAND TARGET
+            -- PERMISSIONS
             --------------------------------------------------
 
             local senderIsAdmin = isAdmin(sender)
@@ -405,7 +504,6 @@ return {
             --------------------------------------------------
 
             message = tostring(message)
-                :lower()
                 :gsub("^%s+", "")
                 :gsub("%s+$", "")
 
@@ -433,9 +531,10 @@ return {
             --------------------------------------------------
 
             if command == "!sync" then
+
                 --------------------------------------------------
-                -- !sync
-                -- Gunakan target follow yang aktif jika ada.
+                -- !SYNC
+                -- Gunakan CommandTarget yang masih online.
                 --------------------------------------------------
 
                 if not targetName or targetName == "" then
@@ -453,8 +552,8 @@ return {
                 end
 
                 --------------------------------------------------
-                -- !sync username
-                -- Hanya admin yang boleh menentukan target lain.
+                -- !SYNC USERNAME
+                -- HANYA ADMIN YANG DAPAT MEMILIH TARGET BARU.
                 --------------------------------------------------
 
                 if not senderIsAdmin then
@@ -472,14 +571,13 @@ return {
                     return
                 end
 
-                -- Tidak mengganti vars.CommandTarget.
                 requestSync(target)
                 return
             end
 
             --------------------------------------------------
             -- !STOP
-            -- Hanya admin yang boleh menghentikan semua mode.
+            -- HANYA ADMIN
             --------------------------------------------------
 
             if command == "!stop" then
@@ -561,6 +659,7 @@ return {
 
         connections.PlayerRemoving =
             Players.PlayerRemoving:Connect(function(player)
+
                 if connections[player] then
                     connections[player]:Disconnect()
                     connections[player] = nil
@@ -588,11 +687,11 @@ return {
         print("[Sync] Place:", CurrentPlaceName)
         print("[Sync] PlaceId:", PlaceId)
         print("[Sync] Remote:", SyncRemote:GetFullName())
-        print("[Sync] Sync tidak akan mengganti movement mode.")
         print("[Sync] Commands:")
         print("[Sync] !sync")
         print("[Sync] !sync username")
         print("[Sync] !stop")
         print("----------------------------------------")
+
     end
 }
