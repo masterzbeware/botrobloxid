@@ -1,12 +1,11 @@
-
 -- Centerline.lua
 -- MasterZ HUB
--- Formasi horizontal dengan Admin/Player di tengah.
+-- Formasi horizontal yang lebih rapat dan simetris.
 --
 -- Formasi:
--- B1 B2 B3 B4 B5 A B6 B7 B8 B9 B10 B11 B12
+-- B1 B2 B3 B4 B5 | ADMIN | B6 B7 B8 B9 B10
 --
--- Command:
+-- Commands:
 -- !centerline
 -- !centerline <player>
 -- !stop
@@ -15,9 +14,9 @@
 return {
     Execute = function()
 
-        ----------------------------------------------------------------
+        --------------------------------------------------
         -- SERVICES
-        ----------------------------------------------------------------
+        --------------------------------------------------
 
         local Players = game:GetService("Players")
         local RunService = game:GetService("RunService")
@@ -31,35 +30,55 @@ return {
             return
         end
 
-        ----------------------------------------------------------------
+        --------------------------------------------------
         -- GLOBAL MODE SYSTEM
-        ----------------------------------------------------------------
+        --------------------------------------------------
 
         _G.BotVars = _G.BotVars or {}
-        _G.BotVars.ModeControllers =
-            _G.BotVars.ModeControllers or {}
 
-        ----------------------------------------------------------------
+        local vars = _G.BotVars
+
+        vars.ModeControllers = vars.ModeControllers or {}
+
+        --------------------------------------------------
         -- LOAD ADMIN
-        ----------------------------------------------------------------
+        --------------------------------------------------
 
-        local Admin = loadstring(game:HttpGet(
-            "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
-        ))()
+        local adminOk, Admin = pcall(function()
 
-        ----------------------------------------------------------------
+            local source = game:HttpGet(
+                "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
+            )
+
+            local loader, compileError = loadstring(source)
+
+            if not loader then
+                error(compileError)
+            end
+
+            return loader()
+
+        end)
+
+        if not adminOk or not Admin then
+            warn("[Centerline] Gagal memuat Admin.lua:", Admin)
+            return
+        end
+
+        --------------------------------------------------
         -- CONFIGURATION
-        ----------------------------------------------------------------
+        --------------------------------------------------
 
-        -- Jarak antarbot.
-        local formationSpacing = 3
+        -- Jarak antar-slot bot.
+        -- Sebelumnya 3 studs, sekarang 2 studs.
+        local formationSpacing = 2
 
-        -- Toleransi untuk menganggap bot sudah sampai.
+        -- Toleransi kedatangan.
         local arrivalTolerance = 0.2
 
-        ----------------------------------------------------------------
+        --------------------------------------------------
         -- BOT ORDER
-        ----------------------------------------------------------------
+        --------------------------------------------------
 
         local botOrder = {
             "11611503633", -- Bot 1
@@ -74,9 +93,9 @@ return {
             "11774494628", -- Bot 10
         }
 
-        ----------------------------------------------------------------
+        --------------------------------------------------
         -- VARIABLES
-        ----------------------------------------------------------------
+        --------------------------------------------------
 
         local humanoid
         local myHRP
@@ -85,11 +104,12 @@ return {
         local targetPlayer = nil
         local centerlineConnection = nil
 
-        ----------------------------------------------------------------
+        --------------------------------------------------
         -- UPDATE CHARACTER
-        ----------------------------------------------------------------
+        --------------------------------------------------
 
         local function updateCharacter()
+
             local character =
                 LocalPlayer.Character
                 or LocalPlayer.CharacterAdded:Wait()
@@ -101,15 +121,17 @@ return {
                 character:WaitForChild("HumanoidRootPart")
 
             humanoid.AutoRotate = true
+
         end
 
         updateCharacter()
 
-        ----------------------------------------------------------------
+        --------------------------------------------------
         -- SEND CHAT
-        ----------------------------------------------------------------
+        --------------------------------------------------
 
         local function sendChat(message)
+
             local success = false
 
             if TextChatService
@@ -121,14 +143,19 @@ return {
                     )
 
                 if channel then
+
                     success = pcall(function()
                         channel:SendAsync(message)
                     end)
+
                 end
+
             end
 
             if not success then
+
                 pcall(function()
+
                     local chatEvents =
                         ReplicatedStorage:FindFirstChild(
                             "DefaultChatSystemChatEvents"
@@ -141,20 +168,26 @@ return {
                         )
 
                     if sayMessageRequest then
+
                         sayMessageRequest:FireServer(
                             message,
                             "All"
                         )
+
                     end
+
                 end)
+
             end
+
         end
 
-        ----------------------------------------------------------------
+        --------------------------------------------------
         -- STOP CENTERLINE
-        ----------------------------------------------------------------
+        --------------------------------------------------
 
         local function stopCenterline()
+
             centering = false
             targetPlayer = nil
 
@@ -166,176 +199,267 @@ return {
             if humanoid then
                 humanoid.AutoRotate = true
             end
+
         end
 
-        ----------------------------------------------------------------
+        --------------------------------------------------
         -- REGISTER CONTROLLER
-        ----------------------------------------------------------------
+        --------------------------------------------------
 
-        _G.BotVars.ModeControllers.centerline =
+        vars.ModeControllers.centerline =
             stopCenterline
 
-        ----------------------------------------------------------------
+        --------------------------------------------------
         -- STOP OTHER MODES
-        ----------------------------------------------------------------
+        --------------------------------------------------
 
         local function stopOtherModes()
+
             for name, stopFunction in pairs(
-                _G.BotVars.ModeControllers
+                vars.ModeControllers
             ) do
+
                 if name ~= "centerline"
                     and type(stopFunction) == "function" then
 
                     pcall(stopFunction)
+
                 end
+
             end
+
         end
 
-        ----------------------------------------------------------------
+        --------------------------------------------------
         -- FIND PLAYER
-        ----------------------------------------------------------------
+        --------------------------------------------------
 
         local function findPlayerByName(name)
+
             if not name or name == "" then
                 return nil
             end
 
             name = name:lower()
 
-            -- Exact username/display name.
-            for _, player in ipairs(Players:GetPlayers()) do
+            -- Exact username / display name.
+
+            for _, player in ipairs(
+                Players:GetPlayers()
+            ) do
+
                 if player.Name:lower() == name
                     or player.DisplayName:lower() == name then
 
                     return player
+
                 end
+
             end
 
             -- Username prefix.
-            for _, player in ipairs(Players:GetPlayers()) do
+
+            for _, player in ipairs(
+                Players:GetPlayers()
+            ) do
+
                 if player.Name:lower():sub(
                     1,
                     #name
                 ) == name then
 
                     return player
+
                 end
+
             end
 
             -- Display name prefix.
-            for _, player in ipairs(Players:GetPlayers()) do
+
+            for _, player in ipairs(
+                Players:GetPlayers()
+            ) do
+
                 if player.DisplayName:lower():sub(
                     1,
                     #name
                 ) == name then
 
                     return player
+
                 end
+
             end
 
             return nil
+
         end
 
-        ----------------------------------------------------------------
+        --------------------------------------------------
         -- GET BOT INDEX
-        -- PENTING: gunakan urutan asli botOrder.
-        -- Jangan menghitung slot dari jumlah bot aktif.
-        ----------------------------------------------------------------
+        --------------------------------------------------
 
         local function getBotIndex()
+
             return table.find(
                 botOrder,
                 tostring(LocalPlayer.UserId)
             )
+
         end
 
-        ----------------------------------------------------------------
+        --------------------------------------------------
+        -- CALCULATE HORIZONTAL OFFSET
+        --------------------------------------------------
+        -- Bot 1  = -10 studs
+        -- Bot 2  =  -8 studs
+        -- Bot 3  =  -6 studs
+        -- Bot 4  =  -4 studs
+        -- Bot 5  =  -2 studs
+        -- Admin  =   0 studs
+        -- Bot 6  =  +2 studs
+        -- Bot 7  =  +4 studs
+        -- Bot 8  =  +6 studs
+        -- Bot 9  =  +8 studs
+        -- Bot 10 = +10 studs
+
+        local function getHorizontalOffset(botIndex)
+
+            if botIndex <= 5 then
+
+                return (botIndex - 6) * formationSpacing
+
+            else
+
+                return (botIndex - 5) * formationSpacing
+
+            end
+
+        end
+
+        --------------------------------------------------
         -- START CENTERLINE
-        ----------------------------------------------------------------
+        --------------------------------------------------
 
         local function startCenterline(player)
+
             if not player then
                 return
             end
 
-            ------------------------------------------------------------
+            if not player:IsDescendantOf(Players) then
+                warn("[Centerline] Target tidak tersedia.")
+                return
+            end
+
+            --------------------------------------------------
             -- VALIDATE BOT
-            ------------------------------------------------------------
+            --------------------------------------------------
 
             local botIndex = getBotIndex()
 
             if not botIndex then
+
                 warn(
-                    "[Centerline] Bot tidak ditemukan dalam botOrder:",
+                    "[Centerline] Bot tidak terdaftar:",
                     LocalPlayer.UserId
                 )
+
                 return
+
             end
 
-            ------------------------------------------------------------
+            --------------------------------------------------
             -- STOP OTHER MODES
-            ------------------------------------------------------------
+            --------------------------------------------------
 
             stopOtherModes()
 
-            ------------------------------------------------------------
-            -- SET ACTIVE MODE
-            ------------------------------------------------------------
+            --------------------------------------------------
+            -- SET MODE
+            --------------------------------------------------
 
-            _G.BotVars.ActiveMode = "centerline"
+            vars.ActiveMode = "centerline"
 
-            ------------------------------------------------------------
+            --------------------------------------------------
             -- STOP OLD CONNECTION
-            ------------------------------------------------------------
+            --------------------------------------------------
 
             if centerlineConnection then
+
                 centerlineConnection:Disconnect()
                 centerlineConnection = nil
+
             end
 
-            ------------------------------------------------------------
-            -- SET STATE
-            ------------------------------------------------------------
+            --------------------------------------------------
+            -- SET TARGET
+            --------------------------------------------------
 
             centering = true
             targetPlayer = player
 
-            _G.BotVars.CommandTarget = player
+            vars.CommandTarget = player
 
             sendChat("Yes, Sir!")
 
-            ------------------------------------------------------------
+            --------------------------------------------------
+            -- CACHE SLOT
+            --------------------------------------------------
+
+            local horizontalOffset =
+                getHorizontalOffset(botIndex)
+
+            print(
+                "[Centerline] Target:",
+                player.Name
+            )
+
+            print(
+                "[Centerline] Bot:",
+                botIndex,
+                "| Offset:",
+                horizontalOffset,
+                "| Spacing:",
+                formationSpacing
+            )
+
+            --------------------------------------------------
             -- CENTERLINE LOOP
-            ------------------------------------------------------------
+            --------------------------------------------------
 
             centerlineConnection =
                 RunService.Heartbeat:Connect(function()
 
-                    ----------------------------------------------------
+                    --------------------------------------------------
                     -- CHECK ACTIVE MODE
-                    ----------------------------------------------------
+                    --------------------------------------------------
 
-                    if _G.BotVars.ActiveMode ~= "centerline" then
+                    if vars.ActiveMode ~= "centerline" then
+
                         stopCenterline()
                         return
+
                     end
 
-                    ----------------------------------------------------
+                    --------------------------------------------------
                     -- VALIDATE STATE
-                    ----------------------------------------------------
+                    --------------------------------------------------
 
                     if not centering
                         or not humanoid
                         or not myHRP
+                        or not myHRP.Parent
                         or humanoid.Health <= 0
                         or not targetPlayer then
 
                         return
+
                     end
 
-                    ----------------------------------------------------
+                    --------------------------------------------------
                     -- TARGET CHARACTER
-                    ----------------------------------------------------
+                    --------------------------------------------------
 
                     local targetCharacter =
                         targetPlayer.Character
@@ -353,60 +477,22 @@ return {
                         return
                     end
 
-                    ----------------------------------------------------
-                    -- CALCULATE FIXED HORIZONTAL SLOT
-                    ----------------------------------------------------
+                    --------------------------------------------------
+                    -- CALCULATE POSITION
+                    --------------------------------------------------
 
-                    local horizontalOffset
+                    -- RightVector menentukan kiri/kanan target.
+                    -- Offset dibuat rapat menggunakan spacing 2.
 
-                    if botIndex <= 5 then
-                        -- Bot 1 sampai Bot 5 di sebelah kiri.
-                        --
-                        -- Bot 1 = -5 slot
-                        -- Bot 2 = -4 slot
-                        -- Bot 3 = -3 slot
-                        -- Bot 4 = -2 slot
-                        -- Bot 5 = -1 slot
+                    local targetPosition =
+                        targetHRP.Position
+                        +
+                        (
+                            targetHRP.CFrame.RightVector
+                            * horizontalOffset
+                        )
 
-                        horizontalOffset =
-                            (botIndex - 6) * formationSpacing
-                    else
-                        -- Bot 6 sampai Bot 12 di sebelah kanan.
-                        --
-                        -- Bot 6  = +1 slot
-                        -- Bot 7  = +2 slot
-                        -- Bot 8  = +3 slot
-                        -- Bot 9  = +4 slot
-                        -- Bot 10 = +5 slot
-                        -- Bot 11 = +6 slot
-                        -- Bot 12 = +7 slot
-
-                        horizontalOffset =
-                            (botIndex - 5) * formationSpacing
-                    end
-
-                    ----------------------------------------------------
-                    -- FORMATION POSITION
-                    ----------------------------------------------------
-
-                    -- Semua bot berada pada satu garis horizontal.
-                    -- RightVector menentukan posisi kiri/kanan.
-                    -- Tidak ada offset tambahan ke depan/belakang.
-
-local targetPosition =
-    targetHRP.Position
-    + targetHRP.CFrame.RightVector * horizontalOffset
-
--- Pastikan semua bot menggunakan ketinggian yang sama.
-targetPosition = Vector3.new(
-    targetPosition.X,
-    targetHRP.Position.Y,
-    targetPosition.Z
-)
-
-                    ----------------------------------------------------
-                    -- KEEP SAME HEIGHT AS TARGET
-                    ----------------------------------------------------
+                    -- Samakan ketinggian dengan target.
 
                     targetPosition = Vector3.new(
                         targetPosition.X,
@@ -414,9 +500,9 @@ targetPosition = Vector3.new(
                         targetPosition.Z
                     )
 
-                    ----------------------------------------------------
+                    --------------------------------------------------
                     -- DISTANCE TO DESTINATION
-                    ----------------------------------------------------
+                    --------------------------------------------------
 
                     local distanceToTarget =
                         (
@@ -424,45 +510,56 @@ targetPosition = Vector3.new(
                             - targetPosition
                         ).Magnitude
 
-                    ----------------------------------------------------
+                    --------------------------------------------------
                     -- MOVE TO POSITION
-                    ----------------------------------------------------
+                    --------------------------------------------------
 
                     if distanceToTarget > arrivalTolerance then
+
                         humanoid.AutoRotate = true
-                        humanoid:MoveTo(targetPosition)
+
+                        humanoid:MoveTo(
+                            targetPosition
+                        )
+
                         return
+
                     end
 
-                    ----------------------------------------------------
+                    --------------------------------------------------
                     -- ARRIVED
-                    -- FACE THE SAME DIRECTION AS TARGET
-                    ----------------------------------------------------
+                    -- FACE SAME DIRECTION AS TARGET
+                    --------------------------------------------------
 
                     humanoid.AutoRotate = false
 
                     local targetRotation =
                         targetHRP.CFrame
-                        - targetHRP.Position
+                        -
+                        targetHRP.Position
 
                     myHRP.CFrame =
                         CFrame.new(myHRP.Position)
-                        * targetRotation
+                        *
+                        targetRotation
+
                 end)
+
         end
 
-        ----------------------------------------------------------------
+        --------------------------------------------------
         -- COMMAND HANDLER
-        ----------------------------------------------------------------
+        --------------------------------------------------
 
         local function handleCommand(message, sender)
+
             if not message or not sender then
                 return
             end
 
-            ------------------------------------------------------------
+            --------------------------------------------------
             -- ADMIN CHECK
-            ------------------------------------------------------------
+            --------------------------------------------------
 
             local isAdmin = false
 
@@ -471,60 +568,20 @@ targetPosition = Vector3.new(
             end)
 
             local isCommandTarget =
-                (_G.BotVars.CommandTarget == sender)
+                vars.CommandTarget == sender
 
-            ------------------------------------------------------------
-            -- CLEAN MESSAGE
-            ------------------------------------------------------------
+            --------------------------------------------------
+            -- NORMALIZE MESSAGE
+            --------------------------------------------------
 
             local lower =
                 message:lower()
                 :gsub("^%s+", "")
                 :gsub("%s+$", "")
 
-            ------------------------------------------------------------
-            -- !CENTERLINE
-            -- ADMIN ATAU TARGET AKTIF
-            ------------------------------------------------------------
-
-            if lower == "!centerline" then
-                if not isAdmin and not isCommandTarget then
-                    return
-                end
-
-                startCenterline(sender)
-                return
-            end
-
-            ------------------------------------------------------------
-            -- !CENTERLINE PLAYER
-            -- HANYA ADMIN
-            ------------------------------------------------------------
-
-            local targetName =
-                lower:match("^!centerline%s+(.+)$")
-
-            if targetName then
-                if not isAdmin then
-                    return
-                end
-
-                local target =
-                    findPlayerByName(targetName)
-
-                if target then
-                    startCenterline(target)
-                else
-                    sendChat("Player tidak ditemukan.")
-                end
-
-                return
-            end
-
-            ------------------------------------------------------------
+            --------------------------------------------------
             -- !STOP / !UNCENTERLINE
-            -- HANYA ADMIN
-            ------------------------------------------------------------
+            --------------------------------------------------
 
             if lower == "!stop"
                 or lower == "!uncenterline" then
@@ -533,93 +590,171 @@ targetPosition = Vector3.new(
                     return
                 end
 
-                _G.BotVars.ActiveMode = nil
-                _G.BotVars.CommandTarget = nil
+                vars.ActiveMode = nil
+                vars.CommandTarget = nil
 
                 for _, stopFunction in pairs(
-                    _G.BotVars.ModeControllers
+                    vars.ModeControllers
                 ) do
+
                     if type(stopFunction) == "function" then
+
                         pcall(stopFunction)
+
                     end
+
                 end
 
+                print("[Centerline] Formasi dihentikan.")
                 return
+
             end
+
+            --------------------------------------------------
+            -- !CENTERLINE
+            --------------------------------------------------
+
+            if lower == "!centerline" then
+
+                if not isAdmin and not isCommandTarget then
+                    return
+                end
+
+                startCenterline(sender)
+                return
+
+            end
+
+            --------------------------------------------------
+            -- !CENTERLINE PLAYER
+            -- HANYA ADMIN
+            --------------------------------------------------
+
+            local targetName =
+                lower:match("^!centerline%s+(.+)$")
+
+            if targetName then
+
+                if not isAdmin then
+                    return
+                end
+
+                local target =
+                    findPlayerByName(targetName)
+
+                if not target then
+
+                    warn(
+                        "[Centerline] Player tidak ditemukan:",
+                        targetName
+                    )
+
+                    return
+
+                end
+
+                startCenterline(target)
+                return
+
+            end
+
         end
 
-        ----------------------------------------------------------------
-        -- TEXT CHAT
-        ----------------------------------------------------------------
+        --------------------------------------------------
+        -- CHAT CONNECTIONS
+        --------------------------------------------------
+
+        local channel
 
         if TextChatService
             and TextChatService.TextChannels then
 
-            local channel =
+            channel =
                 TextChatService.TextChannels:FindFirstChild(
                     "RBXGeneral"
                 )
 
-            if channel then
-                channel.MessageReceived:Connect(
-                    function(message)
-
-                        local userId =
-                            message.TextSource
-                            and message.TextSource.UserId
-
-                        local sender =
-                            userId
-                            and Players:GetPlayerByUserId(userId)
-
-                        if sender then
-                            handleCommand(
-                                message.Text,
-                                sender
-                            )
-                        end
-                    end
-                )
-            end
         end
 
-        ----------------------------------------------------------------
-        -- FALLBACK CHAT
-        ----------------------------------------------------------------
+        if channel then
 
-        local function connectPlayer(player)
-            player.Chatted:Connect(function(message)
-                handleCommand(message, player)
+            channel.MessageReceived:Connect(function(message)
+
+                local textSource = message.TextSource
+
+                if not textSource then
+                    return
+                end
+
+                local sender =
+                    Players:GetPlayerByUserId(
+                        textSource.UserId
+                    )
+
+                if sender then
+
+                    handleCommand(
+                        message.Text,
+                        sender
+                    )
+
+                end
+
             end)
+
+        else
+
+            local function connectPlayer(player)
+
+                player.Chatted:Connect(function(message)
+
+                    handleCommand(
+                        message,
+                        player
+                    )
+
+                end)
+
+            end
+
+            for _, player in ipairs(
+                Players:GetPlayers()
+            ) do
+
+                connectPlayer(player)
+
+            end
+
+            Players.PlayerAdded:Connect(connectPlayer)
+
         end
 
-        for _, player in ipairs(Players:GetPlayers()) do
-            connectPlayer(player)
-        end
-
-        Players.PlayerAdded:Connect(connectPlayer)
-
-        ----------------------------------------------------------------
+        --------------------------------------------------
         -- CHARACTER RESPAWN
-        ----------------------------------------------------------------
+        --------------------------------------------------
 
         LocalPlayer.CharacterAdded:Connect(function()
+
             task.wait(1)
 
             updateCharacter()
 
-            if _G.BotVars.ActiveMode == "centerline"
+            if vars.ActiveMode == "centerline"
                 and targetPlayer then
 
                 startCenterline(targetPlayer)
+
             end
+
         end)
 
-        ----------------------------------------------------------------
-        -- FINISHED
-        ----------------------------------------------------------------
+        --------------------------------------------------
+        -- DONE
+        --------------------------------------------------
 
         print("[Centerline] Loaded successfully.")
+        print("[Centerline] Formation spacing:", formationSpacing)
+        print("[Centerline] Gunakan !centerline untuk memulai.")
 
     end
 }

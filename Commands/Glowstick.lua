@@ -9,6 +9,13 @@
 --
 -- THE BUNKER:
 -- ReplicatedStorage.Remotes.ColorPicker.SetColor:FireServer(color, nil)
+--
+-- Commands:
+-- !glowstick
+-- !glowstick rainbow
+-- !glowstick red
+-- !glowstick blue
+-- !stop
 
 return {
     Execute = function()
@@ -55,6 +62,9 @@ return {
             GameName = "THE BUNKER"
         end
 
+        -- Interval pergantian warna rainbow.
+        local RAINBOW_INTERVAL = 1.2
+
         print(
             "[Glowstick] PlaceId:",
             PlaceId,
@@ -90,27 +100,39 @@ return {
         end
 
         --------------------------------------------------
-        -- GLOBAL STATE / CLEANUP
+        -- GLOBAL STATE / CLEANUP OLD STATE
         --------------------------------------------------
 
         _G.BotVars = _G.BotVars or {}
 
         local vars = _G.BotVars
+        local previousState = vars.GlowstickState
 
-        if vars.GlowstickState
-            and vars.GlowstickState.Connections then
+        if previousState then
 
-            for _, connection in ipairs(
-                vars.GlowstickState.Connections
-            ) do
-                pcall(function()
-                    connection:Disconnect()
-                end)
+            -- Menghentikan rainbow dari module sebelumnya.
+            previousState.Active = false
+            previousState.Rainbow = false
+
+            previousState.RainbowRunId =
+                (previousState.RainbowRunId or 0) + 1
+
+            if previousState.Connections then
+                for _, connection in ipairs(
+                    previousState.Connections
+                ) do
+                    pcall(function()
+                        connection:Disconnect()
+                    end)
+                end
             end
+
         end
 
         local state = {
             Active = false,
+            Rainbow = false,
+            RainbowRunId = 0,
             Connections = {},
         }
 
@@ -123,10 +145,9 @@ return {
         --------------------------------------------------
         -- COLOR CONFIG
         --------------------------------------------------
-        -- Default: warna untuk TANPANAMA / CIDRO.
-        -- THE BUNKER akan memakai warna dari ColorPickerHandler.
 
         local GlowstickColors = {
+
             red = Color3.new(
                 1, 0, 0
             ),
@@ -181,10 +202,6 @@ return {
         --------------------------------------------------
         -- THE BUNKER COLOR PALETTE
         --------------------------------------------------
-        -- Sesuai ColorPickerHandler yang kamu kirim:
-        -- Red, Orange, Yellow, Lime, Cyan, Blue, Purple,
-        -- Pink, Black dan White.
-        --------------------------------------------------
 
         if IsTheBunker then
 
@@ -200,7 +217,6 @@ return {
             GlowstickColors.lime =
                 Color3.fromRGB(80, 255, 0)
 
-            -- Alias green memakai warna Lime resmi.
             GlowstickColors.green =
                 Color3.fromRGB(80, 255, 0)
 
@@ -225,6 +241,51 @@ return {
         end
 
         --------------------------------------------------
+        -- RAINBOW PALETTE
+        --------------------------------------------------
+        -- THE BUNKER menggunakan palet ColorPickerHandler.
+        -- TANPANAMA menggunakan palet Glowstick yang tersedia.
+        -- CIDRO tidak mendukung command rainbow pada konfigurasi ini.
+
+        local RainbowColors
+
+        if IsTheBunker then
+
+            RainbowColors = {
+                "red",
+                "orange",
+                "yellow",
+                "lime",
+                "cyan",
+                "blue",
+                "purple",
+                "pink",
+                "black",
+                "white",
+            }
+
+        else
+
+            RainbowColors = {
+                "red",
+                "orange",
+                "yellow",
+                "lime",
+                "green",
+                "cyan",
+                "blue",
+                "purple",
+                "magenta",
+                "pink",
+                "black",
+                "white",
+            }
+
+        end
+
+        local RandomGenerator = Random.new()
+
+        --------------------------------------------------
         -- FIND GLOWSTICK
         --------------------------------------------------
 
@@ -235,7 +296,7 @@ return {
             local backpack =
                 LocalPlayer:FindFirstChildOfClass("Backpack")
 
-            -- Character first: already equipped.
+            -- Cari Tool yang sudah equipped.
             if character then
 
                 for _, child in ipairs(
@@ -252,7 +313,7 @@ return {
 
             end
 
-            -- Then check Backpack.
+            -- Cari Tool di Backpack.
             if backpack then
 
                 for _, child in ipairs(
@@ -281,7 +342,6 @@ return {
             local character = LocalPlayer.Character
 
             if not character then
-                warn("[Glowstick] Character belum tersedia.")
                 return false
             end
 
@@ -289,25 +349,16 @@ return {
                 character:FindFirstChildOfClass("Humanoid")
 
             if not humanoid then
-                warn("[Glowstick] Humanoid tidak ditemukan.")
                 return false
             end
 
             local tool = findGlowstick()
 
             if not tool then
-                warn(
-                    "[Glowstick] Tool tidak ditemukan:",
-                    ToolName
-                )
                 return false
             end
 
             if tool.Parent == character then
-                print(
-                    "[Glowstick] Sudah equipped:",
-                    tool.Name
-                )
                 return true
             end
 
@@ -315,10 +366,6 @@ return {
                 LocalPlayer:FindFirstChildOfClass("Backpack")
 
             if tool.Parent ~= backpack then
-                warn(
-                    "[Glowstick] Tool bukan di Backpack:",
-                    tool:GetFullName()
-                )
                 return false
             end
 
@@ -333,20 +380,7 @@ return {
 
             task.wait(0.25)
 
-            if tool.Parent == character then
-                print(
-                    "[Glowstick] Berhasil equipped:",
-                    tool.Name
-                )
-                return true
-            end
-
-            warn(
-                "[Glowstick] Equip belum terkonfirmasi:",
-                tool.Name
-            )
-
-            return false
+            return tool.Parent == character
         end
 
         --------------------------------------------------
@@ -365,9 +399,7 @@ return {
                 local tool = findGlowstick()
 
                 if not tool then
-                    warn(
-                        "[Glowstick] GlowStick tidak ditemukan."
-                    )
+                    warn("[Glowstick] GlowStick tidak ditemukan.")
                     return nil
                 end
 
@@ -380,10 +412,7 @@ return {
                     return remote
                 end
 
-                warn(
-                    "[Glowstick] Tool.SetColor tidak ditemukan."
-                )
-
+                warn("[Glowstick] Tool.SetColor tidak ditemukan.")
                 return nil
             end
 
@@ -410,7 +439,7 @@ return {
 
                     warn(
                         "[Glowstick] Remotes.ColorPicker.SetColor "
-                        .. "tidak ditemukan atau bukan RemoteEvent."
+                        .. "tidak ditemukan."
                     )
 
                     return nil
@@ -421,7 +450,6 @@ return {
 
             --------------------------------------------------
             -- CIDRO-JANJI / OTHER PLACES
-            -- ReplicatedStorage.GlowstickRemotes.SetColor
             --------------------------------------------------
 
             local remotes =
@@ -472,30 +500,15 @@ return {
 
             local ok, err = pcall(function()
 
-                --------------------------------------------------
-                -- THE BUNKER
-                --------------------------------------------------
-                -- Sesuai RemoteSpy:
-                --
-                -- SetColor:FireServer(
-                --     Color3.new(...),
-                --     nil
-                -- )
-                --------------------------------------------------
-
                 if IsTheBunker then
 
-                    remote:FireServer(
-                        color,
-                        nil
-                    )
-
-                --------------------------------------------------
-                -- TANPANAMA / CIDRO-JANJI
-                --------------------------------------------------
+                    -- THE BUNKER:
+                    -- SetColor:FireServer(color, nil)
+                    remote:FireServer(color, nil)
 
                 else
 
+                    -- TANPANAMA / CIDRO
                     remote:FireServer(color)
 
                 end
@@ -512,7 +525,7 @@ return {
             end
 
             print(
-                "[Glowstick] Warna berhasil dikirim:",
+                "[Glowstick] Warna:",
                 colorName,
                 "| Game:",
                 GameName
@@ -522,12 +535,216 @@ return {
         end
 
         --------------------------------------------------
+        -- STOP RAINBOW
+        --------------------------------------------------
+
+        local function stopRainbow()
+
+            state.Rainbow = false
+
+            -- Membatalkan loop rainbow yang sedang berjalan.
+            state.RainbowRunId =
+                state.RainbowRunId + 1
+
+        end
+
+        --------------------------------------------------
+        -- START RAINBOW
+        --------------------------------------------------
+
+        local function startRainbow()
+
+            --------------------------------------------------
+            -- PLACE VALIDATION
+            --------------------------------------------------
+
+            if not IsTanpanama and not IsTheBunker then
+
+                warn(
+                    "[Glowstick] Rainbow hanya tersedia "
+                    .. "di TANPANAMA dan THE BUNKER."
+                )
+
+                return
+            end
+
+            --------------------------------------------------
+            -- ACTIVATE RAINBOW
+            --------------------------------------------------
+
+            state.Active = true
+            state.Rainbow = true
+
+            state.RainbowRunId =
+                state.RainbowRunId + 1
+
+            local thisRunId =
+                state.RainbowRunId
+
+            print(
+                "[Glowstick] Rainbow dimulai:",
+                GameName
+            )
+
+            print(
+                "[Glowstick] Interval warna:",
+                RAINBOW_INTERVAL,
+                "detik"
+            )
+
+            --------------------------------------------------
+            -- RAINBOW LOOP
+            --------------------------------------------------
+
+            task.spawn(function()
+
+                local lastColorName = nil
+
+                --------------------------------------------------
+                -- WAIT UNTIL TOOL IS AVAILABLE
+                --------------------------------------------------
+
+                local equipped = false
+
+                for attempt = 1, 10 do
+
+                    if not state.Active
+                        or not state.Rainbow
+                        or state.RainbowRunId ~= thisRunId then
+
+                        return
+                    end
+
+                    local tool = findGlowstick()
+
+                    if tool then
+
+                        if tool.Parent == LocalPlayer.Character then
+                            equipped = true
+                        else
+                            equipped = equipGlowstick()
+                        end
+
+                        if equipped then
+                            break
+                        end
+
+                    end
+
+                    task.wait(0.5)
+
+                end
+
+                if not equipped then
+
+                    if state.RainbowRunId == thisRunId then
+                        state.Rainbow = false
+                    end
+
+                    warn(
+                        "[Glowstick] Rainbow gagal dimulai. "
+                        .. "Tool Glowstick tidak ditemukan "
+                        .. "atau gagal equipped."
+                    )
+
+                    return
+                end
+
+                --------------------------------------------------
+                -- REPEATING RANDOM COLORS
+                --------------------------------------------------
+
+                while state.Active
+                    and state.Rainbow
+                    and state.RainbowRunId == thisRunId do
+
+                    --------------------------------------------------
+                    -- SELECT RANDOM COLOR
+                    -- Hindari warna sama dua kali berturut-turut.
+                    --------------------------------------------------
+
+                    local choices = {}
+
+                    for _, colorName in ipairs(
+                        RainbowColors
+                    ) do
+
+                        if colorName ~= lastColorName then
+                            table.insert(choices, colorName)
+                        end
+
+                    end
+
+                    if #choices == 0 then
+                        choices = RainbowColors
+                    end
+
+                    local index =
+                        RandomGenerator:NextInteger(
+                            1,
+                            #choices
+                        )
+
+                    local nextColor =
+                        choices[index]
+
+                    --------------------------------------------------
+                    -- CHECK TOOL / RE-EQUIP IF NECESSARY
+                    --------------------------------------------------
+
+                    local tool = findGlowstick()
+                    local canChangeColor = false
+
+                    if tool then
+
+                        if tool.Parent == LocalPlayer.Character then
+                            canChangeColor = true
+                        else
+                            canChangeColor = equipGlowstick()
+                        end
+
+                    end
+
+                    --------------------------------------------------
+                    -- APPLY RANDOM COLOR
+                    --------------------------------------------------
+
+                    if canChangeColor
+                        and state.Active
+                        and state.Rainbow
+                        and state.RainbowRunId == thisRunId then
+
+                        local success =
+                            setGlowstickColor(nextColor)
+
+                        if success then
+                            lastColorName = nextColor
+                        end
+
+                    end
+
+                    --------------------------------------------------
+                    -- NEXT COLOR
+                    --------------------------------------------------
+
+                    task.wait(RAINBOW_INTERVAL)
+
+                end
+
+                print("[Glowstick] Rainbow loop selesai.")
+
+            end)
+        end
+
+        --------------------------------------------------
         -- STOP / UNEQUIP
         --------------------------------------------------
 
         local function stopGlowstick()
 
             state.Active = false
+
+            stopRainbow()
 
             local character = LocalPlayer.Character
 
@@ -544,7 +761,7 @@ return {
                 end)
             end
 
-            print("[Glowstick] Dihentikan.")
+            print("[Glowstick] Rainbow/Glowstick dihentikan.")
 
         end
 
@@ -587,15 +804,29 @@ return {
             --------------------------------------------------
 
             if lower == "!stop" then
+
                 stopGlowstick()
                 return
             end
 
             --------------------------------------------------
+            -- !GLOWSTICK RAINBOW
+            --------------------------------------------------
+
+            if lower == "!glowstick rainbow" then
+
+                startRainbow()
+                return
+            end
+
+            --------------------------------------------------
             -- !GLOWSTICK
+            -- Equip biasa dan hentikan rainbow sebelumnya.
             --------------------------------------------------
 
             if lower == "!glowstick" then
+
+                stopRainbow()
 
                 state.Active = true
 
@@ -603,11 +834,19 @@ return {
 
                     for attempt = 1, 10 do
 
-                        if not state.Active then
+                        if not state.Active
+                            or state.Rainbow then
+
                             return
                         end
 
                         if equipGlowstick() then
+
+                            print(
+                                "[Glowstick] Berhasil equipped:",
+                                GameName
+                            )
+
                             return
                         end
 
@@ -639,12 +878,20 @@ return {
             end
 
             if not GlowstickColors[colorName] then
+
                 warn(
                     "[Glowstick] Warna tidak tersedia:",
                     colorName
                 )
+
                 return
             end
+
+            --------------------------------------------------
+            -- STOP RAINBOW BEFORE MANUAL COLOR
+            --------------------------------------------------
+
+            stopRainbow()
 
             state.Active = true
 
@@ -652,20 +899,30 @@ return {
 
                 for attempt = 1, 10 do
 
-                    if not state.Active then
+                    if not state.Active
+                        or state.Rainbow then
+
                         return
                     end
 
-                    if findGlowstick() then
+                    local tool = findGlowstick()
 
-                        -- Warna dikirim setelah equip dikonfirmasi.
-                        if equipGlowstick() and state.Active then
-                            setGlowstickColor(colorName)
+                    if tool then
+
+                        local equipped = false
+
+                        if tool.Parent == LocalPlayer.Character then
+                            equipped = true
                         else
-                            warn(
-                                "[Glowstick] Warna tidak dikirim "
-                                .. "karena equip gagal."
-                            )
+                            equipped = equipGlowstick()
+                        end
+
+                        if equipped
+                            and state.Active
+                            and not state.Rainbow then
+
+                            setGlowstickColor(colorName)
+
                         end
 
                         return
@@ -761,12 +1018,15 @@ return {
                         end
 
                         if equipGlowstick() then
-                            return
+                            break
                         end
 
                         task.wait(0.5)
 
                     end
+
+                    -- Rainbow loop akan mendeteksi Tool baru
+                    -- dan melanjutkan penggantian warna.
 
                 end)
 
@@ -779,9 +1039,10 @@ return {
 
         print("[Glowstick] Command system loaded.")
         print("[Glowstick] Game:", GameName)
-        print("[Glowstick] Gunakan !glowstick untuk equip.")
-        print("[Glowstick] Gunakan !glowstick red untuk warna merah.")
-        print("[Glowstick] Gunakan !stop untuk unequip.")
+        print("[Glowstick] !glowstick = Equip")
+        print("[Glowstick] !glowstick rainbow = Random warna")
+        print("[Glowstick] !glowstick red = Warna manual")
+        print("[Glowstick] !stop = Hentikan dan unequip")
 
     end
 }
