@@ -70,14 +70,14 @@ return {
         --------------------------------------------------
 
         -- Jarak antara posisi bot yang bersebelahan.
-        local formationSpacing = 3
+        local formationSpacing = 5
 
         -- Jarak bot paling dekat dari target:
         -- setengah jarak antarbot agar target berada di tengah.
-        local targetGap = formationSpacing / 2
+        local targetGap = formationSpacing / 1
 
         -- Toleransi kedatangan.
-        local arrivalTolerance = 0.5
+        local arrivalTolerance = 0.3
 
         --------------------------------------------------
         -- BOT ORDER
