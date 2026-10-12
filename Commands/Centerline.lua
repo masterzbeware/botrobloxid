@@ -5,8 +5,8 @@
 -- Formasi:
 -- B1 B2 B3 B4 B5 | ADMIN | B6 B7 B8 B9 B10
 --
--- Jarak bot terdekat ke Admin : 1 stud
--- Jarak antarbot pada sisi sama: 3 studs
+-- Jarak antarslot: 3 studs
+-- Jarak Admin ke bot terdekat: 1.5 studs
 --
 -- Commands:
 -- !centerline
@@ -43,11 +43,10 @@ return {
         vars.ModeControllers = vars.ModeControllers or {}
 
         --------------------------------------------------
-        -- LOAD ADMIN MODULE
+        -- LOAD ADMIN
         --------------------------------------------------
 
         local adminOk, Admin = pcall(function()
-
             local source = game:HttpGet(
                 "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
             )
@@ -59,7 +58,6 @@ return {
             end
 
             return loader()
-
         end)
 
         if not adminOk or not Admin then
@@ -71,13 +69,14 @@ return {
         -- CONFIGURATION
         --------------------------------------------------
 
-        -- Jarak antarbot dalam satu sisi.
-        local formationSpacing = 6
+        -- Jarak antara posisi bot yang bersebelahan.
+        local formationSpacing = 5
 
-        -- Jarak bot terdekat dari Admin/player.
-        local targetGap = 0.2
+        -- Jarak bot paling dekat dari target:
+        -- setengah jarak antarbot agar target berada di tengah.
+        local targetGap = formationSpacing / 1
 
-        -- Toleransi saat bot mendekati posisi tujuan.
+        -- Toleransi kedatangan.
         local arrivalTolerance = 0.3
 
         --------------------------------------------------
@@ -125,7 +124,6 @@ return {
                 character:WaitForChild("HumanoidRootPart")
 
             humanoid.AutoRotate = true
-
         end
 
         updateCharacter()
@@ -151,11 +149,9 @@ return {
                         channel:SendAsync(message)
                     end)
                 end
-
             end
 
             if not success then
-
                 pcall(function()
 
                     local chatEvents =
@@ -175,11 +171,8 @@ return {
                             "All"
                         )
                     end
-
                 end)
-
             end
-
         end
 
         --------------------------------------------------
@@ -199,15 +192,13 @@ return {
             if humanoid then
                 humanoid.AutoRotate = true
             end
-
         end
 
         --------------------------------------------------
-        -- REGISTER MODE CONTROLLER
+        -- REGISTER CONTROLLER
         --------------------------------------------------
 
-        vars.ModeControllers.centerline =
-            stopCenterline
+        vars.ModeControllers.centerline = stopCenterline
 
         --------------------------------------------------
         -- STOP OTHER MODES
@@ -223,11 +214,8 @@ return {
                     and type(stopFunction) == "function" then
 
                     pcall(stopFunction)
-
                 end
-
             end
-
         end
 
         --------------------------------------------------
@@ -243,7 +231,6 @@ return {
             name = name:lower()
 
             -- Exact username / display name.
-
             for _, player in ipairs(
                 Players:GetPlayers()
             ) do
@@ -252,47 +239,30 @@ return {
                     or player.DisplayName:lower() == name then
 
                     return player
-
                 end
-
             end
 
             -- Username prefix.
-
             for _, player in ipairs(
                 Players:GetPlayers()
             ) do
 
-                if player.Name:lower():sub(
-                    1,
-                    #name
-                ) == name then
-
+                if player.Name:lower():sub(1, #name) == name then
                     return player
-
                 end
-
             end
 
             -- Display name prefix.
-
             for _, player in ipairs(
                 Players:GetPlayers()
             ) do
 
-                if player.DisplayName:lower():sub(
-                    1,
-                    #name
-                ) == name then
-
+                if player.DisplayName:lower():sub(1, #name) == name then
                     return player
-
                 end
-
             end
 
             return nil
-
         end
 
         --------------------------------------------------
@@ -305,26 +275,26 @@ return {
                 botOrder,
                 tostring(LocalPlayer.UserId)
             )
-
         end
 
         --------------------------------------------------
         -- CALCULATE HORIZONTAL OFFSET
         --------------------------------------------------
+        -- Bot 1  = -13.5 studs
+        -- Bot 2  = -10.5 studs
+        -- Bot 3  =  -7.5 studs
+        -- Bot 4  =  -4.5 studs
+        -- Bot 5  =  -1.5 studs
+        -- Admin  =   0 studs
+        -- Bot 6  =  +1.5 studs
+        -- Bot 7  =  +4.5 studs
+        -- Bot 8  =  +7.5 studs
+        -- Bot 9  = +10.5 studs
+        -- Bot 10 = +13.5 studs
         --
-        -- Bot 1  = -13 studs
-        -- Bot 2  = -10 studs
-        -- Bot 3  =  -7 studs
-        -- Bot 4  =  -4 studs
-        -- Bot 5  =  -1 stud
-        -- Admin  =   0
-        -- Bot 6  =  +1 stud
-        -- Bot 7  =  +4 studs
-        -- Bot 8  =  +7 studs
-        -- Bot 9  = +10 studs
-        -- Bot 10 = +13 studs
-        --
-        -- Offset kiri negatif, kanan positif.
+        -- Jarak Bot 5 ke Admin = 1.5 studs.
+        -- Jarak Bot 6 ke Admin = 1.5 studs.
+        -- Jarak antarbots selalu 3 studs.
 
         local function getHorizontalOffset(botIndex)
 
@@ -341,7 +311,6 @@ return {
                     + ((botIndex - 6) * formationSpacing)
 
             end
-
         end
 
         --------------------------------------------------
@@ -380,7 +349,7 @@ return {
             stopOtherModes()
 
             --------------------------------------------------
-            -- SET ACTIVE MODE
+            -- SET MODE
             --------------------------------------------------
 
             vars.ActiveMode = "centerline"
@@ -404,7 +373,7 @@ return {
             vars.CommandTarget = player
 
             --------------------------------------------------
-            -- CALCULATE BOT SLOT
+            -- BOT OFFSET
             --------------------------------------------------
 
             local horizontalOffset =
@@ -416,7 +385,7 @@ return {
             )
 
             print(
-                "[Centerline] Bot index:",
+                "[Centerline] Bot:",
                 botIndex,
                 "| Offset:",
                 horizontalOffset,
@@ -425,6 +394,10 @@ return {
                 "| Target gap:",
                 targetGap
             )
+
+            --------------------------------------------------
+            -- CHAT CONFIRMATION
+            --------------------------------------------------
 
             sendChat("Yes, Sir!")
 
@@ -456,7 +429,6 @@ return {
                         or not targetPlayer then
 
                         return
-
                     end
 
                     --------------------------------------------------
@@ -483,6 +455,7 @@ return {
                     -- CALCULATE POSITION
                     --------------------------------------------------
 
+                    -- Posisi kiri/kanan mengikuti arah target.
                     local rightVector =
                         targetHRP.CFrame.RightVector
 
@@ -490,7 +463,8 @@ return {
                         targetHRP.Position
                         + (rightVector * horizontalOffset)
 
-                    -- Pertahankan ketinggian target.
+                    -- Ratakan ketinggian agar semua bot berada
+                    -- pada level yang sama dengan target.
 
                     targetPosition = Vector3.new(
                         targetPosition.X,
@@ -499,7 +473,7 @@ return {
                     )
 
                     --------------------------------------------------
-                    -- CHECK DISTANCE
+                    -- DISTANCE TO DESTINATION
                     --------------------------------------------------
 
                     local distanceToTarget =
@@ -516,16 +490,14 @@ return {
 
                         humanoid.AutoRotate = true
 
-                        humanoid:MoveTo(
-                            targetPosition
-                        )
+                        humanoid:MoveTo(targetPosition)
 
                         return
-
                     end
 
                     --------------------------------------------------
-                    -- ARRIVED: FACE SAME DIRECTION AS TARGET
+                    -- ARRIVED
+                    -- FACE SAME DIRECTION AS TARGET
                     --------------------------------------------------
 
                     humanoid.AutoRotate = false
@@ -539,7 +511,6 @@ return {
                         * targetRotation
 
                 end)
-
         end
 
         --------------------------------------------------
@@ -595,12 +566,10 @@ return {
                     if type(stopFunction) == "function" then
                         pcall(stopFunction)
                     end
-
                 end
 
                 print("[Centerline] Formasi dihentikan.")
                 return
-
             end
 
             --------------------------------------------------
@@ -615,7 +584,6 @@ return {
 
                 startCenterline(sender)
                 return
-
             end
 
             --------------------------------------------------
@@ -645,9 +613,7 @@ return {
 
                 startCenterline(target)
                 return
-
             end
-
         end
 
         --------------------------------------------------
@@ -663,7 +629,6 @@ return {
                 TextChatService.TextChannels:FindFirstChild(
                     "RBXGeneral"
                 )
-
         end
 
         if channel then
@@ -682,12 +647,8 @@ return {
                     )
 
                 if sender then
-                    handleCommand(
-                        message.Text,
-                        sender
-                    )
+                    handleCommand(message.Text, sender)
                 end
-
             end)
 
         else
@@ -697,7 +658,6 @@ return {
                 player.Chatted:Connect(function(message)
                     handleCommand(message, player)
                 end)
-
             end
 
             for _, player in ipairs(
@@ -707,7 +667,6 @@ return {
             end
 
             Players.PlayerAdded:Connect(connectPlayer)
-
         end
 
         --------------------------------------------------
@@ -724,9 +683,7 @@ return {
                 and targetPlayer then
 
                 startCenterline(targetPlayer)
-
             end
-
         end)
 
         --------------------------------------------------
@@ -735,7 +692,7 @@ return {
 
         print("[Centerline] Loaded successfully.")
         print("[Centerline] Jarak antarbot:", formationSpacing)
-        print("[Centerline] Jarak target ke bot terdekat:", targetGap)
+        print("[Centerline] Jarak bot terdekat ke target:", targetGap)
         print("[Centerline] Gunakan !centerline untuk memulai.")
 
     end
