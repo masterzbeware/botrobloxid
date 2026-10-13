@@ -56,7 +56,7 @@ return {
         ----------------------------------------------------------------
 
         local adminFollowDistance = 3
-        local defaultBotFollowDistance = 2
+        local defaultBotFollowDistance = 3
 
         ----------------------------------------------------------------
         -- BOT ORDER
