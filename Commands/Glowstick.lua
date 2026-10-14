@@ -188,12 +188,6 @@ return {
                 1, 0.11764705926179886, 0.47058823704779886
             ),
 
-            black = Color3.new(
-                0.039215687662363052,
-                0.039215687662363052,
-                0.039215687662363052
-            ),
-
             white = Color3.new(
                 1, 1, 1
             ),
@@ -232,9 +226,6 @@ return {
             GlowstickColors.pink =
                 Color3.fromRGB(255, 150, 200)
 
-            GlowstickColors.black =
-                Color3.fromRGB(30, 30, 30)
-
             GlowstickColors.white =
                 Color3.fromRGB(255, 255, 255)
 
@@ -260,7 +251,6 @@ return {
                 "blue",
                 "purple",
                 "pink",
-                "black",
                 "white",
             }
 
@@ -277,7 +267,6 @@ return {
                 "purple",
                 "magenta",
                 "pink",
-                "black",
                 "white",
             }
 
