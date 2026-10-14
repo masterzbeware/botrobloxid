@@ -75,7 +75,7 @@ _G.BotVars = {
 local windowOk, Window = pcall(function()
     return Library:CreateWindow({
         Title = "MasterZ HUB",
-        Footer = "1.0.1",
+        Footer = "1.0.0",
         Icon = 0,
     })
 end)
@@ -129,6 +129,7 @@ local commandFiles = {
     "LineFormation.lua",
     "Stagger.lua",
     "Centerline.lua",
+    "StaffDetect.lua",
 }
 
 --------------------------------------------------
@@ -309,6 +310,7 @@ local executionOrder = {
     "tomatodance",
     "trackmakerdance",
     "mydawgdance",
+    "staffdetect",
 }
 
 --------------------------------------------------
