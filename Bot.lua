@@ -58,10 +58,7 @@ _G.BotVars = {
     -- Mode controllers
     ModeControllers = {},
 
-    ModeControllers = {},
-StaffDetected = false,
-DetectedStaffUserId = nil,
-DetectedStaffName = nil,
+    
 
     -- Additional admins
     AdditionalAdmins = {},
@@ -134,7 +131,6 @@ local commandFiles = {
     "LineFormation.lua",
     "Stagger.lua",
     "Centerline.lua",
-    "StaffDetect.lua",
 }
 
 --------------------------------------------------
@@ -315,7 +311,6 @@ local executionOrder = {
     "tomatodance",
     "trackmakerdance",
     "mydawgdance",
-    "staffdetect",
 }
 
 --------------------------------------------------
