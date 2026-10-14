@@ -1,9 +1,10 @@
-
+```lua
 return {
     Execute = function()
         --------------------------------------------------
         -- StaffDetect.lua
-        -- Deteksi staff secara otomatis tanpa command.
+        -- Deteksi staff secara otomatis.
+        -- Menghentikan otomatisasi saat staff terdeteksi.
         --------------------------------------------------
 
         local vars = _G.BotVars
@@ -30,7 +31,7 @@ return {
             [957153090] = true,
             [9092542128] = true,
 
-            --test
+            -- Test
             [11802903376] = true,
         }
 
@@ -40,35 +41,93 @@ return {
 
         vars.StaffDetected = false
         vars.DetectedStaffUserId = nil
+        vars.DetectedStaffName = nil
+
+        -- Mencegah proses penghentian berjalan berulang.
+        local detectionProcessed = {}
+
+        --------------------------------------------------
+        -- HENTIKAN OTOMATISASI
+        --------------------------------------------------
+
+        local function stopAutomation()
+            local controllers = vars.ModeControllers
+
+            if type(controllers) ~= "table" then
+                warn(
+                    "[StaffDetect] ModeControllers tidak ditemukan."
+                )
+                return
+            end
+
+            for modeName, stopFunction in pairs(controllers) do
+                if type(stopFunction) == "function" then
+                    local success, err = pcall(stopFunction)
+
+                    if success then
+                        print(
+                            "[StaffDetect] Mode dihentikan: "
+                            .. tostring(modeName)
+                        )
+                    else
+                        warn(
+                            "[StaffDetect] Gagal menghentikan mode "
+                            .. tostring(modeName)
+                            .. ": "
+                            .. tostring(err)
+                        )
+                    end
+                end
+            end
+
+            -- Reset status mode aktif jika variabel tersedia.
+            vars.ActiveMode = nil
+        end
+
+        --------------------------------------------------
+        -- PERIKSA PEMAIN
+        --------------------------------------------------
 
         local function checkPlayer(player)
             if not player then
                 return
             end
 
-            if not StaffUsers[player.UserId] then
+            local userId = player.UserId
+
+            if not StaffUsers[userId] then
                 return
             end
 
-            -- Jangan memproses staff yang sama berulang kali.
-            if vars.StaffDetected
-                and vars.DetectedStaffUserId == player.UserId then
+            -- Jangan proses staff yang sama berulang kali.
+            if detectionProcessed[userId] then
                 return
             end
+
+            detectionProcessed[userId] = true
 
             vars.StaffDetected = true
-            vars.DetectedStaffUserId = player.UserId
+            vars.DetectedStaffUserId = userId
+            vars.DetectedStaffName = player.Name
 
             warn(
-                "[StaffDetect] Staff terdeteksi: "
+                "[StaffDetect] STAFF TERDETEKSI: "
                 .. player.Name
                 .. " ("
-                .. tostring(player.UserId)
+                .. tostring(userId)
                 .. ")"
             )
 
-            -- Tempat untuk menghentikan otomatisasi bot
-            -- melalui mekanisme kontrol bot yang tersedia.
+            --------------------------------------------------
+            -- HENTIKAN MODE OTOMATISASI
+            --------------------------------------------------
+
+            stopAutomation()
+
+            print(
+                "[StaffDetect] Deteksi selesai. "
+                .. "Otomatisasi telah dihentikan."
+            )
         end
 
         --------------------------------------------------
@@ -77,13 +136,23 @@ return {
 
         for _, player in ipairs(Players:GetPlayers()) do
             checkPlayer(player)
+
+            if vars.StaffDetected then
+                break
+            end
         end
 
         --------------------------------------------------
         -- DETEKSI PEMAIN BARU
         --------------------------------------------------
 
-        Players.PlayerAdded:Connect(checkPlayer)
+        Players.PlayerAdded:Connect(function(player)
+            checkPlayer(player)
+        end)
+
+        --------------------------------------------------
+        -- STATUS
+        --------------------------------------------------
 
         print("[StaffDetect] Deteksi staff otomatis aktif.")
     end

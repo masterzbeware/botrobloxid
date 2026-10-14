@@ -58,6 +58,11 @@ _G.BotVars = {
     -- Mode controllers
     ModeControllers = {},
 
+    ModeControllers = {},
+StaffDetected = false,
+DetectedStaffUserId = nil,
+DetectedStaffName = nil,
+
     -- Additional admins
     AdditionalAdmins = {},
 
