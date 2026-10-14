@@ -25,7 +25,15 @@ return {
         --------------------------------------------------
 
         local WatchedUsers = {
-            [11802903376] = true, -- Contoh UserId
+            [10477890967] = true, -- Contoh UserId
+            [10977024755] = true,
+            [11071417917] = true,
+            [11070276511] = true,
+            [10925201612] = true,
+            [9064034988] = true,
+            [9386785659] = true,
+            [957153090] = true,
+            [9092542128] = true,
             -- [123456789] = true,
             -- Tambahkan UserId lainnya di sini
         }
