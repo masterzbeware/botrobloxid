@@ -108,13 +108,23 @@ return {
             end
         end
 
-        --------------------------------------------------
-        -- PLAYER ADDED
-        --------------------------------------------------
 
-        Players.PlayerAdded:Connect(function(player)
-            sendJoinMessage(player)
-        end)
+--------------------------------------------------
+-- CHECK PLAYERS ALREADY IN SERVER
+--------------------------------------------------
+
+for _, player in ipairs(Players:GetPlayers()) do
+    sendJoinMessage(player)
+end
+
+--------------------------------------------------
+-- DETECT NEW PLAYERS
+--------------------------------------------------
+
+Players.PlayerAdded:Connect(function(player)
+    sendJoinMessage(player)
+end)
+
 
         --------------------------------------------------
         -- READY
