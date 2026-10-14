@@ -473,13 +473,10 @@ return {
 
         local function startRainbow()
 
-            if not IsTanpanama and not IsTheBunker then
-                warn(
-                    "[Glowstick] Rainbow hanya tersedia "
-                    .. "di TANPANAMA dan THE BUNKER."
-                )
-                return
-            end
+
+-- Rainbow diizinkan untuk semua game
+-- yang memiliki remote warna yang sesuai.
+
 
             state.Active = true
             state.Rainbow = true
