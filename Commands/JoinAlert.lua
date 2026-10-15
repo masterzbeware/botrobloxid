@@ -1,6 +1,6 @@
 -- Commands/JoinAlert.lua
 -- MasterZ HUB
--- Auto Message + Auto Leave when a listed UserId joins
+-- Auto Leave when a listed UserId joins
 
 return {
     Execute = function()
@@ -10,8 +10,6 @@ return {
         --------------------------------------------------
 
         local Players = game:GetService("Players")
-        local TextChatService = game:GetService("TextChatService")
-
         local LocalPlayer = Players.LocalPlayer
 
         if not LocalPlayer then
@@ -34,7 +32,6 @@ return {
             [957153090] = true,
             [9092542128] = true,
             [9410392958] = true,
-            [11802903376] = true,
 
             -- Tambahkan UserId lainnya di sini
             -- [123456789] = true,
@@ -44,9 +41,7 @@ return {
         -- SETTINGS
         --------------------------------------------------
 
-        local JoinMessage = "We have to go, Sir!"
-
-        -- Jeda setelah mengirim pesan sebelum keluar.
+        -- Jeda sebelum keluar dari permainan.
         local LeaveDelay = 1.5
 
         --------------------------------------------------
@@ -70,16 +65,12 @@ return {
         local processedUsers = {}
 
         --------------------------------------------------
-        -- SEND MESSAGE AND LEAVE
+        -- DETECT WATCHED USER
         --------------------------------------------------
 
-        local function sendJoinMessage(player)
+        local function checkPlayer(player)
 
-            if triggered then
-                return
-            end
-
-            if not player then
+            if triggered or not player then
                 return
             end
 
@@ -88,7 +79,7 @@ return {
                 return
             end
 
-            -- Periksa apakah UserId masuk watchlist.
+            -- Periksa UserId.
             if WatchedUsers[player.UserId] ~= true then
                 return
             end
@@ -108,45 +99,6 @@ return {
             )
 
             --------------------------------------------------
-            -- SEND CHAT MESSAGE
-            --------------------------------------------------
-
-            local success, err = pcall(function()
-
-                local channels =
-                    TextChatService:FindFirstChild("TextChannels")
-
-                if not channels then
-                    error("TextChannels tidak ditemukan.")
-                end
-
-                local general =
-                    channels:FindFirstChild("RBXGeneral")
-
-                if not general then
-                    error("RBXGeneral tidak ditemukan.")
-                end
-
-                general:SendAsync(JoinMessage)
-
-            end)
-
-            if success then
-
-                print(
-                    "[JoinAlert] Pesan berhasil dikirim ke sistem chat."
-                )
-
-            else
-
-                warn(
-                    "[JoinAlert] Gagal mengirim pesan:",
-                    tostring(err)
-                )
-
-            end
-
-            --------------------------------------------------
             -- WAIT, THEN LEAVE
             --------------------------------------------------
 
@@ -159,9 +111,8 @@ return {
             )
 
             LocalPlayer:Kick(
-                "We have to go, Sir!"
+                "Watched user joined the server."
             )
-
         end
 
         --------------------------------------------------
@@ -174,7 +125,7 @@ return {
                 break
             end
 
-            sendJoinMessage(player)
+            checkPlayer(player)
 
         end
 
@@ -183,7 +134,7 @@ return {
         --------------------------------------------------
 
         Players.PlayerAdded:Connect(function(player)
-            sendJoinMessage(player)
+            checkPlayer(player)
         end)
 
         --------------------------------------------------
