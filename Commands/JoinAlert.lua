@@ -43,7 +43,7 @@ return {
         --------------------------------------------------
 
         -- Jeda sebelum keluar dari permainan.
-        local LeaveDelay = 1.5
+        local LeaveDelay = 1.0
 
         --------------------------------------------------
         -- PREVENT DUPLICATE INITIALIZATION
