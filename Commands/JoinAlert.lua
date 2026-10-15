@@ -111,7 +111,7 @@ return {
             )
 
             LocalPlayer:Kick(
-                "Watched user joined the server."
+                "Ada Admin di server."
             )
         end
 
