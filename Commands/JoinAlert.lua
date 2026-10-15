@@ -1,6 +1,6 @@
 -- Commands/JoinAlert.lua
 -- MasterZ HUB
--- Auto Message when a listed UserId joins
+-- Auto Message + Auto Leave when a listed UserId joins
 
 return {
     Execute = function()
@@ -10,8 +10,7 @@ return {
         --------------------------------------------------
 
         local Players = game:GetService("Players")
-        local TextChatService =
-            game:GetService("TextChatService")
+        local TextChatService = game:GetService("TextChatService")
 
         local LocalPlayer = Players.LocalPlayer
 
@@ -25,7 +24,7 @@ return {
         --------------------------------------------------
 
         local WatchedUsers = {
-            [10477890967] = true, -- Contoh UserId
+            [10477890967] = true,
             [10977024755] = true,
             [11071417917] = true,
             [11070276511] = true,
@@ -34,15 +33,21 @@ return {
             [9386785659] = true,
             [957153090] = true,
             [9092542128] = true,
-            -- [123456789] = true,
+            [9410392958] = true,
+            [11802903376] = true,
+
             -- Tambahkan UserId lainnya di sini
+            -- [123456789] = true,
         }
 
         --------------------------------------------------
-        -- MESSAGE
+        -- SETTINGS
         --------------------------------------------------
 
         local JoinMessage = "We have to go, Sir!"
+
+        -- Jeda setelah mengirim pesan sebelum keluar.
+        local LeaveDelay = 1.5
 
         --------------------------------------------------
         -- PREVENT DUPLICATE INITIALIZATION
@@ -58,22 +63,43 @@ return {
         _G.BotVars.JoinAlertLoaded = true
 
         --------------------------------------------------
-        -- SEND MESSAGE
+        -- STATE
+        --------------------------------------------------
+
+        local triggered = false
+        local processedUsers = {}
+
+        --------------------------------------------------
+        -- SEND MESSAGE AND LEAVE
         --------------------------------------------------
 
         local function sendJoinMessage(player)
+
+            if triggered then
+                return
+            end
 
             if not player then
                 return
             end
 
+            -- Abaikan LocalPlayer sendiri.
             if player == LocalPlayer then
                 return
             end
 
+            -- Periksa apakah UserId masuk watchlist.
             if WatchedUsers[player.UserId] ~= true then
                 return
             end
+
+            -- Cegah pemrosesan ganda.
+            if processedUsers[player.UserId] then
+                return
+            end
+
+            processedUsers[player.UserId] = true
+            triggered = true
 
             print(
                 "[JoinAlert] UserId terdeteksi:",
@@ -81,12 +107,14 @@ return {
                 player.UserId
             )
 
+            --------------------------------------------------
+            -- SEND CHAT MESSAGE
+            --------------------------------------------------
+
             local success, err = pcall(function()
 
                 local channels =
-                    TextChatService:FindFirstChild(
-                        "TextChannels"
-                    )
+                    TextChatService:FindFirstChild("TextChannels")
 
                 if not channels then
                     error("TextChannels tidak ditemukan.")
@@ -104,35 +132,59 @@ return {
             end)
 
             if success then
+
                 print(
-                    "[JoinAlert] Pesan join dikirim untuk:",
-                    player.Name
+                    "[JoinAlert] Pesan berhasil dikirim ke sistem chat."
                 )
+
             else
+
                 warn(
                     "[JoinAlert] Gagal mengirim pesan:",
                     tostring(err)
                 )
+
             end
+
+            --------------------------------------------------
+            -- WAIT, THEN LEAVE
+            --------------------------------------------------
+
+            task.wait(LeaveDelay)
+
+            print(
+                "[JoinAlert] Keluar dari permainan karena:",
+                player.Name,
+                player.UserId
+            )
+
+            LocalPlayer:Kick(
+                "We have to go, Sir!"
+            )
+
         end
 
+        --------------------------------------------------
+        -- CHECK PLAYERS ALREADY IN SERVER
+        --------------------------------------------------
 
---------------------------------------------------
--- CHECK PLAYERS ALREADY IN SERVER
---------------------------------------------------
+        for _, player in ipairs(Players:GetPlayers()) do
 
-for _, player in ipairs(Players:GetPlayers()) do
-    sendJoinMessage(player)
-end
+            if triggered then
+                break
+            end
 
---------------------------------------------------
--- DETECT NEW PLAYERS
---------------------------------------------------
+            sendJoinMessage(player)
 
-Players.PlayerAdded:Connect(function(player)
-    sendJoinMessage(player)
-end)
+        end
 
+        --------------------------------------------------
+        -- DETECT NEW PLAYERS
+        --------------------------------------------------
+
+        Players.PlayerAdded:Connect(function(player)
+            sendJoinMessage(player)
+        end)
 
         --------------------------------------------------
         -- READY
