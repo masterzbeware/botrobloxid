@@ -1,12 +1,17 @@
 -- Centerline.lua
 -- MasterZ HUB
--- Formasi horizontal dengan Admin/Player di tengah.
+-- Formasi horizontal dinamis dengan Admin/Player di tengah.
 --
--- Formasi:
--- B1 B2 B3 B4 B5 | ADMIN | B6 B7 B8 B9 B10
+-- Formasi menyesuaikan jumlah bot aktif.
 --
--- Jarak antarslot: 3 studs
--- Jarak Admin ke bot terdekat: 1.5 studs
+-- Contoh:
+-- 2 bot  : B1 | ADMIN | B2
+-- 4 bot  : B1 B2 | ADMIN | B3 B4
+-- 6 bot  : B1 B2 B3 | ADMIN | B4 B5 B6
+-- 10 bot : B1 B2 B3 B4 B5 | ADMIN | B6 B7 B8 B9 B10
+--
+-- Jarak antarbot: 5 studs
+-- Jarak bot terdekat ke target: 5 studs
 --
 -- Commands:
 -- !centerline
@@ -40,6 +45,7 @@ return {
         _G.BotVars = _G.BotVars or {}
 
         local vars = _G.BotVars
+
         vars.ModeControllers = vars.ModeControllers or {}
 
         --------------------------------------------------
@@ -47,6 +53,7 @@ return {
         --------------------------------------------------
 
         local adminOk, Admin = pcall(function()
+
             local source = game:HttpGet(
                 "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
             )
@@ -58,10 +65,14 @@ return {
             end
 
             return loader()
+
         end)
 
         if not adminOk or not Admin then
-            warn("[Centerline] Gagal memuat Admin.lua:", Admin)
+            warn(
+                "[Centerline] Gagal memuat Admin.lua:",
+                Admin
+            )
             return
         end
 
@@ -69,12 +80,11 @@ return {
         -- CONFIGURATION
         --------------------------------------------------
 
-        -- Jarak antara posisi bot yang bersebelahan.
+        -- Jarak antarbot yang bersebelahan.
         local formationSpacing = 5
 
-        -- Jarak bot paling dekat dari target:
-        -- setengah jarak antarbot agar target berada di tengah.
-        local targetGap = formationSpacing / 1
+        -- Jarak bot terdekat dari target.
+        local targetGap = formationSpacing
 
         -- Toleransi kedatangan.
         local arrivalTolerance = 0.3
@@ -83,25 +93,22 @@ return {
         -- BOT ORDER
         --------------------------------------------------
 
-local botOrder = {
+        local botOrder = {
+            "11801693968", -- Bot 1
+            "11801692411", -- Bot 2
 
-    "11801693968", -- Bot 1
-    "11801692411", -- Bot 2
+            "11801726433", -- Bot 3
+            "11801750996", -- Bot 4
 
-    "11801726433", -- Bot 3
-    "11801750996", -- Bot 4
+            "11802903376", -- Bot 5
+            "11802916689", -- Bot 6
 
-    "11802903376", -- Bot 5
-    "11802916689", -- Bot 6
+            "11802903446", -- Bot 7
+            "11775829997", -- Bot 8
 
-    "11802903446", -- Bot 7
-    "11775829997", -- Bot 8
-
-    "11775843339", -- Bot 9
-
-    "11810691407", -- Bot 10
-
-}
+            "11775843339", -- Bot 9
+            "11810691407", -- Bot 10
+        }
 
         --------------------------------------------------
         -- VARIABLES
@@ -131,6 +138,7 @@ local botOrder = {
                 character:WaitForChild("HumanoidRootPart")
 
             humanoid.AutoRotate = true
+
         end
 
         updateCharacter()
@@ -152,13 +160,16 @@ local botOrder = {
                     )
 
                 if channel then
+
                     success = pcall(function()
                         channel:SendAsync(message)
                     end)
+
                 end
             end
 
             if not success then
+
                 pcall(function()
 
                     local chatEvents =
@@ -173,13 +184,18 @@ local botOrder = {
                         )
 
                     if sayMessageRequest then
+
                         sayMessageRequest:FireServer(
                             message,
                             "All"
                         )
+
                     end
+
                 end)
+
             end
+
         end
 
         --------------------------------------------------
@@ -192,13 +208,16 @@ local botOrder = {
             targetPlayer = nil
 
             if centerlineConnection then
+
                 centerlineConnection:Disconnect()
                 centerlineConnection = nil
+
             end
 
             if humanoid then
                 humanoid.AutoRotate = true
             end
+
         end
 
         --------------------------------------------------
@@ -221,8 +240,11 @@ local botOrder = {
                     and type(stopFunction) == "function" then
 
                     pcall(stopFunction)
+
                 end
+
             end
+
         end
 
         --------------------------------------------------
@@ -237,7 +259,7 @@ local botOrder = {
 
             name = name:lower()
 
-            -- Exact username / display name.
+            -- Exact username atau display name.
             for _, player in ipairs(
                 Players:GetPlayers()
             ) do
@@ -246,7 +268,9 @@ local botOrder = {
                     or player.DisplayName:lower() == name then
 
                     return player
+
                 end
+
             end
 
             -- Username prefix.
@@ -254,9 +278,15 @@ local botOrder = {
                 Players:GetPlayers()
             ) do
 
-                if player.Name:lower():sub(1, #name) == name then
+                if player.Name:lower():sub(
+                    1,
+                    #name
+                ) == name then
+
                     return player
+
                 end
+
             end
 
             -- Display name prefix.
@@ -264,60 +294,103 @@ local botOrder = {
                 Players:GetPlayers()
             ) do
 
-                if player.DisplayName:lower():sub(1, #name) == name then
+                if player.DisplayName:lower():sub(
+                    1,
+                    #name
+                ) == name then
+
                     return player
+
                 end
+
             end
 
             return nil
+
         end
 
         --------------------------------------------------
-        -- GET BOT INDEX
+        -- GET ACTIVE BOTS
+        --------------------------------------------------
+        -- Hanya bot yang benar-benar berada di server.
+        -- Urutan mengikuti botOrder.
         --------------------------------------------------
 
-        local function getBotIndex()
+        local function getActiveBots()
 
-            return table.find(
-                botOrder,
-                tostring(LocalPlayer.UserId)
-            )
+            local activeBots = {}
+
+            for _, botUserId in ipairs(botOrder) do
+
+                local botPlayer =
+                    Players:GetPlayerByUserId(
+                        tonumber(botUserId)
+                    )
+
+                if botPlayer then
+
+                    table.insert(
+                        activeBots,
+                        tostring(botUserId)
+                    )
+
+                end
+
+            end
+
+            return activeBots
+
         end
 
         --------------------------------------------------
         -- CALCULATE HORIZONTAL OFFSET
         --------------------------------------------------
-        -- Bot 1  = -13.5 studs
-        -- Bot 2  = -10.5 studs
-        -- Bot 3  =  -7.5 studs
-        -- Bot 4  =  -4.5 studs
-        -- Bot 5  =  -1.5 studs
-        -- Admin  =   0 studs
-        -- Bot 6  =  +1.5 studs
-        -- Bot 7  =  +4.5 studs
-        -- Bot 8  =  +7.5 studs
-        -- Bot 9  = +10.5 studs
-        -- Bot 10 = +13.5 studs
+        -- Jumlah bot genap:
+        -- Jumlah bot kiri = jumlah bot kanan.
         --
-        -- Jarak Bot 5 ke Admin = 1.5 studs.
-        -- Jarak Bot 6 ke Admin = 1.5 studs.
-        -- Jarak antarbots selalu 3 studs.
+        -- Jumlah bot ganjil:
+        -- Satu sisi memiliki satu bot lebih banyak.
+        --
+        -- Contoh 2 bot:
+        -- B1 = -5, B2 = +5
+        --
+        -- Contoh 4 bot:
+        -- B1 = -10, B2 = -5
+        -- B3 = +5,  B4 = +10
+        --
+        -- Contoh 6 bot:
+        -- B1 = -15, B2 = -10, B3 = -5
+        -- B4 = +5,  B5 = +10, B6 = +15
+        --------------------------------------------------
 
-        local function getHorizontalOffset(botIndex)
+        local function getHorizontalOffset(
+            activeIndex,
+            activeBotCount
+        )
 
-            if botIndex <= 5 then
+            local leftCount =
+                math.floor(activeBotCount / 2)
+
+            -- Bot berada di sisi kiri target.
+            if activeIndex <= leftCount then
 
                 return -(
                     targetGap
-                    + ((5 - botIndex) * formationSpacing)
+                    + (
+                        (leftCount - activeIndex)
+                        * formationSpacing
+                    )
                 )
 
-            else
-
-                return targetGap
-                    + ((botIndex - 6) * formationSpacing)
-
             end
+
+            -- Bot berada di sisi kanan target.
+            return targetGap
+                + (
+                    (activeIndex - leftCount - 1)
+                    * formationSpacing
+                )
+
         end
 
         --------------------------------------------------
@@ -331,22 +404,35 @@ local botOrder = {
             end
 
             if not player:IsDescendantOf(Players) then
-                warn("[Centerline] Target tidak tersedia.")
+
+                warn(
+                    "[Centerline] Target tidak tersedia."
+                )
+
                 return
+
             end
 
             --------------------------------------------------
-            -- VALIDATE BOT
+            -- VALIDATE ACTIVE BOT
             --------------------------------------------------
 
-            local botIndex = getBotIndex()
+            local activeBots = getActiveBots()
 
-            if not botIndex then
+            local activeIndex = table.find(
+                activeBots,
+                tostring(LocalPlayer.UserId)
+            )
+
+            if not activeIndex then
+
                 warn(
-                    "[Centerline] Bot tidak terdaftar:",
+                    "[Centerline] Bot tidak aktif atau tidak terdaftar:",
                     LocalPlayer.UserId
                 )
+
                 return
+
             end
 
             --------------------------------------------------
@@ -366,8 +452,10 @@ local botOrder = {
             --------------------------------------------------
 
             if centerlineConnection then
+
                 centerlineConnection:Disconnect()
                 centerlineConnection = nil
+
             end
 
             --------------------------------------------------
@@ -380,11 +468,16 @@ local botOrder = {
             vars.CommandTarget = player
 
             --------------------------------------------------
-            -- BOT OFFSET
+            -- LOG FORMATION
             --------------------------------------------------
 
+            local activeBotCount = #activeBots
+
             local horizontalOffset =
-                getHorizontalOffset(botIndex)
+                getHorizontalOffset(
+                    activeIndex,
+                    activeBotCount
+                )
 
             print(
                 "[Centerline] Target:",
@@ -392,14 +485,15 @@ local botOrder = {
             )
 
             print(
-                "[Centerline] Bot:",
-                botIndex,
+                "[Centerline] Active bots:",
+                activeBotCount
+            )
+
+            print(
+                "[Centerline] Bot index:",
+                activeIndex,
                 "| Offset:",
-                horizontalOffset,
-                "| Spacing:",
-                formationSpacing,
-                "| Target gap:",
-                targetGap
+                horizontalOffset
             )
 
             --------------------------------------------------
@@ -420,8 +514,10 @@ local botOrder = {
                     --------------------------------------------------
 
                     if vars.ActiveMode ~= "centerline" then
+
                         stopCenterline()
                         return
+
                     end
 
                     --------------------------------------------------
@@ -436,6 +532,7 @@ local botOrder = {
                         or not targetPlayer then
 
                         return
+
                     end
 
                     --------------------------------------------------
@@ -459,20 +556,50 @@ local botOrder = {
                     end
 
                     --------------------------------------------------
+                    -- REFRESH ACTIVE BOTS
+                    --------------------------------------------------
+                    -- Dihitung ulang agar formasi menyesuaikan
+                    -- saat bot masuk atau keluar server.
+                    --------------------------------------------------
+
+                    activeBots = getActiveBots()
+
+                    activeBotCount = #activeBots
+
+                    activeIndex = table.find(
+                        activeBots,
+                        tostring(LocalPlayer.UserId)
+                    )
+
+                    if not activeIndex then
+                        return
+                    end
+
+                    --------------------------------------------------
+                    -- RECALCULATE OFFSET
+                    --------------------------------------------------
+
+                    horizontalOffset =
+                        getHorizontalOffset(
+                            activeIndex,
+                            activeBotCount
+                        )
+
+                    --------------------------------------------------
                     -- CALCULATE POSITION
                     --------------------------------------------------
 
-                    -- Posisi kiri/kanan mengikuti arah target.
                     local rightVector =
                         targetHRP.CFrame.RightVector
 
                     local targetPosition =
                         targetHRP.Position
-                        + (rightVector * horizontalOffset)
+                        + (
+                            rightVector
+                            * horizontalOffset
+                        )
 
-                    -- Ratakan ketinggian agar semua bot berada
-                    -- pada level yang sama dengan target.
-
+                    -- Samakan ketinggian dengan target.
                     targetPosition = Vector3.new(
                         targetPosition.X,
                         targetHRP.Position.Y,
@@ -497,9 +624,12 @@ local botOrder = {
 
                         humanoid.AutoRotate = true
 
-                        humanoid:MoveTo(targetPosition)
+                        humanoid:MoveTo(
+                            targetPosition
+                        )
 
                         return
+
                     end
 
                     --------------------------------------------------
@@ -518,6 +648,7 @@ local botOrder = {
                         * targetRotation
 
                 end)
+
         end
 
         --------------------------------------------------
@@ -554,6 +685,7 @@ local botOrder = {
 
             --------------------------------------------------
             -- !STOP / !UNCENTERLINE
+            -- HANYA ADMIN
             --------------------------------------------------
 
             if lower == "!stop"
@@ -571,16 +703,24 @@ local botOrder = {
                 ) do
 
                     if type(stopFunction) == "function" then
+
                         pcall(stopFunction)
+
                     end
+
                 end
 
-                print("[Centerline] Formasi dihentikan.")
+                print(
+                    "[Centerline] Formasi dihentikan."
+                )
+
                 return
+
             end
 
             --------------------------------------------------
             -- !CENTERLINE
+            -- ADMIN ATAU COMMAND TARGET
             --------------------------------------------------
 
             if lower == "!centerline" then
@@ -590,7 +730,9 @@ local botOrder = {
                 end
 
                 startCenterline(sender)
+
                 return
+
             end
 
             --------------------------------------------------
@@ -611,16 +753,22 @@ local botOrder = {
                     findPlayerByName(targetName)
 
                 if not target then
+
                     warn(
                         "[Centerline] Player tidak ditemukan:",
                         targetName
                     )
+
                     return
+
                 end
 
                 startCenterline(target)
+
                 return
+
             end
+
         end
 
         --------------------------------------------------
@@ -636,6 +784,7 @@ local botOrder = {
                 TextChatService.TextChannels:FindFirstChild(
                     "RBXGeneral"
                 )
+
         end
 
         if channel then
@@ -654,8 +803,14 @@ local botOrder = {
                     )
 
                 if sender then
-                    handleCommand(message.Text, sender)
+
+                    handleCommand(
+                        message.Text,
+                        sender
+                    )
+
                 end
+
             end)
 
         else
@@ -663,17 +818,26 @@ local botOrder = {
             local function connectPlayer(player)
 
                 player.Chatted:Connect(function(message)
-                    handleCommand(message, player)
+
+                    handleCommand(
+                        message,
+                        player
+                    )
+
                 end)
+
             end
 
             for _, player in ipairs(
                 Players:GetPlayers()
             ) do
+
                 connectPlayer(player)
+
             end
 
             Players.PlayerAdded:Connect(connectPlayer)
+
         end
 
         --------------------------------------------------
@@ -690,17 +854,36 @@ local botOrder = {
                 and targetPlayer then
 
                 startCenterline(targetPlayer)
+
             end
+
         end)
 
         --------------------------------------------------
         -- DONE
         --------------------------------------------------
 
-        print("[Centerline] Loaded successfully.")
-        print("[Centerline] Jarak antarbot:", formationSpacing)
-        print("[Centerline] Jarak bot terdekat ke target:", targetGap)
-        print("[Centerline] Gunakan !centerline untuk memulai.")
+        print(
+            "[Centerline] Loaded successfully."
+        )
+
+        print(
+            "[Centerline] Jarak antarbot:",
+            formationSpacing
+        )
+
+        print(
+            "[Centerline] Jarak bot terdekat ke target:",
+            targetGap
+        )
+
+        print(
+            "[Centerline] Formasi menyesuaikan bot aktif."
+        )
+
+        print(
+            "[Centerline] Gunakan !centerline untuk memulai."
+        )
 
     end
 }
