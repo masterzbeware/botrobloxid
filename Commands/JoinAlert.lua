@@ -32,7 +32,6 @@ return {
             [957153090] = true,
             [9092542128] = true,
             [9410392958] = true,
-            [11802903376] = true,
 
             -- Tambahkan UserId lainnya di sini
             -- [123456789] = true,
