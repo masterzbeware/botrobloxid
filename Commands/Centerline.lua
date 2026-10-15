@@ -81,7 +81,7 @@ return {
         --------------------------------------------------
 
         -- Jarak antarbot yang bersebelahan.
-        local formationSpacing = 5
+        local formationSpacing = 6
 
         -- Jarak bot terdekat dari target.
         local targetGap = formationSpacing
