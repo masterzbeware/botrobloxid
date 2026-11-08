@@ -478,6 +478,29 @@ return {
 
 
             ----------------------------------------------------------------
+            -- JANGAN FORWARD PERINTAH BAHASA NATURAL
+            --
+            -- Perintah tanpa tanda seru seperti 'ikuti saya',
+            -- 'maju jalan', atau 'berhenti' dikenali oleh parser
+            -- dari Perfix.lua (_G.BotVars.NLP). Pesan seperti itu
+            -- adalah perintah untuk modul lain, bukan untuk
+            -- diulang oleh Message.lua.
+            ----------------------------------------------------------------
+
+            local NLP = _G.BotVars.NLP
+
+            if NLP
+                and NLP.Classify(
+                    cleanMessage,
+                    NLP.Intents
+                ) then
+
+                return
+
+            end
+
+
+            ----------------------------------------------------------------
             -- KIRIM PESAN YANG SAMA
             ----------------------------------------------------------------
 
