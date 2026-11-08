@@ -52,6 +52,35 @@ return {
         local followConnection = nil
 
         ----------------------------------------------------------------
+        -- NATURAL LANGUAGE (TANPA PREFIX)
+        --
+        -- Parser dan kamus perintah berasal dari Perfix.lua
+        -- (_G.BotVars.NLP), jadi perintah cukup ditulis dengan kata
+        -- biasa:
+        --
+        -- Ikuti pengirim (Admin atau CommandTarget):
+        --   ikuti saya / ikut aku / follow me
+        --   maju jalan / bergerak maju jalan / ayo jalan
+        --
+        -- Ikuti pemain lain (HANYA Admin):
+        --   ikuti trevkaro / follow trevkaro
+        --
+        -- Berhenti (HANYA Admin):
+        --   berhenti / stop / bubar jalan / jangan ikuti saya
+        ----------------------------------------------------------------
+
+        local NLP = _G.BotVars.NLP
+
+        if not NLP then
+
+            warn(
+                "[Follow] NLP tidak ditemukan. "
+                .. "Pastikan Perfix.lua dimuat lebih dulu."
+            )
+
+        end
+
+        ----------------------------------------------------------------
         -- DISTANCE
         ----------------------------------------------------------------
 
@@ -585,25 +614,33 @@ local botOrder = {
                 )
 
             ------------------------------------------------------------
-            -- CLEAN MESSAGE
+            -- ANALISA PESAN (BAHASA NATURAL)
             ------------------------------------------------------------
 
-            local lower =
-                message
-                :lower()
-                :gsub("^%s+", "")
-                :gsub("%s+$", "")
+            local intent, args
+
+            if NLP then
+
+                intent, args = NLP.Classify(
+                    message,
+                    NLP.Intents
+                )
+
+            end
+
+            if not intent then
+                return
+            end
 
             ------------------------------------------------------------
-            -- !STOP
+            -- STOP (berhenti / stop / bubar jalan / jangan ikuti / unfollow)
             --
             -- HANYA ADMIN.
             --
-            -- CommandTarget TIDAK boleh menggunakan !stop.
+            -- CommandTarget TIDAK boleh menggunakan perintah stop.
             ------------------------------------------------------------
 
-            if lower == "!stop"
-                or lower == "!unfollow" then
+            if intent == "stop" then
 
                 if not isAdmin then
                     return
@@ -643,18 +680,18 @@ local botOrder = {
             end
 
             ----------------------------------------------------------------
-            -- !FOLLOW
+            -- FOLLOW
             --
             -- ADA 2 JENIS:
             --
-            -- 1. !follow
+            -- 1. ikuti saya / maju jalan (tanpa nama)
             --    Admin ATAU CommandTarget boleh.
             --
-            -- 2. !follow player
+            -- 2. ikuti <nama pemain>
             --    HANYA Admin.
             ----------------------------------------------------------------
 
-            if lower == "!follow" then
+            if intent == "follow" and #args == 0 then
 
                 ------------------------------------------------------------
                 -- ADMIN ATAU COMMAND TARGET
@@ -683,15 +720,31 @@ local botOrder = {
             end
 
             ----------------------------------------------------------------
-            -- !FOLLOW PLAYER
+            -- FOLLOW PLAYER
             --
             -- HANYA ADMIN YANG BOLEH MEMILIH TARGET BARU.
             ----------------------------------------------------------------
 
-            local targetName =
-                lower:match(
-                    "^!follow%s+(.+)$"
-                )
+            local targetName = nil
+
+            if intent == "follow" and #args > 0 then
+
+                for _, candidate in ipairs({
+                    table.concat(args, " "),
+                    args[1],
+                    args[#args],
+                }) do
+
+                    if findPlayerByName(candidate) then
+
+                        targetName = candidate
+                        break
+
+                    end
+
+                end
+
+            end
 
             if targetName then
 
