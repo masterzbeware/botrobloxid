@@ -51,6 +51,57 @@ return {
         local targetPlayer = nil
         local staggerConnection = nil
 
+        ----------------------------------------------------------------
+        -- NATURAL LANGUAGE (TANPA PREFIX)
+        --
+        -- Parser berasal dari Perfix.lua (_G.BotVars.NLP).
+        -- Perfix.lua belum memiliki intent stagger, jadi modul ini
+        -- mendaftarkan intent-nya sendiri ke NLP.Intents.
+        --
+        -- Formasi stagger di sekitar pengirim (Admin atau CommandTarget):
+        --   stagger / formasi stagger / zigzag
+        --
+        -- Formasi stagger di sekitar pemain lain (HANYA Admin):
+        --   stagger trevkaro
+        --
+        -- Berhenti (HANYA Admin):
+        --   berhenti / stop / bubar / unstagger
+        ----------------------------------------------------------------
+
+        local NLP = _G.BotVars.NLP
+
+        if not NLP then
+
+            warn(
+                "[Stagger] NLP tidak ditemukan. "
+                .. "Pastikan Perfix.lua dimuat lebih dulu."
+            )
+
+        else
+
+            NLP.Intents.stagger =
+                NLP.Intents.stagger
+                or {
+                    Words = {
+                        stagger = 2,
+                        zigzag = 2,
+                    },
+                }
+
+            NLP.Intents.unstagger =
+                NLP.Intents.unstagger
+                or {
+                    Threshold = 3,
+                    Priority = 1,
+                    StrictRemainder = true,
+
+                    Words = {
+                        unstagger = 3,
+                    },
+                }
+
+        end
+
         -- Mencegah satu pesan ditangani berulang kali oleh listener.
         local recentMessages = {}
 
@@ -67,19 +118,18 @@ return {
 
 local botOrder = {
 
-    "11801693968", -- Bot 1
-    "11801692411", -- Bot 2
+    "11954797420", -- Bot 1
+    "11954814620", -- Bot 2
 
-    "11801726433", -- Bot 3
-    "11801750996", -- Bot 4
+    "11954816098", -- Bot 3
+    "11957237714", -- Bot 4
 
-    "11802903376", -- Bot 5
-    "11802903446", -- Bot 6
+    "11960711816", -- Bot 5
+    "11957234942", -- Bot 6
 
-    "11802916689", -- Bot 7
-    "11810691407", -- Bot 8
+    "11960702834", -- Bot 7
+    "11960661126", -- Bot 8
 
-    "11810683044", -- Bot 9
 
 }
 
@@ -511,20 +561,25 @@ local botOrder = {
             end)
 
             ------------------------------------------------------------
-            -- NORMALIZE MESSAGE
+            -- ANALISA PESAN (BAHASA NATURAL)
             ------------------------------------------------------------
 
-            local lower = message
-                :lower()
-                :gsub("^%s+", "")
-                :gsub("%s+$", "")
+            local intent, args
+
+            if NLP then
+                intent, args = NLP.Classify(message, NLP.Intents)
+            end
+
+            if not intent then
+                return
+            end
 
             ------------------------------------------------------------
-            -- !STOP / !UNSTAGGER
+            -- STOP (berhenti / stop / bubar / unstagger)
             ------------------------------------------------------------
 
-            if lower == "!stop"
-                or lower == "!unstagger" then
+            if intent == "stop"
+                or intent == "unstagger" then
 
                 if not isAdmin then
                     return
@@ -547,14 +602,21 @@ local botOrder = {
             end
 
             ------------------------------------------------------------
-            -- !STAGGER [PLAYER]
+            -- STAGGER [PLAYER]
             ------------------------------------------------------------
 
-            local command, targetName =
-                lower:match("^(%S+)%s*(.-)$")
-
-            if command ~= "!stagger" then
+            if intent ~= "stagger" then
                 return
+            end
+
+            local targetName = ""
+
+            if #args > 0 then
+
+                targetName =
+                    NLP.ResolveTarget(args, findPlayerByName)
+                    or table.concat(args, " ")
+
             end
 
             ------------------------------------------------------------

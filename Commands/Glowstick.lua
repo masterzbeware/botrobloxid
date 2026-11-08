@@ -10,12 +10,12 @@
 -- THE BUNKER:
 -- ReplicatedStorage.Remotes.ColorPicker.SetColor:FireServer(color, nil)
 --
--- Commands:
--- !glowstick
--- !glowstick rainbow
--- !glowstick red
--- !glowstick blue
--- !stop
+-- Commands (bahasa natural, tanpa prefix, hanya Admin):
+-- glowstick
+-- glowstick rainbow
+-- glowstick red
+-- glowstick blue
+-- berhenti / stop / bubar
 
 return {
     Execute = function()
@@ -133,6 +133,79 @@ return {
         local function addConnection(connection)
             table.insert(state.Connections, connection)
         end
+
+        --------------------------------------------------
+        -- NATURAL LANGUAGE (TANPA PREFIX)
+        --------------------------------------------------
+        -- Parser berasal dari Perfix.lua (_G.BotVars.NLP).
+        -- Perfix.lua belum memiliki intent glowstick, jadi modul
+        -- ini mendaftarkan intent-nya sendiri ke NLP.Intents.
+        --
+        -- Nama warna dan kata rainbow bukan bagian dari kamus,
+        -- jadi terbaca sebagai sisa kata (args) lalu dicocokkan
+        -- dengan ColorAliases di bawah.
+        --
+        --   glowstick                 = equip
+        --   glowstick rainbow         = random warna
+        --   glowstick red / merah     = warna manual
+        --   berhenti / stop / bubar   = hentikan dan unequip
+        --------------------------------------------------
+
+        local NLP = vars.NLP
+
+        if not NLP then
+
+            warn(
+                "[Glowstick] NLP tidak ditemukan. "
+                .. "Pastikan Perfix.lua dimuat lebih dulu."
+            )
+
+        else
+
+            NLP.Intents.glowstick =
+                NLP.Intents.glowstick
+                or {
+                    Words = {
+                        glowstick = 2,
+                    },
+                }
+
+        end
+
+        local ColorAliases = {
+            rainbow = "rainbow",
+            pelangi = "rainbow",
+
+            red = "red",
+            merah = "red",
+
+            orange = "orange",
+            oranye = "orange",
+            jingga = "orange",
+
+            yellow = "yellow",
+            kuning = "yellow",
+
+            lime = "lime",
+
+            green = "green",
+            hijau = "green",
+
+            cyan = "cyan",
+
+            blue = "blue",
+            biru = "blue",
+
+            purple = "purple",
+            ungu = "purple",
+
+            magenta = "magenta",
+
+            pink = "pink",
+
+            white = "white",
+            putih = "white",
+        }
 
         --------------------------------------------------
         -- COLOR CONFIG
@@ -638,31 +711,62 @@ return {
                 return
             end
 
-            local lower = message:lower():match("^%s*(.-)%s*$")
+            local intent, args
+
+            if NLP then
+                intent, args = NLP.Classify(message, NLP.Intents)
+            end
+
+            if not intent then
+                return
+            end
 
             --------------------------------------------------
-            -- !STOP
+            -- STOP (berhenti / stop / bubar)
             --------------------------------------------------
 
-            if lower == "!stop" then
+            if intent == "stop" then
                 stopGlowstick()
                 return
             end
 
             --------------------------------------------------
-            -- !GLOWSTICK RAINBOW
+            -- GLOWSTICK RAINBOW
             --------------------------------------------------
 
-            if lower == "!glowstick rainbow" then
+            if intent ~= "glowstick" then
+                return
+            end
+
+            local requested = nil
+
+            for _, word in ipairs(args) do
+
+                if ColorAliases[word] then
+                    requested = ColorAliases[word]
+                    break
+                end
+
+            end
+
+            if #args > 0 and not requested then
+                warn(
+                    "[Glowstick] Warna tidak tersedia:",
+                    table.concat(args, " ")
+                )
+                return
+            end
+
+            if requested == "rainbow" then
                 startRainbow()
                 return
             end
 
             --------------------------------------------------
-            -- !GLOWSTICK
+            -- GLOWSTICK (equip)
             --------------------------------------------------
 
-            if lower == "!glowstick" then
+            if not requested then
 
                 stopRainbow()
                 state.Active = true
@@ -693,11 +797,10 @@ return {
             end
 
             --------------------------------------------------
-            -- !GLOWSTICK COLOR
+            -- GLOWSTICK COLOR
             --------------------------------------------------
 
-            local colorName =
-                lower:match("^!glowstick%s+(%a+)%s*$")
+            local colorName = requested
 
             if not colorName then
                 return
@@ -842,10 +945,10 @@ return {
 
         print("[Glowstick] Command system loaded.")
         print("[Glowstick] Game:", GameName)
-        print("[Glowstick] !glowstick = Equip")
-        print("[Glowstick] !glowstick rainbow = Random warna")
-        print("[Glowstick] !glowstick red = Warna manual")
-        print("[Glowstick] !stop = Hentikan dan unequip")
+        print("[Glowstick] glowstick = Equip")
+        print("[Glowstick] glowstick rainbow = Random warna")
+        print("[Glowstick] glowstick red = Warna manual")
+        print("[Glowstick] stop / berhenti = Hentikan dan unequip")
 
     end
 }

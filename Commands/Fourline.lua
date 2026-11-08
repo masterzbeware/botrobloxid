@@ -96,6 +96,36 @@ return {
 
 
         ----------------------------------------------------------------
+        -- NATURAL LANGUAGE (TANPA PREFIX)
+        --
+        -- Parser dan kamus perintah berasal dari Perfix.lua
+        -- (_G.BotVars.NLP), jadi perintah cukup ditulis dengan kata
+        -- biasa:
+        --
+        -- Formasi empat baris di sekitar pengirim
+        -- (Admin atau CommandTarget):
+        --   fourline / formasi empat / barisan empat
+        --
+        -- Formasi untuk pemain lain (HANYA Admin):
+        --   fourline trevkaro / formasi empat trevkaro
+        --
+        -- Berhenti (HANYA Admin):
+        --   berhenti / stop / bubar / unfourline
+        ----------------------------------------------------------------
+
+        local NLP = _G.BotVars.NLP
+
+        if not NLP then
+
+            warn(
+                "[Fourline] NLP tidak ditemukan. "
+                .. "Pastikan Perfix.lua dimuat lebih dulu."
+            )
+
+        end
+
+
+        ----------------------------------------------------------------
         -- FORMATION DISTANCE
         ----------------------------------------------------------------
 
@@ -112,19 +142,18 @@ return {
 
 local botOrder = {
 
-    "11801693968", -- Bot 1
-    "11801692411", -- Bot 2
+    "11954797420", -- Bot 1
+    "11954814620", -- Bot 2
 
-    "11801726433", -- Bot 3
-    "11801750996", -- Bot 4
+    "11954816098", -- Bot 3
+    "11957237714", -- Bot 4
 
-    "11802903376", -- Bot 5
-    "11802903446", -- Bot 6
+    "11960711816", -- Bot 5
+    "11957234942", -- Bot 6
 
-    "11802916689", -- Bot 7
-    "11810691407", -- Bot 8
+    "11960702834", -- Bot 7
+    "11960661126", -- Bot 8
 
-    "11810683044", -- Bot 9
 
 }
 
@@ -827,24 +856,27 @@ local botOrder = {
 
 
             ------------------------------------------------------------
-            -- CLEAN MESSAGE
+            -- ANALISA PESAN (BAHASA NATURAL)
             ------------------------------------------------------------
 
-            local lower =
-                message
-                :lower()
-                :gsub("^%s+", "")
-                :gsub("%s+$", "")
+            local intent, args
+
+            if NLP then
+                intent, args = NLP.Classify(message, NLP.Intents)
+            end
+
+            if not intent then
+                return
+            end
 
 
             ----------------------------------------------------------------
-            -- !STOP
+            -- STOP (berhenti / stop / bubar / unfourline)
             --
             -- HANYA ADMIN
             ----------------------------------------------------------------
 
-            if lower == "!stop"
-                or lower == "!unfourline" then
+            if intent == "stop" then
 
                 if not isAdmin then
                     return
@@ -887,15 +919,15 @@ local botOrder = {
 
 
             ----------------------------------------------------------------
-            -- !FOURLINE
+            -- FOURLINE (tanpa nama)
             --
             -- Admin ATAU CommandTarget.
             --
-            -- !fourline
+            -- fourline
             -- = kembali ke diri sendiri
             ----------------------------------------------------------------
 
-            if lower == "!fourline" then
+            if intent == "fourline" and #args == 0 then
 
                 if not isAdmin
                     and not isCommandTarget then
@@ -923,15 +955,16 @@ local botOrder = {
 
 
             ----------------------------------------------------------------
-            -- !FOURLINE PLAYER
+            -- FOURLINE <nama pemain>
             --
             -- HANYA ADMIN.
             ----------------------------------------------------------------
 
-            local targetName =
-                lower:match(
-                    "^!fourline%s+(.+)$"
-                )
+            local targetName = nil
+
+            if intent == "fourline" and #args > 0 then
+                targetName = NLP.ResolveTarget(args, findPlayerByName)
+            end
 
 
             if targetName then

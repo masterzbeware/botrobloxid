@@ -104,6 +104,63 @@ return {
 
 
         ----------------------------------------------------------------
+        -- NATURAL LANGUAGE (TANPA PREFIX)
+        --
+        -- Parser berasal dari Perfix.lua (_G.BotVars.NLP).
+        -- Perfix.lua belum memiliki intent square, jadi modul ini
+        -- mendaftarkan intent-nya sendiri ke NLP.Intents.
+        --
+        -- Formasi kotak di sekitar pengirim (Admin atau CommandTarget):
+        --   square / formasi kotak / barisan persegi
+        --
+        -- Formasi kotak di sekitar pemain lain (HANYA Admin):
+        --   square trevkaro / formasi kotak trevkaro
+        --
+        -- Hentikan formasi kotak saja (HANYA Admin):
+        --   unsquare
+        --
+        -- Berhenti total (HANYA Admin), ditangani intent stop:
+        --   berhenti / stop / bubar
+        ----------------------------------------------------------------
+
+        local NLP = _G.BotVars.NLP
+
+        if not NLP then
+
+            warn(
+                "[Square] NLP tidak ditemukan. "
+                .. "Pastikan Perfix.lua dimuat lebih dulu."
+            )
+
+        else
+
+            NLP.Intents.square =
+                NLP.Intents.square
+                or {
+                    Words = {
+                        square = 2,
+                        kotak = 2,
+                        persegi = 2,
+                        bujursangkar = 2,
+                    },
+                }
+
+            NLP.Intents.unsquare =
+                NLP.Intents.unsquare
+                or {
+                    Threshold = 3,
+                    Priority = 1,
+                    StrictRemainder = true,
+
+                    Words = {
+                        unsquare = 3,
+                    },
+                }
+
+        end
+
+
+        ----------------------------------------------------------------
         -- FORMATION SETTINGS
         ----------------------------------------------------------------
 
@@ -121,19 +178,18 @@ return {
 
 local botOrder = {
 
-    "11801693968", -- Bot 1
-    "11801692411", -- Bot 2
+    "11954797420", -- Bot 1
+    "11954814620", -- Bot 2
 
-    "11801726433", -- Bot 3
-    "11801750996", -- Bot 4
+    "11954816098", -- Bot 3
+    "11957237714", -- Bot 4
 
-    "11802903376", -- Bot 5
-    "11802903446", -- Bot 6
+    "11960711816", -- Bot 5
+    "11957234942", -- Bot 6
 
-    "11802916689", -- Bot 7
-    "11810691407", -- Bot 8
+    "11960702834", -- Bot 7
+    "11960661126", -- Bot 8
 
-    "11810683044", -- Bot 9
 
 }
 
@@ -831,34 +887,32 @@ local botOrder = {
 
 
             ----------------------------------------------------------------
-            -- NORMALIZE MESSAGE
+            -- ANALISA PESAN (BAHASA NATURAL)
             ----------------------------------------------------------------
 
-            local lower =
-                message
-                :lower()
-                :gsub(
-                    "^%s+",
-                    ""
-                )
-                :gsub(
-                    "%s+$",
-                    ""
-                )
+            local intent, args
+
+            if NLP then
+                intent, args = NLP.Classify(message, NLP.Intents)
+            end
+
+            if not intent then
+                return
+            end
 
 
             ----------------------------------------------------------------
-            -- !STOP
+            -- STOP (berhenti / stop / bubar)
             --
             -- HANYA ADMIN
             ----------------------------------------------------------------
 
-            if lower == "!stop" then
+            if intent == "stop" then
 
                 if not isAdmin then
 
                     print(
-                        "[Square] !stop ditolak:",
+                        "[Square] stop ditolak:",
                         sender.Name,
                         "bukan Admin."
                     )
@@ -869,7 +923,7 @@ local botOrder = {
 
 
                 print(
-                    "[Square] !stop diterima | Admin:",
+                    "[Square] stop diterima | Admin:",
                     sender.Name
                 )
 
@@ -911,17 +965,17 @@ local botOrder = {
 
 
             ----------------------------------------------------------------
-            -- !UNSQUARE
+            -- UNSQUARE
             --
             -- HANYA ADMIN
             ----------------------------------------------------------------
 
-            if lower == "!unsquare" then
+            if intent == "unsquare" then
 
                 if not isAdmin then
 
                     print(
-                        "[Square] !unsquare ditolak:",
+                        "[Square] unsquare ditolak:",
                         sender.Name,
                         "bukan Admin."
                     )
@@ -932,7 +986,7 @@ local botOrder = {
 
 
                 print(
-                    "[Square] !unsquare diterima | Admin:",
+                    "[Square] unsquare diterima | Admin:",
                     sender.Name
                 )
 
@@ -953,23 +1007,23 @@ local botOrder = {
 
 
             ----------------------------------------------------------------
-            -- !SQUARE
+            -- SQUARE (tanpa nama)
             --
             -- ADMIN:
-            --     !square
+            --     square
             --
             -- COMMAND TARGET:
-            --     !square
+            --     square
             --
             ----------------------------------------------------------------
 
-            if lower == "!square" then
+            if intent == "square" and #args == 0 then
 
                 if not isAdmin
                     and not isCommandTarget then
 
                     print(
-                        "[Square] !square ditolak:",
+                        "[Square] square ditolak:",
                         sender.Name
                     )
 
@@ -979,7 +1033,7 @@ local botOrder = {
 
 
                 print(
-                    "[Square] !square diterima | Sender:",
+                    "[Square] square diterima | Sender:",
                     sender.Name,
                     "| Admin:",
                     isAdmin,
@@ -1007,15 +1061,20 @@ local botOrder = {
 
 
             ----------------------------------------------------------------
-            -- !SQUARE PLAYER
+            -- SQUARE <nama pemain>
             --
             -- HANYA ADMIN
             ----------------------------------------------------------------
 
-            local targetName =
-                lower:match(
-                    "^!square%s+(.+)$"
-                )
+            local targetName = nil
+
+            if intent == "square" and #args > 0 then
+
+                targetName =
+                    NLP.ResolveTarget(args, findPlayerByName)
+                    or table.concat(args, " ")
+
+            end
 
 
             if targetName then
@@ -1023,7 +1082,7 @@ local botOrder = {
                 if not isAdmin then
 
                     print(
-                        "[Square] !square PLAYER ditolak:",
+                        "[Square] square PLAYER ditolak:",
                         sender.Name,
                         "bukan Admin."
                     )

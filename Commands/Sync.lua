@@ -27,6 +27,46 @@ return {
         vars.ModeControllers = vars.ModeControllers or {}
 
         --------------------------------------------------
+        -- NATURAL LANGUAGE (TANPA PREFIX)
+        --------------------------------------------------
+        -- Parser berasal dari Perfix.lua (_G.BotVars.NLP).
+        -- Perfix.lua belum memiliki intent sync, jadi modul ini
+        -- mendaftarkan intent-nya sendiri ke NLP.Intents.
+        --
+        -- Sync dengan target saat ini (Admin atau CommandTarget):
+        --   sync / sinkron
+        --
+        -- Sync dengan pemain tertentu (HANYA Admin):
+        --   sync trevkaro
+        --
+        -- Berhenti (HANYA Admin):
+        --   berhenti / stop / bubar
+        --------------------------------------------------
+
+        local NLP = vars.NLP
+
+        if not NLP then
+
+            warn(
+                "[Sync] NLP tidak ditemukan. "
+                .. "Pastikan Perfix.lua dimuat lebih dulu."
+            )
+
+        else
+
+            NLP.Intents.sync =
+                NLP.Intents.sync
+                or {
+                    Words = {
+                        sync = 2,
+                        sinkron = 2,
+                        sinkronkan = 2,
+                    },
+                }
+
+        end
+
+        --------------------------------------------------
         -- PREVENT DUPLICATE EXECUTE
         --------------------------------------------------
 
@@ -503,37 +543,34 @@ return {
             -- NORMALIZE MESSAGE
             --------------------------------------------------
 
-            message = tostring(message)
-                :gsub("^%s+", "")
-                :gsub("%s+$", "")
+            local intent, args
 
-            if message == "" then
+            if NLP then
+                intent, args = NLP.Classify(message, NLP.Intents)
+            end
+
+            if not intent then
                 return
             end
 
-            local command, targetName =
-                message:match("^(%S+)%s*(.*)$")
+            local targetName = ""
 
-            if not command then
-                return
-            end
+            if intent == "sync" and #args > 0 then
 
-            command = command:lower()
+                targetName =
+                    NLP.ResolveTarget(args, findPlayer)
+                    or table.concat(args, " ")
 
-            if targetName then
-                targetName = targetName
-                    :gsub("^%s+", "")
-                    :gsub("%s+$", "")
             end
 
             --------------------------------------------------
-            -- !SYNC
+            -- SYNC
             --------------------------------------------------
 
-            if command == "!sync" then
+            if intent == "sync" then
 
                 --------------------------------------------------
-                -- !SYNC
+                -- SYNC (tanpa nama)
                 -- Gunakan CommandTarget yang masih online.
                 --------------------------------------------------
 
@@ -552,7 +589,7 @@ return {
                 end
 
                 --------------------------------------------------
-                -- !SYNC USERNAME
+                -- SYNC <nama pemain>
                 -- HANYA ADMIN YANG DAPAT MEMILIH TARGET BARU.
                 --------------------------------------------------
 
@@ -576,11 +613,11 @@ return {
             end
 
             --------------------------------------------------
-            -- !STOP
+            -- STOP (berhenti / stop / bubar)
             -- HANYA ADMIN
             --------------------------------------------------
 
-            if command == "!stop" then
+            if intent == "stop" then
                 if not senderIsAdmin then
                     return
                 end
@@ -606,7 +643,7 @@ return {
                 end
 
                 print(
-                    "[Sync] Perintah !stop diproses oleh admin."
+                    "[Sync] Perintah stop diproses oleh admin."
                 )
 
                 return
@@ -688,9 +725,9 @@ return {
         print("[Sync] PlaceId:", PlaceId)
         print("[Sync] Remote:", SyncRemote:GetFullName())
         print("[Sync] Commands:")
-        print("[Sync] !sync")
-        print("[Sync] !sync username")
-        print("[Sync] !stop")
+        print("[Sync] sync")
+        print("[Sync] sync username")
+        print("[Sync] stop")
         print("----------------------------------------")
 
     end

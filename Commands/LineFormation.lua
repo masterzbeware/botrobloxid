@@ -53,6 +53,73 @@ return {
         local currentLineMode = nil
 
         ----------------------------------------------------------------
+        -- NATURAL LANGUAGE (TANPA PREFIX)
+        --
+        -- Parser berasal dari Perfix.lua (_G.BotVars.NLP).
+        -- Perfix.lua belum memiliki intent line, jadi modul ini
+        -- mendaftarkan intent-nya sendiri ke NLP.Intents.
+        --
+        -- Mode 1 = 1 baris (maks 12 bot)
+        -- Mode 2 = 6 bot per baris
+        -- Mode 3 = 3 bot per baris
+        --
+        -- Formasi di belakang pengirim (Admin atau CommandTarget):
+        --   line 1 / line 2 / line 3
+        --   formasi baris 2 / barisan 3
+        --
+        -- Formasi di belakang pemain lain (HANYA Admin):
+        --   line 2 trevkaro
+        --
+        -- Berhenti (HANYA Admin):
+        --   berhenti / stop / bubar / unline
+        ----------------------------------------------------------------
+
+        local NLP = _G.BotVars.NLP
+
+        if not NLP then
+
+            warn(
+                "[LineFormation] NLP tidak ditemukan. "
+                .. "Pastikan Perfix.lua dimuat lebih dulu."
+            )
+
+        else
+
+            NLP.Intents.line =
+                NLP.Intents.line
+                or {
+                    Words = {
+                        lineformation = 2,
+
+                        -- Kata umum formasi (lemah)
+                        formasi = 1,
+                        bentuk = 1,
+                        barisan = 1,
+                        baris = 1,
+                        line = 1,
+
+                        -- Nomor mode (lemah, dipasangkan dengan kata di atas)
+                        ["1"] = 1,
+                        ["2"] = 1,
+                        ["3"] = 1,
+                    },
+                }
+
+            NLP.Intents.unline =
+                NLP.Intents.unline
+                or {
+                    Threshold = 3,
+                    Priority = 1,
+                    StrictRemainder = true,
+
+                    Words = {
+                        unline = 3,
+                    },
+                }
+
+        end
+
+        ----------------------------------------------------------------
         -- FORMATION SETTINGS
         ----------------------------------------------------------------
 
@@ -68,19 +135,18 @@ return {
 
 local botOrder = {
 
-    "11801693968", -- Bot 1
-    "11801692411", -- Bot 2
+    "11954797420", -- Bot 1
+    "11954814620", -- Bot 2
 
-    "11801726433", -- Bot 3
-    "11801750996", -- Bot 4
+    "11954816098", -- Bot 3
+    "11957237714", -- Bot 4
 
-    "11802903376", -- Bot 5
-    "11802903446", -- Bot 6
+    "11960711816", -- Bot 5
+    "11957234942", -- Bot 6
 
-    "11802916689", -- Bot 7
-    "11810691407", -- Bot 8
+    "11960702834", -- Bot 7
+    "11960661126", -- Bot 8
 
-    "11810683044", -- Bot 9
 
 }
 
@@ -672,13 +738,18 @@ local botOrder = {
             end)
 
             ------------------------------------------------------------
-            -- CLEAN MESSAGE
+            -- ANALISA PESAN (BAHASA NATURAL)
             ------------------------------------------------------------
 
-            local lower =
-                message:lower()
-                :gsub("^%s+", "")
-                :gsub("%s+$", "")
+            local intent, args
+
+            if NLP then
+                intent, args = NLP.Classify(message, NLP.Intents)
+            end
+
+            if not intent then
+                return
+            end
 
             ------------------------------------------------------------
             -- COMMAND TARGET
@@ -688,11 +759,11 @@ local botOrder = {
                 _G.BotVars.CommandTarget
 
             ------------------------------------------------------------
-            -- !STOP / !UNLINE
+            -- STOP (berhenti / stop / bubar / unline)
             ------------------------------------------------------------
 
-            if lower == "!stop"
-                or lower == "!unline" then
+            if intent == "stop"
+                or intent == "unline" then
 
                 if not isAdmin then
                     return
@@ -715,15 +786,31 @@ local botOrder = {
             end
 
             ------------------------------------------------------------
-            -- !LINE 1 / !LINE 2 / !LINE 3
+            -- LINE 1 / LINE 2 / LINE 3 (tanpa nama)
             ------------------------------------------------------------
 
-            local mode =
-                lower:match("^!line%s+([123])$")
+            local mode = nil
 
-            if mode then
+            if intent == "line" then
 
-                mode = tonumber(mode)
+                for _, token in ipairs(
+                    NLP.Tokenize(message)
+                ) do
+
+                    if token.norm == "1"
+                        or token.norm == "2"
+                        or token.norm == "3" then
+
+                        mode = tonumber(token.norm)
+                        break
+
+                    end
+
+                end
+
+            end
+
+            if mode and #args == 0 then
 
                 -- Admin atau CommandTarget boleh mengganti formasi.
                 if not isAdmin and sender ~= commandTarget then
@@ -753,23 +840,26 @@ local botOrder = {
             end
 
             ------------------------------------------------------------
-            -- !LINE 1 PLAYER / !LINE 2 PLAYER / !LINE 3 PLAYER
+            -- LINE <1/2/3> <nama pemain>
             -- HANYA ADMIN
             ------------------------------------------------------------
 
-            local modeWithPlayer, targetName =
-                lower:match(
-                    "^!line%s+([123])%s+(.+)$"
-                )
+            local targetName = nil
 
-            if modeWithPlayer and targetName then
+            if mode and #args > 0 then
+
+                targetName =
+                    NLP.ResolveTarget(args, findPlayerByName)
+
+            end
+
+            if targetName then
 
                 if not isAdmin then
                     return
                 end
 
-                local selectedMode =
-                    tonumber(modeWithPlayer)
+                local selectedMode = mode
 
                 local target =
                     findPlayerByName(targetName)
