@@ -102,6 +102,34 @@ return {
         local circleConnection = nil
 
         --------------------------------------------------
+        -- NATURAL LANGUAGE (TANPA PREFIX)
+        --------------------------------------------------
+        -- Parser dan kamus perintah berasal dari Perfix.lua
+        -- (_G.BotVars.NLP), jadi perintah cukup ditulis dengan
+        -- kata biasa:
+        --
+        -- Lingkaran di sekitar pengirim (Admin atau CommandTarget):
+        --   circle / lingkaran / formasi lingkaran
+        --
+        -- Lingkaran di sekitar pemain lain (HANYA Admin):
+        --   circle trevkaro / lingkaran trevkaro
+        --
+        -- Berhenti (HANYA Admin):
+        --   berhenti / stop / bubar / uncircle
+        --------------------------------------------------
+
+        local NLP = vars.NLP
+
+        if not NLP then
+
+            warn(
+                "[Circle] NLP tidak ditemukan. "
+                .. "Pastikan Perfix.lua dimuat lebih dulu."
+            )
+
+        end
+
+        --------------------------------------------------
         -- FORMATION DISTANCE
         --------------------------------------------------
 
@@ -117,19 +145,18 @@ return {
 
 local botOrder = {
 
-    "11801693968", -- Bot 1
-    "11801692411", -- Bot 2
+    "11954797420", -- Bot 1
+    "11954814620", -- Bot 2
 
-    "11801726433", -- Bot 3
-    "11801750996", -- Bot 4
+    "11954816098", -- Bot 3
+    "11957237714", -- Bot 4
 
-    "11802903376", -- Bot 5
-    "11802903446", -- Bot 6
+    "11960711816", -- Bot 5
+    "11957234942", -- Bot 6
 
-    "11802916689", -- Bot 7
-    "11810691407", -- Bot 8
+    "11960702834", -- Bot 7
+    "11960661126", -- Bot 8
 
-    "11810683044", -- Bot 9
 
 }
 
@@ -618,20 +645,24 @@ local botOrder = {
                 isAdmin = Admin:IsAdmin(sender)
             end)
 
-            local lower =
-                message:lower()
-                :gsub("^%s+", "")
-                :gsub("%s+$", "")
+            local intent, args
+
+            if NLP then
+                intent, args = NLP.Classify(message, NLP.Intents)
+            end
+
+            if not intent then
+                return
+            end
 
             local commandTarget =
                 vars.CommandTarget
 
             --------------------------------------------------
-            -- !STOP / !UNCIRCLE
+            -- STOP (berhenti / stop / bubar / uncircle)
             --------------------------------------------------
 
-            if lower == "!stop"
-                or lower == "!uncircle" then
+            if intent == "stop" then
 
                 if not isAdmin then
                     return
@@ -653,10 +684,10 @@ local botOrder = {
             end
 
             --------------------------------------------------
-            -- !CIRCLE
+            -- CIRCLE (tanpa nama)
             --------------------------------------------------
 
-            if lower == "!circle" then
+            if intent == "circle" and #args == 0 then
                 if not isAdmin and sender ~= commandTarget then
                     return
                 end
@@ -666,12 +697,19 @@ local botOrder = {
             end
 
             --------------------------------------------------
-            -- !CIRCLE PLAYER
+            -- CIRCLE <nama pemain>
             -- Only an admin can select a new target.
             --------------------------------------------------
 
-            local targetName =
-                lower:match("^!circle%s+(.+)$")
+            local targetName = nil
+
+            if intent == "circle" and #args > 0 then
+
+                targetName =
+                    NLP.ResolveTarget(args, findPlayerByName)
+                    or table.concat(args, " ")
+
+            end
 
             if targetName then
                 if not isAdmin then
@@ -777,6 +815,6 @@ local botOrder = {
 
         print("[Circle] Dynamic Circle system loaded.")
         print("[Circle] Bot online akan dihitung ulang otomatis.")
-        print("[Circle] Ketik !circle untuk membentuk ulang lingkaran.")
+        print("[Circle] Ketik circle atau lingkaran untuk membentuk ulang lingkaran.")
     end
 }
