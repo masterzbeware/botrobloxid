@@ -57,6 +57,8 @@ NLP.Fillers = makeSet({
     "anda", "kita", "kami", "all", "everyone",
     "bareng", "barengan", "bersama",
     "sir", "komandan", "siap", "t",
+    "buat", "bikin", "membuat", "membentuk", "form", "make",
+    "jadi", "menjadi",
 })
 
 -- Kata ganti diri: "ikuti saya" artinya target = pengirim.
@@ -70,6 +72,7 @@ NLP.Connectors = makeSet({
     "ke", "di", "kepada", "untuk", "pada", "dengan", "sama",
     "yang", "itu", "ini", "nya", "dan", "and", "to", "the", "a",
     "tempat", "sini", "situ", "kesini", "kemari", "here", "there",
+    "sekitar", "around", "dari",
 })
 
 -- Kata negasi: "jangan ikuti saya" berarti berhenti.
@@ -83,7 +86,94 @@ NLP.Negations = makeSet({
 -- KAMUS PERINTAH
 --------------------------------------------------
 
+-- Kata umum formasi (lemah, bernilai 1): baru berarti jika
+-- dipasangkan dengan kata penentu seperti 'depan' atau 'tengah'.
+local function formation(words)
+    local common = {
+        formasi = 1,
+        bentuk = 1,
+        barisan = 1,
+        baris = 1,
+        line = 1,
+    }
+
+    for word, points in pairs(common) do
+        words[word] = points
+    end
+
+    return words
+end
+
 NLP.Intents = {
+
+    -- Formasi depan (modul Frontline)
+    frontline = {
+        Words = formation({
+            frontline = 2,
+            front = 1,
+            depan = 1,
+        }),
+    },
+
+    -- Formasi belakang (modul Backline)
+    backline = {
+        Words = formation({
+            backline = 2,
+            back = 1,
+            belakang = 1,
+        }),
+    },
+
+    -- Formasi tengah (modul Centerline)
+    centerline = {
+        Words = formation({
+            centerline = 2,
+            center = 1,
+            centre = 1,
+            tengah = 1,
+        }),
+    },
+
+    -- Formasi lingkaran (modul Circle)
+    circle = {
+        Words = formation({
+            circle = 2,
+            lingkaran = 2,
+            melingkar = 2,
+            keliling = 2,
+            kelilingi = 2,
+            mengelilingi = 2,
+        }),
+    },
+
+    -- Formasi empat baris (modul Fourline)
+    fourline = {
+        Words = formation({
+            fourline = 2,
+            four = 1,
+            empat = 1,
+            ["4"] = 1,
+        }),
+    },
+
+    -- Formasi panah (modul Arrow)
+    arrow = {
+        Words = formation({
+            arrow = 2,
+            panah = 2,
+        }),
+    },
+
+    -- Hentikan formasi panah saja (modul Arrow)
+    unarrow = {
+        Threshold = 3,
+        Priority = 1,
+        StrictRemainder = true,
+
+        Words = {
+            unarrow = 3,
+        },
+    },
 
     -- Ikuti pemain (modul Follow)
     follow = {
@@ -135,6 +225,11 @@ NLP.Intents = {
             halt = 3,
             bubar = 3,
             unfollow = 3,
+            unbackline = 3,
+            uncenterline = 3,
+            uncircle = 3,
+            unfourline = 3,
+            unfrontline = 3,
         },
     },
 
@@ -435,7 +530,45 @@ function NLP.Classify(text, intents)
         return nil
     end
 
+    -- Dua perintah dengan skor dan prioritas sama berarti ambigu
+    -- (misalnya hanya 'formasi baris'): lebih aman diabaikan.
+    for name, def in pairs(intents) do
+        if name ~= bestName
+            and (scores[name] or 0) == bestScore
+            and (def.Priority or 0) == bestPriority
+            and bestScore >= (def.Threshold or 2)
+            and not (def.StrictRemainder and #args > 0) then
+
+            return nil
+
+        end
+    end
+
     return bestName, args, bestScore
+end
+
+-- Cari nama pemain dari args (sisa kata yang tidak dikenal).
+-- Mencoba gabungan semua kata, lalu kata pertama, lalu kata terakhir.
+-- findPlayer = fungsi pencari pemain milik modul pemanggil.
+-- Mengembalikan teks nama yang cocok, atau nil.
+function NLP.ResolveTarget(args, findPlayer)
+    if not args or #args == 0 then
+        return nil
+    end
+
+    local candidates = {
+        table.concat(args, " "),
+        args[1],
+        args[#args],
+    }
+
+    for _, candidate in ipairs(candidates) do
+        if findPlayer(candidate) then
+            return candidate
+        end
+    end
+
+    return nil
 end
 
 return {

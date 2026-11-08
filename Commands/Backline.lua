@@ -52,6 +52,34 @@ return {
         local backlineConnection = nil
 
         ----------------------------------------------------------------
+        -- NATURAL LANGUAGE (TANPA PREFIX)
+        --
+        -- Parser dan kamus perintah berasal dari Perfix.lua
+        -- (_G.BotVars.NLP), jadi perintah cukup ditulis dengan kata
+        -- biasa:
+        --
+        -- Formasi di belakang pengirim (Admin atau CommandTarget):
+        --   backline / formasi belakang / barisan belakang
+        --
+        -- Formasi di belakang pemain lain (HANYA Admin):
+        --   backline trevkaro / formasi belakang trevkaro
+        --
+        -- Berhenti (HANYA Admin):
+        --   berhenti / stop / bubar / unbackline
+        ----------------------------------------------------------------
+
+        local NLP = _G.BotVars.NLP
+
+        if not NLP then
+
+            warn(
+                "[Backline] NLP tidak ditemukan. "
+                .. "Pastikan Perfix.lua dimuat lebih dulu."
+            )
+
+        end
+
+        ----------------------------------------------------------------
         -- FORMATION DISTANCE
         ----------------------------------------------------------------
 
@@ -67,19 +95,18 @@ return {
 
 local botOrder = {
 
-    "11801693968", -- Bot 1
-    "11801692411", -- Bot 2
+    "11954797420", -- Bot 1
+    "11954814620", -- Bot 2
 
-    "11801726433", -- Bot 3
-    "11801750996", -- Bot 4
+    "11954816098", -- Bot 3
+    "11957237714", -- Bot 4
 
-    "11802903376", -- Bot 5
-    "11802903446", -- Bot 6
+    "11960711816", -- Bot 5
+    "11957234942", -- Bot 6
 
-    "11802916689", -- Bot 7
-    "11810691407", -- Bot 8
+    "11960702834", -- Bot 7
+    "11960661126", -- Bot 8
 
-    "11810683044", -- Bot 9
 
 }
 
@@ -552,20 +579,25 @@ local botOrder = {
                 (_G.BotVars.CommandTarget == sender)
 
             ------------------------------------------------------------
-            -- CLEAN MESSAGE
+            -- ANALISA PESAN (BAHASA NATURAL)
             ------------------------------------------------------------
 
-            local lower =
-                message:lower()
-                :gsub("^%s+", "")
-                :gsub("%s+$", "")
+            local intent, args
+
+            if NLP then
+                intent, args = NLP.Classify(message, NLP.Intents)
+            end
+
+            if not intent then
+                return
+            end
 
             ------------------------------------------------------------
-            -- !BACKLINE
+            -- BACKLINE (tanpa nama)
             -- ADMIN ATAU COMMAND TARGET
             ------------------------------------------------------------
 
-            if lower == "!backline" then
+            if intent == "backline" and #args == 0 then
 
                 if not isAdmin and not isCommandTarget then
                     return
@@ -577,12 +609,15 @@ local botOrder = {
             end
 
             ------------------------------------------------------------
-            -- !BACKLINE PLAYER
+            -- BACKLINE <nama pemain>
             -- HANYA ADMIN
             ------------------------------------------------------------
 
-            local targetName =
-                lower:match("^!backline%s+(.+)$")
+            local targetName = nil
+
+            if intent == "backline" and #args > 0 then
+                targetName = NLP.ResolveTarget(args, findPlayerByName)
+            end
 
             if targetName then
 
@@ -601,12 +636,11 @@ local botOrder = {
             end
 
             ------------------------------------------------------------
-            -- !STOP / !UNBACKLINE
+            -- STOP (berhenti / stop / bubar / unbackline)
             -- HANYA ADMIN
             ------------------------------------------------------------
 
-            if lower == "!stop"
-                or lower == "!unbackline" then
+            if intent == "stop" then
 
                 if not isAdmin then
                     return

@@ -13,11 +13,10 @@
 -- Jarak antarbot: 5 studs
 -- Jarak bot terdekat ke target: 5 studs
 --
--- Commands:
--- !centerline
--- !centerline <player>
--- !stop
--- !uncenterline
+-- Commands (bahasa natural, tanpa prefix):
+-- centerline / formasi tengah / barisan tengah
+-- centerline <player>   (hanya Admin)
+-- berhenti / stop / bubar / uncenterline   (hanya Admin)
 
 return {
     Execute = function()
@@ -47,6 +46,25 @@ return {
         local vars = _G.BotVars
 
         vars.ModeControllers = vars.ModeControllers or {}
+
+        --------------------------------------------------
+        -- NATURAL LANGUAGE (TANPA PREFIX)
+        --------------------------------------------------
+        -- Parser dan kamus perintah berasal dari Perfix.lua
+        -- (_G.BotVars.NLP), jadi perintah cukup ditulis dengan
+        -- kata biasa.
+        --------------------------------------------------
+
+        local NLP = vars.NLP
+
+        if not NLP then
+
+            warn(
+                "[Centerline] NLP tidak ditemukan. "
+                .. "Pastikan Perfix.lua dimuat lebih dulu."
+            )
+
+        end
 
         --------------------------------------------------
         -- LOAD ADMIN
@@ -95,19 +113,18 @@ return {
 
 local botOrder = {
 
-    "11801693968", -- Bot 1
-    "11801692411", -- Bot 2
+    "11954797420", -- Bot 1
+    "11954814620", -- Bot 2
 
-    "11801726433", -- Bot 3
-    "11801750996", -- Bot 4
+    "11954816098", -- Bot 3
+    "11957237714", -- Bot 4
 
-    "11802903376", -- Bot 5
-    "11802903446", -- Bot 6
+    "11960711816", -- Bot 5
+    "11957234942", -- Bot 6
 
-    "11802916689", -- Bot 7
-    "11810691407", -- Bot 8
+    "11960702834", -- Bot 7
+    "11960661126", -- Bot 8
 
-    "11810683044", -- Bot 9
 
 }
 
@@ -676,21 +693,25 @@ local botOrder = {
                 vars.CommandTarget == sender
 
             --------------------------------------------------
-            -- NORMALIZE MESSAGE
+            -- ANALYZE MESSAGE (NATURAL LANGUAGE)
             --------------------------------------------------
 
-            local lower =
-                message:lower()
-                :gsub("^%s+", "")
-                :gsub("%s+$", "")
+            local intent, args
+
+            if NLP then
+                intent, args = NLP.Classify(message, NLP.Intents)
+            end
+
+            if not intent then
+                return
+            end
 
             --------------------------------------------------
-            -- !STOP / !UNCENTERLINE
+            -- STOP (berhenti / stop / bubar / uncenterline)
             -- HANYA ADMIN
             --------------------------------------------------
 
-            if lower == "!stop"
-                or lower == "!uncenterline" then
+            if intent == "stop" then
 
                 if not isAdmin then
                     return
@@ -720,11 +741,11 @@ local botOrder = {
             end
 
             --------------------------------------------------
-            -- !CENTERLINE
+            -- CENTERLINE (tanpa nama)
             -- ADMIN ATAU COMMAND TARGET
             --------------------------------------------------
 
-            if lower == "!centerline" then
+            if intent == "centerline" and #args == 0 then
 
                 if not isAdmin and not isCommandTarget then
                     return
@@ -737,12 +758,15 @@ local botOrder = {
             end
 
             --------------------------------------------------
-            -- !CENTERLINE PLAYER
+            -- CENTERLINE <nama pemain>
             -- HANYA ADMIN
             --------------------------------------------------
 
-            local targetName =
-                lower:match("^!centerline%s+(.+)$")
+            local targetName = nil
+
+            if intent == "centerline" and #args > 0 then
+                targetName = NLP.ResolveTarget(args, findPlayerByName)
+            end
 
             if targetName then
 
@@ -883,7 +907,7 @@ local botOrder = {
         )
 
         print(
-            "[Centerline] Gunakan !centerline untuk memulai."
+            "[Centerline] Ketik centerline atau formasi tengah untuk memulai."
         )
 
     end
