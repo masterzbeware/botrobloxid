@@ -1,14 +1,14 @@
 -- AdminCommand.lua
 -- Menambahkan admin melalui command chat.
 --
--- Command:
--- !addadmin <username>
--- !removeadmin <username>
+-- Command (tanpa prefix, cukup kata biasa):
+-- tambah admin <username> / add admin <username>
+-- hapus admin <username> / remove admin <username>
 --
 -- Admin baru hanya mendapatkan akses command:
--- !follow
--- !follow <player>
--- !stop
+-- follow
+-- follow <player>
+-- stop
 --
 -- Admin utama tetap ditentukan oleh Admin.lua.
 
@@ -32,6 +32,80 @@ return {
         -- UserId = true
         _G.BotVars.AdditionalAdmins =
             _G.BotVars.AdditionalAdmins or {}
+
+        --------------------------------------------------
+        -- NATURAL LANGUAGE (TANPA PREFIX)
+        --------------------------------------------------
+        -- Parser berasal dari Perfix.lua (_G.BotVars.NLP).
+        -- Perfix.lua belum memiliki intent addadmin/removeadmin,
+        -- jadi modul ini mendaftarkan intent-nya sendiri ke
+        -- NLP.Intents.
+        --
+        -- Tambah admin (HANYA Admin utama):
+        --   tambah admin trevkaro / add admin trevkaro
+        --
+        -- Hapus admin (HANYA Admin utama):
+        --   hapus admin trevkaro / remove admin trevkaro
+        --------------------------------------------------
+
+        local NLP = _G.BotVars.NLP
+
+        if not NLP then
+
+            warn(
+                "[AdminCommand] NLP tidak ditemukan. "
+                .. "Pastikan Perfix.lua dimuat lebih dulu."
+            )
+
+        else
+
+            NLP.Intents.addadmin =
+                NLP.Intents.addadmin
+                or {
+                    Threshold = 3,
+
+                    Words = {
+                        addadmin = 3,
+                        tambahadmin = 3,
+                        tambahkanadmin = 3,
+
+                        add = 1,
+                        tambah = 1,
+                        tambahkan = 1,
+                    },
+
+                    Phrases = {
+                        ["add admin"] = 2,
+                        ["tambah admin"] = 2,
+                        ["tambahkan admin"] = 2,
+                    },
+                }
+
+            NLP.Intents.removeadmin =
+                NLP.Intents.removeadmin
+                or {
+                    Threshold = 3,
+
+                    Words = {
+                        removeadmin = 3,
+                        hapusadmin = 3,
+                        unadmin = 3,
+
+                        remove = 1,
+                        hapus = 1,
+                        copot = 1,
+                        cabut = 1,
+                    },
+
+                    Phrases = {
+                        ["remove admin"] = 2,
+                        ["hapus admin"] = 2,
+                        ["copot admin"] = 2,
+                        ["cabut admin"] = 2,
+                    },
+                }
+
+        end
 
         --------------------------------------------------
         -- LOAD ADMIN
@@ -139,19 +213,53 @@ return {
                 return
             end
 
-            local command =
-                message:match("^%s*(.-)%s*$")
+            local intent, args
 
-            local targetName =
-                command:match(
-                    "^!addadmin%s+(.+)$"
-                )
+            if NLP then
+                intent, args = NLP.Classify(message, NLP.Intents)
+            end
+
+            if intent ~= "addadmin"
+                and intent ~= "removeadmin" then
+
+                return
+            end
 
             --------------------------------------------------
-            -- !ADDADMIN
+            -- NAMA PEMAIN
+            --------------------------------------------------
+            -- Kata "admin" pada "tambah admin <nama>" ikut
+            -- terbaca sebagai sisa kata, jadi kemunculan
+            -- pertamanya dibuang. Pemain yang bernama "admin"
+            -- ditulis: tambah admin admin.
             --------------------------------------------------
 
-            if targetName then
+            local nameArgs = {}
+            local skippedAdminWord = false
+
+            for _, word in ipairs(args) do
+                if not skippedAdminWord
+                    and word:lower() == "admin" then
+
+                    skippedAdminWord = true
+                else
+                    table.insert(nameArgs, word)
+                end
+            end
+
+            local targetName = nil
+
+            if #nameArgs > 0 then
+                targetName =
+                    NLP.ResolveTarget(nameArgs, findPlayer)
+                    or table.concat(nameArgs, " ")
+            end
+
+            --------------------------------------------------
+            -- ADDADMIN
+            --------------------------------------------------
+
+            if intent == "addadmin" and targetName then
 
                 local target =
                     findPlayer(targetName)
@@ -197,18 +305,13 @@ return {
             end
 
             --------------------------------------------------
-            -- !REMOVEADMIN
+            -- REMOVEADMIN
             --------------------------------------------------
 
-            local removeName =
-                command:match(
-                    "^!removeadmin%s+(.+)$"
-                )
-
-            if removeName then
+            if intent == "removeadmin" and targetName then
 
                 local target =
-                    findPlayer(removeName)
+                    findPlayer(targetName)
 
                 if not target then
 
