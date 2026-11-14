@@ -54,6 +54,58 @@ return {
 
 
         ----------------------------------------------------------------
+        -- NATURAL LANGUAGE (TANPA PREFIX)
+        --
+        -- Parser berasal dari Perfix.lua (_G.BotVars.NLP).
+        -- Perfix.lua belum memiliki intent salute, jadi modul ini
+        -- mendaftarkan intent-nya sendiri ke NLP.Intents.
+        --
+        -- Hormat di sekitar pengirim (Admin atau CommandTarget):
+        --   hormat / menghormat
+        --
+        -- Hormat untuk pemain lain (HANYA Admin):
+        --   hormat trevkaro
+        --
+        -- Berhenti (HANYA Admin):
+        --   berhenti / stop / bubar / unhormat
+        ----------------------------------------------------------------
+
+        local NLP = _G.BotVars.NLP
+
+        if not NLP then
+
+            warn(
+                "[Salute] NLP tidak ditemukan. "
+                .. "Pastikan Perfix.lua dimuat lebih dulu."
+            )
+
+        else
+
+            NLP.Intents.salute =
+                NLP.Intents.salute
+                or {
+                    Words = {
+                        hormat = 2,
+                        menghormat = 2,
+                    },
+                }
+
+            NLP.Intents.unsalute =
+                NLP.Intents.unsalute
+                or {
+                    Threshold = 3,
+                    Priority = 1,
+                    StrictRemainder = true,
+
+                    Words = {
+                        unhormat = 3,
+                    },
+                }
+
+        end
+
+
+        ----------------------------------------------------------------
         -- FE ANIMATION ID
         ----------------------------------------------------------------
 
@@ -698,31 +750,37 @@ return {
 
 
             ------------------------------------------------------------
-            -- CLEAN MESSAGE
+            -- ANALISA PESAN (BAHASA NATURAL)
             ------------------------------------------------------------
 
-            local lower =
-                message:lower()
+            local intent, args
 
-            lower =
-                lower:gsub("^%s+", "")
+            if NLP then
 
-            lower =
-                lower:gsub("%s+$", "")
+                intent, args = NLP.Classify(
+                    message,
+                    NLP.Intents
+                )
+
+            end
+
+            if not intent then
+                return
+            end
 
 
             ----------------------------------------------------------------
-            -- !STOP
+            -- STOP (berhenti / stop / bubar)
             --
             -- HANYA ADMIN
             ----------------------------------------------------------------
 
-            if lower == "!stop" then
+            if intent == "stop" then
 
                 if not isAdmin then
 
                     print(
-                        "[Salute] !stop ditolak:",
+                        "[Salute] stop ditolak:",
                         sender.Name,
                         "bukan Admin."
                     )
@@ -771,17 +829,17 @@ return {
 
 
             ----------------------------------------------------------------
-            -- !UNSALUTE
+            -- UNSALUTE (unhormat)
             --
             -- HANYA ADMIN
             ----------------------------------------------------------------
 
-            if lower == "!unsalute" then
+            if intent == "unsalute" then
 
                 if not isAdmin then
 
                     print(
-                        "[Salute] !unsalute ditolak:",
+                        "[Salute] unhormat ditolak:",
                         sender.Name,
                         "bukan Admin."
                     )
@@ -813,27 +871,27 @@ return {
 
 
             ----------------------------------------------------------------
-            -- !SALUTE
+            -- HORMAT (tanpa nama)
             --
             -- ADMIN:
-            --     !salute
+            --     hormat
             --     -> Target = Admin
             --
             -- COMMAND TARGET:
-            --     !salute
+            --     hormat
             --     -> Target = dirinya sendiri
             --
             -- PLAYER BIASA:
             --     ditolak
             ----------------------------------------------------------------
 
-            if lower == "!salute" then
+            if intent == "salute" and #args == 0 then
 
                 if not isAdmin
                     and not isCommandTarget then
 
                     print(
-                        "[Salute] !salute ditolak:",
+                        "[Salute] hormat ditolak:",
                         sender.Name
                     )
 
@@ -868,15 +926,22 @@ return {
 
 
             ----------------------------------------------------------------
-            -- !SALUTE PLAYER
+            -- HORMAT <nama pemain>
             --
             -- HANYA ADMIN
             ----------------------------------------------------------------
 
-            local targetName =
-                lower:match(
-                    "^!salute%s+(.+)$"
-                )
+            local targetName = nil
+
+            if intent == "salute" and #args > 0 then
+
+                targetName =
+                    NLP.ResolveTarget(
+                        args,
+                        findPlayerByName
+                    )
+
+            end
 
             if targetName then
 

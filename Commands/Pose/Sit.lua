@@ -49,9 +49,60 @@ return {
 
 
         ----------------------------------------------------------------
+        -- NATURAL LANGUAGE (TANPA PREFIX)
+        --
+        -- Parser berasal dari Perfix.lua (_G.BotVars.NLP).
+        -- Perfix.lua belum memiliki intent sit, jadi modul ini
+        -- mendaftarkan intent-nya sendiri ke NLP.Intents.
+        --
+        -- Semua bot duduk (HANYA Admin):
+        --   duduk
+        --
+        -- Berdiri kembali (HANYA Admin):
+        --   unsit
+        --
+        -- Berhenti (HANYA Admin):
+        --   berhenti / stop / bubar
+        ----------------------------------------------------------------
+
+        local NLP = _G.BotVars.NLP
+
+        if not NLP then
+
+            warn(
+                "[Sit] NLP tidak ditemukan. "
+                .. "Pastikan Perfix.lua dimuat lebih dulu."
+            )
+
+        else
+
+            NLP.Intents.sit =
+                NLP.Intents.sit
+                or {
+                    Words = {
+                        duduk = 2,
+                    },
+                }
+
+            NLP.Intents.unsit =
+                NLP.Intents.unsit
+                or {
+                    Threshold = 3,
+                    Priority = 1,
+                    StrictRemainder = true,
+
+                    Words = {
+                        unsit = 3,
+                    },
+                }
+
+        end
+
+
+        ----------------------------------------------------------------
         -- SIT EMOTE IDS
         ----------------------------------------------------------------
-        -- Setiap Bot yang menerima !sit akan memilih 1 emote secara
+        -- Setiap Bot yang menerima perintah duduk akan memilih 1 emote secara
         -- random dari daftar ini dan menjalankannya.
 
         local SIT_EMOTE_IDS = {
@@ -529,24 +580,30 @@ return {
 
 
             ------------------------------------------------------------
-            -- CLEAN MESSAGE
+            -- ANALISA PESAN (BAHASA NATURAL)
             ------------------------------------------------------------
 
-            local lower =
-                message:lower()
+            local intent, args
 
-            lower =
-                lower:gsub("^%s+", "")
+            if NLP then
 
-            lower =
-                lower:gsub("%s+$", "")
+                intent, args = NLP.Classify(
+                    message,
+                    NLP.Intents
+                )
+
+            end
+
+            if not intent then
+                return
+            end
 
 
             ------------------------------------------------------------
-            -- !SIT
+            -- DUDUK
             ------------------------------------------------------------
 
-            if lower == "!sit" then
+            if intent == "sit" and #args == 0 then
 
                 print(
                     "[Sit] Command diterima | Bot:",
@@ -567,10 +624,10 @@ return {
 
 
             ------------------------------------------------------------
-            -- !UNSIT
+            -- UNSIT
             ------------------------------------------------------------
 
-            if lower == "!unsit" then
+            if intent == "unsit" then
 
                 print(
                     "[Sit] Unsit | Bot:",
@@ -594,10 +651,10 @@ return {
 
 
             ------------------------------------------------------------
-            -- !STOP
+            -- STOP (berhenti / stop / bubar)
             ------------------------------------------------------------
 
-            if lower == "!stop" then
+            if intent == "stop" then
 
                 print(
                     "[Sit] Stop | Bot:",
@@ -727,7 +784,7 @@ return {
         print(
             "[Sit] Loaded untuk:",
             LocalPlayer.Name,
-            "| Semua bot eligible untuk !sit",
+            "| Semua bot eligible untuk duduk",
             "| Random emotes:",
             #SIT_EMOTE_IDS
         )

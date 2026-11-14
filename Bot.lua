@@ -2,6 +2,7 @@
 -- MasterZ HUB
 -- Modular Command Loader
 -- Mendukung subfolder seperti Commands/Dance/BrazilDance.lua
+-- dan Commands/Pose/Salute.lua
 
 --------------------------------------------------
 -- REPOSITORY
@@ -124,8 +125,11 @@ local commandFiles = {
     "Message.lua",
     "JoinAlert.lua",
     "Rest.lua",
-    "Salute.lua",
-    "Sit.lua",
+
+    -- Pose subfolder
+    "Pose/Salute.lua",
+    "Pose/Sit.lua",
+
     "Square.lua",
     "Sync.lua",
     "Worship.lua",
@@ -209,6 +213,7 @@ for _, fileName in ipairs(commandFiles) do
     --------------------------------------------------
     -- REGISTER MODULE
     -- Dance/BrazilDance.lua -> brazildance
+    -- Pose/Salute.lua -> salute
     --------------------------------------------------
 
     local key = fileName:match("([^/]+)%.lua$")
