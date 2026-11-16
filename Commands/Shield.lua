@@ -23,6 +23,13 @@
 -- shield / formasi pengamanan / formasi berjaga
 -- shield <player>   (hanya Admin)
 -- berhenti / stop / bubar / unshield   (hanya Admin)
+--
+-- Siaga (bersama Standby.lua):
+-- Setelah formasi berjaga terbentuk, Admin mengetik
+-- "siap siaga" atau "siap sedia". Bot lalu memantau Player
+-- yang mendekati target (Admin), dan satu bot (bot aktif
+-- pertama) mengirim peringatan:
+-- "Harap menjauh. Ring 1 dalam pengamanan."
 
 return {
     Execute = function()
@@ -159,6 +166,25 @@ return {
 
         -- Toleransi kedatangan.
         local arrivalTolerance = 1.5
+
+        -- Peringatan siaga (siap siaga / siap sedia):
+        -- Player yang berada dalam jarak ini dari target (studs)
+        -- dianggap masuk Ring 1. Bot berdiri 6 studs dari target
+        -- (sudut sekitar 8,5) dan menghalangi Player secara fisik,
+        -- jadi radius dibuat lebih lebar dari ring bot.
+        local warningRadius = 15
+
+        -- Seberapa sering Player di sekitar target dicek (detik).
+        local warningCheckInterval = 0.5
+
+        -- Jeda sebelum Player yang sama diperingatkan lagi (detik).
+        local warningPlayerCooldown = 10
+
+        -- Jeda minimum antar chat peringatan (detik).
+        local warningChatGap = 3
+
+        local warningMessage =
+            "Harap menjauh. Ring 1 dalam pengamanan."
 
         --------------------------------------------------
         -- SLOT ORDER
@@ -917,6 +943,207 @@ local botOrder = {
                 and targetPlayer then
 
                 startShield(targetPlayer)
+
+            end
+
+        end)
+
+        --------------------------------------------------
+        -- PERINGATAN SIAGA (RING 1)
+        --------------------------------------------------
+        -- Aktif hanya jika formasi shield berjalan DAN Admin sudah
+        -- mengetik "siap siaga" / "siap sedia" (Standby.lua
+        -- menandainya lewat vars.StandbyEnabled).
+        --
+        -- Player yang masuk radius warningRadius dari target
+        -- diperingatkan lewat chat. Target, Admin, dan bot tidak
+        -- diperingatkan.
+        --
+        -- Hanya satu bot (bot aktif pertama) yang mengirim chat,
+        -- supaya peringatan tidak terkirim berkali-kali oleh
+        -- semua bot.
+        --------------------------------------------------
+
+        local botUserIds = {}
+
+        for _, botUserId in ipairs(botOrder) do
+            botUserIds[tonumber(botUserId)] = true
+        end
+
+        local warnedAt = {}
+        local lastWarningAt = -math.huge
+        local wasWatching = false
+
+        -- Mencegah monitor ganda jika module dijalankan ulang.
+        local shieldRunId =
+            (vars.ShieldRunId or 0) + 1
+
+        vars.ShieldRunId = shieldRunId
+
+        task.spawn(function()
+
+            while true do
+
+                task.wait(warningCheckInterval)
+
+                -- Module dijalankan ulang: monitor lama berhenti.
+                if shieldRunId ~= vars.ShieldRunId then
+                    return
+                end
+
+                ----------------------------------------------
+                -- HANYA SAAT SHIELD AKTIF DAN SIAGA DIAKTIFKAN
+                ----------------------------------------------
+
+                local watching =
+                    vars.ActiveMode == "shield"
+                    and vars.StandbyEnabled == true
+                    and guarding
+                    and targetPlayer ~= nil
+
+                if watching ~= wasWatching then
+
+                    wasWatching = watching
+
+                    print(
+                        "[Shield] Pemantauan siaga:",
+                        watching and "AKTIF" or "NONAKTIF",
+                        "| Mode:",
+                        tostring(vars.ActiveMode),
+                        "| Standby:",
+                        tostring(vars.StandbyEnabled),
+                        "| Bot:",
+                        LocalPlayer.Name
+                    )
+
+                end
+
+                if not watching then
+
+                    if next(warnedAt) then
+                        warnedAt = {}
+                    end
+
+                    continue
+
+                end
+
+                ----------------------------------------------
+                -- HANYA BOT AKTIF PERTAMA YANG BERBICARA
+                ----------------------------------------------
+
+                local activeBots = getActiveBots()
+
+                if activeBots[1] ~= tostring(LocalPlayer.UserId) then
+                    continue
+                end
+
+                ----------------------------------------------
+                -- POSISI TARGET
+                ----------------------------------------------
+
+                local targetCharacter =
+                    targetPlayer.Character
+
+                local targetHRP =
+                    targetCharacter
+                    and targetCharacter:FindFirstChild(
+                        "HumanoidRootPart"
+                    )
+
+                if not targetHRP then
+                    continue
+                end
+
+                ----------------------------------------------
+                -- CARI PLAYER YANG MENDEKAT
+                ----------------------------------------------
+
+                local now = os.clock()
+                local pending = {}
+
+                for _, player in ipairs(Players:GetPlayers()) do
+
+                    local trusted =
+                        player == LocalPlayer
+                        or player == targetPlayer
+                        or botUserIds[player.UserId] == true
+
+                    if not trusted then
+
+                        pcall(function()
+                            trusted = Admin:IsAdmin(player)
+                        end)
+
+                    end
+
+                    if not trusted then
+
+                        local character = player.Character
+
+                        local rootPart =
+                            character
+                            and character:FindFirstChild(
+                                "HumanoidRootPart"
+                            )
+
+                        local inRing =
+                            rootPart
+                            and (
+                                rootPart.Position
+                                - targetHRP.Position
+                            ).Magnitude <= warningRadius
+
+                        if inRing then
+
+                            local lastWarned =
+                                warnedAt[player.UserId]
+                                or -math.huge
+
+                            if now - lastWarned
+                                >= warningPlayerCooldown then
+
+                                table.insert(
+                                    pending,
+                                    player.UserId
+                                )
+
+                            end
+
+                        else
+
+                            -- Sudah keluar dari Ring 1: jika mendekat
+                            -- lagi, langsung diperingatkan.
+                            warnedAt[player.UserId] = nil
+
+                        end
+
+                    end
+
+                end
+
+                ----------------------------------------------
+                -- KIRIM PERINGATAN
+                ----------------------------------------------
+
+                if #pending > 0
+                    and now - lastWarningAt >= warningChatGap then
+
+                    lastWarningAt = now
+
+                    for _, userId in ipairs(pending) do
+                        warnedAt[userId] = now
+                    end
+
+                    sendChat(warningMessage)
+
+                    print(
+                        "[Shield] Peringatan Ring 1 dikirim.",
+                        "| Jumlah Player:",
+                        #pending
+                    )
+
+                end
 
             end
 

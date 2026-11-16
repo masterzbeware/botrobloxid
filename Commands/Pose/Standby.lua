@@ -196,6 +196,10 @@ return {
 
         _G.BotVars.StandbyRunId = runId
 
+        -- Status Standby dibagikan ke modul lain (misalnya Shield.lua
+        -- memakainya untuk peringatan saat siap siaga).
+        _G.BotVars.StandbyEnabled = false
+
 
         ----------------------------------------------------------------
         -- CEK TRACK MILIK STANDBY
@@ -406,7 +410,17 @@ return {
         _G.BotVars.ModeControllers.standby =
             function()
 
+                if standbyEnabled then
+
+                    print(
+                        "[Standby] Siaga berakhir | Bot:",
+                        LocalPlayer.Name
+                    )
+
+                end
+
                 standbyEnabled = false
+                _G.BotVars.StandbyEnabled = false
 
                 -- Berhenti seketika supaya animasi mode berikutnya
                 -- (misalnya hormat) bisa langsung dimainkan.
@@ -678,6 +692,7 @@ return {
             end
 
             standbyEnabled = true
+            _G.BotVars.StandbyEnabled = true
 
             print(
                 "[Standby] Aktif | Bot:",
