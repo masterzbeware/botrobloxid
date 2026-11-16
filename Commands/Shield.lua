@@ -183,8 +183,8 @@ return {
         -- Peringatan siaga (siap siaga / siap sedia):
         -- Player yang berada dalam jarak ini dari target (studs)
         -- dianggap masuk Ring 1. Bot berdiri 6 studs dari target,
-        -- jadi 6 studs sama dengan jarak ring bot.
-        local warningRadius = 6
+        -- jadi 8 studs sedikit di luar jarak ring bot.
+        local warningRadius = 8
 
         -- Seberapa sering Player di sekitar target dicek (detik).
         local warningCheckInterval = 0.5
@@ -195,10 +195,10 @@ return {
         -- Jeda minimum antar chat peringatan (detik).
         local warningChatGap = 3
 
-        -- Jeda antar bot saat mengirim peringatan (detik). Bot 1
-        -- langsung, Bot 2 setelah 1 jeda, Bot 3 setelah 2 jeda,
-        -- dan seterusnya, supaya tidak terkirim bersamaan.
-        local warningChatStagger = 1
+        -- Jeda antar bot saat mengirim peringatan (detik). 0 = semua
+        -- bot mengirim serentak. Jika lebih dari 0: Bot 1 langsung,
+        -- Bot 2 setelah 1 jeda, Bot 3 setelah 2 jeda, dan seterusnya.
+        local warningChatStagger = 0
 
         local warningMessage =
             "Harap menjauh. Ring 1 dalam pengamanan."
@@ -1046,8 +1046,8 @@ local botOrder = {
         -- diperingatkan lewat chat. Target, Admin, dan bot tidak
         -- diperingatkan.
         --
-        -- Semua bot aktif ikut mengirim chat peringatan, bergantian
-        -- dengan jeda warningChatStagger per bot.
+        -- Semua bot aktif ikut mengirim chat peringatan secara serentak
+        -- (warningChatStagger = 0).
         --------------------------------------------------
 
         local botUserIds = {}
@@ -1070,7 +1070,12 @@ local botOrder = {
 
             while true do
 
-                task.wait(warningCheckInterval)
+                -- Pengecekan diselaraskan ke waktu server supaya semua bot
+                -- mendeteksi dan mengirim peringatan di saat yang sama.
+                task.wait(
+                    warningCheckInterval
+                    - (workspace:GetServerTimeNow() % warningCheckInterval)
+                )
 
                 -- Module dijalankan ulang: monitor lama berhenti.
                 if shieldRunId ~= vars.ShieldRunId then
@@ -1226,8 +1231,8 @@ local botOrder = {
                         warnedAt[userId] = now
                     end
 
-                    -- Bot ke-N bicara setelah (N - 1) jeda supaya
-                    -- peringatan tidak terkirim bersamaan.
+                    -- Bot ke-N bicara setelah (N - 1) * warningChatStagger detik;
+                    -- dengan nilai 0 semua bot bicara bersamaan.
                     task.delay(
                         (botIndex - 1) * warningChatStagger,
                         function()
