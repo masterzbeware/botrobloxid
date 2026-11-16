@@ -114,6 +114,11 @@ return {
         --
         -- Standby berakhir saat ada perintah lain (follow, circle,
         -- salute, sit, dll) atau stop.
+        --
+        -- Modul lain (misalnya Shield.lua) bisa menahan animasi lewat
+        -- _G.BotVars.StandbyHold = true (animasi tidak dimainkan
+        -- selama ditahan) dan menghentikannya seketika lewat
+        -- _G.BotVars.StandbyHalt(). Siaga tetap aktif selama itu.
         ----------------------------------------------------------------
 
 
@@ -288,6 +293,12 @@ return {
                 return false
             end
 
+            -- Ditahan modul lain (misalnya Shield.lua saat Target
+            -- bergerak): animasi jangan dimainkan dulu.
+            if _G.BotVars.StandbyHold then
+                return false
+            end
+
             if humanoid.Health <= 0 then
                 return false
             end
@@ -397,6 +408,23 @@ return {
             return stopped
 
         end
+
+
+        ----------------------------------------------------------------
+        -- HENTIKAN ANIMASI TANPA MENGAKHIRI SIAGA
+        --
+        -- Dipanggil modul lain (misalnya Shield.lua saat Target
+        -- bergerak) untuk menghentikan animasi seketika. Siaga tetap
+        -- aktif: animasi dimainkan lagi begitu StandbyHold dilepas
+        -- dan bot sudah diam.
+        ----------------------------------------------------------------
+
+        _G.BotVars.StandbyHalt =
+            function()
+
+                return stopTrack(0)
+
+            end
 
 
         ----------------------------------------------------------------

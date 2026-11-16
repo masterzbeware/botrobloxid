@@ -30,6 +30,10 @@
 -- yang mendekati target (Admin), dan semua bot aktif
 -- mengirim peringatan:
 -- "Harap menjauh. Ring 1 dalam pengamanan."
+--
+-- Animasi siaga (Standby.lua): saat Target bergerak, animasi
+-- dihentikan dulu, bot ikut bergerak, lalu animasi dimainkan
+-- lagi setelah Target berhenti. Perintah stop membatalkan semuanya.
 
 return {
     Execute = function()
@@ -167,6 +171,15 @@ return {
         -- Toleransi kedatangan.
         local arrivalTolerance = 1.5
 
+        -- Gerak Target (untuk menghentikan animasi siaga):
+        -- Target dianggap bergerak jika berpindah lebih dari jarak
+        -- ini (studs) di bidang datar.
+        local targetMoveThreshold = 0.5
+
+        -- Target dianggap sudah berhenti setelah tidak berpindah
+        -- selama waktu ini (detik). Setelah itu animasi dimainkan lagi.
+        local targetStopDelay = 0.6
+
         -- Peringatan siaga (siap siaga / siap sedia):
         -- Player yang berada dalam jarak ini dari target (studs)
         -- dianggap masuk Ring 1. Bot berdiri 6 studs dari target,
@@ -255,6 +268,27 @@ local botOrder = {
         local targetPlayer = nil
         local shieldConnection = nil
 
+        -- Pelacak gerak Target (dipakai untuk menahan animasi siaga).
+        local referencePosition = nil
+        local targetMovedAt = -math.huge
+
+        -- Menahan / melepas animasi siaga di Standby.lua lewat
+        -- vars.StandbyHold. Saat mulai menahan, animasi yang sedang
+        -- dimainkan langsung dihentikan lewat vars.StandbyHalt.
+        local function setStandbyHold(hold)
+
+            if vars.StandbyHold == hold then
+                return
+            end
+
+            vars.StandbyHold = hold
+
+            if hold and type(vars.StandbyHalt) == "function" then
+                pcall(vars.StandbyHalt)
+            end
+
+        end
+
         --------------------------------------------------
         -- UPDATE CHARACTER
         --------------------------------------------------
@@ -340,6 +374,11 @@ local botOrder = {
 
             guarding = false
             targetPlayer = nil
+            referencePosition = nil
+            targetMovedAt = -math.huge
+
+            -- Lepaskan tahanan animasi siaga.
+            vars.StandbyHold = false
 
             if shieldConnection then
 
@@ -641,6 +680,41 @@ local botOrder = {
                     end
 
                     --------------------------------------------------
+                    -- GERAK TARGET
+                    --------------------------------------------------
+                    -- Target dianggap bergerak jika berpindah lebih dari
+                    -- targetMoveThreshold di bidang datar, dan dianggap
+                    -- berhenti setelah targetStopDelay tanpa berpindah.
+                    --------------------------------------------------
+
+                    local now = os.clock()
+
+                    local targetFlatPosition =
+                        Vector3.new(
+                            targetHRP.Position.X,
+                            0,
+                            targetHRP.Position.Z
+                        )
+
+                    if not referencePosition
+                        or (
+                            targetFlatPosition
+                            - referencePosition
+                        ).Magnitude > targetMoveThreshold then
+
+                        -- Posisi awal tidak dihitung sebagai gerakan.
+                        if referencePosition then
+                            targetMovedAt = now
+                        end
+
+                        referencePosition = targetFlatPosition
+
+                    end
+
+                    local targetMoving =
+                        now - targetMovedAt < targetStopDelay
+
+                    --------------------------------------------------
                     -- REFRESH ACTIVE BOTS
                     --------------------------------------------------
                     -- Dihitung ulang agar formasi menyesuaikan
@@ -705,6 +779,15 @@ local botOrder = {
                     --------------------------------------------------
                     -- MOVE TO POSITION
                     --------------------------------------------------
+
+                    -- Tahan animasi siaga selama Target bergerak atau bot
+                    -- belum sampai. Saat mulai menahan, animasi dihentikan
+                    -- dulu sebelum bot bergerak. Setelah Target berhenti
+                    -- dan bot sampai, animasi dimainkan lagi oleh Standby.lua.
+                    setStandbyHold(
+                        targetMoving
+                        or distanceToTarget > arrivalTolerance
+                    )
 
                     if distanceToTarget > arrivalTolerance then
 
