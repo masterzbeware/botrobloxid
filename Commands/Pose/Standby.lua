@@ -38,14 +38,18 @@ return {
         --
         -- Standby selalu aktif otomatis:
         --
-        -- Diam + tidak ada animasi lain + tidak ada perintah
+        -- Diam + tidak ada animasi lain
         --     -> animasi Standby dimainkan
         --
-        -- Bergerak / jalan / ada animasi lain / ada perintah
+        -- Bergerak / jalan / ada animasi lain
         --     -> animasi Standby berhenti
         --
-        -- Setelah bot kembali diam dan tidak ada perintah aktif,
-        -- animasi Standby dimainkan lagi.
+        -- Perintah gerak/formasi (follow, circle, frontline, dll)
+        -- tidak menghalangi Standby: selama bot diam di posisinya,
+        -- animasi Standby tetap dimainkan.
+        --
+        -- Perintah beralih animasi (salute, sit, dance, dll)
+        -- menghentikan Standby selama perintah itu aktif.
         ----------------------------------------------------------------
 
 
@@ -89,6 +93,25 @@ return {
             [Enum.AnimationPriority.Action2] = true,
             [Enum.AnimationPriority.Action3] = true,
             [Enum.AnimationPriority.Action4] = true,
+        }
+
+
+        ----------------------------------------------------------------
+        -- MODE YANG MEMAINKAN ANIMASI SENDIRI
+        --
+        -- Selama salah satu mode ini aktif, Standby tidak dimainkan
+        -- supaya animasi mode tersebut tidak tertimpa.
+        -- Mode gerak/formasi (follow, circle, dll) tidak termasuk.
+        ----------------------------------------------------------------
+
+        local ANIMATION_MODES = {
+            salute = true,
+            sit = true,
+            mydawgdance = true,
+            agree = true,
+            worship = true,
+            rest = true,
+            glowstick = true,
         }
 
 
@@ -176,10 +199,12 @@ return {
         local function isIdle(humanoid, rootPart)
 
             ------------------------------------------------------------
-            -- ADA PERINTAH / MODE AKTIF
+            -- MODE ANIMASI AKTIF (salute, sit, dance, dll)
             ------------------------------------------------------------
 
-            if _G.BotVars.ActiveMode ~= nil then
+            local activeMode = _G.BotVars.ActiveMode
+
+            if activeMode and ANIMATION_MODES[activeMode] then
                 return false
             end
 
@@ -250,7 +275,7 @@ return {
         -- Dipanggil mode lain (follow, dance, salute, dll) saat
         -- perintah baru dimulai, supaya animasi Standby langsung
         -- berhenti. Standby tetap aktif dan akan dimainkan lagi
-        -- setelah tidak ada perintah dan bot kembali diam.
+        -- begitu bot diam (dan bukan sedang mode animasi).
         ----------------------------------------------------------------
 
         _G.BotVars.ModeControllers.standby =
@@ -344,9 +369,9 @@ return {
         ----------------------------------------------------------------
         -- IDLE MONITOR
         --
-        -- Diam + tidak ada animasi lain + tidak ada perintah
+        -- Diam + tidak ada animasi lain
         --     -> mainkan Standby
-        -- Bergerak / ada animasi lain / ada perintah
+        -- Bergerak / ada animasi lain / mode animasi aktif
         --     -> hentikan Standby
         ----------------------------------------------------------------
 

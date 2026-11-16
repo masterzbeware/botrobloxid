@@ -1,7 +1,7 @@
 -- Bot.lua
 -- MasterZ HUB
 -- Modular Command Loader
--- Mendukung subfolder seperti Commands/Dance/BrazilDance.lua
+-- Mendukung subfolder seperti Commands/Dance/MyDawgDance.lua
 -- dan Commands/Pose/Salute.lua
 
 --------------------------------------------------
@@ -105,15 +105,6 @@ local commandFiles = {
     "Backline.lua",
 
     -- Dance subfolder
-    "Dance/BrazilDance.lua",
-    "Dance/KangoraDance.lua",
-    "Dance/PakodiDance.lua",
-    "Dance/PargoyDance.lua",
-    "Dance/ScubaDance.lua",
-    "Dance/TripoutDance.lua",
-    "Dance/HulaDance.lua",
-    "Dance/TomatoDance.lua",
-    "Dance/TrackmakerDance.lua",
     "Dance/MyDawgDance.lua",
 
     "Circle.lua",
@@ -129,6 +120,7 @@ local commandFiles = {
     -- Pose subfolder
     "Pose/Salute.lua",
     "Pose/Sit.lua",
+    "Pose/Standby.lua",
 
     "Square.lua",
     "Sync.lua",
@@ -212,7 +204,7 @@ for _, fileName in ipairs(commandFiles) do
 
     --------------------------------------------------
     -- REGISTER MODULE
-    -- Dance/BrazilDance.lua -> brazildance
+    -- Dance/MyDawgDance.lua -> mydawgdance
     -- Pose/Salute.lua -> salute
     --------------------------------------------------
 
@@ -287,23 +279,19 @@ local executionOrder = {
     "arrow",
     "backline",
 
-    "brazildance",
-
     "circle",
     "follow",
     "fourline",
     "frontline",
     "glowstick",
 
-    "kangoradance",
     "message",
     "joinalert",
-    "pakodidance",
-    "pargoydance",
 
     "rest",
     "salute",
     "sit",
+    "standby",
     "square",
     "sync",
     "worship",
@@ -312,11 +300,6 @@ local executionOrder = {
     "stagger",
     "centerline",
 
-    "scubadance",
-    "tripoutdance",
-    "huladance",
-    "tomatodance",
-    "trackmakerdance",
     "mydawgdance",
 }
 
