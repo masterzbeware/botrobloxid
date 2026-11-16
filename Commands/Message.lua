@@ -67,6 +67,95 @@ return {
 
 
         ----------------------------------------------------------------
+        -- ANIMASI YANG MENAHAN FORWARD PESAN
+        --
+        -- Selama salah satu animasi ini sedang dimainkan, bot tidak
+        -- ikut mengirim pesan chat yang sama seperti Target.
+        -- ID sama dengan yang dipakai di Rest.lua, Standby.lua,
+        -- dan Salute.lua.
+        ----------------------------------------------------------------
+
+        local POSE_ANIMATION_IDS = {
+
+            "75628064640924",  -- Rest.lua
+            "99340305804606",  -- Standby.lua
+            "104670223060882", -- Salute.lua
+
+        }
+
+
+        local function isPoseAnimationPlaying()
+
+            local character =
+                LocalPlayer.Character
+
+            local humanoid =
+                character
+                and character:FindFirstChildOfClass(
+                    "Humanoid"
+                )
+
+            local animator =
+                humanoid
+                and humanoid:FindFirstChildOfClass(
+                    "Animator"
+                )
+
+            if not animator then
+                return false
+            end
+
+
+            for _, track in ipairs(
+                animator:GetPlayingAnimationTracks()
+            ) do
+
+                local ok, matched = pcall(function()
+
+                    local animation = track.Animation
+
+                    if not animation then
+                        return false
+                    end
+
+                    local animationId =
+                        tostring(animation.AnimationId)
+
+                    for _, poseId in ipairs(
+                        POSE_ANIMATION_IDS
+                    ) do
+
+                        if string.find(
+                            animationId,
+                            poseId,
+                            1,
+                            true
+                        ) then
+
+                            return true
+
+                        end
+
+                    end
+
+                    return false
+
+                end)
+
+
+                if ok and matched then
+                    return true
+                end
+
+            end
+
+
+            return false
+
+        end
+
+
+        ----------------------------------------------------------------
         -- CHECK EXCLUDED CHARACTER
         ----------------------------------------------------------------
 
@@ -494,6 +583,22 @@ return {
                     cleanMessage,
                     NLP.Intents
                 ) then
+
+                return
+
+            end
+
+
+            ----------------------------------------------------------------
+            -- JANGAN FORWARD SAAT MEMAINKAN ANIMASI REST / STANDBY / SALUTE
+            ----------------------------------------------------------------
+
+            if isPoseAnimationPlaying() then
+
+                print(
+                    "[Message] Forward dilewati: bot sedang",
+                    "memainkan animasi Rest/Standby/Salute."
+                )
 
                 return
 

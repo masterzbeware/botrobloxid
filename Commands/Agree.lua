@@ -24,13 +24,13 @@ return {
         -- modul ini mendaftarkan intent-nya sendiri ke NLP.Intents.
         --
         -- Pertanyaan (tanda baca ? dan ! diabaikan parser):
-        --   mengerti / mengerti? / mengerti?!
+        --   mengerti / mengerti? / mengerti?! / apakah kalian mengerti?
         --   jelas / jelas? / jelas?!
         --   ada pertanyaan / ada pertanyaan? / ada pertanyaan?!
         --
         -- Panggilan barisan (HANYA Admin), bot menjawab
         -- "Siap menerima perintah.":
-        --   barisan / pimpin / pimpinan
+        --   barisan / pimpin / pimpinan / pasukan
         --   pimpinan saya ambil alih / barisan saya ambil alih
         --
         -- Perintah (HANYA Admin):
@@ -56,6 +56,10 @@ return {
 
                     Words = {
                         mengerti = 2,
+
+                        -- Kata pendamping (bernilai 0) untuk
+                        -- "apakah kalian mengerti?".
+                        apakah = 0,
                     },
                 }
 
@@ -99,6 +103,7 @@ return {
                         barisan = 1,
                         pimpin = 2,
                         pimpinan = 2,
+                        pasukan = 2,
 
                         -- Kata pendamping (bernilai 0) untuk
                         -- "... saya ambil alih".
@@ -215,6 +220,7 @@ return {
             barisan = true,
             pimpin = true,
             pimpinan = true,
+            pasukan = true,
         }
 
         local READY_RESPONSE = "Siap menerima perintah."

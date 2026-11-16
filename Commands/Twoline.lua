@@ -54,7 +54,7 @@ return {
         ----------------------------------------------------------------
         -- FORMASI
         --
-        -- Dua kolom, empat baris, di depan Target (A):
+        -- Dua kolom, empat baris, di belakang Target (A):
         --
         --   B8  B7
         --   B6  B5
@@ -63,7 +63,7 @@ return {
         --       A
         --
         -- right : - ke kiri Target, + ke kanan Target
-        -- row   : jumlah baris ke depan Target (1 = baris terdekat)
+        -- row   : jumlah baris ke belakang Target (1 = baris terdekat)
         --
         -- Bot aktif ke-1 menempati slot 1, bot aktif ke-2 slot 2,
         -- dan seterusnya.
@@ -92,10 +92,10 @@ return {
         -- (_G.BotVars.NLP). Perfix.lua belum memiliki intent twoline,
         -- jadi modul ini mendaftarkan intent-nya sendiri.
         --
-        -- Formasi di depan pengirim (Admin atau CommandTarget):
+        -- Formasi di belakang pengirim (Admin atau CommandTarget):
         --   twoline / formasi dua baris / barisan dua
         --
-        -- Formasi di depan pemain lain (HANYA Admin):
+        -- Formasi di belakang pemain lain (HANYA Admin):
         --   twoline trevkaro / formasi dua baris trevkaro
         --
         -- Berhenti (HANYA Admin):
@@ -639,7 +639,7 @@ local botOrder = {
                                 *
                                 (slot.right * (columnSpacing / 2))
                             )
-                            +
+                            -
                             (
                                 targetHRP.CFrame.LookVector
                                 *
@@ -831,7 +831,7 @@ local botOrder = {
                 end
 
                 ------------------------------------------------------------
-                -- FORMASI DI DEPAN SENDER
+                -- FORMASI DI BELAKANG SENDER
                 ------------------------------------------------------------
 
                 _G.BotVars.CommandTarget =
