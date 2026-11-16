@@ -6,6 +6,7 @@ return {
         ----------------------------------------------------------------
 
         local Players = game:GetService("Players")
+        local TextChatService = game:GetService("TextChatService")
 
         local LocalPlayer = Players.LocalPlayer
 
@@ -26,30 +27,93 @@ return {
 
 
         ----------------------------------------------------------------
+        -- LOAD ADMIN
+        ----------------------------------------------------------------
+
+        local Admin
+
+        do
+            local success, result = pcall(function()
+
+                return loadstring(game:HttpGet(
+                    "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
+                ))()
+
+            end)
+
+            if success and result then
+                Admin = result
+            else
+                warn("[Standby] Gagal load Admin.lua.")
+                return
+            end
+        end
+
+
+        ----------------------------------------------------------------
+        -- NATURAL LANGUAGE (TANPA PREFIX)
+        --
+        -- Parser berasal dari Perfix.lua (_G.BotVars.NLP).
+        -- Perfix.lua belum memiliki intent standby, jadi modul ini
+        -- mendaftarkan intent-nya sendiri ke NLP.Intents.
+        --
+        -- Aktifkan Standby (HANYA Admin):
+        --   siap sedia / siaga / bersiap
+        --
+        -- Catatan: kata "siap" termasuk kata pengisi di Perfix.lua
+        -- dan diabaikan parser, jadi "siap sedia" dikenali lewat
+        -- kata "sedia".
+        ----------------------------------------------------------------
+
+        local NLP = _G.BotVars.NLP
+
+        if not NLP then
+
+            warn(
+                "[Standby] NLP tidak ditemukan. "
+                .. "Pastikan Perfix.lua dimuat lebih dulu."
+            )
+
+        else
+
+            NLP.Intents.standby =
+                NLP.Intents.standby
+                or {
+                    Words = {
+                        sedia = 2,
+                        siaga = 2,
+                        bersiap = 2,
+                    },
+                }
+
+        end
+
+
+        ----------------------------------------------------------------
         -- FE ANIMATION ID
         ----------------------------------------------------------------
 
         local STANDBY_ANIMATION_ID =
-            "119830241096049"
+            "99340305804606"
 
 
         ----------------------------------------------------------------
-        -- CARA KERJA (TANPA PERINTAH)
+        -- CARA KERJA
         --
-        -- Standby selalu aktif otomatis:
+        -- Standby diaktifkan dengan perintah (HANYA Admin):
+        --   siap sedia / siaga / bersiap
+        --
+        -- Setelah aktif:
         --
         -- Diam + tidak ada animasi lain
         --     -> animasi Standby dimainkan
         --
         -- Bergerak / jalan / ada animasi lain
-        --     -> animasi Standby berhenti
+        --     -> animasi Standby berhenti, dan dimainkan lagi
+        --        begitu bot diam
         --
-        -- Perintah gerak/formasi (follow, circle, frontline, dll)
-        -- tidak menghalangi Standby: selama bot diam di posisinya,
-        -- animasi Standby tetap dimainkan.
-        --
-        -- Perintah beralih animasi (salute, sit, dance, dll)
-        -- menghentikan Standby selama perintah itu aktif.
+        -- Standby berakhir saat ada perintah lain (follow, circle,
+        -- salute, sit, dll) atau stop.
         ----------------------------------------------------------------
 
 
@@ -120,6 +184,9 @@ return {
         ----------------------------------------------------------------
 
         local standbyTrack = nil
+
+        -- True setelah Admin mengetik siap sedia / siaga / bersiap.
+        local standbyEnabled = false
 
         local playFailureWarned = false
 
@@ -199,6 +266,15 @@ return {
         local function isIdle(humanoid, rootPart)
 
             ------------------------------------------------------------
+            -- STANDBY BELUM DIAKTIFKAN
+            ------------------------------------------------------------
+
+            if not standbyEnabled then
+                return false
+            end
+
+
+            ------------------------------------------------------------
             -- MODE ANIMASI AKTIF (salute, sit, dance, dll)
             ------------------------------------------------------------
 
@@ -253,6 +329,11 @@ return {
 
         local function stopTrack(fadeTime)
 
+            local fade =
+                fadeTime or 0.15
+
+            local stopped = false
+
             if standbyTrack then
 
                 local oldTrack =
@@ -260,11 +341,56 @@ return {
 
                 standbyTrack = nil
 
+                stopped = true
+
                 pcall(function()
-                    oldTrack:Stop(fadeTime or 0.15)
+                    oldTrack:Stop(fade)
                 end)
 
             end
+
+
+            ------------------------------------------------------------
+            -- HENTIKAN JUGA TRACK STANDBY YANG MASIH BERJALAN DI
+            -- ANIMATOR (jaga-jaga jika referensi track sudah hilang)
+            ------------------------------------------------------------
+
+            local character =
+                LocalPlayer.Character
+
+            local humanoid =
+                character
+                and character:FindFirstChildOfClass(
+                    "Humanoid"
+                )
+
+            local animator =
+                humanoid
+                and humanoid:FindFirstChildOfClass(
+                    "Animator"
+                )
+
+            if animator then
+
+                for _, track in ipairs(
+                    animator:GetPlayingAnimationTracks()
+                ) do
+
+                    if isStandbyTrack(track) then
+
+                        stopped = true
+
+                        pcall(function()
+                            track:Stop(fade)
+                        end)
+
+                    end
+
+                end
+
+            end
+
+            return stopped
 
         end
 
@@ -273,15 +399,25 @@ return {
         -- REGISTER CONTROLLER
         --
         -- Dipanggil mode lain (follow, dance, salute, dll) saat
-        -- perintah baru dimulai, supaya animasi Standby langsung
-        -- berhenti. Standby tetap aktif dan akan dimainkan lagi
-        -- begitu bot diam (dan bukan sedang mode animasi).
+        -- perintah baru dimulai, atau saat Admin mengetik stop.
+        -- Standby berakhir; ketik siap sedia lagi untuk mengaktifkan.
         ----------------------------------------------------------------
 
         _G.BotVars.ModeControllers.standby =
             function()
 
-                stopTrack(0.1)
+                standbyEnabled = false
+
+                -- Berhenti seketika supaya animasi mode berikutnya
+                -- (misalnya hormat) bisa langsung dimainkan.
+                local wasPlaying =
+                    stopTrack(0)
+
+                if wasPlaying then
+
+                    task.wait(0.1)
+
+                end
 
             end
 
@@ -292,15 +428,67 @@ return {
 
         local function playStandbyTrack(humanoid)
 
-            local ok, track =
-                pcall(function()
+            -- PlayEmoteAndGetAnimTrackById bisa mengembalikan
+            -- (berhasil, track). Ambil AnimationTrack yang asli,
+            -- bukan nilai pertama yang dikembalikan.
+            local results =
+                table.pack(
+                    pcall(function()
 
-                    return humanoid:
-                        PlayEmoteAndGetAnimTrackById(
-                            STANDBY_ANIMATION_ID
-                        )
+                        return humanoid:
+                            PlayEmoteAndGetAnimTrackById(
+                                STANDBY_ANIMATION_ID
+                            )
 
-                end)
+                    end)
+                )
+
+            local ok = results[1]
+            local track = nil
+
+            for index = 2, results.n do
+
+                local value = results[index]
+
+                if typeof(value) == "Instance"
+                    and value:IsA("AnimationTrack") then
+
+                    track = value
+                    break
+
+                end
+
+            end
+
+            -- Emote dilaporkan berhasil tetapi tidak ada track yang
+            -- dikembalikan: cari track Standby di Animator.
+            if ok and not track and results[2] == true then
+
+                task.wait()
+
+                local animator =
+                    humanoid:FindFirstChildOfClass(
+                        "Animator"
+                    )
+
+                if animator then
+
+                    for _, candidate in ipairs(
+                        animator:GetPlayingAnimationTracks()
+                    ) do
+
+                        if isStandbyTrack(candidate) then
+
+                            track = candidate
+                            break
+
+                        end
+
+                    end
+
+                end
+
+            end
 
             if not ok or not track then
 
@@ -313,7 +501,7 @@ return {
                         "| Bot:",
                         LocalPlayer.Name,
                         "| Error:",
-                        track
+                        tostring(results[2])
                     )
 
                 end
@@ -370,7 +558,7 @@ return {
         -- IDLE MONITOR
         --
         -- Diam + tidak ada animasi lain
-        --     -> mainkan Standby
+        --     -> mainkan Standby (jika sudah diaktifkan)
         -- Bergerak / ada animasi lain / mode animasi aktif
         --     -> hentikan Standby
         ----------------------------------------------------------------
@@ -457,6 +645,174 @@ return {
             end
 
         end)
+
+
+        ----------------------------------------------------------------
+        -- START STANDBY
+        ----------------------------------------------------------------
+
+        local function startStandby(sender)
+
+            ------------------------------------------------------------
+            -- HENTIKAN MODE ANIMASI (salute, sit, dance, dll)
+            --
+            -- Mode gerak/formasi (follow, circle, dll) TIDAK dihentikan,
+            -- bot tetap di posisinya.
+            ------------------------------------------------------------
+
+            local activeMode = _G.BotVars.ActiveMode
+
+            if activeMode and ANIMATION_MODES[activeMode] then
+
+                local controller =
+                    _G.BotVars.ModeControllers[activeMode]
+
+                _G.BotVars.ActiveMode = nil
+
+                if type(controller) == "function" then
+
+                    pcall(controller)
+
+                end
+
+            end
+
+            standbyEnabled = true
+
+            print(
+                "[Standby] Aktif | Bot:",
+                LocalPlayer.Name,
+                "| Admin:",
+                sender.Name
+            )
+
+        end
+
+
+        ----------------------------------------------------------------
+        -- COMMAND HANDLER
+        --
+        -- siap sedia / siaga / bersiap
+        -- HANYA ADMIN
+        ----------------------------------------------------------------
+
+        local function handleCommand(message, sender)
+
+            if not message or not sender then
+                return
+            end
+
+            local isAdmin = false
+
+            pcall(function()
+
+                isAdmin =
+                    Admin:IsAdmin(sender)
+
+            end)
+
+            if not isAdmin then
+                return
+            end
+
+            local intent, args
+
+            if NLP then
+
+                intent, args = NLP.Classify(
+                    message,
+                    NLP.Intents
+                )
+
+            end
+
+            if intent == "standby" and #args == 0 then
+
+                startStandby(sender)
+
+            end
+
+        end
+
+
+        ----------------------------------------------------------------
+        -- CHAT CONNECTION
+        --
+        -- Gunakan chat modern jika tersedia. Fallback Chatted hanya
+        -- dipakai jika RBXGeneral tidak ada.
+        ----------------------------------------------------------------
+
+        local channel
+
+        if TextChatService
+            and TextChatService.TextChannels then
+
+            channel =
+                TextChatService.TextChannels:FindFirstChild(
+                    "RBXGeneral"
+                )
+
+        end
+
+        if channel then
+
+            channel.MessageReceived:Connect(
+                function(message)
+
+                    local textSource =
+                        message.TextSource
+
+                    if not textSource then
+                        return
+                    end
+
+                    local sender =
+                        Players:GetPlayerByUserId(
+                            textSource.UserId
+                        )
+
+                    if sender then
+
+                        handleCommand(
+                            message.Text,
+                            sender
+                        )
+
+                    end
+
+                end
+            )
+
+        else
+
+            local function connectPlayer(player)
+
+                player.Chatted:Connect(
+                    function(message)
+
+                        handleCommand(
+                            message,
+                            player
+                        )
+
+                    end
+                )
+
+            end
+
+            for _, player in ipairs(
+                Players:GetPlayers()
+            ) do
+
+                connectPlayer(player)
+
+            end
+
+            Players.PlayerAdded:Connect(
+                connectPlayer
+            )
+
+        end
 
 
         ----------------------------------------------------------------

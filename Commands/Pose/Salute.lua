@@ -61,7 +61,7 @@ return {
         -- mendaftarkan intent-nya sendiri ke NLP.Intents.
         --
         -- Hormat di sekitar pengirim (Admin atau CommandTarget):
-        --   hormat / menghormat
+        --   hormat / penghormatan / beri hormat / hormat grak
         --
         -- Hormat untuk pemain lain (HANYA Admin):
         --   hormat trevkaro
@@ -85,8 +85,17 @@ return {
                 NLP.Intents.salute
                 or {
                     Words = {
+                        -- Kata perintah (kuat, cukup satu kata)
                         hormat = 2,
                         menghormat = 2,
+                        penghormatan = 2,
+
+                        -- Kata pendamping (bernilai 0): dikenali supaya
+                        -- "beri hormat" dan "hormat, grak!" tidak dianggap
+                        -- nama pemain, tapi tidak memicu perintah sendirian.
+                        beri = 0,
+                        memberi = 0,
+                        grak = 0,
                     },
                 }
 
@@ -110,7 +119,7 @@ return {
         ----------------------------------------------------------------
 
         local SALUTE_ANIMATION_ID =
-            "97204032436479"
+            "104670223060882"
 
 
         ----------------------------------------------------------------
