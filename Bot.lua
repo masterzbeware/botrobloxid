@@ -279,9 +279,6 @@ local executionOrder = {
 
     "circle",
     "follow",
-    "fourline",
-    "frontline",
-    "glowstick",
 
     "message",
     "joinalert",
@@ -290,12 +287,8 @@ local executionOrder = {
     "salute",
     "sit",
     "standby",
-    "square",
     "sync",
-    "worship",
 
-    "lineformation",
-    "stagger",
     "centerline",
     "shield",
 
