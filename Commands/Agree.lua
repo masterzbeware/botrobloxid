@@ -28,6 +28,10 @@ return {
         --   jelas / jelas? / jelas?!
         --   ada pertanyaan / ada pertanyaan? / ada pertanyaan?!
         --
+        -- Panggilan barisan (HANYA Admin), bot menjawab
+        -- "Siap menerima perintah.":
+        --   barisan / pimpin / pimpinan
+        --
         -- Perintah (HANYA Admin):
         --   agree
         --   unagree / stop / berhenti / bubar
@@ -177,6 +181,40 @@ return {
             sendChat(selectedMessage)
         end
 
+        -- Kata pemanggil barisan / pimpinan.
+        -- Dicocokkan langsung (bukan lewat NLP.Intents) supaya kata
+        -- "barisan" tidak bentrok dengan perintah formasi di modul lain
+        -- (misalnya "barisan depan" atau "barisan belakang").
+        local READY_WORDS = {
+            barisan = true,
+            pimpin = true,
+            pimpinan = true,
+        }
+
+        local READY_RESPONSE = "Siap menerima perintah."
+
+        -- True jika pesan hanya berisi kata pemanggil (kata pengisi
+        -- seperti "siap" diabaikan), misalnya "barisan" atau "siap pimpinan".
+        local function isReadyCall(message)
+            if not NLP then
+                return false
+            end
+
+            local found = false
+
+            for _, token in ipairs(NLP.Tokenize(message)) do
+                if not NLP.Fillers[token.norm] then
+                    if READY_WORDS[token.norm] then
+                        found = true
+                    else
+                        return false
+                    end
+                end
+            end
+
+            return found
+        end
+
         local function handleCommand(message, sender)
             if not message or not sender then
                 return
@@ -188,6 +226,12 @@ return {
             end)
 
             if not isAdmin then
+                return
+            end
+
+            -- Barisan / pimpin / pimpinan: bot menjawab siap.
+            if isReadyCall(message) then
+                sendChat(READY_RESPONSE)
                 return
             end
 

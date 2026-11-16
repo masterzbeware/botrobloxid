@@ -6,6 +6,7 @@ return {
         ----------------------------------------------------------------
 
         local Players = game:GetService("Players")
+        local TextChatService = game:GetService("TextChatService")
 
         local LocalPlayer = Players.LocalPlayer
 
@@ -64,7 +65,8 @@ return {
         --   hormat / penghormatan / beri hormat / hormat grak
         --
         -- Hormat untuk pemain lain (HANYA Admin):
-        --   hormat trevkaro
+        --   hormat trevkaro / hormat kepada trevkaro
+        --   (bot juga mengirim chat: Siap hormat, <displayname>!)
         --
         -- Berhenti (HANYA Admin):
         --   berhenti / stop / bubar / unhormat
@@ -723,6 +725,63 @@ return {
 
 
         ----------------------------------------------------------------
+        -- SEND CHAT
+        ----------------------------------------------------------------
+
+        local function sendChat(message)
+
+            local success = false
+
+            if TextChatService
+                and TextChatService.TextChannels then
+
+                local channel =
+                    TextChatService.TextChannels:FindFirstChild(
+                        "RBXGeneral"
+                    )
+
+                if channel then
+
+                    success = pcall(function()
+                        channel:SendAsync(message)
+                    end)
+
+                end
+
+            end
+
+            if not success then
+
+                pcall(function()
+
+                    local chatEvents =
+                        game:GetService("ReplicatedStorage"):FindFirstChild(
+                            "DefaultChatSystemChatEvents"
+                        )
+
+                    local sayMessageRequest =
+                        chatEvents
+                        and chatEvents:FindFirstChild(
+                            "SayMessageRequest"
+                        )
+
+                    if sayMessageRequest then
+
+                        sayMessageRequest:FireServer(
+                            message,
+                            "All"
+                        )
+
+                    end
+
+                end)
+
+            end
+
+        end
+
+
+        ----------------------------------------------------------------
         -- COMMAND HANDLER
         ----------------------------------------------------------------
 
@@ -993,6 +1052,13 @@ return {
                 _G.BotVars.CommandTarget =
                     target
 
+
+                -- Siap hormat, <displayname>!
+                sendChat(
+                    "Siap hormat, "
+                    .. target.DisplayName
+                    .. "!"
+                )
 
                 playSalute(target)
 
