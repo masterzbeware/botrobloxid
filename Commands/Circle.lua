@@ -434,9 +434,19 @@ local botOrder = {
             -- CHAT CONFIRMATION
             --------------------------------------------------
 
-            sendChat(
-                ({ "Siap!", "Siap, laksanakan!" })[math.random(2)]
-            )
+            -- Kirim konfirmasi hanya sekali per perintah, walaupun
+            -- perintah yang sama terproses lebih dari sekali.
+            local confirmNow = os.clock()
+
+            if confirmNow - (_G.BotConfirmChatAt or -10) >= 1 then
+
+                _G.BotConfirmChatAt = confirmNow
+
+                sendChat(
+                    ({ "Siap!", "Siap, laksanakan!" })[math.random(2)]
+                )
+
+            end
 
             --------------------------------------------------
             -- CIRCLE LOOP

@@ -105,7 +105,7 @@ return {
         local targetGap = formationSpacing
 
         -- Toleransi kedatangan.
-        local arrivalTolerance = 0.3
+        local arrivalTolerance = 1.5
 
         --------------------------------------------------
         -- BOT ORDER
@@ -518,9 +518,19 @@ local botOrder = {
             -- CHAT CONFIRMATION
             --------------------------------------------------
 
-            sendChat(
-                ({ "Siap!", "Siap, laksanakan!" })[math.random(2)]
-            )
+            -- Kirim konfirmasi hanya sekali per perintah, walaupun
+            -- perintah yang sama terproses lebih dari sekali.
+            local confirmNow = os.clock()
+
+            if confirmNow - (_G.BotConfirmChatAt or -10) >= 1 then
+
+                _G.BotConfirmChatAt = confirmNow
+
+                sendChat(
+                    ({ "Siap!", "Siap, laksanakan!" })[math.random(2)]
+                )
+
+            end
 
             --------------------------------------------------
             -- CENTERLINE LOOP
@@ -640,23 +650,9 @@ local botOrder = {
                     -- MOVE TO POSITION
                     --------------------------------------------------
 
-                    --------------------------------------------------
-                    -- FACE SAME DIRECTION AS TARGET
-                    -- Berlaku selama berjalan maupun setelah tiba,
-                    -- sehingga bot tidak berbalik menghadap target.
-                    --------------------------------------------------
-
-                    humanoid.AutoRotate = false
-
-                    local targetRotation =
-                        targetHRP.CFrame
-                        - targetHRP.Position
-
-                    myHRP.CFrame =
-                        CFrame.new(myHRP.Position)
-                        * targetRotation
-
                     if distanceToTarget > arrivalTolerance then
+
+                        humanoid.AutoRotate = true
 
                         humanoid:MoveTo(
                             targetPosition
@@ -668,8 +664,18 @@ local botOrder = {
 
                     --------------------------------------------------
                     -- ARRIVED
-                    -- Arah hadap sudah disamakan dengan target di atas.
+                    -- FACE SAME DIRECTION AS TARGET
                     --------------------------------------------------
+
+                    humanoid.AutoRotate = false
+
+                    local targetRotation =
+                        targetHRP.CFrame
+                        - targetHRP.Position
+
+                    myHRP.CFrame =
+                        CFrame.new(myHRP.Position)
+                        * targetRotation
 
                 end)
 

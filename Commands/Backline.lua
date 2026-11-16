@@ -364,9 +364,19 @@ local botOrder = {
 
             _G.BotVars.CommandTarget = player
 
-            sendChat(
-                ({ "Siap!", "Siap, laksanakan!" })[math.random(2)]
-            )
+            -- Kirim konfirmasi hanya sekali per perintah, walaupun
+            -- perintah yang sama terproses lebih dari sekali.
+            local confirmNow = os.clock()
+
+            if confirmNow - (_G.BotConfirmChatAt or -10) >= 1 then
+
+                _G.BotConfirmChatAt = confirmNow
+
+                sendChat(
+                    ({ "Siap!", "Siap, laksanakan!" })[math.random(2)]
+                )
+
+            end
 
             ------------------------------------------------------------
             -- VALIDASI BOT
@@ -670,6 +680,10 @@ local botOrder = {
         -- TEXT CHAT
         ----------------------------------------------------------------
 
+        -- True jika chat modern (RBXGeneral) dipakai, supaya jalur
+        -- Chatted di bawah tidak memproses pesan yang sama lagi.
+        local textChatConnected = false
+
         if TextChatService
             and TextChatService.TextChannels then
 
@@ -679,6 +693,8 @@ local botOrder = {
                 )
 
             if channel then
+
+                textChatConnected = true
 
                 channel.MessageReceived:Connect(
                     function(message)
@@ -710,7 +726,9 @@ local botOrder = {
 
             player.Chatted:Connect(function(message)
 
-                handleCommand(message, player)
+                if not textChatConnected then
+                    handleCommand(message, player)
+                end
 
             end)
 
@@ -724,7 +742,9 @@ local botOrder = {
 
             player.Chatted:Connect(function(message)
 
-                handleCommand(message, player)
+                if not textChatConnected then
+                    handleCommand(message, player)
+                end
 
             end)
 
