@@ -108,14 +108,11 @@ local commandFiles = {
     "Dance/MyDawgDance.lua",
 
     "Circle.lua",
-    "Collision.lua",
     "Follow.lua",
     "Fourline.lua",
     "Frontline.lua",
-    "Glowstick.lua",
     "Message.lua",
-    "JoinAlert.lua",
-    "Rest.lua",
+    
 
     -- Pose subfolder
     "Pose/Salute.lua",
@@ -128,6 +125,7 @@ local commandFiles = {
     "LineFormation.lua",
     "Stagger.lua",
     "Centerline.lua",
+    "Shield.lua",
 }
 
 --------------------------------------------------
@@ -299,6 +297,7 @@ local executionOrder = {
     "lineformation",
     "stagger",
     "centerline",
+    "shield",
 
     "mydawgdance",
 }
