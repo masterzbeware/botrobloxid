@@ -373,7 +373,7 @@ local botOrder = {
                 _G.BotConfirmChatAt = confirmNow
 
                 sendChat(
-                    ({ "Siap!", "Siap, laksanakan!" })[math.random(2)]
+                    "Siap!"
                 )
 
             end

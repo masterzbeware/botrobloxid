@@ -31,6 +31,7 @@ return {
         -- Panggilan barisan (HANYA Admin), bot menjawab
         -- "Siap menerima perintah.":
         --   barisan / pimpin / pimpinan
+        --   pimpinan saya ambil alih / barisan saya ambil alih
         --
         -- Perintah (HANYA Admin):
         --   agree
@@ -78,6 +79,31 @@ return {
                     Words = {
                         ada = 1,
                         pertanyaan = 1,
+                    },
+                }
+
+            -- Panggilan barisan / pimpinan, termasuk "pimpinan saya ambil alih".
+            -- Threshold 1 supaya "barisan" (kata formasi lemah) sendirian
+            -- tetap dikenali, tanpa mengalahkan perintah formasi seperti
+            -- "barisan depan" (skor formasi 2 > skor intent ini 1).
+            -- Intent ini juga yang membuat Message.lua tidak mengulang
+            -- (echo) pesan tersebut, karena Message.lua melewati semua
+            -- pesan yang dikenali parser.
+            NLP.Intents.agree_siap =
+                NLP.Intents.agree_siap
+                or {
+                    Threshold = 1,
+                    StrictRemainder = true,
+
+                    Words = {
+                        barisan = 1,
+                        pimpin = 2,
+                        pimpinan = 2,
+
+                        -- Kata pendamping (bernilai 0) untuk
+                        -- "... saya ambil alih".
+                        ambil = 0,
+                        alih = 0,
                     },
                 }
 
@@ -242,6 +268,12 @@ return {
             end
 
             if not intent then
+                return
+            end
+
+            -- Barisan / pimpin / pimpinan (termasuk "... saya ambil alih").
+            if intent == "agree_siap" then
+                sendChat(READY_RESPONSE)
                 return
             end
 

@@ -277,6 +277,7 @@ local executionOrder = {
     "agree",
     "arrow",
     "backline",
+    "frontline",
 
     "circle",
     "follow",
