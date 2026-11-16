@@ -127,6 +127,7 @@ local commandFiles = {
     "Stagger.lua",
     "Centerline.lua",
     "Shield.lua",
+    "Twoline.lua"
 }
 
 --------------------------------------------------
@@ -278,6 +279,7 @@ local executionOrder = {
     "arrow",
     "backline",
     "frontline",
+    "twoline",
 
     "circle",
     "follow",
