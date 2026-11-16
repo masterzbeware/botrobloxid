@@ -111,13 +111,11 @@ local commandFiles = {
     "Follow.lua",
     "Fourline.lua",
     "Frontline.lua",
-    "Message.lua",
     
 
     -- Pose subfolder
     "Pose/Salute.lua",
     "Pose/Rest.lua",
-    "Pose/Sit.lua",
     "Pose/Standby.lua",
 
     "Square.lua",
@@ -284,12 +282,8 @@ local executionOrder = {
     "circle",
     "follow",
 
-    "message",
-    "joinalert",
-
     "rest",
     "salute",
-    "sit",
     "standby",
     "sync",
 
