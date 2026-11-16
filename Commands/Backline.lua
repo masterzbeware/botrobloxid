@@ -87,7 +87,7 @@ return {
         local defaultBotBacklineDistance = 6
 
         -- Jarak antar bot dalam barisan.
-        local formationSpacing = 3
+        local formationSpacing = 6
 
         ----------------------------------------------------------------
         -- BOT ORDER
