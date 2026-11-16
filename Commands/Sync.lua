@@ -367,8 +367,34 @@ return {
         -- Untuk THE BUNKER, remote stop khusus belum diketahui.
         --------------------------------------------------
 
+        --------------------------------------------------
+        -- AUTO SYNC SETTINGS
+        --------------------------------------------------
+        -- Animasi yang menghentikan sync selama dimainkan
+        -- (sama dengan ID di Pose/Salute.lua dan Pose/Standby.lua).
+        --------------------------------------------------
+
+        local SALUTE_ANIMATION_ID = "104670223060882"
+        local STANDBY_ANIMATION_ID = "99340305804606"
+
+        -- Seberapa sering status sync dicek (detik).
+        local AUTO_SYNC_INTERVAL = 0.5
+
+        -- Jeda sebelum sync otomatis berjalan lagi setelah
+        -- sync dihentikan (detik).
+        local AUTO_SYNC_RESUME_DELAY = 1.5
+
+        -- Jeda jika permintaan sync otomatis gagal (detik).
+        local AUTO_SYNC_RETRY_DELAY = 5
+
+        -- Waktu paling awal sync otomatis boleh berjalan.
+        local resumeAt = 0
+
         local function stopSync()
             vars.SyncTarget = nil
+
+            -- Sync otomatis berjalan lagi setelah jeda singkat.
+            resumeAt = os.clock() + AUTO_SYNC_RESUME_DELAY
 
             --------------------------------------------------
             -- TANPANAMA
@@ -396,13 +422,39 @@ return {
             end
 
             --------------------------------------------------
-            -- CIDRO / THE BUNKER
+            -- CIDRO JANJI
+            -- Events.RequestSync:FireServer(nil)
+            --------------------------------------------------
+            -- Stop sync = mengirim nil ke remote yang sama
+            -- dengan start sync (hasil remote spy).
+            --------------------------------------------------
+
+            if IsCidro then
+                local ok, err = pcall(function()
+                    SyncRemote:FireServer(nil)
+                end)
+
+                if not ok then
+                    warn(
+                        "[Sync] Permintaan stop CIDRO gagal:",
+                        err
+                    )
+
+                    return false
+                end
+
+                print("[Sync] Permintaan stop CIDRO dikirim.")
+                return true
+            end
+
+            --------------------------------------------------
+            -- THE BUNKER
             --------------------------------------------------
             -- Hanya membersihkan target lokal.
             -- Tidak mengirim argumen stop yang belum diketahui.
             --------------------------------------------------
 
-            if IsCidro or IsTheBunker then
+            if IsTheBunker then
                 print(
                     "[Sync] Target sync lokal dibersihkan:",
                     CurrentPlaceName
@@ -522,6 +574,121 @@ return {
         end
 
         --------------------------------------------------
+        -- AUTO SYNC
+        --------------------------------------------------
+        -- Bot sync otomatis tanpa perlu perintah:
+        --
+        -- 1. Target = CommandTarget yang masih online. Jika tidak
+        --    ada, gunakan Admin yang berada di server.
+        --
+        -- 2. Setelah sync dihentikan (misalnya perintah berhenti),
+        --    sync berjalan otomatis lagi setelah jeda singkat.
+        --
+        -- 3. Selama animasi Salute atau Standby sedang dimainkan,
+        --    sync dihentikan dan tidak dijalankan lagi sampai
+        --    animasi tersebut selesai.
+        --------------------------------------------------
+
+        local function getAutoSyncTarget()
+            local target = vars.CommandTarget
+
+            if target
+                and target ~= LocalPlayer
+                and target:IsA("Player")
+                and target:IsDescendantOf(Players) then
+
+                return target
+            end
+
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer
+                    and isAdmin(player) then
+
+                    return player
+                end
+            end
+
+            return nil
+        end
+
+        local function isSaluteOrStandbyPlaying()
+            local character = LocalPlayer.Character
+
+            local humanoid =
+                character
+                and character:FindFirstChildOfClass("Humanoid")
+
+            local animator =
+                humanoid
+                and humanoid:FindFirstChildOfClass("Animator")
+
+            if not animator then
+                return false
+            end
+
+            for _, track in ipairs(
+                animator:GetPlayingAnimationTracks()
+            ) do
+                local ok, matched = pcall(function()
+                    local animation = track.Animation
+
+                    if not animation then
+                        return false
+                    end
+
+                    local animationId =
+                        tostring(animation.AnimationId)
+
+                    return string.find(
+                        animationId,
+                        SALUTE_ANIMATION_ID,
+                        1,
+                        true
+                    ) ~= nil
+                        or string.find(
+                            animationId,
+                            STANDBY_ANIMATION_ID,
+                            1,
+                            true
+                        ) ~= nil
+                end)
+
+                if ok and matched then
+                    return true
+                end
+            end
+
+            return false
+        end
+
+        task.spawn(function()
+            while true do
+                task.wait(AUTO_SYNC_INTERVAL)
+
+                if isSaluteOrStandbyPlaying() then
+
+                    -- Hentikan sync selama animasi berjalan.
+                    if vars.SyncTarget then
+                        stopSync()
+                    end
+
+                    -- Tunda sync otomatis sampai animasi selesai.
+                    resumeAt = os.clock() + AUTO_SYNC_RESUME_DELAY
+
+                elseif not vars.SyncTarget
+                    and os.clock() >= resumeAt then
+
+                    local target = getAutoSyncTarget()
+
+                    if target and not requestSync(target) then
+                        resumeAt = os.clock() + AUTO_SYNC_RETRY_DELAY
+                    end
+
+                end
+            end
+        end)
+
+        --------------------------------------------------
         -- HANDLE COMMAND
         --------------------------------------------------
 
@@ -628,7 +795,9 @@ return {
 
                 vars.ActiveMode = nil
                 vars.CommandTarget = nil
-                vars.SyncTarget = nil
+
+                -- vars.SyncTarget dihapus oleh stopSync
+                -- (lewat ModeControllers di bawah).
 
                 --------------------------------------------------
                 -- STOP ALL REGISTERED MODES
@@ -714,6 +883,19 @@ return {
         vars.SyncPlace = CurrentPlaceName
         vars.SyncPlaceId = PlaceId
         vars.SyncRemote = SyncRemote
+
+        --------------------------------------------------
+        -- CHARACTER RESPAWN
+        --------------------------------------------------
+        -- Sync hilang saat respawn, jadi sync otomatis
+        -- diminta ulang setelah character baru siap.
+        --------------------------------------------------
+
+        connections.CharacterAdded =
+            LocalPlayer.CharacterAdded:Connect(function()
+                vars.SyncTarget = nil
+                resumeAt = os.clock() + 2
+            end)
 
         --------------------------------------------------
         -- READY
