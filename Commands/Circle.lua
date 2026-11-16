@@ -434,7 +434,9 @@ local botOrder = {
             -- CHAT CONFIRMATION
             --------------------------------------------------
 
-            sendChat("Yes, Sir!")
+            sendChat(
+                ({ "Siap!", "Siap, laksanakan!" })[math.random(2)]
+            )
 
             --------------------------------------------------
             -- CIRCLE LOOP

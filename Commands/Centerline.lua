@@ -518,7 +518,9 @@ local botOrder = {
             -- CHAT CONFIRMATION
             --------------------------------------------------
 
-            sendChat("Yes, Sir!")
+            sendChat(
+                ({ "Siap!", "Siap, laksanakan!" })[math.random(2)]
+            )
 
             --------------------------------------------------
             -- CENTERLINE LOOP
@@ -638,21 +640,10 @@ local botOrder = {
                     -- MOVE TO POSITION
                     --------------------------------------------------
 
-                    if distanceToTarget > arrivalTolerance then
-
-                        humanoid.AutoRotate = true
-
-                        humanoid:MoveTo(
-                            targetPosition
-                        )
-
-                        return
-
-                    end
-
                     --------------------------------------------------
-                    -- ARRIVED
                     -- FACE SAME DIRECTION AS TARGET
+                    -- Berlaku selama berjalan maupun setelah tiba,
+                    -- sehingga bot tidak berbalik menghadap target.
                     --------------------------------------------------
 
                     humanoid.AutoRotate = false
@@ -664,6 +655,21 @@ local botOrder = {
                     myHRP.CFrame =
                         CFrame.new(myHRP.Position)
                         * targetRotation
+
+                    if distanceToTarget > arrivalTolerance then
+
+                        humanoid:MoveTo(
+                            targetPosition
+                        )
+
+                        return
+
+                    end
+
+                    --------------------------------------------------
+                    -- ARRIVED
+                    -- Arah hadap sudah disamakan dengan target di atas.
+                    --------------------------------------------------
 
                 end)
 

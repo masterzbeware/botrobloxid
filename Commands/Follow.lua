@@ -399,7 +399,9 @@ local botOrder = {
             -- CHAT
             ------------------------------------------------------------
 
-            sendChat("Yes, Sir!")
+            sendChat(
+                ({ "Siap!", "Siap, laksanakan!" })[math.random(2)]
+            )
 
             ------------------------------------------------------------
             -- CARI INDEX BOT

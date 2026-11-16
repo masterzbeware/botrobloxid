@@ -364,7 +364,9 @@ local botOrder = {
 
             _G.BotVars.CommandTarget = player
 
-            sendChat("Yes, Sir!")
+            sendChat(
+                ({ "Siap!", "Siap, laksanakan!" })[math.random(2)]
+            )
 
             ------------------------------------------------------------
             -- VALIDASI BOT

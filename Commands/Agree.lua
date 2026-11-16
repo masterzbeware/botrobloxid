@@ -16,8 +16,100 @@ return {
             "https://raw.githubusercontent.com/masterzbeware/botrobloxid/main/Administrator/Admin.lua"
         ))()
 
+        --------------------------------------------------
+        -- NATURAL LANGUAGE (TANPA PREFIX)
+        --------------------------------------------------
+        -- Parser berasal dari Perfix.lua (_G.BotVars.NLP).
+        -- Perfix.lua belum memiliki intent untuk modul ini, jadi
+        -- modul ini mendaftarkan intent-nya sendiri ke NLP.Intents.
+        --
+        -- Pertanyaan (tanda baca ? dan ! diabaikan parser):
+        --   mengerti / mengerti? / mengerti?!
+        --   jelas / jelas? / jelas?!
+        --   ada pertanyaan / ada pertanyaan? / ada pertanyaan?!
+        --
+        -- Perintah (HANYA Admin):
+        --   agree
+        --   unagree / stop / berhenti / bubar
+        --------------------------------------------------
+
+        local NLP = _G.BotVars.NLP
+
+        if not NLP then
+
+            warn(
+                "[Agree] NLP tidak ditemukan. "
+                .. "Pastikan Perfix.lua dimuat lebih dulu."
+            )
+
+        else
+
+            NLP.Intents.agree_mengerti =
+                NLP.Intents.agree_mengerti
+                or {
+                    StrictRemainder = true,
+
+                    Words = {
+                        mengerti = 2,
+                    },
+                }
+
+            NLP.Intents.agree_jelas =
+                NLP.Intents.agree_jelas
+                or {
+                    StrictRemainder = true,
+
+                    Words = {
+                        jelas = 2,
+                    },
+                }
+
+            -- Butuh kedua kata (masing-masing 1 poin, minimal 2)
+            -- supaya kata "pertanyaan" saja tidak memicu balasan.
+            NLP.Intents.agree_pertanyaan =
+                NLP.Intents.agree_pertanyaan
+                or {
+                    StrictRemainder = true,
+
+                    Words = {
+                        ada = 1,
+                        pertanyaan = 1,
+                    },
+                }
+
+            NLP.Intents.agree =
+                NLP.Intents.agree
+                or {
+                    StrictRemainder = true,
+
+                    Words = {
+                        agree = 2,
+                    },
+                }
+
+            NLP.Intents.unagree =
+                NLP.Intents.unagree
+                or {
+                    Threshold = 3,
+                    Priority = 1,
+                    StrictRemainder = true,
+
+                    Words = {
+                        unagree = 3,
+                    },
+                }
+
+        end
+
         local AGREE_MESSAGES = {
             "Yes, Sir!",
+        }
+
+        -- Respon otomatis untuk pertanyaan, berdasarkan nama intent.
+        local QUESTION_RESPONSES = {
+            agree_mengerti = "Siap, mengerti!",
+            agree_jelas = "Siap, jelas!",
+            agree_pertanyaan = "Siap, Tidak ada!",
         }
 
         local agreeing = false
@@ -99,17 +191,30 @@ return {
                 return
             end
 
-            local lower = message:lower()
-            lower = lower:gsub("^%s+", "")
-            lower = lower:gsub("%s+$", "")
+            local intent
 
-            if lower == "!agree" then
+            if NLP then
+                intent = NLP.Classify(message, NLP.Intents)
+            end
+
+            if not intent then
+                return
+            end
+
+            local questionResponse = QUESTION_RESPONSES[intent]
+
+            if questionResponse then
+                sendChat(questionResponse)
+                return
+            end
+
+            if intent == "agree" then
                 _G.BotVars.AgreeMessage = nil
                 startAgree()
                 return
             end
 
-            if lower == "!unagree" or lower == "!stop" then
+            if intent == "unagree" or intent == "stop" then
                 if _G.BotVars.ActiveMode == "agree" then
                     _G.BotVars.ActiveMode = nil
                 end
