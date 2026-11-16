@@ -184,13 +184,13 @@ return {
         -- Player yang berada dalam jarak ini dari target (studs)
         -- dianggap masuk Ring 1. Bot berdiri 6 studs dari target,
         -- jadi 8 studs sedikit di luar jarak ring bot.
-        local warningRadius = 8
+        local warningRadius = 10
 
         -- Seberapa sering Player di sekitar target dicek (detik).
-        local warningCheckInterval = 0.5
+        local warningCheckInterval = 0.8
 
         -- Jeda sebelum Player yang sama diperingatkan lagi (detik).
-        local warningPlayerCooldown = 10
+        local warningPlayerCooldown = 12
 
         -- Jeda minimum antar chat peringatan (detik).
         local warningChatGap = 3
