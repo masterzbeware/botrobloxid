@@ -27,8 +27,8 @@
 -- Siaga (bersama Standby.lua):
 -- Setelah formasi berjaga terbentuk, Admin mengetik
 -- "siap siaga" atau "siap sedia". Bot lalu memantau Player
--- yang mendekati target (Admin), dan satu bot (bot aktif
--- pertama) mengirim peringatan:
+-- yang mendekati target (Admin), dan semua bot aktif
+-- mengirim peringatan:
 -- "Harap menjauh. Ring 1 dalam pengamanan."
 
 return {
@@ -169,10 +169,9 @@ return {
 
         -- Peringatan siaga (siap siaga / siap sedia):
         -- Player yang berada dalam jarak ini dari target (studs)
-        -- dianggap masuk Ring 1. Bot berdiri 6 studs dari target
-        -- (sudut sekitar 8,5) dan menghalangi Player secara fisik,
-        -- jadi radius dibuat lebih lebar dari ring bot.
-        local warningRadius = 15
+        -- dianggap masuk Ring 1. Bot berdiri 6 studs dari target,
+        -- jadi 6 studs sama dengan jarak ring bot.
+        local warningRadius = 6
 
         -- Seberapa sering Player di sekitar target dicek (detik).
         local warningCheckInterval = 0.5
@@ -182,6 +181,11 @@ return {
 
         -- Jeda minimum antar chat peringatan (detik).
         local warningChatGap = 3
+
+        -- Jeda antar bot saat mengirim peringatan (detik). Bot 1
+        -- langsung, Bot 2 setelah 1 jeda, Bot 3 setelah 2 jeda,
+        -- dan seterusnya, supaya tidak terkirim bersamaan.
+        local warningChatStagger = 1
 
         local warningMessage =
             "Harap menjauh. Ring 1 dalam pengamanan."
@@ -959,9 +963,8 @@ local botOrder = {
         -- diperingatkan lewat chat. Target, Admin, dan bot tidak
         -- diperingatkan.
         --
-        -- Hanya satu bot (bot aktif pertama) yang mengirim chat,
-        -- supaya peringatan tidak terkirim berkali-kali oleh
-        -- semua bot.
+        -- Semua bot aktif ikut mengirim chat peringatan, bergantian
+        -- dengan jeda warningChatStagger per bot.
         --------------------------------------------------
 
         local botUserIds = {}
@@ -1029,12 +1032,17 @@ local botOrder = {
                 end
 
                 ----------------------------------------------
-                -- HANYA BOT AKTIF PERTAMA YANG BERBICARA
+                -- SEMUA BOT AKTIF IKUT BERBICARA
                 ----------------------------------------------
 
                 local activeBots = getActiveBots()
 
-                if activeBots[1] ~= tostring(LocalPlayer.UserId) then
+                local botIndex = table.find(
+                    activeBots,
+                    tostring(LocalPlayer.UserId)
+                )
+
+                if not botIndex then
                     continue
                 end
 
@@ -1135,10 +1143,25 @@ local botOrder = {
                         warnedAt[userId] = now
                     end
 
-                    sendChat(warningMessage)
+                    -- Bot ke-N bicara setelah (N - 1) jeda supaya
+                    -- peringatan tidak terkirim bersamaan.
+                    task.delay(
+                        (botIndex - 1) * warningChatStagger,
+                        function()
+
+                            -- Batal jika siaga atau shield sudah berakhir.
+                            if vars.ActiveMode == "shield"
+                                and vars.StandbyEnabled == true then
+
+                                sendChat(warningMessage)
+
+                            end
+
+                        end
+                    )
 
                     print(
-                        "[Shield] Peringatan Ring 1 dikirim.",
+                        "[Shield] Peringatan Ring 1 dijadwalkan.",
                         "| Jumlah Player:",
                         #pending
                     )
