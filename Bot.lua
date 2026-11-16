@@ -116,6 +116,7 @@ local commandFiles = {
 
     -- Pose subfolder
     "Pose/Salute.lua",
+    "Pose/Rest.lua",
     "Pose/Sit.lua",
     "Pose/Standby.lua",
 
