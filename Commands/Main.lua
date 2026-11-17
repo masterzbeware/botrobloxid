@@ -103,6 +103,8 @@ return {
             "!square",
             "arrow / panah / unarrow",
             "!stagger",
+            "diamond / berlian / belah ketupat / undiamond",
+            "staggered diamond / staggereddiamond / staggered / unstaggereddiamond",
         }
 
         --==================================================
