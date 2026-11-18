@@ -127,7 +127,8 @@ local commandFiles = {
     "Shield.lua",
     "Twoline.lua",
     "Diamond.lua",
-    "StaggeredDiamond.lua"
+    "StaggeredDiamond.lua",
+    "Message.lua"
 }
 
 --------------------------------------------------
@@ -293,6 +294,7 @@ local executionOrder = {
 
     "centerline",
     "shield",
+    "message",
 
     "mydawgdance",
 }
