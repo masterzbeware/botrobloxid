@@ -464,6 +464,44 @@ return {
 
 
             ----------------------------------------------------------------
+            -- JANGAN FORWARD JIKA PESAN ADALAH PERINTAH
+            --
+            -- Contoh: berhenti, ikuti saya, formasi berjaga,
+            -- formasi depan, formasi tengah, formasi diamond,
+            -- formasi melingkar, formasi belakang.
+            --
+            -- Perintah dikenali oleh parser bahasa natural
+            -- (_G.BotVars.NLP) dari Perfix.lua.
+            ----------------------------------------------------------------
+
+            local NLP = _G.BotVars.NLP
+
+            if NLP
+                and type(NLP.Classify) == "function" then
+
+                local classifyOk, intent = pcall(
+                    NLP.Classify,
+                    cleanMessage,
+                    NLP.Intents
+                )
+
+                if classifyOk and intent then
+
+                    print(
+                        "[Message] Forward dilewati (perintah:",
+                        tostring(intent) .. ")",
+                        "| Sender:",
+                        sender.Name
+                    )
+
+                    return
+
+                end
+
+            end
+
+
+            ----------------------------------------------------------------
             -- IGNORE PESAN YANG MENGANDUNG
             -- ! ? / \ .
             ----------------------------------------------------------------

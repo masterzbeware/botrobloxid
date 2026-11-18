@@ -61,6 +61,8 @@ return {
         -- Ikuti pengirim (Admin atau CommandTarget):
         --   ikuti saya / ikut aku / follow me
         --   maju jalan / bergerak maju jalan / ayo jalan
+        --   satu banjar / formasi satu banjar / baris lurus /
+        --   banjar tunggal
         --
         -- Ikuti pemain lain (HANYA Admin):
         --   ikuti trevkaro / follow trevkaro
@@ -77,6 +79,55 @@ return {
                 "[Follow] NLP tidak ditemukan. "
                 .. "Pastikan Perfix.lua dimuat lebih dulu."
             )
+
+        end
+
+        ----------------------------------------------------------------
+        -- KATA TAMBAHAN FOLLOW
+        --
+        -- Didaftarkan dari sini ke intent follow milik Perfix.lua:
+        --   ikuti saya (sudah dikenali: "ikuti" + kata ganti "saya")
+        --   formasi satu banjar / satu banjar
+        --   baris lurus
+        --   banjar tunggal
+        ----------------------------------------------------------------
+
+        if NLP
+            and NLP.Intents
+            and NLP.Intents.follow then
+
+            local followIntent = NLP.Intents.follow
+
+            followIntent.Words = followIntent.Words or {}
+            followIntent.Phrases = followIntent.Phrases or {}
+
+            -- Kata lemah (bernilai 1): baru berarti jika berpasangan.
+            for word, points in pairs({
+                satu = 1,
+                banjar = 1,
+                lurus = 1,
+                tunggal = 1,
+            }) do
+
+                if followIntent.Words[word] == nil then
+                    followIntent.Words[word] = points
+                end
+
+            end
+
+            -- Frasa (poin tambahan) supaya follow menang atas
+            -- formasi lain, misalnya "formasi satu banjar".
+            for phrase, points in pairs({
+                ["satu banjar"] = 2,
+                ["banjar tunggal"] = 2,
+                ["baris lurus"] = 2,
+            }) do
+
+                if followIntent.Phrases[phrase] == nil then
+                    followIntent.Phrases[phrase] = points
+                end
+
+            end
 
         end
 

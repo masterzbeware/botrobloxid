@@ -60,6 +60,7 @@ return {
         --
         -- Formasi di depan pengirim (Admin atau CommandTarget):
         --   frontline / formasi depan / barisan depan
+        --   satu saf / saf depan
         --
         -- Formasi di depan pemain lain (HANYA Admin):
         --   frontline trevkaro / formasi depan trevkaro
@@ -76,6 +77,46 @@ return {
                 "[Frontline] NLP tidak ditemukan. "
                 .. "Pastikan Perfix.lua dimuat lebih dulu."
             )
+
+        end
+
+        ----------------------------------------------------------------
+        -- KATA TAMBAHAN FRONTLINE
+        --
+        -- Didaftarkan dari sini ke intent frontline milik Perfix.lua:
+        --   formasi depan / barisan depan (sudah dikenali)
+        --   satu saf / saf depan
+        ----------------------------------------------------------------
+
+        if NLP
+            and NLP.Intents
+            and NLP.Intents.frontline then
+
+            local frontlineIntent = NLP.Intents.frontline
+
+            frontlineIntent.Words = frontlineIntent.Words or {}
+            frontlineIntent.Phrases = frontlineIntent.Phrases or {}
+
+            -- Kata pendamping (bernilai 0): dikenali parser, tetapi
+            -- tidak memicu perintah sendirian.
+            for _, word in ipairs({ "saf", "satu" }) do
+
+                if frontlineIntent.Words[word] == nil then
+                    frontlineIntent.Words[word] = 0
+                end
+
+            end
+
+            for phrase, points in pairs({
+                ["saf depan"] = 2,
+                ["satu saf"] = 2,
+            }) do
+
+                if frontlineIntent.Phrases[phrase] == nil then
+                    frontlineIntent.Phrases[phrase] = points
+                end
+
+            end
 
         end
 

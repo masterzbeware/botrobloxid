@@ -109,7 +109,8 @@ return {
         -- kata biasa:
         --
         -- Lingkaran di sekitar pengirim (Admin atau CommandTarget):
-        --   circle / lingkaran / formasi lingkaran
+        --   formasi melingkar / formasi lingkar / formasi lingkaran /
+        --   lingkar penuh / barisan melingkar
         --
         -- Lingkaran di sekitar pemain lain (HANYA Admin):
         --   circle trevkaro / lingkaran trevkaro
@@ -126,6 +127,36 @@ return {
                 "[Circle] NLP tidak ditemukan. "
                 .. "Pastikan Perfix.lua dimuat lebih dulu."
             )
+
+        end
+
+        --------------------------------------------------
+        -- KATA PERINTAH CIRCLE
+        --------------------------------------------------
+        -- Mengganti kamus intent circle milik Perfix.lua:
+        --   formasi melingkar / formasi lingkar / formasi lingkaran
+        --   lingkar penuh / barisan melingkar
+        --------------------------------------------------
+
+        if NLP
+            and NLP.Intents
+            and NLP.Intents.circle then
+
+            NLP.Intents.circle.Words = {
+                formasi = 1,
+                barisan = 1,
+
+                melingkar = 1,
+                lingkar = 1,
+                lingkaran = 1,
+
+                -- Kata pendamping (bernilai 0) untuk "lingkar penuh".
+                penuh = 0,
+            }
+
+            NLP.Intents.circle.Phrases = {
+                ["lingkar penuh"] = 1,
+            }
 
         end
 

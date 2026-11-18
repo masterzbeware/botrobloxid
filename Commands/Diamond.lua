@@ -99,10 +99,10 @@ return {
         -- jadi modul ini mendaftarkan intent-nya sendiri.
         --
         -- Formasi mengelilingi pengirim (Admin atau CommandTarget):
-        --   diamond / formasi diamond / belah ketupat
+        --   berlian / formasi berlian
         --
         -- Formasi mengelilingi pemain lain (HANYA Admin):
-        --   diamond trevkaro / formasi diamond trevkaro
+        --   berlian trevkaro / formasi berlian trevkaro
         --
         -- Berhenti (HANYA Admin):
         --   berhenti / stop / bubar / undiamond
@@ -128,10 +128,7 @@ return {
                         formasi = 1,
                         bentuk = 1,
 
-                        diamond = 2,
                         berlian = 2,
-                        ketupat = 2,
-                        belah = 1,
                     },
                 }
 
@@ -811,10 +808,10 @@ local botOrder = {
             --
             -- ADA 2 JENIS:
             --
-            -- 1. diamond / formasi diamond (tanpa nama)
+            -- 1. berlian / formasi berlian (tanpa nama)
             --    Admin ATAU CommandTarget boleh.
             --
-            -- 2. diamond <nama pemain>
+            -- 2. berlian <nama pemain>
             --    HANYA Admin.
             ----------------------------------------------------------------
 

@@ -94,6 +94,7 @@ return {
         --
         -- Formasi di belakang pengirim (Admin atau CommandTarget):
         --   twoline / formasi dua baris / barisan dua
+        --   formasi dua banjar / baris dua banjar / dua banjar
         --
         -- Formasi di belakang pemain lain (HANYA Admin):
         --   twoline trevkaro / formasi dua baris trevkaro
@@ -128,6 +129,10 @@ return {
                         twoline = 2,
                         two = 1,
                         dua = 1,
+
+                        -- "dua banjar" / "formasi dua banjar" /
+                        -- "baris dua banjar"
+                        banjar = 1,
                     },
                 }
 

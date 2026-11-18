@@ -60,6 +60,7 @@ return {
         --
         -- Formasi di belakang pengirim (Admin atau CommandTarget):
         --   backline / formasi belakang / barisan belakang
+        --   saf belakang
         --
         -- Formasi di belakang pemain lain (HANYA Admin):
         --   backline trevkaro / formasi belakang trevkaro
@@ -76,6 +77,35 @@ return {
                 "[Backline] NLP tidak ditemukan. "
                 .. "Pastikan Perfix.lua dimuat lebih dulu."
             )
+
+        end
+
+        ----------------------------------------------------------------
+        -- KATA TAMBAHAN BACKLINE
+        --
+        -- Didaftarkan dari sini ke intent backline milik Perfix.lua:
+        --   formasi belakang / barisan belakang (sudah dikenali)
+        --   saf belakang
+        ----------------------------------------------------------------
+
+        if NLP
+            and NLP.Intents
+            and NLP.Intents.backline then
+
+            local backlineIntent = NLP.Intents.backline
+
+            backlineIntent.Words = backlineIntent.Words or {}
+            backlineIntent.Phrases = backlineIntent.Phrases or {}
+
+            -- Kata pendamping (bernilai 0): dikenali parser, tetapi
+            -- tidak memicu perintah sendirian.
+            if backlineIntent.Words.saf == nil then
+                backlineIntent.Words.saf = 0
+            end
+
+            if backlineIntent.Phrases["saf belakang"] == nil then
+                backlineIntent.Phrases["saf belakang"] = 2
+            end
 
         end
 

@@ -14,7 +14,7 @@
 -- Jarak bot terdekat ke target: 5 studs
 --
 -- Commands (bahasa natural, tanpa prefix):
--- centerline / formasi tengah / barisan tengah
+-- centerline / formasi tengah / barisan tengah / saf tengah
 -- centerline <player>   (hanya Admin)
 -- berhenti / stop / bubar / uncenterline   (hanya Admin)
 
@@ -63,6 +63,35 @@ return {
                 "[Centerline] NLP tidak ditemukan. "
                 .. "Pastikan Perfix.lua dimuat lebih dulu."
             )
+
+        end
+
+        --------------------------------------------------
+        -- KATA TAMBAHAN CENTERLINE
+        --------------------------------------------------
+        -- Didaftarkan dari sini ke intent centerline milik Perfix.lua:
+        --   formasi tengah / barisan tengah (sudah dikenali)
+        --   saf tengah
+        --------------------------------------------------
+
+        if NLP
+            and NLP.Intents
+            and NLP.Intents.centerline then
+
+            local centerlineIntent = NLP.Intents.centerline
+
+            centerlineIntent.Words = centerlineIntent.Words or {}
+            centerlineIntent.Phrases = centerlineIntent.Phrases or {}
+
+            -- Kata pendamping (bernilai 0): dikenali parser, tetapi
+            -- tidak memicu perintah sendirian.
+            if centerlineIntent.Words.saf == nil then
+                centerlineIntent.Words.saf = 0
+            end
+
+            if centerlineIntent.Phrases["saf tengah"] == nil then
+                centerlineIntent.Phrases["saf tengah"] = 2
+            end
 
         end
 
