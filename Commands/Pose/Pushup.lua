@@ -670,7 +670,10 @@ return {
                 -- PLAY FE ANIMATION
                 --------------------------------------------------------
 
-                local ok, track =
+                -- PlayEmoteAndGetAnimTrackById mengembalikan dua nilai
+                -- (berhasil?, track), jadi ambil track yang benar-benar
+                -- bertipe Instance dari nilai yang dikembalikan.
+                local ok, first, second =
                     pcall(function()
 
                         return humanoid:
@@ -680,7 +683,19 @@ return {
 
                     end)
 
-                if ok and track then
+                local track = nil
+
+                if ok then
+
+                    if typeof(second) == "Instance" then
+                        track = second
+                    elseif typeof(first) == "Instance" then
+                        track = first
+                    end
+
+                end
+
+                if track then
 
                     success = true
                     result = track
@@ -689,7 +704,7 @@ return {
 
                 end
 
-                result = track
+                result = first
 
 
                 --------------------------------------------------------
@@ -699,6 +714,95 @@ return {
                 if attempt < maxAttempts then
 
                     task.wait(0.1)
+
+                end
+
+            end
+
+
+            ----------------------------------------------------------------
+            -- FALLBACK: ANIMATOR:LOADANIMATION
+            --
+            -- PlayEmote hanya bisa memainkan ID emote. Jika ID ini
+            -- adalah animasi biasa, PlayEmote mengembalikan false,
+            -- jadi animasi dimuat langsung lewat Animator.
+            ----------------------------------------------------------------
+
+            if not success
+                and generation == pushupGeneration then
+
+                local lastEmoteError = result
+
+                local fallbackOk, fallbackTrack =
+                    pcall(function()
+
+                        local animator =
+                            humanoid:FindFirstChildOfClass(
+                                "Animator"
+                            )
+                            or humanoid:WaitForChild(
+                                "Animator",
+                                2
+                            )
+
+                        local animation =
+                            Instance.new("Animation")
+
+                        animation.AnimationId =
+                            "rbxassetid://"
+                            .. PUSHUP_ANIMATION_ID
+
+                        local loadedTrack =
+                            animator:LoadAnimation(
+                                animation
+                            )
+
+                        -- Tunggu animasi selesai dimuat.
+                        local waited = 0
+
+                        while loadedTrack.Length <= 0
+                            and waited < 3 do
+
+                            task.wait(0.1)
+                            waited = waited + 0.1
+
+                        end
+
+                        if loadedTrack.Length <= 0 then
+
+                            error(
+                                "Animasi tidak bisa dimuat "
+                                .. "(Length = 0)"
+                            )
+
+                        end
+
+                        loadedTrack.Priority =
+                            Enum.AnimationPriority.Action
+
+                        loadedTrack:Play(0.1)
+
+                        return loadedTrack
+
+                    end)
+
+                if fallbackOk and fallbackTrack then
+
+                    success = true
+                    result = fallbackTrack
+
+                    print(
+                        "[Pushup] Emote gagal, memakai",
+                        "Animator:LoadAnimation | Bot:",
+                        LocalPlayer.Name
+                    )
+
+                else
+
+                    result =
+                        tostring(lastEmoteError)
+                        .. " | Fallback: "
+                        .. tostring(fallbackTrack)
 
                 end
 
