@@ -179,9 +179,9 @@ return {
         -- Jeda antara PromptAction dan AskCarry (detik).
         local PROMPT_DELAY = 0.3
 
-        -- Jeda setelah membatalkan formasi sebelumnya (Carry atau
-        -- Chain) sebelum formasi baru dimulai (detik).
-        local SWITCH_DELAY = 1.0
+        -- Jeda setelah berhenti (membatalkan formasi sebelumnya)
+        -- sebelum formasi baru dimulai (detik).
+        local SWITCH_DELAY = 1.5
 
         --------------------------------------------------
         -- LOAD ADMIN MODULE
@@ -334,6 +334,15 @@ return {
 
         end
 
+        -- Melepas semua gandengan (dipakai Chain.lua)
+        local function cancelAll()
+
+            return fireCarry({
+                cmd = "CancelAll",
+            })
+
+        end
+
         --------------------------------------------------
         -- STATE
         --------------------------------------------------
@@ -354,6 +363,9 @@ return {
                 carryGeneration + 1
 
             vars.CarryChain = nil
+
+            -- Tidak ada formasi carry/rantai yang aktif lagi.
+            vars.LinkMode = nil
 
             local wasActive = carryActive
 
@@ -380,9 +392,13 @@ return {
         --------------------------------------------------
         -- RELEASE BEFORE START
         --------------------------------------------------
-        -- Sebelum formasi baru dimulai, formasi sebelumnya
-        -- dibatalkan otomatis (Carry sendiri atau Chain.lua),
-        -- jadi tidak perlu mengetik stop dulu.
+        -- Sebelum formasi baru dimulai, formasi sebelumnya (Carry
+        -- atau Chain.lua) dihentikan dulu, sama seperti perintah
+        -- stop, jadi tidak perlu mengetik stop dulu.
+        --
+        -- vars.LinkMode (dibagi dengan Chain.lua) mencatat formasi
+        -- terakhir yang dimulai: nil / "carry" / "chain". Nilainya
+        -- sama di semua bot karena berasal dari chat yang sama.
         --------------------------------------------------
 
         local function releaseBeforeStart()

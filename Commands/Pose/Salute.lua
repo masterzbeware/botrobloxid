@@ -69,7 +69,7 @@ return {
         --   (bot juga mengirim chat: Siap hormat, <displayname>!)
         --
         -- Berhenti (HANYA Admin):
-        --   berhenti / stop / bubar / unhormat
+        --   berhenti / stop / bubar / unhormat / siap grak / tegak grak
         ----------------------------------------------------------------
 
         local NLP = _G.BotVars.NLP
@@ -98,6 +98,23 @@ return {
                         beri = 0,
                         memberi = 0,
                         grak = 0,
+                    },
+                }
+
+            -- Siap grak / tegak grak: dianggap perintah berhenti.
+            -- Definisi sama dengan Carry.lua (carrystop), supaya
+            -- tidak bentrok siapa pun yang dimuat lebih dulu.
+            -- Priority -1 supaya "hormat grak" tetap dimenangkan salute.
+            NLP.Intents.carrystop =
+                NLP.Intents.carrystop
+                or {
+                    Threshold = 2,
+                    Priority = -1,
+                    StrictRemainder = true,
+
+                    Words = {
+                        grak = 2,
+                        tegak = 0,
                     },
                 }
 
@@ -843,7 +860,8 @@ return {
             -- HANYA ADMIN
             ----------------------------------------------------------------
 
-            if intent == "stop" then
+            if intent == "stop"
+                or intent == "carrystop" then
 
                 if not isAdmin then
 
