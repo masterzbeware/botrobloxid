@@ -32,8 +32,8 @@ return {
         -- Perfix.lua belum memiliki intent sync, jadi modul ini
         -- mendaftarkan intent-nya sendiri ke NLP.Intents.
         --
-        -- Sinkron dance ke Admin (HANYA Admin):
-        --   sync / mirror / syncdance
+        -- Sinkron dance ke pengirim (Admin atau CommandTarget):
+        --   sync / mirror / syncdance / dance
         --   (Bot 1, 2, 3, 4, 5, 6, ... semua sinkron dance
         --    ke Admin yang mengetik perintah)
         --
@@ -64,6 +64,7 @@ return {
                         sync = 2,
                         mirror = 2,
                         syncdance = 2,
+                        dance = 2,
                     },
                 }
 
@@ -455,6 +456,11 @@ return {
 
             local senderIsAdmin = isAdmin(sender)
 
+            -- Pemain yang sedang diikuti bot (CommandTarget) juga boleh
+            -- memulai sync, walau bukan Admin.
+            local isCommandTarget =
+                vars.CommandTarget == sender
+
             --------------------------------------------------
             -- ANALISA PESAN (BAHASA NATURAL)
             --------------------------------------------------
@@ -470,13 +476,13 @@ return {
             end
 
             --------------------------------------------------
-            -- SYNC / MIRROR / SYNCDANCE
-            -- HANYA ADMIN. Target = Admin yang mengetik.
+            -- SYNC / MIRROR / SYNCDANCE / DANCE
+            -- ADMIN ATAU COMMAND TARGET. Target = pengirim perintah.
             --------------------------------------------------
 
             if intent == "sync" and #args == 0 then
 
-                if not senderIsAdmin then
+                if not senderIsAdmin and not isCommandTarget then
 
                     print(
                         "[Sync] Perintah ditolak:",
