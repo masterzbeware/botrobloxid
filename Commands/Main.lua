@@ -89,20 +89,14 @@ return {
             "ikuti / ikut / ikutin / mengikuti / follow / following / kejar / maju jalan",
             "frontline / front / depan",
             "circle / lingkaran / melingkar / keliling / kelilingi / mengelilingi",
-            "fourline / four / empat / 4",
             "backline / back / belakang",
             "istirahat / beristirahat / unistirahat / unrest",
             "hormat / menghormat / penghormatan / unhormat",
-            "duduk / unsit",
             "agree / unagree",
             "mengerti",
             "jelas",
             "ada pertanyaan",
             "pimpin / pimpinan / barisan",
-            "!pushup",
-            "!square",
-            "arrow / panah / unarrow",
-            "!stagger",
             "diamond / berlian / belah ketupat / undiamond",
             "staggered diamond / staggereddiamond / staggered / unstaggereddiamond",
         }
@@ -113,18 +107,7 @@ return {
 
         local commands2 = {
             "!message",
-            "!collision",
-            "!brazildance",
-            "!huladance",
-            "!kangoradance",
             "!mydawgdance",
-            "!pakodidance",
-            "!pargoydance",
-            "!scubadance",
-            "!tomatodance",
-            "!trackmakerdance",
-            "!tripoutdance",
-            "!worship",
         }
 
         --==================================================
@@ -132,18 +115,6 @@ return {
         --==================================================
 
         local glowstickCommands = {
-            "!glowstick",
-            "!glowstick blue",
-            "!glowstick purple",
-            "!glowstick magenta",
-            "!glowstick pink",
-            "!glowstick red",
-            "!glowstick orange",
-            "!glowstick yellow",
-            "!glowstick lime",
-            "!glowstick green",
-            "!glowstick white",
-            "!glowstick black",
             "!stop",
         }
 

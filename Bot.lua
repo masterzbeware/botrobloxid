@@ -116,6 +116,7 @@ local commandFiles = {
     "Pose/Salute.lua",
     "Pose/Rest.lua",
     "Pose/Standby.lua",
+    "Pose/Pushup.lua",
 
     "Sync.lua",
 
@@ -129,7 +130,6 @@ local commandFiles = {
     "Centerline.lua",
     "Shield.lua",
     "Twoline.lua",
-    "Facingline.lua",
     "Diamond.lua",
     "StaggeredDiamond.lua",
     "Message.lua"
@@ -285,7 +285,6 @@ local executionOrder = {
     "backline",
     "frontline",
     "twoline",
-    "facingline",
     "diamond",
     "staggereddiamond",
 
@@ -298,6 +297,7 @@ local executionOrder = {
     "sync",
     "carry",
     "chain",
+    "pushup"
     "horseshoes",
 
     "centerline",
