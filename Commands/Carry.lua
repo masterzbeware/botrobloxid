@@ -35,8 +35,13 @@ return {
         -- Mulai Formasi Bertingkat (HANYA Admin):
         --   formasi bertingkat / bertingkat / carry
         --
+        -- Formasi Ganda / berpasangan (HANYA Admin):
+        --   formasi ganda
+        --   (Bot 1 carry Bot 2, Bot 3 carry Bot 4,
+        --    Bot 5 carry Bot 6, Bot 7 carry Bot 8)
+        --
         -- Batalkan carry (HANYA Admin):
-        --   uncarry
+        --   uncarry / siap grak / tegak grak
         --
         -- Berhenti (HANYA Admin):
         --   berhenti / stop / bubar
@@ -81,6 +86,38 @@ return {
 
                     Words = {
                         uncarry = 3,
+                    },
+                }
+
+            -- Formasi Ganda: berpasangan (Bot 1-2, 3-4, 5-6, 7-8).
+            NLP.Intents.carrypair =
+                NLP.Intents.carrypair
+                or {
+                    Priority = 1,
+
+                    Words = {
+                        formasi = 1,
+
+                        ganda = 2,
+                    },
+                }
+
+            -- Batalkan carry: "siap grak" / "tegak grak".
+            -- Kata "siap" adalah kata pengisi di Perfix.lua, jadi
+            -- "siap grak" dikenali lewat kata "grak" saja.
+            --
+            -- Priority -1 supaya "hormat grak" (Salute.lua) tetap
+            -- dimenangkan intent salute saat skornya seri.
+            NLP.Intents.carrystop =
+                NLP.Intents.carrystop
+                or {
+                    Threshold = 2,
+                    Priority = -1,
+                    StrictRemainder = true,
+
+                    Words = {
+                        grak = 2,
+                        tegak = 0,
                     },
                 }
 
@@ -553,6 +590,190 @@ return {
         end
 
         --------------------------------------------------
+        -- START PAIRS (FORMASI GANDA)
+        --------------------------------------------------
+        -- Berpasangan berdasarkan urutan botOrder:
+        --
+        --   Bot 1 carry Bot 2
+        --   Bot 3 carry Bot 4
+        --   Bot 5 carry Bot 6
+        --   Bot 7 carry Bot 8
+        --
+        -- Bot bernomor ganjil meminta carry ke pasangannya:
+        --   1. membuka prompt carry (PromptAction)
+        --   2. meminta carry (AskCarry)
+        -- Bot bernomor genap menerima carry dari pasangannya (Carry)
+        -- setelah ACCEPT_DELAY.
+        --
+        -- Semua pasangan berjalan bersamaan. Jika salah satu bot
+        -- pasangan tidak ada di server, pasangan itu dilewati.
+        --------------------------------------------------
+
+        local function startPairs(sender)
+
+            --------------------------------------------------
+            -- BATALKAN LANGKAH LAMA
+            --------------------------------------------------
+
+            carryGeneration =
+                carryGeneration + 1
+
+            local generation =
+                carryGeneration
+
+            carryActive = false
+
+            vars.CarryChain = nil
+
+            --------------------------------------------------
+            -- POSISI BOT INI DI botOrder
+            --------------------------------------------------
+
+            local myIndex = nil
+
+            for index, userId in ipairs(botOrder) do
+
+                if tonumber(userId) == LocalPlayer.UserId then
+                    myIndex = index
+                    break
+                end
+
+            end
+
+            if not myIndex then
+
+                warn(
+                    "[Carry] Bot ini tidak ada di botOrder:",
+                    LocalPlayer.Name
+                )
+
+                return
+
+            end
+
+            --------------------------------------------------
+            -- PASANGAN
+            --------------------------------------------------
+
+            local isAsker =
+                (myIndex % 2 == 1)
+
+            local partnerIndex =
+                isAsker
+                and (myIndex + 1)
+                or (myIndex - 1)
+
+            local partnerUserId =
+                botOrder[partnerIndex]
+
+            local partner =
+                partnerUserId
+                and Players:GetPlayerByUserId(
+                    tonumber(partnerUserId)
+                )
+
+            if not partner then
+
+                warn(
+                    "[Carry] Pasangan Bot",
+                    partnerIndex,
+                    "tidak ada di server."
+                )
+
+                return
+
+            end
+
+            carryActive = true
+
+            print(
+                "[Carry] Formasi Ganda dimulai | Bot:",
+                LocalPlayer.Name,
+                "| Bot",
+                myIndex,
+                isAsker and "meminta carry ke" or "menerima carry dari",
+                "Bot",
+                partnerIndex,
+                "(" .. partner.Name .. ")",
+                "| Admin:",
+                sender and sender.Name or "None"
+            )
+
+            --------------------------------------------------
+            -- JADWAL BOT INI
+            --------------------------------------------------
+
+            task.spawn(function()
+
+                local startTime = os.clock()
+
+                local function waitUntil(offset)
+
+                    while os.clock() < startTime + offset do
+
+                        if generation ~= carryGeneration then
+                            return false
+                        end
+
+                        task.wait(0.05)
+
+                    end
+
+                    return generation == carryGeneration
+
+                end
+
+                ----------------------------------------------
+                -- BOT GANJIL: PROMPT, LALU MINTA CARRY
+                ----------------------------------------------
+
+                if isAsker then
+
+                    promptAction()
+
+                    if not waitUntil(PROMPT_DELAY) then
+                        return
+                    end
+
+                    if not partner:IsDescendantOf(Players) then
+                        return
+                    end
+
+                    askCarry(partner)
+
+                    print(
+                        "[Carry] Meminta carry ke:",
+                        partner.Name
+                    )
+
+                    return
+
+                end
+
+                ----------------------------------------------
+                -- BOT GENAP: TERIMA CARRY
+                ----------------------------------------------
+
+                if not waitUntil(ACCEPT_DELAY) then
+                    return
+                end
+
+                if not partner:IsDescendantOf(Players) then
+                    return
+                end
+
+                acceptCarry(partner)
+
+                print(
+                    "[Carry] Menerima carry dari:",
+                    partner.Name
+                )
+
+            end)
+
+        end
+
+        --------------------------------------------------
         -- ADMIN CHECK
         --------------------------------------------------
 
@@ -622,6 +843,50 @@ return {
                 )
 
                 startChain(sender)
+                return
+            end
+
+            --------------------------------------------------
+            -- FORMASI GANDA (BERPASANGAN)
+            -- HANYA ADMIN
+            --------------------------------------------------
+
+            if intent == "carrypair" and #args == 0 then
+
+                if not senderIsAdmin then
+
+                    print(
+                        "[Carry] Perintah ditolak:",
+                        sender.Name,
+                        "bukan Admin."
+                    )
+
+                    return
+
+                end
+
+                print(
+                    "[Carry] Formasi Ganda diterima dari:",
+                    sender.Name
+                )
+
+                startPairs(sender)
+                return
+            end
+
+            --------------------------------------------------
+            -- SIAP GRAK / TEGAK GRAK
+            -- Membatalkan carry (Declinecarry), sama seperti uncarry.
+            -- HANYA ADMIN
+            --------------------------------------------------
+
+            if intent == "carrystop" then
+
+                if not senderIsAdmin then
+                    return
+                end
+
+                stopCarry(true)
                 return
             end
 
@@ -761,7 +1026,8 @@ return {
         print("[Carry] Remote:", CarryRemote:GetFullName())
         print("[Carry] Commands:")
         print("[Carry] formasi bertingkat")
-        print("[Carry] uncarry")
+        print("[Carry] formasi ganda")
+        print("[Carry] uncarry / siap grak / tegak grak")
         print("[Carry] stop")
         print("----------------------------------------")
 
