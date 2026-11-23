@@ -109,7 +109,6 @@ local commandFiles = {
 
     "Circle.lua",
     "Follow.lua",
-    "Fourline.lua",
     "Frontline.lua",
     
 
