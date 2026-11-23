@@ -115,7 +115,6 @@ local commandFiles = {
     "Pose/Salute.lua",
     "Pose/Rest.lua",
     "Pose/Standby.lua",
-    "Pose/Pushup.lua",
 
     "Sync.lua",
 
@@ -292,7 +291,6 @@ local executionOrder = {
     "rest",
     "salute",
     "standby",
-    "pushup",
     "sync",
     "carry",
     "chain",
