@@ -62,8 +62,11 @@ return {
         -- mendaftarkan intent-nya sendiri ke NLP.Intents.
         --
         -- Push up dengan hitungan (HANYA Admin):
-        --   pushup 10 / push up 10
-        --   -> bot push up sambil berhitung, berhenti di angka 10.
+        --   pushup 4 / pushup 4 kali / pushup sebanyak 4
+        --   ("push up" dua kata juga dikenali)
+        --   -> semua bot push up serentak sambil berhitung
+        --      (tiap bot mengirim angka ke chat), lalu berhenti
+        --      di angka 4.
         --
         -- Push up tanpa hitungan (HANYA Admin):
         --   pushup / push up
@@ -127,7 +130,7 @@ return {
         ----------------------------------------------------------------
 
         local PUSHUP_ANIMATION_ID =
-            "137977803647560"
+            "11810283308"
 
 
         ----------------------------------------------------------------
@@ -141,7 +144,16 @@ return {
         local MAX_COUNT = 1000
 
         -- Berapa kali animasi boleh dimainkan ulang jika terputus.
+        -- Hanya berlaku pada mode berhitung. Mode tanpa angka tidak
+        -- pernah berhenti sendiri, hanya lewat perintah berhenti.
         local MAX_INTERRUPT_RETRIES = 3
+
+        -- Sinkronisasi antar bot (serentak).
+        -- Semua bot mulai di kelipatan SYNC_GRID detik pada jam server
+        -- yang sama, sehingga animasi dan hitungan berjalan bersamaan.
+        -- SYNC_LEAD = jeda minimum agar semua bot sempat menerima perintah.
+        local SYNC_GRID = 2
+        local SYNC_LEAD = 0.5
 
 
         ----------------------------------------------------------------
@@ -168,6 +180,27 @@ return {
 
             return LocalPlayer.Character
                 or LocalPlayer.CharacterAdded:Wait()
+
+        end
+
+
+        ----------------------------------------------------------------
+        -- SERVER TIME (JAM BERSAMA SEMUA BOT)
+        ----------------------------------------------------------------
+
+        local function getServerTime()
+
+            local ok, now = pcall(function()
+
+                return workspace:GetServerTimeNow()
+
+            end)
+
+            if ok and type(now) == "number" then
+                return now
+            end
+
+            return os.time()
 
         end
 
@@ -594,7 +627,7 @@ return {
 
         local attachTrack
 
-        attachTrack = function(generation)
+        attachTrack = function(generation, startAt)
 
             local character =
                 getCharacter()
@@ -718,6 +751,32 @@ return {
             pushupTrack = track
             pushupActive = true
 
+            -- Sinkronkan fase animasi dengan jam bersama: bot yang
+            -- terlambat mulai (misalnya karena loading animasi)
+            -- menyusul ke posisi yang sama dengan bot lain.
+            if startAt then
+
+                pcall(function()
+
+                    local late =
+                        getServerTime() - startAt
+
+                    local length =
+                        track.Length
+
+                    if late > 0.05
+                        and length
+                        and length > 0
+                        and late < length then
+
+                        track.TimePosition = late
+
+                    end
+
+                end)
+
+            end
+
             -- Diulang terus; setiap satu putaran penuh = satu push up.
             pcall(function()
                 track.Looped = true
@@ -787,7 +846,8 @@ return {
 
                         pushupTrack = nil
 
-                        if interruptRetries
+                        if targetCount
+                            and interruptRetries
                             >= MAX_INTERRUPT_RETRIES then
 
                             warn(
@@ -847,12 +907,17 @@ return {
         --
         -- totalCount = nil  -> tanpa batas (tunggu perintah stop)
         -- totalCount = angka -> berhitung sampai angka tersebut
+        --
+        -- syncStart = true -> semua bot menunggu waktu mulai yang sama
+        --                     (serentak). Dipakai untuk command baru,
+        --                     bukan untuk lanjut setelah respawn.
         ----------------------------------------------------------------
 
         local function playPushup(
             targetPlayer,
             totalCount,
-            startRep
+            startRep,
+            syncStart
         )
 
             ------------------------------------------------------------
@@ -935,10 +1000,41 @@ return {
 
 
             ------------------------------------------------------------
-            -- PLAY
+            -- PLAY (SERENTAK DI JAM SERVER YANG SAMA)
             ------------------------------------------------------------
 
-            attachTrack(generation)
+            local startAt = nil
+
+            if syncStart then
+
+                startAt =
+                    math.ceil(
+                        (getServerTime() + SYNC_LEAD)
+                        / SYNC_GRID
+                    ) * SYNC_GRID
+
+                local waitTime =
+                    startAt - getServerTime()
+
+                if waitTime > 0 then
+                    task.wait(waitTime)
+                end
+
+
+                --------------------------------------------------------
+                -- COMMAND SUDAH BERGANTI SELAMA MENUNGGU
+                --------------------------------------------------------
+
+                if generation
+                    ~= pushupGeneration then
+
+                    return
+
+                end
+
+            end
+
+            attachTrack(generation, startAt)
 
         end
 
@@ -952,17 +1048,59 @@ return {
         --   nil, false  -> argumen tidak valid (diabaikan)
         ----------------------------------------------------------------
 
+        -- Kata pendamping angka yang boleh ada di sekitar hitungan:
+        --   "pushup 4 kali", "pushup sebanyak 4", "pushup 4x"
+        local COUNT_FILLER_WORDS = {
+            kali = true,
+            x = true,
+            sebanyak = true,
+            sebanyaknya = true,
+            banyak = true,
+            set = true,
+            rep = true,
+            reps = true,
+        }
+
         local function parseCount(args)
 
             if not args or #args == 0 then
                 return nil, true
             end
 
-            if #args > 1 then
+            -- Cari angka di antara kata pendamping, misalnya:
+            --   "4" | "4 kali" | "sebanyak 4" | "sebanyak 4 kali"
+            local numberText = nil
+
+            for _, token in ipairs(args) do
+
+                local word = tostring(token):lower()
+
+                local digits = word:match("^(%d+)x?$")
+
+                if digits then
+
+                    -- Dua angka sekaligus dianggap tidak valid.
+                    if numberText then
+                        return nil, false
+                    end
+
+                    numberText = digits
+
+                elseif not COUNT_FILLER_WORDS[word] then
+
+                    -- Kata lain yang tidak dikenal: abaikan perintah.
+                    return nil, false
+
+                end
+
+            end
+
+            -- Hanya kata pendamping tanpa angka ("pushup sebanyak").
+            if not numberText then
                 return nil, false
             end
 
-            local number = tonumber(args[1])
+            local number = tonumber(numberText)
 
             if not number
                 or number ~= math.floor(number)
@@ -1180,7 +1318,7 @@ return {
                 )
 
 
-                playPushup(sender, count, 0)
+                playPushup(sender, count, 0, true)
 
                 return
 
