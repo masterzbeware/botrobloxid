@@ -877,6 +877,128 @@ return {
         end
 
         ----------------------------------------------------------------
+        -- HADAP KANAN SETELAH FOLLOW LALU BERHENTI
+        --
+        -- Urutan: Follow -> berhenti -> "hadap kanan grak".
+        --
+        -- Setelah berhenti, bot tetap di posisi Follow.lua. Perintah
+        -- hadap kanan pada kondisi ini TIDAK membuat formasi baru:
+        -- bot tidak berjalan, hanya memutar facing sekali ke arah
+        -- KANAN pengirim.
+        --
+        -- Mode terakhir sebelum berhenti dicatat dari ActiveMode.
+        -- Handler tiap modul tidak dijamin berurutan saat "berhenti",
+        -- jadi ActiveMode dipantau di setiap Heartbeat. Setelah
+        -- berhenti (ActiveMode nil), catatan ini masih menyimpan mode
+        -- terakhir. Catatan berganti saat mode lain aktif.
+        ----------------------------------------------------------------
+
+        local lastActiveMode = nil
+
+        RunService.Heartbeat:Connect(function()
+
+            local currentMode = _G.BotVars.ActiveMode
+
+            if currentMode then
+
+                lastActiveMode = currentMode
+
+            end
+
+        end)
+
+        local function faceRightOnce(player)
+
+            ------------------------------------------------------------
+            -- BOT HARUS TERDAFTAR DI botOrder
+            ------------------------------------------------------------
+
+            if not table.find(
+                botOrder,
+                tostring(LocalPlayer.UserId)
+            ) then
+
+                return
+
+            end
+
+            ------------------------------------------------------------
+            -- VALIDASI
+            ------------------------------------------------------------
+
+            if not player then
+                return
+            end
+
+            if not humanoid
+                or not myHRP
+                or not myHRP.Parent then
+
+                return
+
+            end
+
+            local targetCharacter = player.Character
+
+            local targetHRP =
+                targetCharacter
+                and targetCharacter:FindFirstChild(
+                    "HumanoidRootPart"
+                )
+
+            if not targetHRP then
+                return
+            end
+
+            local rightVector =
+                targetHRP.CFrame.RightVector
+
+            local faceDirection =
+                Vector3.new(
+                    rightVector.X,
+                    0,
+                    rightVector.Z
+                )
+
+            if faceDirection.Magnitude < 0.001 then
+                return
+            end
+
+            ------------------------------------------------------------
+            -- CHAT
+            ------------------------------------------------------------
+
+            local confirmNow = os.clock()
+
+            if confirmNow - (_G.BotConfirmChatAt or -10) >= 1 then
+
+                _G.BotConfirmChatAt = confirmNow
+
+                sendChat(
+                    "Siap!"
+                )
+
+            end
+
+            ------------------------------------------------------------
+            -- UBAH FACING SAJA (posisi tidak disentuh)
+            --
+            -- AutoRotate dikembalikan ke true oleh stopRightFacing
+            -- saat mode lain dimulai.
+            ------------------------------------------------------------
+
+            humanoid.AutoRotate = false
+
+            myHRP.CFrame =
+                CFrame.lookAt(
+                    myHRP.Position,
+                    myHRP.Position
+                    + faceDirection.Unit
+                )
+
+        end
+
+        ----------------------------------------------------------------
         -- COMMAND HANDLER
         ----------------------------------------------------------------
 
@@ -1010,6 +1132,20 @@ return {
                 if _G.BotVars.ActiveMode == "follow" then
 
                     startFollowFacing()
+
+                    return
+
+                end
+
+                ------------------------------------------------------------
+                -- SETELAH FOLLOW LALU BERHENTI: bot tetap di posisinya,
+                -- cukup ubah facing ke kanan (tanpa formasi baru).
+                ------------------------------------------------------------
+
+                if _G.BotVars.ActiveMode == nil
+                    and lastActiveMode == "follow" then
+
+                    faceRightOnce(sender)
 
                     return
 
