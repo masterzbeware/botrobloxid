@@ -502,6 +502,47 @@ return {
 
 
             ----------------------------------------------------------------
+            -- JANGAN FORWARD PERINTAH CARRY (FORMASI BERTINGKAT)
+            --
+            -- Cadangan jika intent carry belum terdaftar di parser
+            -- (misalnya Carry.lua belum selesai dimuat), supaya pesan
+            -- tidak ikut diteruskan dan bentrok dengan Carry.lua.
+            --
+            -- Contoh: formasi bertingkat, carry, uncarry.
+            ----------------------------------------------------------------
+
+            local carryWords = {
+
+                bertingkat = true,
+                carry = true,
+                uncarry = true,
+
+            }
+
+            local normalized =
+                lower:gsub(
+                    "[^%w%s_]",
+                    " "
+                )
+
+            for word in normalized:gmatch("%S+") do
+
+                if carryWords[word] then
+
+                    print(
+                        "[Message] Forward dilewati (perintah carry)",
+                        "| Sender:",
+                        sender.Name
+                    )
+
+                    return
+
+                end
+
+            end
+
+
+            ----------------------------------------------------------------
             -- IGNORE PESAN YANG MENGANDUNG
             -- ! ? / \ .
             ----------------------------------------------------------------
