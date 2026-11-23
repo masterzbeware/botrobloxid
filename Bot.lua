@@ -129,7 +129,7 @@ local commandFiles = {
     "Centerline.lua",
     "Shield.lua",
     "Twoline.lua",
-    "RightFacing.lua",
+    "Facingline.lua",
     "Diamond.lua",
     "StaggeredDiamond.lua",
     "Message.lua"
@@ -285,7 +285,7 @@ local executionOrder = {
     "backline",
     "frontline",
     "twoline",
-    "rightfacing",
+    "facingline",
     "diamond",
     "staggereddiamond",
 

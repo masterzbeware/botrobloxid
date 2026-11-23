@@ -52,6 +52,11 @@ return {
         local rightFacingConnection = nil
         local followFacingConnection = nil
 
+        -- State formasi hadap kiri (terpisah dari hadap kanan).
+        local leftFacing = false
+        local leftTargetPlayer = nil
+        local leftFacingConnection = nil
+
         ----------------------------------------------------------------
         -- FORMASI HADAP KANAN
         --
@@ -138,6 +143,48 @@ return {
                         grak = 0,
                     },
                 }
+
+            -- HADAP KIRI (cermin dari hadap kanan)
+            --
+            -- Formasi hadap kiri: satu kolom lurus di sebelah KANAN
+            -- Target, semua bot menghadap ke KIRI (ke arah Target).
+            --
+            -- Formasi hadap kiri di sebelah pengirim
+            -- (Admin atau CommandTarget):
+            --   hadap kiri / hadap kiri grak
+            --
+            -- Formasi hadap kiri di sebelah pemain lain (HANYA Admin):
+            --   hadap kiri trevkaro
+            --
+            -- Berhenti (HANYA Admin):
+            --   berhenti / stop / bubar / unleftfacing
+            NLP.Intents.leftfacing =
+                NLP.Intents.leftfacing
+                or {
+                    -- "hadap" + "kiri" = 4. Salah satu saja tidak
+                    -- cukup memicu perintah.
+                    Threshold = 4,
+                    Priority = 1,
+
+                    Words = {
+                        hadap = 2,
+                        kiri = 2,
+
+                        -- Kata pendamping (bernilai 0), sama seperti
+                        -- pada hadap kanan.
+                        grak = 0,
+                    },
+                }
+
+            -- "unleftfacing" menghentikan semua mode.
+            if NLP.Intents.stop
+                and NLP.Intents.stop.Words then
+
+                NLP.Intents.stop.Words.unleftfacing =
+                    NLP.Intents.stop.Words.unleftfacing
+                    or 3
+
+            end
 
             -- "unrightfacing" menghentikan semua mode, sama seperti
             -- untwoline / unfrontline.
@@ -322,16 +369,54 @@ return {
             stopRightFacing
 
         ----------------------------------------------------------------
+        -- STOP LEFT FACING
+        ----------------------------------------------------------------
+
+        local function stopLeftFacing()
+
+            stopFollowFacing()
+
+            leftFacing = false
+            leftTargetPlayer = nil
+
+            ------------------------------------------------------------
+            -- CommandTarget SENGAJA TIDAK DIHAPUS (sama seperti
+            -- stopRightFacing).
+            ------------------------------------------------------------
+
+            if leftFacingConnection then
+
+                leftFacingConnection:Disconnect()
+                leftFacingConnection = nil
+
+            end
+
+            if humanoid then
+
+                humanoid.AutoRotate = true
+
+            end
+
+        end
+
+        ----------------------------------------------------------------
+        -- REGISTER CONTROLLER (LEFT FACING)
+        ----------------------------------------------------------------
+
+        _G.BotVars.ModeControllers.leftfacing =
+            stopLeftFacing
+
+        ----------------------------------------------------------------
         -- STOP SEMUA MODE LAIN
         ----------------------------------------------------------------
 
-        local function stopOtherModes()
+        local function stopOtherModes(ownName)
 
             for name, stopFunction in pairs(
                 _G.BotVars.ModeControllers
             ) do
 
-                if name ~= "rightfacing"
+                if name ~= (ownName or "rightfacing")
                     and type(stopFunction) == "function" then
 
                     pcall(stopFunction)
@@ -740,6 +825,314 @@ return {
         end
 
         ----------------------------------------------------------------
+        -- START LEFT FACING
+        --
+        -- Cermin dari formasi hadap kanan: satu kolom lurus di sebelah
+        -- KANAN Target (T), semua bot menghadap ke KIRI (ke arah
+        -- Target). Slot bot sama seperti formasi hadap kanan:
+        --
+        --          B1
+        --          B2
+        --          B3
+        --   T <─── B4
+        --          B5
+        --          B6
+        --          B7
+        --          B8
+        ----------------------------------------------------------------
+
+        local function startLeftFacing(player)
+
+            if not player then
+                return
+            end
+
+            ------------------------------------------------------------
+            -- BOT HARUS TERDAFTAR DI botOrder
+            ------------------------------------------------------------
+
+            if not table.find(
+                botOrder,
+                tostring(LocalPlayer.UserId)
+            ) then
+
+                stopLeftFacing()
+
+                return
+
+            end
+
+            ------------------------------------------------------------
+            -- STOP MODE LAIN (termasuk hadap kanan)
+            ------------------------------------------------------------
+
+            stopOtherModes("leftfacing")
+
+            ------------------------------------------------------------
+            -- SET ACTIVE MODE
+            ------------------------------------------------------------
+
+            _G.BotVars.ActiveMode =
+                "leftfacing"
+
+            ------------------------------------------------------------
+            -- STOP CONNECTION LAMA
+            ------------------------------------------------------------
+
+            if leftFacingConnection then
+
+                leftFacingConnection:Disconnect()
+                leftFacingConnection = nil
+
+            end
+
+            ------------------------------------------------------------
+            -- SET STATE
+            ------------------------------------------------------------
+
+            leftFacing = true
+            leftTargetPlayer = player
+
+            ------------------------------------------------------------
+            -- PENTING:
+            --
+            -- Set CommandTarget ke target formasi, supaya target
+            -- tetap bisa mengganti mode (follow, frontline, circle, dll).
+            ------------------------------------------------------------
+
+            _G.BotVars.CommandTarget =
+                player
+
+            ------------------------------------------------------------
+            -- CHAT
+            ------------------------------------------------------------
+
+            -- Kirim konfirmasi hanya sekali per perintah, walaupun
+            -- perintah yang sama terproses lebih dari sekali.
+            local confirmNow = os.clock()
+
+            if confirmNow - (_G.BotConfirmChatAt or -10) >= 1 then
+
+                _G.BotConfirmChatAt = confirmNow
+
+                sendChat(
+                    "Siap!"
+                )
+
+            end
+
+            ------------------------------------------------------------
+            -- LEFT FACING LOOP
+            ------------------------------------------------------------
+
+            leftFacingConnection =
+                RunService.Heartbeat:Connect(
+                    function()
+
+                        ------------------------------------------------
+                        -- JIKA MODE SUDAH BERGANTI
+                        ------------------------------------------------
+
+                        if _G.BotVars.ActiveMode
+                            ~= "leftfacing" then
+
+                            stopLeftFacing()
+
+                            return
+
+                        end
+
+                        ------------------------------------------------
+                        -- VALIDASI
+                        ------------------------------------------------
+
+                        if not leftFacing then
+                            return
+                        end
+
+                        if not humanoid
+                            or not myHRP
+                            or not myHRP.Parent then
+
+                            return
+
+                        end
+
+                        if not leftTargetPlayer then
+                            return
+                        end
+
+                        ------------------------------------------------
+                        -- TARGET CHARACTER
+                        ------------------------------------------------
+
+                        local targetCharacter =
+                            leftTargetPlayer.Character
+
+                        if not targetCharacter then
+                            return
+                        end
+
+                        local targetHRP =
+                            targetCharacter:FindFirstChild(
+                                "HumanoidRootPart"
+                            )
+
+                        if not targetHRP then
+                            return
+                        end
+
+                        ------------------------------------------------
+                        -- SLOT BOT INI
+                        --
+                        -- Dihitung ulang agar formasi menyesuaikan
+                        -- saat bot masuk atau keluar server.
+                        ------------------------------------------------
+
+                        local activeBots = getActiveBots()
+
+                        local activeIndex =
+                            table.find(
+                                activeBots,
+                                tostring(LocalPlayer.UserId)
+                            )
+
+                        if not activeIndex then
+                            return
+                        end
+
+                        local slot = slotOrder[activeIndex]
+
+                        -- Bot di luar jumlah slot tidak mendapat posisi.
+                        if not slot then
+                            return
+                        end
+
+                        ------------------------------------------------
+                        -- JARAK KE SAMPING TARGET
+                        ------------------------------------------------
+
+                        local sideDistance =
+                            defaultSideDistance
+
+                        if Admin:IsAdmin(
+                            leftTargetPlayer
+                        ) then
+
+                            sideDistance =
+                                adminSideDistance
+
+                        end
+
+                        local specialDistance =
+                            Distance:GetDistance(
+                                tostring(
+                                    LocalPlayer.UserId
+                                ),
+                                tostring(
+                                    leftTargetPlayer.UserId
+                                )
+                            )
+
+                        if specialDistance then
+
+                            sideDistance =
+                                specialDistance
+
+                        end
+
+                        ------------------------------------------------
+                        -- POSISI BOT
+                        --
+                        -- Di sebelah KANAN Target (+RightVector),
+                        -- bergeser ke depan / belakang sesuai slot.
+                        ------------------------------------------------
+
+                        local targetPosition =
+                            targetHRP.Position
+                            +
+                            (
+                                targetHRP.CFrame.RightVector
+                                *
+                                sideDistance
+                            )
+                            +
+                            (
+                                targetHRP.CFrame.LookVector
+                                *
+                                (slot.row * rowSpacing)
+                            )
+
+                        -- Samakan ketinggian dengan target.
+                        targetPosition = Vector3.new(
+                            targetPosition.X,
+                            targetHRP.Position.Y,
+                            targetPosition.Z
+                        )
+
+                        ------------------------------------------------
+                        -- JARAK
+                        ------------------------------------------------
+
+                        local distanceToTarget =
+                            (
+                                myHRP.Position
+                                -
+                                targetPosition
+                            ).Magnitude
+
+                        ------------------------------------------------
+                        -- JALAN
+                        ------------------------------------------------
+
+                        if distanceToTarget > 1.5 then
+
+                            humanoid.AutoRotate = true
+
+                            humanoid:MoveTo(
+                                targetPosition
+                            )
+
+                            return
+
+                        end
+
+                        ------------------------------------------------
+                        -- SUDAH SAMPAI: HADAP KIRI
+                        --
+                        -- Menghadap ke arah kiri Target (ke arah
+                        -- Target dari kolom bot).
+                        ------------------------------------------------
+
+                        humanoid.AutoRotate = false
+
+                        local leftVector =
+                            -targetHRP.CFrame.RightVector
+
+                        local faceDirection =
+                            Vector3.new(
+                                leftVector.X,
+                                0,
+                                leftVector.Z
+                            )
+
+                        if faceDirection.Magnitude < 0.001 then
+                            return
+                        end
+
+                        myHRP.CFrame =
+                            CFrame.lookAt(
+                                myHRP.Position,
+                                myHRP.Position
+                                + faceDirection.Unit
+                            )
+
+                    end
+                )
+
+        end
+
+        ----------------------------------------------------------------
         -- START RIGHT FACING (SAAT MODE FOLLOW)
         --
         -- Jika bot sedang Follow, formasi TIDAK diubah. Bot tetap
@@ -756,7 +1149,10 @@ return {
         -- ke arah Target.
         ----------------------------------------------------------------
 
-        local function startFollowFacing()
+        local function startFollowFacing(side)
+
+            -- side: 1 = kanan (default), -1 = kiri.
+            side = side or 1
 
             ------------------------------------------------------------
             -- BOT HARUS TERDAFTAR DI botOrder
@@ -846,7 +1242,7 @@ return {
                             end
 
                             local rightVector =
-                                targetHRP.CFrame.RightVector
+                                targetHRP.CFrame.RightVector * side
 
                             local faceDirection =
                                 Vector3.new(
@@ -907,7 +1303,11 @@ return {
 
         end)
 
-        local function faceRightOnce(player)
+        local function faceRightOnce(player, side)
+
+            -- side: 1 = kanan (default), -1 = kiri
+            -- (dipakai oleh "hadap kiri grak").
+            side = side or 1
 
             ------------------------------------------------------------
             -- BOT HARUS TERDAFTAR DI botOrder
@@ -951,7 +1351,7 @@ return {
             end
 
             local rightVector =
-                targetHRP.CFrame.RightVector
+                targetHRP.CFrame.RightVector * side
 
             local faceDirection =
                 Vector3.new(
@@ -1167,6 +1567,153 @@ return {
             end
 
             ----------------------------------------------------------------
+            -- LEFT FACING
+            --
+            -- Cermin dari hadap kanan. ADA 2 JENIS:
+            --
+            -- 1. hadap kiri / hadap kiri grak (tanpa nama)
+            --    Admin ATAU CommandTarget boleh.
+            --
+            -- 2. hadap kiri <nama pemain>
+            --    HANYA Admin.
+            ----------------------------------------------------------------
+
+            if intent == "leftfacing" and #args == 0 then
+
+                ------------------------------------------------------------
+                -- ADMIN ATAU COMMAND TARGET
+                ------------------------------------------------------------
+
+                if not isAdmin
+                    and not isCommandTarget then
+
+                    return
+
+                end
+
+                ------------------------------------------------------------
+                -- SEDANG FOLLOW: JANGAN UBAH FORMASI, CUKUP UBAH FACING
+                ------------------------------------------------------------
+
+                if _G.BotVars.ActiveMode == "follow" then
+
+                    startFollowFacing(-1)
+
+                    return
+
+                end
+
+                ------------------------------------------------------------
+                -- SETELAH FOLLOW LALU BERHENTI: bot tetap di posisinya,
+                -- cukup ubah facing ke kiri (tanpa formasi baru).
+                ------------------------------------------------------------
+
+                if _G.BotVars.ActiveMode == nil
+                    and lastActiveMode == "follow" then
+
+                    faceRightOnce(sender, -1)
+
+                    return
+
+                end
+
+                ------------------------------------------------------------
+                -- FORMASI DI SEBELAH SENDER
+                ------------------------------------------------------------
+
+                _G.BotVars.CommandTarget =
+                    sender
+
+                startLeftFacing(
+                    sender
+                )
+
+                return
+
+            end
+
+            ----------------------------------------------------------------
+            -- LEFT FACING PLAYER
+            --
+            -- HANYA ADMIN YANG BOLEH MEMILIH TARGET BARU.
+            ----------------------------------------------------------------
+
+            local leftTargetName = nil
+
+            if intent == "leftfacing" and #args > 0 then
+
+                for _, candidate in ipairs({
+                    table.concat(args, " "),
+                    args[1],
+                    args[#args],
+                }) do
+
+                    if findPlayerByName(candidate) then
+
+                        leftTargetName = candidate
+                        break
+
+                    end
+
+                end
+
+            end
+
+            if leftTargetName then
+
+                ------------------------------------------------------------
+                -- TARGET BARU HANYA ADMIN
+                ------------------------------------------------------------
+
+                if not isAdmin then
+                    return
+                end
+
+                ------------------------------------------------------------
+                -- FIND PLAYER
+                ------------------------------------------------------------
+
+                local target =
+                    findPlayerByName(
+                        leftTargetName
+                    )
+
+                if not target then
+                    return
+                end
+
+                ------------------------------------------------------------
+                -- SEDANG FOLLOW: JANGAN UBAH FORMASI, CUKUP UBAH FACING
+                ------------------------------------------------------------
+
+                if _G.BotVars.ActiveMode == "follow" then
+
+                    startFollowFacing(-1)
+
+                    return
+
+                end
+
+                ------------------------------------------------------------
+                -- SET COMMAND TARGET
+                ------------------------------------------------------------
+
+                _G.BotVars.CommandTarget =
+                    target
+
+                ------------------------------------------------------------
+                -- START LEFT FACING
+                ------------------------------------------------------------
+
+                startLeftFacing(
+                    target
+                )
+
+                return
+
+            end
+
+            ----------------------------------------------------------------
             -- RIGHT FACING PLAYER
             --
             -- HANYA ADMIN YANG BOLEH MEMILIH TARGET BARU.
@@ -1344,6 +1891,30 @@ return {
 
                     end
                 )
+
+            end
+        )
+
+        ----------------------------------------------------------------
+        -- CHARACTER RESPAWN (LEFT FACING)
+        ----------------------------------------------------------------
+
+        LocalPlayer.CharacterAdded:Connect(
+            function()
+
+                task.wait(1)
+
+                updateCharacter()
+
+                if _G.BotVars.ActiveMode
+                    == "leftfacing"
+                    and leftTargetPlayer then
+
+                    startLeftFacing(
+                        leftTargetPlayer
+                    )
+
+                end
 
             end
         )
