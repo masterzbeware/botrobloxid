@@ -119,7 +119,7 @@ local commandFiles = {
     "Pose/Standby.lua",
 
     "Square.lua",
-    "Sync.lua",
+    "Carry.lua",
     "Worship.lua",
     "LineFormation.lua",
     "Stagger.lua",
@@ -290,7 +290,7 @@ local executionOrder = {
     "rest",
     "salute",
     "standby",
-    "sync",
+    "carry",
 
     "centerline",
     "shield",
