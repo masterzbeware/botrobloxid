@@ -70,6 +70,10 @@ return {
         --
         -- Berhenti (HANYA Admin):
         --   berhenti / stop / bubar / unhormat / siap grak / tegak grak
+        --
+        -- siap grak / tegak grak juga boleh oleh CommandTarget
+        -- (pemain yang sedang diikuti bot), dan hanya menghentikan
+        -- animasi hormat.
         ----------------------------------------------------------------
 
         local NLP = _G.BotVars.NLP
@@ -851,6 +855,41 @@ return {
 
             if not intent then
                 return
+            end
+
+
+            ----------------------------------------------------------------
+            -- TEGAK GRAK / SIAP GRAK oleh CommandTarget (bukan admin)
+            --
+            -- Pemain yang sedang diikuti bot cukup menghentikan
+            -- animasi hormat. CommandTarget dan mode lain
+            -- (follow, formasi) tidak dihentikan.
+            ----------------------------------------------------------------
+
+            if intent == "carrystop"
+                and not isAdmin
+                and isCommandTarget then
+
+                if dancing
+                    or _G.BotVars.ActiveMode == "salute" then
+
+                    print(
+                        "[Salute] Tegak grak | CommandTarget:",
+                        sender.Name
+                    )
+
+                    if _G.BotVars.ActiveMode == "salute" then
+
+                        _G.BotVars.ActiveMode = nil
+
+                    end
+
+                    stopSalute()
+
+                end
+
+                return
+
             end
 
 

@@ -68,6 +68,9 @@ return {
         --
         -- Berhenti (HANYA Admin):
         --   berhenti / stop / bubar / unistirahat
+        --
+        -- Berhenti istirahat (Admin atau CommandTarget):
+        --   siap grak / tegak grak
         ----------------------------------------------------------------
 
         local NLP = _G.BotVars.NLP
@@ -106,6 +109,23 @@ return {
                     Words = {
                         unistirahat = 3,
                         unrest = 3,
+                    },
+                }
+
+            -- Siap grak / tegak grak: menghentikan istirahat.
+            -- Definisi sama dengan Salute.lua dan Carry.lua (carrystop),
+            -- supaya tidak bentrok siapa pun yang dimuat lebih dulu.
+            -- Priority -1 supaya perintah lain tetap menang.
+            NLP.Intents.carrystop =
+                NLP.Intents.carrystop
+                or {
+                    Threshold = 2,
+                    Priority = -1,
+                    StrictRemainder = true,
+
+                    Words = {
+                        grak = 2,
+                        tegak = 0,
                     },
                 }
 
@@ -773,6 +793,40 @@ return {
 
             if not intent then
                 return
+            end
+
+
+            ----------------------------------------------------------------
+            -- TEGAK GRAK / SIAP GRAK
+            --
+            -- ADMIN atau COMMAND TARGET (pemain yang sedang diikuti
+            -- bot): hentikan animasi istirahat saja. CommandTarget dan
+            -- mode lain tidak dihentikan.
+            ----------------------------------------------------------------
+
+            if intent == "carrystop" then
+
+                if (isAdmin or isCommandTarget)
+                    and (resting
+                        or _G.BotVars.ActiveMode == "rest") then
+
+                    print(
+                        "[Rest] Tegak grak | Sender:",
+                        sender.Name
+                    )
+
+                    if _G.BotVars.ActiveMode == "rest" then
+
+                        _G.BotVars.ActiveMode = nil
+
+                    end
+
+                    stopRest()
+
+                end
+
+                return
+
             end
 
 

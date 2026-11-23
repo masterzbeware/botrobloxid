@@ -74,16 +74,16 @@ return {
                     },
                 }
 
-            -- Butuh kedua kata (masing-masing 1 poin, minimal 2)
-            -- supaya kata "pertanyaan" saja tidak memicu balasan.
+            -- "pertanyaan" saja sudah cukup (2 poin), "ada" hanya
+            -- kata pendamping (bernilai 0) untuk "ada pertanyaan".
             NLP.Intents.agree_pertanyaan =
                 NLP.Intents.agree_pertanyaan
                 or {
                     StrictRemainder = true,
 
                     Words = {
-                        ada = 1,
-                        pertanyaan = 1,
+                        ada = 0,
+                        pertanyaan = 2,
                     },
                 }
 
@@ -289,15 +289,17 @@ return {
                 return
             end
 
-            -- Perintah lainnya tetap hanya untuk admin.
-            if not isAdmin then
-                return
-            end
-
+            -- Pertanyaan (jelas? / mengerti? / ada pertanyaan?) dijawab
+            -- untuk Admin DAN CommandTarget (pemain yang sedang diikuti).
             local questionResponse = QUESTION_RESPONSES[intent]
 
             if questionResponse then
                 sendChat(questionResponse)
+                return
+            end
+
+            -- Perintah lainnya tetap hanya untuk admin.
+            if not isAdmin then
                 return
             end
 
