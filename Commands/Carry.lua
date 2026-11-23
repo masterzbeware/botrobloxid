@@ -357,7 +357,7 @@ return {
         -- jika bot ini ikut rantai, mengirim Declinecarry.
         --------------------------------------------------
 
-        local function stopCarry(forceDecline)
+        local function stopCarry(forceDecline, useCancelAll)
 
             carryGeneration =
                 carryGeneration + 1
@@ -371,7 +371,15 @@ return {
 
             carryActive = false
 
-            if wasActive or forceDecline == true then
+            if useCancelAll == true
+                and (wasActive or forceDecline == true) then
+
+                -- Sama seperti Chain.lua: lepas dengan CancelAll.
+                cancelAll()
+
+                print("[Carry] Carry dibatalkan.")
+
+            elseif wasActive or forceDecline == true then
 
                 declineCarry()
 
@@ -408,7 +416,7 @@ return {
             -- Carry sendiri (Declinecarry)
             if carryActive then
 
-                stopCarry(true)
+                stopCarry(true, true)
 
                 released = true
 
