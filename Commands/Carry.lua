@@ -852,6 +852,11 @@ return {
         -- ADMIN CHECK
         --------------------------------------------------
 
+        -- UserId ini HANYA boleh menjalankan "formasi ganda".
+        -- "formasi bertingkat" / "bertingkat" / "carry" dari UserId
+        -- ini diabaikan.
+        local GANDA_ONLY_USERID = 11810283308
+
         local function isAdmin(sender)
             if not sender then
                 return false
@@ -904,6 +909,10 @@ return {
             --------------------------------------------------
 
             if intent == "carry" and #args == 0 then
+
+                if sender.UserId == GANDA_ONLY_USERID then
+                    return
+                end
 
                 if not senderIsAdmin and not isCommandTarget then
 
