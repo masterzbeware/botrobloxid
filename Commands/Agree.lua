@@ -28,7 +28,8 @@ return {
         --   jelas / jelas? / jelas?!
         --   ada pertanyaan / ada pertanyaan? / ada pertanyaan?!
         --
-        -- Panggilan barisan (HANYA Admin), bot menjawab
+        -- Panggilan barisan (Admin, atau pemain yang sedang diikuti
+        -- bot / CommandTarget), bot menjawab
         -- "Siap menerima perintah.":
         --   barisan / pimpin / pimpinan / pasukan
         --   pimpinan saya ambil alih / barisan saya ambil alih
@@ -257,7 +258,12 @@ return {
                 isAdmin = Admin:IsAdmin(sender)
             end)
 
-            if not isAdmin then
+            -- Pemain yang sedang diikuti bot (CommandTarget) juga boleh
+            -- memanggil barisan / pimpinan / "ambil alih", walau bukan admin.
+            local isCommandTarget =
+                _G.BotVars.CommandTarget == sender
+
+            if not isAdmin and not isCommandTarget then
                 return
             end
 
@@ -280,6 +286,11 @@ return {
             -- Barisan / pimpin / pimpinan (termasuk "... saya ambil alih").
             if intent == "agree_siap" then
                 sendChat(READY_RESPONSE)
+                return
+            end
+
+            -- Perintah lainnya tetap hanya untuk admin.
+            if not isAdmin then
                 return
             end
 
