@@ -57,7 +57,7 @@ return {
         -- Perfix.lua belum memiliki intent standby, jadi modul ini
         -- mendaftarkan intent-nya sendiri ke NLP.Intents.
         --
-        -- Aktifkan Standby (HANYA Admin):
+        -- Aktifkan Standby (Admin atau CommandTarget):
         --   siap sedia / siaga / bersiap
         --
         -- Catatan: kata "siap" termasuk kata pengisi di Perfix.lua
@@ -100,7 +100,7 @@ return {
         ----------------------------------------------------------------
         -- CARA KERJA
         --
-        -- Standby diaktifkan dengan perintah (HANYA Admin):
+        -- Standby diaktifkan dengan perintah (Admin atau CommandTarget):
         --   siap sedia / siaga / bersiap
         --
         -- Setelah aktif:
@@ -736,7 +736,7 @@ return {
         -- COMMAND HANDLER
         --
         -- siap sedia / siaga / bersiap
-        -- HANYA ADMIN
+        -- ADMIN ATAU COMMAND TARGET (pemain yang sedang diikuti bot)
         ----------------------------------------------------------------
 
         local function handleCommand(message, sender)
@@ -754,7 +754,10 @@ return {
 
             end)
 
-            if not isAdmin then
+            local isCommandTarget =
+                _G.BotVars.CommandTarget == sender
+
+            if not isAdmin and not isCommandTarget then
                 return
             end
 

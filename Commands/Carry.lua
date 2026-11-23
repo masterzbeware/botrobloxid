@@ -32,10 +32,10 @@ return {
         -- Perfix.lua belum memiliki intent carry, jadi modul ini
         -- mendaftarkan intent-nya sendiri ke NLP.Intents.
         --
-        -- Mulai Formasi Bertingkat (HANYA Admin):
+        -- Mulai Formasi Bertingkat (Admin atau CommandTarget):
         --   formasi bertingkat / bertingkat / carry
         --
-        -- Formasi Ganda / berpasangan (HANYA Admin):
+        -- Formasi Ganda / berpasangan (Admin atau CommandTarget):
         --   formasi ganda
         --   (Bot 1 carry Bot 2, Bot 3 carry Bot 4,
         --    Bot 5 carry Bot 6, Bot 7 carry Bot 8)
@@ -879,6 +879,11 @@ return {
 
             local senderIsAdmin = isAdmin(sender)
 
+            -- Pemain yang sedang diikuti bot (CommandTarget) juga boleh
+            -- memulai formasi, walau bukan Admin.
+            local isCommandTarget =
+                vars.CommandTarget == sender
+
             --------------------------------------------------
             -- ANALISA PESAN (BAHASA NATURAL)
             --------------------------------------------------
@@ -895,12 +900,12 @@ return {
 
             --------------------------------------------------
             -- CARRY / FORMASI BERTINGKAT
-            -- HANYA ADMIN
+            -- ADMIN ATAU COMMAND TARGET
             --------------------------------------------------
 
             if intent == "carry" and #args == 0 then
 
-                if not senderIsAdmin then
+                if not senderIsAdmin and not isCommandTarget then
 
                     print(
                         "[Carry] Perintah ditolak:",
@@ -923,12 +928,12 @@ return {
 
             --------------------------------------------------
             -- FORMASI GANDA (BERPASANGAN)
-            -- HANYA ADMIN
+            -- ADMIN ATAU COMMAND TARGET
             --------------------------------------------------
 
             if intent == "carrypair" and #args == 0 then
 
-                if not senderIsAdmin then
+                if not senderIsAdmin and not isCommandTarget then
 
                     print(
                         "[Carry] Perintah ditolak:",

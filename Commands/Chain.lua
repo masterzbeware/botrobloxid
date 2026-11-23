@@ -32,7 +32,7 @@ return {
         -- Perfix.lua belum memiliki intent chain, jadi modul ini
         -- mendaftarkan intent-nya sendiri ke NLP.Intents.
         --
-        -- Formasi Rantai / bergandengan (HANYA Admin):
+        -- Formasi Rantai / bergandengan (Admin atau CommandTarget):
         --   formasi rantai / formasi berantai
         --   (Bot 1 gandeng Bot 2, Bot 3 gandeng Bot 4,
         --    Bot 5 gandeng Bot 6, Bot 7 gandeng Bot 8)
@@ -593,6 +593,11 @@ return {
 
             local senderIsAdmin = isAdmin(sender)
 
+            -- Pemain yang sedang diikuti bot (CommandTarget) juga boleh
+            -- memulai formasi, walau bukan Admin.
+            local isCommandTarget =
+                vars.CommandTarget == sender
+
             --------------------------------------------------
             -- ANALISA PESAN (BAHASA NATURAL)
             --------------------------------------------------
@@ -609,12 +614,12 @@ return {
 
             --------------------------------------------------
             -- FORMASI RANTAI
-            -- HANYA ADMIN
+            -- ADMIN ATAU COMMAND TARGET
             --------------------------------------------------
 
             if intent == "chain" and #args == 0 then
 
-                if not senderIsAdmin then
+                if not senderIsAdmin and not isCommandTarget then
 
                     print(
                         "[Chain] Perintah ditolak:",
