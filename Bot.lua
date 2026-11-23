@@ -78,7 +78,7 @@ _G.BotVars = {
 local windowOk, Window = pcall(function()
     return Library:CreateWindow({
         Title = "MasterZ HUB",
-        Footer = "1.1.3",
+        Footer = "1.0.0",
         Icon = 0,
     })
 end)
@@ -294,10 +294,10 @@ local executionOrder = {
     "rest",
     "salute",
     "standby",
+    "pushup",
     "sync",
     "carry",
     "chain",
-    "pushup",
     "horseshoes",
 
     "centerline",
