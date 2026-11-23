@@ -670,9 +670,33 @@ return {
                 -- PLAY FE ANIMATION
                 --------------------------------------------------------
 
-                -- PlayEmoteAndGetAnimTrackById mengembalikan dua nilai
-                -- (berhasil?, track), jadi ambil track yang benar-benar
-                -- bertipe Instance dari nilai yang dikembalikan.
+                -- Sama seperti Rest.lua dan Salute.lua: animasi dimainkan
+                -- lewat PlayEmoteAndGetAnimTrackById, dan dianggap berhasil
+                -- jika pemanggilan tidak error dan nilai pertamanya bukan
+                -- false/nil.
+                --
+                -- Pushup juga butuh AnimationTrack asli untuk menghitung
+                -- putaran, jadi track diambil dari nilai kembalian
+                -- (berhasil?, track) atau dicari di Animator.
+                local animator =
+                    humanoid:FindFirstChildOfClass(
+                        "Animator"
+                    )
+
+                local before = {}
+
+                if animator then
+
+                    for _, playing in ipairs(
+                        animator:GetPlayingAnimationTracks()
+                    ) do
+
+                        before[playing] = true
+
+                    end
+
+                end
+
                 local ok, first, second =
                     pcall(function()
 
@@ -683,9 +707,9 @@ return {
 
                     end)
 
-                local track = nil
+                if ok and first then
 
-                if ok then
+                    local track = nil
 
                     if typeof(second) == "Instance" then
                         track = second
@@ -693,12 +717,32 @@ return {
                         track = first
                     end
 
-                end
+                    -- Track tidak ikut dikembalikan: cari track baru
+                    -- yang sedang dimainkan di Animator.
+                    if not track and animator then
 
-                if track then
+                        task.wait(0.1)
+
+                        local longest = -1
+
+                        for _, playing in ipairs(
+                            animator:GetPlayingAnimationTracks()
+                        ) do
+
+                            if not before[playing]
+                                and playing.Length > longest then
+
+                                track = playing
+                                longest = playing.Length
+
+                            end
+
+                        end
+
+                    end
 
                     success = true
-                    result = track
+                    result = track or first
 
                     break
 
@@ -851,6 +895,16 @@ return {
             ----------------------------------------------------------------
 
             local track = result
+
+            if typeof(track) ~= "Instance" then
+
+                warn(
+                    "[Pushup] AnimationTrack tidak ditemukan,",
+                    "hitungan putaran tidak bisa berjalan | Bot:",
+                    LocalPlayer.Name
+                )
+
+            end
 
             pushupTrack = track
             pushupActive = true
