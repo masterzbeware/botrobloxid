@@ -132,9 +132,6 @@ return {
         -- Jeda sebelum bot menerima carry setelah diminta (detik).
         local ACCEPT_DELAY = 1.5
 
-        -- Kirim PromptAction sebelum meminta carry.
-        local SEND_PROMPT_ACTION = true
-
         -- Jeda antara PromptAction dan AskCarry (detik).
         local PROMPT_DELAY = 0.3
 
@@ -303,7 +300,7 @@ return {
         -- jika bot ini ikut rantai, mengirim Declinecarry.
         --------------------------------------------------
 
-        local function stopCarry()
+        local function stopCarry(forceDecline)
 
             carryGeneration =
                 carryGeneration + 1
@@ -314,7 +311,7 @@ return {
 
             carryActive = false
 
-            if wasActive then
+            if wasActive or forceDecline == true then
 
                 declineCarry()
 
@@ -367,8 +364,10 @@ return {
         -- perintah diterima:
         --
         -- Langkah k (k = 1 .. n-1), pada waktu (k-1) * STEP_DELAY:
-        --   Bot k meminta carry ke Bot k+1
-        --   Bot k+1 menerima setelah ACCEPT_DELAY
+        --   1. Bot k membuka prompt carry (PromptAction)
+        --   2. Bot k meminta carry ke Bot k+1 (AskCarry)
+        --   3. Bot k+1 menerima carry dari Bot k (Carry) setelah
+        --      ACCEPT_DELAY
         --------------------------------------------------
 
         local function startChain(sender)
@@ -525,16 +524,12 @@ return {
 
                     end
 
-                    if SEND_PROMPT_ACTION then
+                    promptAction()
 
-                        promptAction()
+                    task.wait(PROMPT_DELAY)
 
-                        task.wait(PROMPT_DELAY)
-
-                        if generation ~= carryGeneration then
-                            return
-                        end
-
+                    if generation ~= carryGeneration then
+                        return
                     end
 
                     askCarry(target)
@@ -621,7 +616,7 @@ return {
                     return
                 end
 
-                stopCarry()
+                stopCarry(true)
                 return
             end
 
@@ -642,7 +637,8 @@ return {
                 vars.ActiveMode = nil
                 vars.CommandTarget = nil
 
-                -- Carry dibatalkan lewat ModeControllers di bawah.
+                -- Perintah berhenti: kirim Declinecarry.
+                stopCarry(true)
 
                 --------------------------------------------------
                 -- STOP ALL REGISTERED MODES
