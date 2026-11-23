@@ -101,7 +101,6 @@ local commandFiles = {
     "Perfix.lua",
     "Main.lua",
     "Agree.lua",
-    "Arrow.lua",
     "Backline.lua",
 
     -- Dance subfolder
@@ -281,7 +280,6 @@ local executionOrder = {
     "perfix",
     "main",
     "agree",
-    "arrow",
     "backline",
     "frontline",
     "twoline",
