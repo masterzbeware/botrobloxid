@@ -59,7 +59,14 @@ return {
             NLP.Intents.carry =
                 NLP.Intents.carry
                 or {
+                    Priority = 1,
+
                     Words = {
+                        -- "formasi" bernilai 1 supaya "formasi bertingkat"
+                        -- (skor 3) menang atas intent staggereddiamond
+                        -- (skor 2) yang juga memakai kata "bertingkat".
+                        formasi = 1,
+
                         bertingkat = 2,
                         carry = 2,
                     },
@@ -598,8 +605,21 @@ return {
             if intent == "carry" and #args == 0 then
 
                 if not senderIsAdmin then
+
+                    print(
+                        "[Carry] Perintah ditolak:",
+                        sender.Name,
+                        "bukan Admin."
+                    )
+
                     return
+
                 end
+
+                print(
+                    "[Carry] Perintah diterima dari:",
+                    sender.Name
+                )
 
                 startChain(sender)
                 return

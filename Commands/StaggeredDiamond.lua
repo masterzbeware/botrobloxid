@@ -98,7 +98,7 @@ return {
         --
         -- Formasi di sekitar pengirim (Admin atau CommandTarget):
         --   staggereddiamond / staggered diamond / formasi staggered
-        --   formasi delapan / formasi bertingkat
+        --   formasi delapan
         --
         -- Formasi di sekitar pemain lain (HANYA Admin):
         --   staggered diamond trevkaro
@@ -133,9 +133,8 @@ return {
                         staggered = 2,
                         diamond = 1,
 
-                        -- "formasi delapan" / "formasi bertingkat"
+                        -- "formasi delapan"
                         delapan = 1,
-                        bertingkat = 1,
                     },
                 }
 
