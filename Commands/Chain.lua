@@ -139,6 +139,10 @@ return {
         -- Jeda antara PromptAction dan AskCarry (detik).
         local PROMPT_DELAY = 0.3
 
+        -- Jeda setelah membatalkan formasi sebelumnya (Chain atau
+        -- Carry) sebelum formasi baru dimulai (detik).
+        local SWITCH_DELAY = 1.0
+
         -- Perintah remote untuk menerima gandengan.
         -- Remote spy yang tersedia hanya PromptAction, AskCarry, dan
         -- CancelAll. Perintah terima di bawah mengikuti pola Carry.lua
@@ -328,7 +332,7 @@ return {
 
             end
 
-            return true
+            return wasActive
 
         end
 
@@ -360,14 +364,40 @@ return {
         local function startChain(sender)
 
             --------------------------------------------------
-            -- BATALKAN CARRY.LUA JIKA SEDANG AKTIF
+            -- BATALKAN FORMASI SEBELUMNYA OTOMATIS
+            -- (Chain sendiri atau Carry.lua), jadi tidak perlu
+            -- mengetik stop dulu.
             --------------------------------------------------
 
+            local released = false
+
+            -- Chain sendiri (CancelAll)
+            if chainActive then
+
+                stopChain(true)
+
+                released = true
+
+            end
+
+            -- Carry.lua (Declinecarry)
             local carryController =
                 vars.ModeControllers.carry
 
             if type(carryController) == "function" then
-                pcall(carryController)
+
+                local ok, wasActive =
+                    pcall(carryController)
+
+                if ok and wasActive == true then
+                    released = true
+                end
+
+            end
+
+            -- Beri waktu server memproses pembatalan.
+            if released then
+                task.wait(SWITCH_DELAY)
             end
 
             --------------------------------------------------

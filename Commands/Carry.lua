@@ -179,6 +179,10 @@ return {
         -- Jeda antara PromptAction dan AskCarry (detik).
         local PROMPT_DELAY = 0.3
 
+        -- Jeda setelah membatalkan formasi sebelumnya (Carry atau
+        -- Chain) sebelum formasi baru dimulai (detik).
+        local SWITCH_DELAY = 1.0
+
         --------------------------------------------------
         -- LOAD ADMIN MODULE
         --------------------------------------------------
@@ -363,7 +367,7 @@ return {
 
             end
 
-            return true
+            return wasActive
 
         end
 
@@ -372,6 +376,49 @@ return {
         --------------------------------------------------
 
         vars.ModeControllers.carry = stopCarry
+
+        --------------------------------------------------
+        -- RELEASE BEFORE START
+        --------------------------------------------------
+        -- Sebelum formasi baru dimulai, formasi sebelumnya
+        -- dibatalkan otomatis (Carry sendiri atau Chain.lua),
+        -- jadi tidak perlu mengetik stop dulu.
+        --------------------------------------------------
+
+        local function releaseBeforeStart()
+
+            local released = false
+
+            -- Carry sendiri (Declinecarry)
+            if carryActive then
+
+                stopCarry(true)
+
+                released = true
+
+            end
+
+            -- Chain.lua (CancelAll)
+            local chainController =
+                vars.ModeControllers.chain
+
+            if type(chainController) == "function" then
+
+                local ok, wasActive =
+                    pcall(chainController)
+
+                if ok and wasActive == true then
+                    released = true
+                end
+
+            end
+
+            -- Beri waktu server memproses pembatalan.
+            if released then
+                task.wait(SWITCH_DELAY)
+            end
+
+        end
 
         --------------------------------------------------
         -- BUILD CHAIN
@@ -415,6 +462,8 @@ return {
         --------------------------------------------------
 
         local function startChain(sender)
+
+            releaseBeforeStart()
 
             --------------------------------------------------
             -- BATALKAN RANTAI LAMA
@@ -610,6 +659,8 @@ return {
         --------------------------------------------------
 
         local function startPairs(sender)
+
+            releaseBeforeStart()
 
             --------------------------------------------------
             -- BATALKAN LANGKAH LAMA

@@ -78,7 +78,7 @@ _G.BotVars = {
 local windowOk, Window = pcall(function()
     return Library:CreateWindow({
         Title = "MasterZ HUB",
-        Footer = "1.1.3",
+        Footer = "1.1.4",
         Icon = 0,
     })
 end)
@@ -120,6 +120,7 @@ local commandFiles = {
     "Square.lua",
     "Carry.lua",
     "Chain.lua",
+    "Horseshoes.lua",
     "Worship.lua",
     "LineFormation.lua",
     "Stagger.lua",
@@ -292,6 +293,7 @@ local executionOrder = {
     "standby",
     "carry",
     "chain",
+    "horseshoes",
 
     "centerline",
     "shield",
