@@ -50,6 +50,7 @@ return {
         local facing = false
         local targetPlayer = nil
         local rightFacingConnection = nil
+        local followFacingConnection = nil
 
         ----------------------------------------------------------------
         -- FORMASI HADAP KANAN
@@ -271,7 +272,20 @@ return {
         -- STOP RIGHT FACING
         ----------------------------------------------------------------
 
+        local function stopFollowFacing()
+
+            if followFacingConnection then
+
+                followFacingConnection:Disconnect()
+                followFacingConnection = nil
+
+            end
+
+        end
+
         local function stopRightFacing()
+
+            stopFollowFacing()
 
             facing = false
             targetPlayer = nil
@@ -726,6 +740,143 @@ return {
         end
 
         ----------------------------------------------------------------
+        -- START RIGHT FACING (SAAT MODE FOLLOW)
+        --
+        -- Jika bot sedang Follow, formasi TIDAK diubah. Bot tetap
+        -- mengikuti Target seperti biasa dan hanya menghadap ke
+        -- KANAN Target.
+        --
+        -- ActiveMode tetap "follow" supaya loop Follow tetap berjalan.
+        -- Loop Follow menimpa rotasi bot di setiap Heartbeat, jadi
+        -- rotasi di sini ditulis lewat task.defer agar dijalankan
+        -- SETELAH semua handler Heartbeat selesai.
+        --
+        -- Berhenti otomatis jika mode berganti, atau saat perintah
+        -- follow dikirim ulang (ikuti saya) yang mengembalikan facing
+        -- ke arah Target.
+        ----------------------------------------------------------------
+
+        local function startFollowFacing()
+
+            ------------------------------------------------------------
+            -- BOT HARUS TERDAFTAR DI botOrder
+            ------------------------------------------------------------
+
+            if not table.find(
+                botOrder,
+                tostring(LocalPlayer.UserId)
+            ) then
+
+                return
+
+            end
+
+            ------------------------------------------------------------
+            -- STOP LOOP FACING LAMA
+            ------------------------------------------------------------
+
+            stopFollowFacing()
+
+            ------------------------------------------------------------
+            -- CHAT
+            ------------------------------------------------------------
+
+            local confirmNow = os.clock()
+
+            if confirmNow - (_G.BotConfirmChatAt or -10) >= 1 then
+
+                _G.BotConfirmChatAt = confirmNow
+
+                sendChat(
+                    "Siap!"
+                )
+
+            end
+
+            ------------------------------------------------------------
+            -- FACING LOOP
+            ------------------------------------------------------------
+
+            followFacingConnection =
+                RunService.Heartbeat:Connect(
+                    function()
+
+                        if _G.BotVars.ActiveMode ~= "follow" then
+
+                            stopFollowFacing()
+
+                            return
+
+                        end
+
+                        task.defer(function()
+
+                            if not followFacingConnection then
+                                return
+                            end
+
+                            if _G.BotVars.ActiveMode ~= "follow" then
+                                return
+                            end
+
+                            if not humanoid
+                                or not myHRP
+                                or not myHRP.Parent then
+
+                                return
+
+                            end
+
+                            -- Target yang sedang di-follow.
+                            local followTarget =
+                                _G.BotVars.CommandTarget
+
+                            local targetCharacter =
+                                followTarget
+                                and followTarget.Character
+
+                            local targetHRP =
+                                targetCharacter
+                                and targetCharacter:FindFirstChild(
+                                    "HumanoidRootPart"
+                                )
+
+                            if not targetHRP then
+                                return
+                            end
+
+                            local rightVector =
+                                targetHRP.CFrame.RightVector
+
+                            local faceDirection =
+                                Vector3.new(
+                                    rightVector.X,
+                                    0,
+                                    rightVector.Z
+                                )
+
+                            if faceDirection.Magnitude < 0.001 then
+                                return
+                            end
+
+                            -- Posisi tidak disentuh, hanya rotasi.
+                            humanoid.AutoRotate = false
+
+                            myHRP.CFrame =
+                                CFrame.lookAt(
+                                    myHRP.Position,
+                                    myHRP.Position
+                                    + faceDirection.Unit
+                                )
+
+                        end)
+
+                    end
+                )
+
+        end
+
+        ----------------------------------------------------------------
         -- COMMAND HANDLER
         ----------------------------------------------------------------
 
@@ -853,6 +1004,18 @@ return {
                 end
 
                 ------------------------------------------------------------
+                -- SEDANG FOLLOW: JANGAN UBAH FORMASI, CUKUP UBAH FACING
+                ------------------------------------------------------------
+
+                if _G.BotVars.ActiveMode == "follow" then
+
+                    startFollowFacing()
+
+                    return
+
+                end
+
+                ------------------------------------------------------------
                 -- FORMASI DI SEBELAH SENDER
                 ------------------------------------------------------------
 
@@ -915,6 +1078,18 @@ return {
 
                 if not target then
                     return
+                end
+
+                ------------------------------------------------------------
+                -- SEDANG FOLLOW: JANGAN UBAH FORMASI, CUKUP UBAH FACING
+                ------------------------------------------------------------
+
+                if _G.BotVars.ActiveMode == "follow" then
+
+                    startFollowFacing()
+
+                    return
+
                 end
 
                 ------------------------------------------------------------
