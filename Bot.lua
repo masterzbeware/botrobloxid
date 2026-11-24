@@ -113,6 +113,7 @@ local commandFiles = {
 
     -- Pose subfolder
     "Pose/Salute.lua",
+    "Pose/Flex.lua",
     "Pose/Pushup.lua",
     "Pose/Situp.lua",
     "Pose/Rest.lua",
@@ -294,6 +295,7 @@ local executionOrder = {
 
     "rest",
     "salute",
+    "flex",
     "pushup",
     "situp",
     "standby",

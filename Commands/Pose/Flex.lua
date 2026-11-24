@@ -63,6 +63,7 @@ return {
         --
         -- Pamer otot di sekitar pengirim (Admin atau CommandTarget):
         --   pamer otot / Pamer otot! / Tunjukkan otot! / Pose otot!
+        --   tunjukan otot (salah ketik satu huruf k juga dikenali)
         --
         -- Pamer otot untuk pemain lain (HANYA Admin):
         --   pamer otot trevkaro
@@ -101,6 +102,7 @@ return {
                         -- perintah sendirian.
                         pamer = 0,
                         tunjukkan = 0,
+                        tunjukan = 0,
                         pose = 0,
                     },
 
@@ -110,6 +112,7 @@ return {
                     Phrases = {
                         ["pamer otot"] = 1,
                         ["tunjukkan otot"] = 1,
+                        ["tunjukan otot"] = 1,
                         ["pose otot"] = 1,
                     },
                 }
@@ -548,7 +551,29 @@ return {
             -- PLAY FE ANIMATION WITH RETRY
             ------------------------------------------------------------
 
-            local maxAttempts = 3
+            ------------------------------------------------------------
+            -- BERHENTI BERGERAK DULU
+            --
+            -- Emote hanya bisa dimainkan saat Humanoid berdiri diam.
+            -- Bot yang baru selesai mengikuti masih berlari, jadi
+            -- percobaan pertama sering gagal. Karena itu bot dihentikan
+            -- dulu dan percobaan diperpanjang.
+            ------------------------------------------------------------
+
+            pcall(function()
+
+                local root =
+                    character:FindFirstChild(
+                        "HumanoidRootPart"
+                    )
+
+                if root then
+                    humanoid:MoveTo(root.Position)
+                end
+
+            end)
+
+            local maxAttempts = 15
             local success = false
             local result = nil
 
@@ -570,17 +595,38 @@ return {
                 -- PLAY FE ANIMATION
                 --------------------------------------------------------
 
-                local ok, track =
+                -- PlayEmoteAndGetAnimTrackById mengembalikan DUA nilai:
+                -- (berhasil, AnimationTrack). Keduanya harus ditangkap,
+                -- kalau tidak, track yang tersimpan hanya "true".
+                local ok, emoteResult, emoteTrack =
                     pcall(function()
 
                         return humanoid:
                             PlayEmoteAndGetAnimTrackById(
-                                FLEX_ANIMATION_ID
+                                tonumber(FLEX_ANIMATION_ID)
+                                or FLEX_ANIMATION_ID
                             )
 
                     end)
 
-                if ok and track then
+                local track = nil
+
+                if ok then
+
+                    if typeof(emoteResult) == "Instance" then
+
+                        track = emoteResult
+
+                    elseif emoteResult == true
+                        and typeof(emoteTrack) == "Instance" then
+
+                        track = emoteTrack
+
+                    end
+
+                end
+
+                if track then
 
                     success = true
                     result = track
@@ -589,7 +635,7 @@ return {
 
                 end
 
-                result = track
+                result = emoteResult
 
 
                 --------------------------------------------------------
@@ -599,6 +645,65 @@ return {
                 if attempt < maxAttempts then
 
                     task.wait(0.1)
+
+                end
+
+            end
+
+
+            ----------------------------------------------------------------
+            -- CADANGAN: MAINKAN LANGSUNG LEWAT ANIMATOR
+            --
+            -- Jika emote tetap ditolak, animasi dimainkan langsung
+            -- dengan prioritas Action.
+            ----------------------------------------------------------------
+
+            if not success
+                and generation == danceGeneration then
+
+                local animator =
+                    humanoid:FindFirstChildOfClass(
+                        "Animator"
+                    )
+
+                if animator then
+
+                    local loadOk, loadedTrack =
+                        pcall(function()
+
+                            local animation =
+                                Instance.new("Animation")
+
+                            animation.AnimationId =
+                                "rbxassetid://"
+                                .. tostring(FLEX_ANIMATION_ID)
+
+                            local newTrack =
+                                animator:LoadAnimation(
+                                    animation
+                                )
+
+                            newTrack.Priority =
+                                Enum.AnimationPriority.Action
+
+                            newTrack.Looped = false
+
+                            newTrack:Play(0.1)
+
+                            return newTrack
+
+                        end)
+
+                    if loadOk and loadedTrack then
+
+                        success = true
+                        result = loadedTrack
+
+                    else
+
+                        result = loadedTrack
+
+                    end
 
                 end
 

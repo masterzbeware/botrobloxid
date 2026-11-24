@@ -543,6 +543,52 @@ return {
 
 
             ----------------------------------------------------------------
+            -- JANGAN FORWARD PERINTAH PAMER OTOT (FLEX)
+            --
+            -- Cadangan jika intent flex belum terdaftar di parser
+            -- (misalnya Flex.lua belum dimuat), supaya pesan tidak ikut
+            -- diteruskan sebagai chat dan bentrok dengan Flex.lua.
+            --
+            -- Contoh: pamer otot, tunjukkan otot, tunjukan otot,
+            -- pose otot.
+            ----------------------------------------------------------------
+
+            local flexPhrases = {
+
+                "pamer otot",
+                "tunjukkan otot",
+                "tunjukan otot",
+                "pose otot",
+
+            }
+
+            local flexText =
+                " "
+                .. (normalized:gsub("%s+", " "))
+                .. " "
+
+            for _, phrase in ipairs(flexPhrases) do
+
+                if flexText:find(
+                    " " .. phrase .. " ",
+                    1,
+                    true
+                ) then
+
+                    print(
+                        "[Message] Forward dilewati (perintah pamer otot)",
+                        "| Sender:",
+                        sender.Name
+                    )
+
+                    return
+
+                end
+
+            end
+
+
+            ----------------------------------------------------------------
             -- IGNORE PESAN YANG MENGANDUNG
             -- ! ? / \ .
             ----------------------------------------------------------------
