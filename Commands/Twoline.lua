@@ -153,12 +153,13 @@ return {
         -- JARAK
         ----------------------------------------------------------------
 
-        -- Jarak antar baris (studs).
-        local adminRowDistance = 3
-        local defaultRowDistance = 3
+        -- Jarak antar baris (studs), sama seperti Centerline.
+        local adminRowDistance = 6
+        local defaultRowDistance = 6
 
-        -- Jarak antara kolom kiri dan kolom kanan (studs).
-        local columnSpacing = 4
+        -- Jarak antara kolom kiri dan kolom kanan (studs),
+        -- sama seperti Centerline.
+        local columnSpacing = 6
 
         ----------------------------------------------------------------
         -- BOT ORDER

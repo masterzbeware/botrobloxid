@@ -154,8 +154,10 @@ return {
         ----------------------------------------------------------------
 
         -- Jarak satu satuan slot (studs), dipakai untuk baris dan kolom.
-        local adminSpacing = 3
-        local defaultSpacing = 3
+        -- 6 studs, sama seperti Centerline: pasangan bot terdekat
+        -- berjarak satu satuan penuh.
+        local adminSpacing = 6
+        local defaultSpacing = 6
 
         ----------------------------------------------------------------
         -- BOT ORDER
