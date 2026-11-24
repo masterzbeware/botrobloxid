@@ -1,21 +1,20 @@
 -- Threeline.lua
 -- MasterZ HUB
--- Formasi tiga baris di belakang Admin/Player.
+-- Formasi tiga baris dengan Admin/Player di baris pertama.
 --
--- Empat bot di baris pertama, empat di baris kedua, dan tiga di
--- baris ketiga. Seluruh blok berada di belakang target dan
--- menghadap ke arah yang sama dengan target.
+-- Baris pertama: empat bot sejajar target (dua di kiri, dua di
+-- kanan). Baris kedua: lima bot tepat di belakangnya. Baris ketiga:
+-- dua bot. Seluruh bot menghadap ke arah yang sama dengan target.
 --
---   B1    B2    B3    B4
---   B5    B6    B7    B8
---   B9    B10   B11
---
---               A
+--   B1    B2    A     B3    B4
+--   B5    B6    B7    B8    B9
+--   B10   B11
 --
 --   A = Admin / Player (target)
 --   B = Bot
 --
--- (atas = baris terdekat di belakang target)
+-- Jarak antarbot (kolom maupun baris): 6 studs, sama seperti
+-- Centerline.
 --
 -- Formasi menyesuaikan bot aktif: bot aktif ke-1 menempati slot B1,
 -- bot aktif ke-2 slot B2, dan seterusnya.
@@ -85,11 +84,11 @@ return {
         -- (_G.BotVars.NLP). Perfix.lua belum memiliki intent
         -- threeline, jadi modul ini mendaftarkan intent-nya sendiri.
         --
-        -- Formasi di belakang pengirim (Admin atau CommandTarget):
+        -- Formasi di sekitar pengirim (Admin atau CommandTarget):
         --   threeline / formasi tiga baris / tiga baris /
         --   barisan tiga / formasi tiga banjar
         --
-        -- Formasi di belakang pemain lain (HANYA Admin):
+        -- Formasi di sekitar pemain lain (HANYA Admin):
         --   threeline trevkaro / formasi tiga baris trevkaro
         --
         -- Berhenti (HANYA Admin):
@@ -156,54 +155,54 @@ return {
         ----------------------------------------------------------------
         -- FORMASI
         --
-        -- Tiga baris di belakang Target (A):
+        -- Tiga baris dengan Target (A) di baris pertama:
         --
-        --   B1    B2    B3    B4
-        --   B5    B6    B7    B8
-        --   B9    B10   B11
+        --   B1    B2    A     B3    B4
+        --   B5    B6    B7    B8    B9
+        --   B10   B11
         --
-        --               A
+        -- col : kolom dari kiri ke kanan (1 - 5), dilihat dari sisi
+        --       Target yang menghadap ke depan. Kolom 3 adalah kolom
+        --       Target.
+        -- row : jumlah baris ke belakang Target (0 = sejajar Target)
         --
-        -- col : kolom dari kiri ke kanan (1 - 4), dilihat dari sisi
-        --       Target yang menghadap ke depan
-        -- row : jumlah baris ke belakang Target (1 = baris terdekat)
-        --
-        -- Baris ketiga hanya berisi tiga bot (B9 - B11) dan mengisi
-        -- tiga kolom pertama dari kiri, sesuai bentuk formasinya.
+        -- Baris pertama melewati kolom 3 (tempat Target). Baris
+        -- ketiga hanya berisi dua bot (B10 - B11) dan mengisi dua
+        -- kolom pertama dari kiri, sesuai bentuk formasinya.
         ----------------------------------------------------------------
 
         local slotOrder = {
 
-            { col = 1, row = 1 }, -- Slot 1 (B1)
-            { col = 2, row = 1 }, -- Slot 2 (B2)
-            { col = 3, row = 1 }, -- Slot 3 (B3)
-            { col = 4, row = 1 }, -- Slot 4 (B4)
+            { col = 1, row = 0 }, -- Slot 1 (B1)
+            { col = 2, row = 0 }, -- Slot 2 (B2)
+            { col = 4, row = 0 }, -- Slot 3 (B3)
+            { col = 5, row = 0 }, -- Slot 4 (B4)
 
-            { col = 1, row = 2 }, -- Slot 5 (B5)
-            { col = 2, row = 2 }, -- Slot 6 (B6)
-            { col = 3, row = 2 }, -- Slot 7 (B7)
-            { col = 4, row = 2 }, -- Slot 8 (B8)
+            { col = 1, row = 1 }, -- Slot 5 (B5)
+            { col = 2, row = 1 }, -- Slot 6 (B6)
+            { col = 3, row = 1 }, -- Slot 7 (B7)
+            { col = 4, row = 1 }, -- Slot 8 (B8)
+            { col = 5, row = 1 }, -- Slot 9 (B9)
 
-            { col = 1, row = 3 }, -- Slot 9 (B9)
-            { col = 2, row = 3 }, -- Slot 10 (B10)
-            { col = 3, row = 3 }, -- Slot 11 (B11)
+            { col = 1, row = 2 }, -- Slot 10 (B10)
+            { col = 2, row = 2 }, -- Slot 11 (B11)
 
         }
 
         -- Jumlah kolom pada baris terpanjang (dipakai untuk menengahkan
         -- seluruh blok terhadap Target).
-        local columnCount = 4
+        local columnCount = 5
 
         ----------------------------------------------------------------
         -- JARAK
         ----------------------------------------------------------------
 
-        -- Jarak antar baris (studs).
-        local adminRowDistance = 3
-        local defaultRowDistance = 3
+        -- Jarak antar baris (studs), sama seperti Centerline.
+        local adminRowDistance = 6
+        local defaultRowDistance = 6
 
-        -- Jarak antar kolom (studs).
-        local columnSpacing = 3
+        -- Jarak antar kolom (studs), sama seperti Centerline.
+        local columnSpacing = 6
 
         -- Toleransi kedatangan.
         local arrivalTolerance = 1.5
@@ -706,8 +705,9 @@ return {
                         ------------------------------------------------
                         -- POSISI BOT
                         --
-                        -- Blok ditengahkan terhadap Target: kolom 1
-                        -- berada di kiri dan kolom 4 di kanan.
+                        -- Blok ditengahkan terhadap Target: kolom 3
+                        -- sejajar Target, kolom 1 di kiri dan kolom 5
+                        -- di kanan.
                         ------------------------------------------------
 
                         local right =
