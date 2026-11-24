@@ -92,6 +92,12 @@ DistanceModule.Pairs = {
         ["BotB"] = "11960770617",
         ["Distance"] = 2
     }, -- Bot 7 - Bot 8
+
+        {
+        ["BotA"] = "11954797420",
+        ["BotB"] = "12033761173",
+        ["Distance"] = 2
+    }, -- Bot 9 - Bot 10
 }
 
 
