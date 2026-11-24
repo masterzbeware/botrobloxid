@@ -32,9 +32,6 @@ return {
         -- Perfix.lua belum memiliki intent carry, jadi modul ini
         -- mendaftarkan intent-nya sendiri ke NLP.Intents.
         --
-        -- Mulai Formasi Bertingkat (Admin atau CommandTarget):
-        --   formasi bertingkat / bertingkat / carry
-        --
         -- Formasi Ganda / berpasangan (Admin atau CommandTarget):
         --   formasi ganda
         --   (Bot 1 carry Bot 2, Bot 3 carry Bot 4,
@@ -60,22 +57,6 @@ return {
             )
 
         else
-
-            NLP.Intents.carry =
-                NLP.Intents.carry
-                or {
-                    Priority = 1,
-
-                    Words = {
-                        -- "formasi" bernilai 1 supaya "formasi bertingkat"
-                        -- (skor 3) menang atas intent staggereddiamond
-                        -- (skor 2) yang juga memakai kata "bertingkat".
-                        formasi = 1,
-
-                        bertingkat = 2,
-                        carry = 2,
-                    },
-                }
 
             NLP.Intents.uncarry =
                 NLP.Intents.uncarry
@@ -135,18 +116,11 @@ return {
         vars.CarryLoaded = true
 
         --------------------------------------------------
-        -- FORMASI BERTINGKAT
+        -- URUTAN BOT
         --------------------------------------------------
         -- Urutan bot (berdasarkan UserId) sama dengan modul
-        -- formasi lain. Rantai carry mengikuti urutan ini:
-        --
-        --   Bot 1 meminta carry ke Bot 2
-        --   Bot 2 menerima, lalu meminta carry ke Bot 3
-        --   Bot 3 menerima, lalu meminta carry ke Bot 4
-        --   ... dan seterusnya sampai bot terakhir.
-        --
-        -- Bot yang tidak ada di server dilewati, jadi rantai
-        -- tetap tersambung dari bot yang hadir.
+        -- formasi lain. Formasi Ganda memasangkan bot secara
+        -- berurutan: Bot 1-2, Bot 3-4, dan seterusnya.
         --------------------------------------------------
 
         local botOrder = {
@@ -169,10 +143,6 @@ return {
         --------------------------------------------------
         -- SETTINGS
         --------------------------------------------------
-
-        -- Jarak waktu antar langkah rantai (detik).
-        -- Harus lebih besar dari ACCEPT_DELAY.
-        local STEP_DELAY = 4
 
         -- Jeda sebelum bot menerima carry setelah diminta (detik).
         local ACCEPT_DELAY = 1.5
@@ -363,8 +333,6 @@ return {
             carryGeneration =
                 carryGeneration + 1
 
-            vars.CarryChain = nil
-
             -- Tidak ada formasi carry/rantai yang aktif lagi.
             vars.LinkMode = nil
 
@@ -446,224 +414,6 @@ return {
         end
 
         --------------------------------------------------
-        -- BUILD CHAIN
-        --------------------------------------------------
-        -- Daftar pemain bot yang hadir di server, urut
-        -- sesuai botOrder.
-        --------------------------------------------------
-
-        local function buildChain()
-
-            local chain = {}
-
-            for _, userId in ipairs(botOrder) do
-
-                local player =
-                    Players:GetPlayerByUserId(
-                        tonumber(userId)
-                    )
-
-                if player then
-                    table.insert(chain, player)
-                end
-
-            end
-
-            return chain
-
-        end
-
-        --------------------------------------------------
-        -- START CHAIN (FORMASI BERTINGKAT)
-        --------------------------------------------------
-        -- Setiap bot menjalankan jadwalnya sendiri dari saat
-        -- perintah diterima:
-        --
-        -- Langkah k (k = 1 .. n-1), pada waktu (k-1) * STEP_DELAY:
-        --   1. Bot k membuka prompt carry (PromptAction)
-        --   2. Bot k meminta carry ke Bot k+1 (AskCarry)
-        --   3. Bot k+1 menerima carry dari Bot k (Carry) setelah
-        --      ACCEPT_DELAY
-        --------------------------------------------------
-
-        local function startChain(sender)
-
-            releaseBeforeStart()
-
-            --------------------------------------------------
-            -- BATALKAN RANTAI LAMA
-            --------------------------------------------------
-
-            carryGeneration =
-                carryGeneration + 1
-
-            local generation =
-                carryGeneration
-
-            carryActive = false
-
-            --------------------------------------------------
-            -- SUSUN RANTAI
-            --------------------------------------------------
-
-            local chain = buildChain()
-
-            vars.CarryChain = chain
-
-            local myIndex = nil
-
-            for index, player in ipairs(chain) do
-
-                if player == LocalPlayer then
-                    myIndex = index
-                    break
-                end
-
-            end
-
-            if not myIndex then
-
-                warn(
-                    "[Carry] Bot ini tidak ada di botOrder:",
-                    LocalPlayer.Name
-                )
-
-                return
-
-            end
-
-            if #chain < 2 then
-
-                warn(
-                    "[Carry] Minimal 2 bot dibutuhkan, tersedia:",
-                    #chain
-                )
-
-                return
-
-            end
-
-            carryActive = true
-
-            print(
-                "[Carry] Formasi Bertingkat dimulai | Bot:",
-                LocalPlayer.Name,
-                "| Posisi:",
-                myIndex .. "/" .. #chain,
-                "| Admin:",
-                sender and sender.Name or "None"
-            )
-
-            --------------------------------------------------
-            -- JADWAL BOT INI
-            --------------------------------------------------
-
-            task.spawn(function()
-
-                local startTime = os.clock()
-
-                -- Menunggu sampai waktu tertentu.
-                -- False jika rantai dibatalkan / diganti.
-                local function waitUntil(offset)
-
-                    while os.clock() < startTime + offset do
-
-                        if generation ~= carryGeneration then
-                            return false
-                        end
-
-                        task.wait(0.05)
-
-                    end
-
-                    return generation == carryGeneration
-
-                end
-
-                ----------------------------------------------
-                -- 1. TERIMA CARRY DARI BOT SEBELUMNYA
-                ----------------------------------------------
-
-                if myIndex > 1 then
-
-                    local asker = chain[myIndex - 1]
-
-                    local acceptAt =
-                        (myIndex - 2) * STEP_DELAY
-                        + ACCEPT_DELAY
-
-                    if not waitUntil(acceptAt) then
-                        return
-                    end
-
-                    if not asker:IsDescendantOf(Players) then
-
-                        warn(
-                            "[Carry] Bot sebelumnya tidak ada:",
-                            asker.Name
-                        )
-
-                        return
-
-                    end
-
-                    acceptCarry(asker)
-
-                    print(
-                        "[Carry] Menerima carry dari:",
-                        asker.Name
-                    )
-
-                end
-
-                ----------------------------------------------
-                -- 2. MINTA CARRY KE BOT BERIKUTNYA
-                ----------------------------------------------
-
-                if myIndex < #chain then
-
-                    local target = chain[myIndex + 1]
-
-                    local askAt =
-                        (myIndex - 1) * STEP_DELAY
-
-                    if not waitUntil(askAt) then
-                        return
-                    end
-
-                    if not target:IsDescendantOf(Players) then
-
-                        warn(
-                            "[Carry] Bot berikutnya tidak ada:",
-                            target.Name
-                        )
-
-                        return
-
-                    end
-
-                    promptAction()
-
-                    task.wait(PROMPT_DELAY)
-
-                    if generation ~= carryGeneration then
-                        return
-                    end
-
-                    askCarry(target)
-
-                    print(
-                        "[Carry] Meminta carry ke:",
-                        target.Name
-                    )
-
-                end
-
-            end)
-
-        end
-
-        --------------------------------------------------
         -- START PAIRS (FORMASI GANDA)
         --------------------------------------------------
         -- Berpasangan berdasarkan urutan botOrder:
@@ -698,8 +448,6 @@ return {
                 carryGeneration
 
             carryActive = false
-
-            vars.CarryChain = nil
 
             --------------------------------------------------
             -- POSISI BOT INI DI botOrder
@@ -900,34 +648,6 @@ return {
             end
 
             --------------------------------------------------
-            -- CARRY / FORMASI BERTINGKAT
-            -- ADMIN ATAU COMMAND TARGET
-            --------------------------------------------------
-
-            if intent == "carry" and #args == 0 then
-
-                if not senderIsAdmin and not isCommandTarget then
-
-                    print(
-                        "[Carry] Perintah ditolak:",
-                        sender.Name,
-                        "bukan Admin."
-                    )
-
-                    return
-
-                end
-
-                print(
-                    "[Carry] Perintah diterima dari:",
-                    sender.Name
-                )
-
-                startChain(sender)
-                return
-            end
-
-            --------------------------------------------------
             -- FORMASI GANDA (BERPASANGAN)
             -- ADMIN ATAU COMMAND TARGET
             --------------------------------------------------
@@ -1106,7 +826,6 @@ return {
         print("[Carry] Loaded successfully.")
         print("[Carry] Remote:", CarryRemote:GetFullName())
         print("[Carry] Commands:")
-        print("[Carry] formasi bertingkat")
         print("[Carry] formasi ganda")
         print("[Carry] uncarry / siap grak / tegak grak")
         print("[Carry] stop")
