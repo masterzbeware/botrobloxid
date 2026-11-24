@@ -189,6 +189,11 @@ return {
             { right =  1,   forward =  0 }, -- Slot 7 (B7) kanan target
             { right = -1,   forward =  0 }, -- Slot 8 (B8) kiri target
 
+            { right = -2,   forward = -2 }, -- Slot 9 (B9) ujung kiri belakang
+            { right =  2,   forward = -2 }, -- Slot 10 (B10) ujung kanan belakang
+
+            { right =  0,   forward =  2 }, -- Slot 11 (B11) depan tengah
+
         }
 
         ----------------------------------------------------------------

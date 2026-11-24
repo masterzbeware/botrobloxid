@@ -234,6 +234,11 @@ return {
             { right = -1, forward = -1 }, -- Slot 7: belakang kiri
             { right =  1, forward = -1 }, -- Slot 8: belakang kanan
 
+            { right =  0, forward =  2 }, -- Slot 9: depan luar
+            { right =  0, forward = -2 }, -- Slot 10: belakang luar
+
+            { right = -2, forward =  0 }, -- Slot 11: kiri luar
+
         }
 
         --------------------------------------------------

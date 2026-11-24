@@ -89,6 +89,10 @@ return {
             { right = -2, forward =  0 }, -- Slot 7 (B7) kiri
             { right = -1, forward =  1 }, -- Slot 8 (B8) depan kiri
 
+            { right =  0, forward =  3 }, -- Slot 9 (B9) depan luar
+            { right =  3, forward =  0 }, -- Slot 10 (B10) kanan luar
+            { right = -3, forward =  0 }, -- Slot 11 (B11) kiri luar
+
         }
 
         ----------------------------------------------------------------
