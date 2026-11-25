@@ -455,6 +455,23 @@ return {
             end
 
             --------------------------------------------------
+            -- PERINTAH TIDAK BOLEH MENGANDUNG SIMBOL
+            --
+            -- / \ @ ! # $ % ^ & * ( ) |
+            --
+            -- Perintah ditulis dengan kata biasa. Pesan yang memuat
+            -- salah satu simbol di atas (di mana pun posisinya)
+            -- diabaikan.
+            --------------------------------------------------
+
+            if type(message) ~= "string"
+                or message:find("[/\\@!#$%%^&*()|]") then
+
+                return
+
+            end
+
+            --------------------------------------------------
             -- PERMISSIONS
             --------------------------------------------------
 

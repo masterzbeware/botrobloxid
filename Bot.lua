@@ -121,19 +121,14 @@ local commandFiles = {
 
     "Sync.lua",
 
-    "Square.lua",
     "Carry.lua",
     "Chain.lua",
     "Horseshoes.lua",
-    "Worship.lua",
-    "LineFormation.lua",
-    "Stagger.lua",
     "Centerline.lua",
     "Shield.lua",
     "Twoline.lua",
     "Threeline.lua",
     "Diamond.lua",
-    "StaggeredDiamond.lua",
     "Message.lua"
 }
 
@@ -288,7 +283,6 @@ local executionOrder = {
     "twoline",
     "threeline",
     "diamond",
-    "staggereddiamond",
 
     "circle",
     "follow",

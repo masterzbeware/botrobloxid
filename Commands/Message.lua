@@ -78,6 +78,44 @@ return {
 
 
             ----------------------------------------------------------------
+            -- PESAN YANG DIAWALI SIMBOL PERINTAH TIDAK DIBALAS
+            --
+            -- / \ @ ! # $ % ^ & * ( ) |
+            --
+            -- Pesan seperti ini bukan perintah (lihat Perfix.lua),
+            -- tetapi juga bukan obrolan biasa, jadi tidak diteruskan.
+            ----------------------------------------------------------------
+
+            local blockedPrefixes = {
+
+                ["/"] = true,
+                ["\\"] = true,
+                ["@"] = true,
+                ["!"] = true,
+                ["#"] = true,
+                ["$"] = true,
+                ["%"] = true,
+                ["^"] = true,
+                ["&"] = true,
+                ["*"] = true,
+                ["("] = true,
+                [")"] = true,
+                ["|"] = true,
+
+            }
+
+            local firstCharacter =
+                message:match("^%s*(.)")
+
+            if firstCharacter
+                and blockedPrefixes[firstCharacter] then
+
+                return true
+
+            end
+
+
+            ----------------------------------------------------------------
             -- CHARACTER YANG TIDAK BOLEH DIBALAS
             ----------------------------------------------------------------
 

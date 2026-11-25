@@ -82,6 +82,15 @@ NLP.Negations = makeSet({
     "no", "not", "dont", "don",
 })
 
+-- Awalan simbol: pesan yang DIAWALI salah satu simbol ini bukan
+-- perintah (misalnya "/ikuti saya", "@ikuti", "!ikuti").
+-- Perintah harus ditulis dengan kata biasa. Tanda baca di tengah
+-- atau di akhir kalimat tetap diperbolehkan, misalnya "Hormat, grak!".
+NLP.BlockedPrefixes = makeSet({
+    "/", "\\", "@", "!", "#", "$", "%", "^",
+    "&", "*", "(", ")", "|",
+})
+
 --------------------------------------------------
 -- KAMUS PERINTAH
 --------------------------------------------------
@@ -371,6 +380,20 @@ end
 
 function NLP.Classify(text, intents)
     text = tostring(text or "")
+
+    ----------------------------------------------
+    -- Pesan yang diawali simbol (/ \ @ ! # $ % ^ & * ( ) |)
+    -- bukan perintah, jadi tidak diproses sama sekali.
+    ----------------------------------------------
+
+    local firstCharacter = text:match("^%s*(.)")
+
+    if firstCharacter
+        and NLP.BlockedPrefixes[firstCharacter] then
+
+        return nil
+
+    end
 
     ----------------------------------------------
     -- Perintah lama milik modul lain ("!frontline",

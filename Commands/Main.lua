@@ -98,7 +98,6 @@ return {
             "ada pertanyaan",
             "pimpin / pimpinan / barisan",
             "diamond / berlian / belah ketupat / undiamond",
-            "staggered diamond / staggereddiamond / staggered / unstaggereddiamond",
         }
 
         --==================================================
