@@ -138,6 +138,14 @@ return {
         local adminFollowDistance = 3
         local defaultBotFollowDistance = 3
 
+        -- Jarak dan status Admin target dihitung ulang tiap interval
+        -- ini (detik), bukan setiap frame.
+        local distanceRefresh = 1
+
+        -- Perintah jalan (MoveTo) dikirim paling sering sekali per
+        -- interval ini (detik), bukan setiap frame.
+        local moveInterval = 0.1
+
         ----------------------------------------------------------------
         -- BOT ORDER
         ----------------------------------------------------------------
@@ -490,6 +498,21 @@ local botOrder = {
             -- FOLLOW LOOP
             ------------------------------------------------------------
 
+            -- Cache supaya pengecekan Admin dan jarak khusus tidak
+            -- diulang setiap frame.
+            local cachedFor = nil
+            local cachedDistance = defaultBotFollowDistance
+            local cachedDistanceAt = -math.huge
+
+            -- Pelacak MoveTo supaya tidak dikirim setiap frame.
+            local lastMoveAt = -math.huge
+            local lastMoveTarget = nil
+
+            -- Cache HumanoidRootPart target supaya tidak dicari
+            -- dengan FindFirstChild setiap frame.
+            local cachedTargetCharacter = nil
+            local cachedTargetHRP = nil
+
             followConnection =
                 RunService.Heartbeat:Connect(
                     function()
@@ -537,10 +560,24 @@ local botOrder = {
                             return
                         end
 
-                        local targetHRP =
-                            targetCharacter:FindFirstChild(
-                                "HumanoidRootPart"
-                            )
+                        local targetHRP = cachedTargetHRP
+
+                        -- Dicari ulang hanya jika karakter target
+                        -- berganti atau HumanoidRootPart hilang.
+                        if cachedTargetCharacter ~= targetCharacter
+                            or not targetHRP
+                            or targetHRP.Parent ~= targetCharacter then
+
+                            cachedTargetCharacter = targetCharacter
+
+                            targetHRP =
+                                targetCharacter:FindFirstChild(
+                                    "HumanoidRootPart"
+                                )
+
+                            cachedTargetHRP = targetHRP
+
+                        end
 
                         if not targetHRP then
                             return
@@ -550,44 +587,62 @@ local botOrder = {
                         -- DISTANCE
                         ------------------------------------------------
 
-                        local distance =
-                            defaultBotFollowDistance
+                        local now = os.clock()
 
-                        if Admin:IsAdmin(
-                            targetPlayer
-                        ) then
+                        if cachedFor ~= targetPlayer
+                            or now - cachedDistanceAt
+                                >= distanceRefresh then
 
-                            distance =
-                                adminFollowDistance
+                            cachedFor = targetPlayer
+                            cachedDistanceAt = now
 
-                        end
+                            local distance =
+                                defaultBotFollowDistance
 
-                        local specialDistance =
-                            Distance:GetDistance(
-                                tostring(
-                                    LocalPlayer.UserId
-                                ),
-                                tostring(
-                                    targetPlayer.UserId
+                            if Admin:IsAdmin(
+                                targetPlayer
+                            ) then
+
+                                distance =
+                                    adminFollowDistance
+
+                            end
+
+                            local specialDistance =
+                                Distance:GetDistance(
+                                    tostring(
+                                        LocalPlayer.UserId
+                                    ),
+                                    tostring(
+                                        targetPlayer.UserId
+                                    )
                                 )
-                            )
 
-                        if specialDistance then
+                            if specialDistance then
 
-                            distance =
-                                specialDistance
+                                distance =
+                                    specialDistance
+
+                            end
+
+                            cachedDistance = distance
 
                         end
+
+                        local distance = cachedDistance
 
                         ------------------------------------------------
                         -- POSISI BOT
                         ------------------------------------------------
 
+                        local targetCFrame =
+                            targetHRP.CFrame
+
                         local targetPosition =
-                            targetHRP.Position
+                            targetCFrame.Position
                             -
                             (
-                                targetHRP.CFrame.LookVector
+                                targetCFrame.LookVector
                                 *
                                 (distance * myIndex)
                             )
@@ -609,11 +664,29 @@ local botOrder = {
 
                         if distanceToTarget > 1.5 then
 
-                            humanoid.AutoRotate = true
+                            if not humanoid.AutoRotate then
 
-                            humanoid:MoveTo(
-                                targetPosition
-                            )
+                                humanoid.AutoRotate = true
+
+                            end
+
+                            -- MoveTo dikirim ulang tiap moveInterval,
+                            -- atau langsung jika tujuan bergeser jauh.
+                            if now - lastMoveAt >= moveInterval
+                                or not lastMoveTarget
+                                or (
+                                    lastMoveTarget
+                                    - targetPosition
+                                ).Magnitude > 2 then
+
+                                lastMoveAt = now
+                                lastMoveTarget = targetPosition
+
+                                humanoid:MoveTo(
+                                    targetPosition
+                                )
+
+                            end
 
                             return
 
@@ -623,19 +696,40 @@ local botOrder = {
                         -- SUDAH SAMPAI
                         ------------------------------------------------
 
-                        humanoid.AutoRotate = false
+                        if humanoid.AutoRotate then
 
-                        local targetRotation =
-                            targetHRP.CFrame
-                            -
-                            targetHRP.Position
+                            humanoid.AutoRotate = false
 
-                        myHRP.CFrame =
-                            CFrame.new(
-                                myHRP.Position
-                            )
-                            *
-                            targetRotation
+                        end
+
+                        -- CFrame hanya ditulis jika arah hadap bot
+                        -- berbeda dari arah hadap target, bukan
+                        -- setiap frame.
+                        local myCFrame =
+                            myHRP.CFrame
+
+                        if (
+                            myCFrame.LookVector
+                            - targetCFrame.LookVector
+                        ).Magnitude > 0.01
+                            or (
+                                myCFrame.UpVector
+                                - targetCFrame.UpVector
+                            ).Magnitude > 0.01 then
+
+                            local targetRotation =
+                                targetCFrame
+                                -
+                                targetCFrame.Position
+
+                            myHRP.CFrame =
+                                CFrame.new(
+                                    myCFrame.Position
+                                )
+                                *
+                                targetRotation
+
+                        end
 
                     end
                 )
@@ -925,14 +1019,14 @@ local botOrder = {
         -- FALLBACK CHAT
         ----------------------------------------------------------------
 
-        for _, player in ipairs(
-            Players:GetPlayers()
-        ) do
+        if not textChatConnected then
 
-            player.Chatted:Connect(
-                function(message)
+            for _, player in ipairs(
+                Players:GetPlayers()
+            ) do
 
-                    if not textChatConnected then
+                player.Chatted:Connect(
+                    function(message)
 
                         handleCommand(
                             message,
@@ -940,9 +1034,9 @@ local botOrder = {
                         )
 
                     end
+                )
 
-                end
-            )
+            end
 
         end
 
@@ -950,13 +1044,13 @@ local botOrder = {
         -- PLAYER ADDED
         ----------------------------------------------------------------
 
-        Players.PlayerAdded:Connect(
-            function(player)
+        if not textChatConnected then
 
-                player.Chatted:Connect(
-                    function(message)
+            Players.PlayerAdded:Connect(
+                function(player)
 
-                        if not textChatConnected then
+                    player.Chatted:Connect(
+                        function(message)
 
                             handleCommand(
                                 message,
@@ -964,12 +1058,12 @@ local botOrder = {
                             )
 
                         end
+                    )
 
-                    end
-                )
+                end
+            )
 
-            end
-        )
+        end
 
         ----------------------------------------------------------------
         -- CHARACTER RESPAWN
